@@ -1,11 +1,11 @@
 # CODEX Claude Share Package Manifest
 
-Generated: 2026-04-24 22:33:26 -07:00
+Generated: 2026-04-24 22:45:10 -07:00
 
 ## Summary
 
-- File count: 131
-- Total bytes: 12569418
+- File count: 132
+- Total bytes: 12573375
 
 ## File Inventory
 
@@ -71,6 +71,7 @@ Generated: 2026-04-24 22:33:26 -07:00
 - `CODEX Full Size Mockup Images\CODEX Claude UX Review\CODEX rendered screenshots\31_v4_0_v4_0_toolbar_reference.png` (155446 bytes)
 - `CODEX Full Size Mockup Images\CODEX Claude UX Review\CODEX rendered screenshots\32_v4_0_v4_1_preferences_mockup.png` (122283 bytes)
 - `CODEX Full Size Mockup Images\CODEX Claude UX Review\CODEX rendered screenshots\CODEX_render_manifest.json` (50063 bytes)
+- `CODEX Prompts\CODEX_CLAUDE_HANDOFF_PROMPT_STAGED.md` (3848 bytes)
 - `CODEX Prompts\CODEX_CLAUDE_INTEGRATION_PROMPT.md` (5561 bytes)
 - `CODEX Sample Code\audit_mvp_reference_builder.py` (16837 bytes)
 - `CODEX Sample Code\validate_audit_mvp_contracts.py` (11942 bytes)
@@ -138,5 +139,5 @@ Generated: 2026-04-24 22:33:26 -07:00
 - `CODEX Source HTML Mockups\CODEX Claude Original HTML\CODEX_claude_v4_0_v4_0_toolbar_reference.html` (14035 bytes)
 - `CODEX Source HTML Mockups\CODEX Claude Original HTML\CODEX_claude_v4_0_v4_1_preferences_mockup.html` (23587 bytes)
 - `CODEX Source HTML Mockups\CODEX Storyboards\CODEX_step_by_step_ui_storyboard_v1.html` (34727 bytes)
-- `CODEX_READ_ME_FIRST.md` (3753 bytes)
+- `CODEX_READ_ME_FIRST.md` (3862 bytes)
 - `CODEX_render_share_mockups.js` (1884 bytes)

@@ -36,7 +36,10 @@ Canonical specs, code quality recommendations, UX review, project orientation, s
 
 ### CODEX Prompts
 
-Copy-ready Claude prompt for integrating the Audit MVP starter pack into `C:\panda-gallery` later.
+Copy-ready Claude prompts:
+
+- `CODEX_CLAUDE_HANDOFF_PROMPT_STAGED.md` for review/planning handoff.
+- `CODEX_CLAUDE_INTEGRATION_PROMPT.md` for later local package-builder integration into `C:\panda-gallery`.
 
 ### CODEX Sample Code
 
@@ -82,7 +85,7 @@ Paste this to Claude:
 Please review the shared Codex package at:
 C:\CODEX PG\CODEX Claude Share Package
 
-Read CODEX_READ_ME_FIRST.md first, then follow the read order. Do not edit C:\panda-gallery yet. First summarize what you understand, then propose the next safest implementation step for the Audit MVP local package builder.
+Read CODEX_READ_ME_FIRST.md first, then follow the read order. Do not edit C:\panda-gallery yet. First summarize what you understand, identify risks/missing files, and recommend the safest next staged implementation step.
 ```
 
 
