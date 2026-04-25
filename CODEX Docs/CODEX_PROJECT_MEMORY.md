@@ -168,3 +168,19 @@ Created: 2026-04-24 19:49:53 -07:00
 - Optional installer script: C:\CODEX PG\CODEX Skills\CODEX_install_project_skills.ps1
 
 Purpose: make Codex more consistent on Panda Gallery orientation, 6 C's code review, and Claude-ready task prompt writing. Skills were created under C:\CODEX PG first to respect the project folder rule. Installing them into Codex's live skills directory should be a separate explicit action because that writes outside C:\CODEX PG.
+
+## Claude UX Mockup Review Completed
+
+Created: 2026-04-24 20:04:34 -07:00
+
+- Review folder: C:\CODEX PG\CODEX Claude UX Mockup Review
+- Main document: C:\CODEX PG\CODEX Claude UX Mockup Review\CODEX_CLAUDE_SCREENSHOT_UX_MOCKUP_REVIEW.md
+- Rendered screenshot folder: C:\CODEX PG\CODEX Claude UX Mockup Review\CODEX rendered screenshots
+- Contact sheets:
+  - C:\CODEX PG\CODEX Claude UX Mockup Review\CODEX_recent_mockups_contact_sheet.png
+  - C:\CODEX PG\CODEX Claude UX Mockup Review\CODEX_v4_0_mockups_contact_sheet.png
+  - C:\CODEX PG\CODEX Claude UX Mockup Review\CODEX_all_claude_mockups_contact_sheet.png
+
+Scope: reviewed 32 Claude UX mockups from C:\panda-gallery\workflows\design, including recent testing-pane mockups and the v4.0 shell/library/mount/review/compare/present/template/right-panel studies.
+
+Key opinion: Claude's visual direction is strong enough to be the foundation for Panda Gallery v4, but it should be made more explicitly dental. Borrow Lightroom's workflow architecture and Photoshop's focused tools, while using dental vocabulary and clinical defaults. Recommended module set: Library, Mount, Review, Compare, Present.

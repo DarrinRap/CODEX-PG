@@ -1,0 +1,386 @@
+[
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\113_avatar_rewrite_mockup_v1.html",
+    "relative": "113_avatar_rewrite_mockup_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\01_113_avatar_rewrite_mockup_v1.png",
+    "title": "#113 Avatar Rewrite — Mockup v1",
+    "size": {
+      "width": 1440,
+      "height": 2126
+    },
+    "error": null,
+    "textSample": "Bug #113 — Avatar Rewrite Mockup v1\n\nTarget: replace QLabel+setPixmap+border-radius approach with a custom QWidget that paints via QPainter directly. Rounded-square, 8px radius, 36×36 logical. Qt's paintEvent rendering pipeline is inherently DPR-aware — no pixmap DPR juggling, no QLabel anchoring surprises, no QSS border-radius clip gaps.\n\nPatient list — 420px panel width (typical)\nDavis, Carol\nPT-000001 • 555-0123\n25\nJohnson, Alice\nPT-000002 • 555-0124\n21\nRapoport, Adam\nPT-000003 • 555-0125\n21\n🐼\nWilliams, Bob\nPT-000004 • 555-0126\n0\nSmith, John (selected)\nPT-000005 • 555-0127\n8\nArchived Patient\nPT-000006 • 555-0128\n0\nOther panel widths\n320px (narrow)\nDavis, Carol\nPT-000001 • 555-0123\n25\nRapoport, Adam\nPT-000003 • 555-0125\n21\n600px (wide)\nDavis, Carol\nPT-000001 • 555-0123\n25\nRapoport, Adam\nPT-000003 • 555-0125\n21\nRadius comparison — pick the right corner radius\n\nAll 48px for clarity. Current spec: 8px. Linear/Figma house style: 6–8px. A smaller radius reads cleaner at 36px real size.\n\n0px (square)\n4px\n6px\n8px ★\n12px\ncircle\nDPR scale preview — same avatar at 1× / 2× / 3×\n\nYour display is 300% scaling. The rewrite paints directly in paintEvent at widget native resolution, so Qt handl"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\action_bar_mockup_v1.html",
+    "relative": "action_bar_mockup_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\02_action_bar_mockup_v1.png",
+    "title": "PG — Unified Action Bar Mockup v1 (#107 + #110)",
+    "size": {
+      "width": 1440,
+      "height": 4640
+    },
+    "error": null,
+    "textSample": "Unified Action Bar — #107 + #110 bundled fix (Mockup v1)\n\nTarget: move all contextual action buttons (PASS, FAIL, SKIP, Next →) out of the scroll area and into the pane-level action bar at the bottom. One row, always reachable, state-dependent content. Fixes #110 (buttons scroll out of view on tall rows) and #107 (two-row footer on checklist steps). Widths shown: 430 px (MIN_SIZE, current floor) and 360 px (below wrap breakpoint) to prove the layout holds across the pane's size range.\n\nARCHITECTURAL CHANGE\n\nBefore: In-row _actions_host (PASS/FAIL/SKIP on the active row, inside the scroll area) plus a separate ChecklistStepView._footer (summary + Next →) below the scroll area, plus the pane-level button_row (Cancel / Pause / ← Back) at the bottom. Three horizontal action surfaces, two of them inside the scroll region.\n\nAfter: One pane-level action bar hosts all buttons. _actions_host is removed from _ChecklistRow entirely. ChecklistStepView._footer dissolves — its Next button moves to the pane bar, and its summary text moves to a new thin summary strip above the action bar (always visible once any item is answered, per recommendation — see Option A vs B below).\n\nNew / moved button\nE"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\checklist_mockup_v1.html",
+    "relative": "checklist_mockup_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\03_checklist_mockup_v1.png",
+    "title": "Panda Gallery — Checklist View Mockup v1",
+    "size": {
+      "width": 1440,
+      "height": 2028
+    },
+    "error": null,
+    "textSample": "Checklist view — mockup v1\nThree pane widths. Five states. Unified list surface. No walled cards.\n320 PX — NARROW\n1 · ALL PENDING\nToolbar gating check\n0 / 4\nOpen a patient with at least 3 photos before starting.\nToolbar shows patient name\nZoom icons enabled\nMount icon enabled\nArchive icon disabled\nPASS\nFAIL\nSKIP\n2 · FIRST ANSWERED, ACTIVE ON #2\nToolbar gating check\n1 / 4\nToolbar shows patient name\nZoom icons enabled\nPASS\nFAIL\nSKIP\nMount icon enabled\nArchive icon disabled\n3 · MIDDLE FAIL WITH NOTE\nToolbar gating check\n2 / 4\nToolbar shows patient name\nZoom icons enabled\nFAIL\nZoom-in icon stays gray after patient select until window refocuses.\nMount icon enabled\nPASS\nFAIL\nSKIP\nArchive icon disabled\n4 · ALL ANSWERED, NEXT BUTTON\nToolbar gating check\n4 / 4\nToolbar shows patient name\nZoom icons enabled\nFAIL\nZoom-in icon stays gray after patient select until window refocuses.\nMount icon enabled\nArchive icon disabled\n2 pass · 1 fail · 1 skip\nNext →\n5 · FAIL INPUT PANEL OPEN\nToolbar gating check\n1 / 4\nToolbar shows patient name\nZoom icons enabled\nDESCRIBE WHAT FAILED\nCANCEL\nSAVE FAIL\nMount icon enabled\nArchive icon disabled\n420 PX — DEFAULT\n1 · ALL PENDING\nToolbar gating check\n0 / 4\nOpen a "
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\checklist_mockup_v2.html",
+    "relative": "checklist_mockup_v2.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\04_checklist_mockup_v2.png",
+    "title": "Panda Gallery — Checklist View Mockup v2",
+    "size": {
+      "width": 1440,
+      "height": 2659
+    },
+    "error": null,
+    "textSample": "Checklist view — mockup v2\nThree pane widths + a live resizable demo. Unified list, no walled cards, width-clamped.\nWIDTH CONSTRAINTS — CLAUDE CODE MUST ENFORCE THESE IN CODE\nHard minimum: pane width ≥ 280 px. Apply via setMinimumWidth(280) on the instruction-pane dock widget. Below this, Pass/Fail/Skip collide with the label regardless of wrapping.\nWrap breakpoint: at pane width ≤ 360 px, the active row drops its button row below the label (separate line, right-aligned). Implemented via a layout switch keyed off the pane's current width in resizeEvent.\nAbove 360 px: buttons sit inline on the right of the active row.\nTitle bar: step name truncates with ellipsis; step count (2 / 4) never truncates.\nLive resizable demo — grab the bottom-right corner and drag\nToolbar gating check — active patient\n2 / 4\nToolbar shows patient name in the title area\nZoom-in and zoom-out icons are enabled\nFAIL\nZoom-in icon stays gray after patient select until window refocuses.\nMount icon is enabled\nPASS\nFAIL\nSKIP\nArchive icon is disabled\n↔ drag bottom-right corner of the pane\nwrap @ 360 px  ·  min = 280 px\nFixed-width reference — 320 / 420 / 600 px\n320 PX — NARROW (BELOW WRAP BREAKPOINT)\n1 · ALL PENDING\n"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\dialog_sizing_v1.html",
+    "relative": "dialog_sizing_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\05_dialog_sizing_v1.png",
+    "title": "#129 Sizing rule mockup v1 — Settings dialog",
+    "size": {
+      "width": 1440,
+      "height": 1804
+    },
+    "error": null,
+    "textSample": "#129 sizing rule — Settings dialog mockup v1\n\nVisual target for the four-invariant sizing rule. Each scenario shows the Testing — Settings dialog (Pane tab) at a different width. Buttons stay intact across all widths; text wraps at the narrow end; gap between buttons is constant 10px. Default width on first open = floor × 1.15.\n\nThe four invariants\nButtons all visible. Every button in the active cluster fully rendered. None clipped, none hidden.\nInter-button spacing fixed. 10px gap between buttons. Never compressed. Window can't shrink past the point where compression would be required.\nText never clipped. Labels word-wrap freely (window grows vertically). No horizontal truncation.\nMulti-line inputs ≥ 2 lines. Any QTextEdit has min-height = 2 lines of rendered font + padding.\nSettings dialog — three widths\nAT FLOOR — 320 px\nsmallest valid size\nTesting — Settings\n✕\nPane\nSession\nRemember pane size and position\nShow pane in screenshots and recordings\nInclude mouse cursor in F12 captures\nReset pane size and position\nClose\nWidth is the longest single button (Reset…) + horizontal padding. Below this, Reset would clip → INVARIANT 1 violated.\nCOMFORTABLE — 380 px\nfirst-open default (floor "
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\focus_indicator_v1.html",
+    "relative": "focus_indicator_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\06_focus_indicator_v1.png",
+    "title": "#131 Focus Indicator — 3 options",
+    "size": {
+      "width": 1440,
+      "height": 1303
+    },
+    "error": null,
+    "textSample": "#131 — Active-window focus indicator\n\nThree options, each showing FOCUSED and UNFOCUSED states side-by-side. Pick one and I'll draft the CC prompt. Same pane content in all three for a clean visual comparison.\n\nOption A — Solid peach title bar (your suggestion)\nMaximum contrast. No ambiguity. Title bar turns a full peach fill when focused, charcoal when not.\nFOCUSED\nInstruction Pane\n— □ ✕\nStep 3 of 5 · P3\nFirst capture\nPress Shift+F12. Drag a box. Release.\nCancel\nPause\n← Back\nPASS\nFAIL\nUNFOCUSED\nInstruction Pane\n— □ ✕\nStep 3 of 5 · P3\nFirst capture\nPress Shift+F12. Drag a box. Release.\nCancel\nPause\n← Back\nPASS\nFAIL\n+ Impossible to miss which window is active. − Loud. Changes the window's whole top personality. Can feel \"alert-level\" for a passive indicator.\nOption B — Peach 2px top stripe + subtle tint\nOn-brand, low visual noise. Thin peach stripe at top + slightly brighter title bar fill.\nFOCUSED\nInstruction Pane\n— □ ✕\nStep 3 of 5 · P3\nFirst capture\nPress Shift+F12. Drag a box. Release.\nCancel\nPause\n← Back\nPASS\nFAIL\nUNFOCUSED\nInstruction Pane\n— □ ✕\nStep 3 of 5 · P3\nFirst capture\nPress Shift+F12. Drag a box. Release.\nCancel\nPause\n← Back\nPASS\nFAIL\n+ Subtle, on-brand, doesn't hijack "
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\instruction_pane_redesign_v1.html",
+    "relative": "instruction_pane_redesign_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\07_instruction_pane_redesign_v1.png",
+    "title": "Panda Gallery — Instruction Pane redesign v1 (closes #107 #108 #110 #111)",
+    "size": {
+      "width": 1440,
+      "height": 6249
+    },
+    "error": null,
+    "textSample": "Instruction Pane — redesign v1\n\nTarget file: instruction_pane.py · Closes: #107 (two-row footer waste) · #108 (oversized FAIL textarea) · #110 (in-row PASS/FAIL/SKIP scroll out of view) · #111 (cramped/not modern)\n\nDESIGN PRINCIPLES\nAction bar is always reachable. PASS / FAIL / SKIP / Next live at the pane bottom, sibling to Cancel / Pause / Back. They never scroll with content.\nBreathing room. Root padding 20/22, section gap 14, button height 32, all uniform. No squished corners.\nFAIL textarea is capped. min 64, max 84, internal scroll on overflow. Never dominates the pane.\nOne content area per step kind. Single-expected shows body + EXPECTED + filler. Checklist shows body + scrolling list + summary strip. Mutually exclusive.\nSummary strip is subtle but present. Right-aligned, muted text, one line above the action bar. Counts use the existing dot colors.\nNo new colors. Everything pulled from styles.py.\npending\nactive\npass\nfail\nskip\nState 1 — Single-expected step, idle\n\nActive buttons: Cancel · Pause · ← Back · PASS · FAIL\n\nWIDTH 560 (DEFAULT) DESKTOP\n?\nSTEP 3 OF 8 · T-A2-OPEN\nOpen the Import dialog\nContext loaded from step 1 — the first-step-only context block renders here when pr"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\pane_action_bar_v2_mockup_v1.html",
+    "relative": "pane_action_bar_v2_mockup_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\08_pane_action_bar_v2_mockup_v1.png",
+    "title": "Pane action bar v2 — #124 + #125 bundle — mockup v1",
+    "size": {
+      "width": 1440,
+      "height": 5349
+    },
+    "error": null,
+    "textSample": "Instruction Pane action bar v2 — #124 + #125 bundle\n\nOne redesign wave, two bugs closed. #124: two-row action bar so the pane can shrink below 560 px. #125: new kind: \"action\" step renders an Acknowledge button instead of PASS/FAIL for navigation-only steps. Three variants of the Acknowledge button are shown side-by-side (§6) — pick one before we draft the Claude Code prompt. Colors from styles.py: peach #e8a87c, green #5ab87a, bg #14141f / #1a1a2e, border #2a2a3e.\n\n§1 Observation step — kind: \"observation\" / legacy expectedbaseline — what most steps look like today\n\nSingle-row layout is fine above the 420 px breakpoint. Below that, the action bar wraps to two rows. Navigation cluster (Cancel / Pause / Back) goes left; outcome cluster (PASS / FAIL) goes right.\n\n600 px — single row\n\nStep 5 of 10 · T5_cursor_absent\n?\nVerify F12 capture excludes cursor\nOpen the most recent capture PNG in your image viewer.\nEXPECTED\nThe capture PNG does not show the mouse cursor overlay.\nCancel\nPause\n← Back\nPASS\nFAIL\n\n440 px — two rows (wrap point)\n\nStep 5 of 10 · T5_cursor_absent\n?\nVerify F12 capture excludes cursor\nOpen the most recent capture PNG in your image viewer.\nEXPECTED\nThe capture PNG does n"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\pane_fail_panel_mockup_v1.html",
+    "relative": "pane_fail_panel_mockup_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\09_pane_fail_panel_mockup_v1.png",
+    "title": "Panda Gallery — Pane-level FAIL panel mockup v1 (Phase B, bug #87)",
+    "size": {
+      "width": 1440,
+      "height": 1985
+    },
+    "error": null,
+    "textSample": "Pane-level FAIL panel — mockup v1\nPhase B of bug #87. Single-expected steps: replace the action row (PASS / FAIL) with an inline FAIL panel when the user taps FAIL, so the user can type a note and commit without leaving the pane. Visual language reuses the checklist-row FAIL panel's QSS verbatim — #checklistFailPanel, #checklistFailPanelEdit, #checklistBtnPanelCancel, #checklistBtnPanelSave.\nTHREE STATES\n\nState 1 — Default. Body + EXPECTED + action row (PASS / FAIL). Unchanged from v3.75.6.\n\nState 2 — FAIL panel open. Action row replaced with an inline panel: red-tinted container, \"DESCRIBE WHAT FAILED\" header, multi-line textarea, CANCEL + SAVE FAIL button row. Bottom-of-pane Cancel / Pause / ← Back row stays visible (pane-level actions).\n\nState 3 — Post-save. Result written to results_latest.json, auto-advance to the next step (or to summary on last step). Identical to PASS advance.\n\nSingle step with body + EXPECTED + action row across three states\n1 DEFAULT — PASS / FAIL BUTTONS\n?\nStep 2 of 3 · B1\nB1 — Click FAIL to test the panel\nSETUP: Look at this step.\nACTION: Tap FAIL or press F.\nEXPECTED\nPASS / FAIL button row is visible at the bottom of the pane.\nCancel\nPause\n← Back\nPASS\n"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\pane_fail_panel_mockup_v2.html",
+    "relative": "pane_fail_panel_mockup_v2.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\10_pane_fail_panel_mockup_v2.png",
+    "title": "Panda Gallery — Pane-level FAIL panel mockup v2 (Phase B, bug #87)",
+    "size": {
+      "width": 1440,
+      "height": 2299
+    },
+    "error": null,
+    "textSample": "Pane-level FAIL panel — mockup v2\nPhase B of bug #87. Single-expected steps: replace the action row (PASS / FAIL) with an inline FAIL panel when the user taps FAIL, so the user can type a note and commit without leaving the pane. Visual language reuses shipped CHECKLIST_VIEW_QSS object names verbatim — #checklistFailPanel, #checklistFailPanelEdit, #checklistBtnPanelCancel, #checklistBtnPanelSave.\n\nv2 fix vs v1: state 2 now shows sample text typed into the textarea so SAVE FAIL renders in its enabled red state (matches shipped #checklistBtnPanelSave — color #d46a6a, border rgba(212,106,106,0.35)). v1 accidentally drew the disabled (gray) state because the textarea was empty. A dedicated swatch board at the bottom shows every button state.\nTHREE STATES\n\nState 1 — Default. Body + EXPECTED + action row (PASS / FAIL). Unchanged from v3.75.6.\n\nState 2 — FAIL panel open. Action row replaced with an inline panel: red-tinted container, \"DESCRIBE WHAT FAILED\" header, multi-line textarea, CANCEL + SAVE FAIL button row. Bottom-of-pane Cancel / Pause / ← Back row stays visible (pane-level actions).\n\nState 3 — Post-save. Result written to results_latest.json, auto-advance to the next step (or to"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\region_capture_v1.html",
+    "relative": "region_capture_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\11_region_capture_v1.png",
+    "title": "#130 Region capture mockup v1 — Shift+F12",
+    "size": {
+      "width": 1440,
+      "height": 3772
+    },
+    "error": null,
+    "textSample": "#130 region capture — mockup v1 (Shift+F12)\n\nFive states of the region-capture flow. Each \"display\" is a 1024×576 stand-in for the user's screen at that moment. Background shows a generic PG main window. Hotkey: Shift+F12. Single-display v1 — overlay paints on cursor's display only. Toast click is the only path to the review dialog.\n\nState 1 — Idle (default)\nBEFORE Shift+F12\nFile\nEdit\nView\nTemplates\nCompare\nOpen\nUndo\nRedo\nZoom+\nZoom-\nFit\nExport\nPrint\nPATIENTS\nChen, James\nMitchell, Sarah\nPanda Gallery\nPROPERTIES\nInfo · Adjust · Drawing · Layers\nReady\n100%\nPG runs normally. F12 captures the whole window. Shift+F12 is wired but inactive.\nState 2 — Region selection (mid-drag)\nSHIFT+F12 PRESSED · USER DRAGGING\nFile\nEdit\nView\nTemplates\nCompare\nOpen\nUndo\nRedo\nZoom+\nZoom-\nFit\nExport\nPrint\nPATIENTS\nChen, James\nMitchell, Sarah\nPanda Gallery\nPROPERTIES\nInfo · Adjust · Drawing · Layers\nReady\n100%\nDrag to capture region. Esc to cancel.\n280 × 200 px\nOverlay dims everything outside the dragged rectangle. The cutout shows the original PG content at full brightness. Peach #e8a87c outline. Live dimensions label tracks the cursor.\nState 3 — Capture flash (mouse release)\n~80MS GREEN FLASH INSIDE CAPTU"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\review_dialog_sizing_v1.html",
+    "relative": "review_dialog_sizing_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\12_review_dialog_sizing_v1.png",
+    "title": "#132 Review dialog sizing + position",
+    "size": {
+      "width": 1440,
+      "height": 3908
+    },
+    "error": null,
+    "textSample": "#132 — Review dialog: 30% size reduction + anchored to pane\n\nTwo changes: (1) shrink the preview image cap from 800×600 to 560×420 (exactly 30% each dimension), and (2) position the dialog flush against the Instruction Pane instead of centered on the main window. Fallback to center-on-main when no pane is visible.\n\nPart 1 — preview size: current vs proposed\nCURRENT (V4.23)\nMAX = 800 × 600 px · dialog ≈ 832 × 720 px (with chrome)\nRegion capture — Review\n— ✕\n800 × 600 preview area\n1.8 KB · 2026-04-25 19:42:03 · 412 × 287 px\nDiscard\nRe-capture\nSave\nPROPOSED\nMAX = 560 × 420 px · dialog ≈ 592 × 540 px (with chrome) · 30% smaller each dim, 51% less screen area\nRegion capture — Review\n— ✕\n560 × 420 preview area\n1.8 KB · 2026-04-25 19:42:03 · 412 × 287 px\nDiscard\nRe-capture\nSave\nNote: the image is still scaled with KeepAspectRatio, so captures smaller than 560×420 still render at their native size — the cap only kicks in for larger captures. 30% reduction is the cap; a 200×150 capture still shows at 200×150.\nPart 2 — dialog position: anchored to pane\n\nPrimary case: pane is open and visible. Dialog opens flush against the pane's free side with a 12px gap. No overlap — tester sees both at on"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\single_expected_mockup_v1.html",
+    "relative": "single_expected_mockup_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\13_single_expected_mockup_v1.png",
+    "title": "Panda Gallery — Single-Expected Step Mockup v1",
+    "size": {
+      "width": 1440,
+      "height": 2019
+    },
+    "error": null,
+    "textSample": "Single-expected step layout — mockup v1\nFix for G1/G4 (wasted vertical space) + G2 (button style) + G3 (narrow-resize button truncation).\nWHAT THIS MOCKUP LOCKS IN\nBody gets NO vertical stretch. Uses flex: 0 0 auto + max-height: 40%. Only scrolls if content actually overflows.\nSpacer absorbs empty space. A flex: 1 1 auto element between body and EXPECTED pushes EXPECTED + button row to the bottom of the pane. Content top, void middle, buttons bottom. Predictable.\nAll bottom-bar buttons are outlined — no solid fills. PASS becomes green-outline (was solid green). FAIL stays amber-outline. Cancel/Pause/Back stay neutral-outline. Entire pane speaks one visual vocabulary.\nPASS and FAIL get setMinimumWidth(76) and setMinimumWidth(72). Prevents the G3 narrow-resize truncation.\nPane MIN_SIZE width bumps from 320 → 380. Five outlined buttons at their floor widths + margins need 380 to fit without overlap.\n1. Wasted vertical space — before vs after\nBEFORE (CURRENT V3.66) — G1 / G4\n?\nStep 1 of 3 · A1\nA1 — Single-expected regression\nVerifying v3.65.2 checklist step kind: schema validation passed, single-expected renders unchanged.\nSETUP: Look at the pane.\nACTION: Verify this step still renders"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\single_expected_mockup_v2.html",
+    "relative": "single_expected_mockup_v2.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\14_single_expected_mockup_v2.png",
+    "title": "Panda Gallery — Single-Expected Step Mockup v2 (filler placement)",
+    "size": {
+      "width": 1440,
+      "height": 2802
+    },
+    "error": null,
+    "textSample": "Single-expected step — filler placement v2\nChoosing where the flex: 1 spacer goes when body content is short vs. medium. Informed by live-testing screenshots showing the v1 mockup only drew the short-body case.\nTHE CONFLICT THAT SURFACED\n\nv1 mockup (shipped in v3.66): spacer between body and EXPECTED. EXPECTED pinned to bottom of pane, just above button row. Works great for short body text.\n\nLive testing with B1 / B2 (medium-length body): the spacer creates a visible gap between body and EXPECTED. The user reads this as \"wasted space\" identical to the original G1/G4 bug — we just relocated the void.\n\nRoot question: where should the absorbed void go — above EXPECTED, or below EXPECTED?\n\nShort body (A1 — \"Look at the pane\")\nA CURRENT V3.66 — SPACER ABOVE EXPECTED\n?\nStep 1 of 3 · A1\nA1 — Single-expected regression\nSETUP: Look at the pane.\nACTION: Verify the layout.\nEXPECTED\nYou see a progress line, a body paragraph, and a green-left-border EXPECTED block.\nCancel\nPause\n← Back\nPASS\nFAIL\nBody hugs the top. Void absorbs between body and EXPECTED. EXPECTED sits just above button row — reader's eye drops from title to body to (visual void) to EXPECTED to PASS/FAIL.\nB PROPOSED — SPACER BELOW"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\stats_row_mic_bar_mockup_v1.html",
+    "relative": "stats_row_mic_bar_mockup_v1.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\15_stats_row_mic_bar_mockup_v1.png",
+    "title": "PG 3c — stats-row MicLevelBar swap mockup v1",
+    "size": {
+      "width": 2892,
+      "height": 1707
+    },
+    "error": null,
+    "textSample": "Phase 3c — stats-row MicLevelBar swap\n\nMockup v1. Target: replace the single-QLabel _stats_lbl in InstructionPane with a fixed-height row that renders a MicLevelBar during AudioState.ACTIVE and a text dot in SILENT / DISCONNECTED / FAILED. Row height pinned at 30 px across all states.\n\nStats-row text decision for ACTIVE state (Option A, recommended). During ACTIVE, drop the word “Capturing” from the stats text. The animating bar communicates “capturing” more directly than the word. Non-ACTIVE states retain the full phrase because the dot colour carries less information than the bar does.\n   ACTIVE text: Frames: NNNN · MM:SS\n   Non-ACTIVE text: Capturing · Frames: NNNN · MM:SS (DISCONNECTED overrides with its own copy.)\nWidth: 430 px (pane MIN_SIZE floor)\n\nHardest layout case. Pane inner width = 430 − 32 = 398 px. Bar must hold its 200 px minimum; text column absorbs the rest via flex: 1 with ellipsis on overflow.\n\nACTIVE\nMic healthy, speech detected\nSTEP 3 OF 7\nWalk through the save flow\nClick File → Save and verify the dialog…\n-14 dB\nFrames: 28 · 2:47\nbar grows ~184 px · text ~120 px · margins 32 px · 398 total\nSILENT\nMic healthy, no speech for ≥1 s\nSTEP 3 OF 7\nWalk through the sa"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v3_71_ui_vocabulary.html",
+    "relative": "v3_71_ui_vocabulary.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\16_v3_71_ui_vocabulary.png",
+    "title": "Where each part of the pane lives",
+    "size": {
+      "width": 1440,
+      "height": 2169
+    },
+    "error": null,
+    "textSample": "Where each part of the pane lives\n\nYellow labels point at the real regions. Three states side by side.\n\nQuick reference\nHELP\nThe ? circle, top right. Opens a key reference.\nPROGRESS\n\"Step X of Y\" text, top left.\nTITLE\nThe orange heading of the step.\nINSTRUCTIONS\nThe plain text block that tells you what to do. Scrolls if long.\nQUESTION LIST\nThe rows with colored dots. The active one has an orange left stripe.\nSUMMARY STRIP\nThe thin \"X pass · X fail · X skip\" line that shows up after you answer one question.\nACTION BAR\nThe 6 buttons at the very bottom: Cancel, Pause, Back, PASS, FAIL, SKIP.\nFAIL PANEL\nThe red-bordered textbox that opens when you press FAIL.\n▼ State 1: checklist just loaded, nothing answered yet\nSTEP 1 OF 3\nPROGRESS\n?\nBefore answering anything\nTITLE\nLook at the pane. Answer each question.\nINSTRUCTIONS\nThe 6 buttons at the bottom look nice and evenly spaced\nThe question list takes up most of the pane\nNothing looks squished or cut off\nQUESTION LIST\nCancel\nPause\n← Back\nPASS\nFAIL\nSKIP\nACTION BAR\n▼ State 2: pressed PASS once on the first question\nSTEP 1 OF 3\n?\nBefore answering anything\nLook at the pane. Answer each question.\nThe 6 buttons at the bottom look nice and evenly"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\INDEX.html",
+    "relative": "v4_0/INDEX.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\17_v4_0_index.png",
+    "title": "Panda Gallery v4.0 — Design Mockup Index",
+    "size": {
+      "width": 1440,
+      "height": 1502
+    },
+    "error": null,
+    "textSample": "PANDAGallery Design Mockups\nv4.0 · Week 1 shell mockup · iteration 1\nSCREENS\nThe main shell in context — all three modules, empty-state, loupe. Click to open full-window.\nPANDA\nSplash / startup\nFirst-impression screen shown while the app boots. Atmospheric glow, loading bar, version footer.\nSHELL\nLibrary · patient selected\nMain workspace. Patient list left, thumbnail grid center, properties right, filmstrip bottom. The default screen after launch.\nSHELL\nLibrary · empty state\nNo patient selected. Three-step onboarding: select patient → import images → arrange & present. Addresses bug #114.\nSHELL\nLibrary · loupe (image zoomed)\nSingle image editing. Tool strip appears, right panel shifts to Adjust / History / Annotations. Canvas darkens to pure black.\nSHELL\nArrange · unified canvas\nTemplate + freeform consolidated. Drag from image library on left onto the arrangement sheet. Saved arrangements reusable.\nSHELL\nPresent · dual-monitor\nFirst-class patient-facing view. Control monitor has chrome, patient monitor is zero-chrome mirror. The differentiated feature.\nSHELL\nREFERENCE\nDeep-dive documentation: every menu, every toolbar, every keyboard shortcut, in one place.\nFILE\n \nCtrl+O Open\nCtrl"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_ALL.html",
+    "relative": "v4_0/v4_0_ALL.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\18_v4_0_v4_0_all.png",
+    "title": "Panda Gallery v4.0 — Design Mockups",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "PANDAGalleryv4.0\n✦\nSplash\n▦\nMain shell\n☰\nMenus & shortcuts\n⚒\nToolbars\n◐\nPalette & type\nPANDA\nGALLERY  ·  V4.0\nLoading patient database · 247 patients\nPanda Dental Software\n© 2026  ·  panda_gallery.db  ·  v4.0-dev"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_arrange_canvas_mockup.html",
+    "relative": "v4_0/v4_0_arrange_canvas_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\19_v4_0_v4_0_arrange_canvas_mockup.png",
+    "title": "Panda Gallery v4.0 — Arrange · canvas",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "PANDA\nGallery\nv4.0\n◀\n▶\n▦\nLibrary\n⌘1\n◩\nArrange\n⌘2\n▶\nPresent\n⌘3\n↓\nImport\n↑\nExport\n▶\nPresent\n⌖\nV Select\n⊕\nP Place\n↻\nR Rotate\n⇄\nS Swap\n✦\nA Auto\n▦\nG Grid\n✎\nN Note\nLibrary\n›\nAdams, Deborah\n›\nFull Mouth Series · 2026-03-14\n◩ Mount\n▢ Freeform\n⊞ Grid\n−\n80%\n+\nFit\nADAMS, DEBORAH · #00842 · FMX · 2026-03-14\nStandard FMX 18\n1\n2\n3\n4\n5\n6\nDrop\nPA\n15-17\n8 · BW\n9 · BW\n10 · BW\n11 · BW\n12\n13\n14\n15\n16\n17\nDrop\nPA\n19-17\nFILMSTRIP · ADAMS, DEBORAH · TODAY'S VISIT · 16 USED · 8 AVAILABLE\n◀\n▶\n✕\nSlot\nSeries\nTemplate\nExport\nSLOT 4 · #9\nselected\nImage\nPA_03_14_04\nCaptured\n2026-03-14\nSensor\nSize 1 · Anterior\nRegion\n#9 central\nQUICK ADJUST\nslot-only\nBrightness\n+12\nContrast\n+20\nSharpness\n0\nTRANSFORM\nRotate\n↶ 90°\n↷ 90°\nFlip\n↔ H\n↕ V\nSERIES\nauto-saved 12s ago\nSlots filled\n16 / 18\n2 slots remaining · positions 7 & 18.\nOpen in Edit\nRemove\nARRANGE\nAdams, Deborah · FMX\n│\nSlot 4 · PA_03_14_04\n│\nSelect (V)\n│\n16 / 18 mounted\nauto-saved 12s ago\n│\nv4.0-dev"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_comparison_mockup.html",
+    "relative": "v4_0/v4_0_comparison_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\20_v4_0_v4_0_comparison_mockup.png",
+    "title": "Panda Gallery v4.0 — Comparison",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "PANDAGallery\n›\nAdams, Deborah\n›\nCompare — before / after treatment\n← Back to Library\nLayout:\nSide-by-side\nStacked\nGrid (4)\nSplit swipe\nZoom:\n−\n135%\n+\nFit\n🔗 Sync\nOverlay:\nAnnotations\nMeasurements\nHeatmap diff\nExport as image\nSave as Series\nA · BEFORE 2026-01-22 · PA_01_22_03\nB · AFTER 2026-03-14 · PA_03_14_07\nFILMSTRIP · ADAMS, DEBORAH · ALL PAS & BWS\nClick to set A · Shift+Click to set B\nCOMPARISON · A ↔ B\nMETADATA\n52 DAYS APART\nA · DATE\n2026-01-22\nB · DATE\n2026-03-14\nA · DIMENSIONS\n1456 × 1112\nB · DIMENSIONS\n1456 × 1112\nA · CATEGORY\nPA · Size 2\nB · CATEGORY\nPA · Size 2\nADJUSTMENT DELTA\n3 EDITS\nBrightness\n0\n+15\nContrast\n0\n+30\nSharpness\n0\n+25\nInvert\n—\n✓\non\nCLINICAL NOTES\nADAMS, DEBORAH\nTAGS\nendo\nfollow-up\n#15\n+ add tag\nExport PDF report\nSend to Present\nCOMPARE\n2 images\n│\nsync on · 135% · fit both\n│\nnotes unsaved\nv4.0-dev"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_edit_image_mockup.html",
+    "relative": "v4_0/v4_0_edit_image_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\21_v4_0_v4_0_edit_image_mockup.png",
+    "title": "Panda Gallery v4.0 — Edit Image (Loupe)",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "PANDAGallery v4.0\n◀\n▶\n▦\nLibrary\n⌘1\n◩\nArrange\n⌘2\n▶\nPresent\n⌘3\n↓\nImport\n↑\nExport\n▶\nPresent\n⌖\nV Select\n✎\nB Brush\n▭\nR Rect\n⬭\nE Ellipse\n↗\nA Arrow\nT\nT Text\n⌗\nC Crop\n⊢⊣\nM Measure\n◐\nI Invert\nLibrary\n›\nAdams, Deborah\n›\nPA_03_14_01\n▦\nGrid\n◈\nLoupe\n◱\nCompare\n⟲\nBefore/After\n−\n100%\n+\n⊡\nFit\nFILMSTRIP · ADAMS, DEBORAH · ALL VISITS\n◀\n▶\n✕\nInfo\nAdjust\nDrawing\nLayers\nHistory\nHISTOGRAM\nluminance\nADJUSTMENTS\n✦\nAuto Enhance\nStrength\n5%\nBrightness\n+15\nContrast\n+30\nSaturation\n0\nSharpness\n+25\nTRANSFORM\nRotate\n↶ 90°\n↷ 90°\n0°\nFlip\n↔ H\n↕ V\nINVERT\nInvert (radiograph)\nRADIOGRAPH\nauto-detected\nGrayscale image. Saturation disabled.\nReset All\nReset to Original\nLOUPE\nPA_03_14_01\n│\n1456×1112 · 100%\n│\nBrush (B)\n│\n4 edits · 2 annotations\n7/24 in patient\n│\nv4.0-dev"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_INDEX.html",
+    "relative": "v4_0/v4_0_INDEX.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\22_v4_0_v4_0_index.png",
+    "title": "Panda Gallery v4.0 — Design Index",
+    "size": {
+      "width": 1440,
+      "height": 2919
+    },
+    "error": null,
+    "textSample": "PANDAGallery — Design Index\nv4.0 · complete mockup library · updated 2026-04-23\n17\nmockups\n7\nprimary screens\n5\nstudies & references\npalette locked\nVersion v4.0\nTarget ship 2026-07-23\nPalette · Segoe UI · peach\n01 · PRIMARY SCREENS\n\nThe screens a dentist moves through in a typical day. These are the core app surfaces — every other screen exists to support what happens here.\n\nGORGEOUS\nEditor · Adjust panel\nSingle-image loupe with full Lightroom-style adjustment panel, tool strip, filmstrip, and histogram. The screen where actual clinical work happens.\nv4_0_edit_image_mockup.html\nOpen ↗\nSplash screen\nApp launch — brand-forward with peach gradient PANDA wordmark, v4.0 version badge, loading status.\nv4_0_splash_mockup.html\nOpen ↗\nMain shell · Library\nProposed: Patient list · thumbnail grid · filter panel · filmstrip. The screen a dentist opens to first thing every morning.\nv4_0_shell_mockup_v1_library.html\nOpen ↗\nNEW\nLibrary · empty states\nFirst launch (no patients), patient list with no selection, patient selected but zero images. Three states in one file.\nv4_0_library_empty_mockup.html\nOpen ↗\nNEW\nArrange · canvas (populated)\nFull-mouth series with 16 of 18 slots mounted. Image palette"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_library_empty_mockup.html",
+    "relative": "v4_0/v4_0_library_empty_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\23_v4_0_v4_0_library_empty_mockup.png",
+    "title": "Panda Gallery v4.0 — Library · empty states",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "LIBRARY · EMPTY STATES:\nA · first launch\nB · patient list, no selection\nC · patient with no images\nPANDA\nGallery\nv4.0\n◀\n▶\n▦\nLibrary\n⌘1\n◩\nArrange\n⌘2\n▶\nPresent\n⌘3\n↓\nImport\n↑\nExport\n▶\nPresent\nPATIENTS\n0\nYour patient list\nwill appear here.\n+ New\n⋯ More\nWelcome\nWELCOME TO V4.0\nYour PANDA Gallery is empty.\n\nAdd a patient, import DICOM files from your sensor, or load demo data to explore the app.\n\n↓\nImport DICOM\nChoose a folder of .dcm files. Panda auto-classifies images and creates patients.\n⌘I\n+\nAdd patient\nCreate a patient record manually — name, DOB, chart number. Add images later.\n⌘N\n⚑\nDemo data\nTry Panda with 8 sample patients and 240 images. Remove anytime.\n⌘D\nKeyboard shortcuts\nConnect practice management\nDocumentation\n◎\nNothing to show yet\nPatient details and filters will appear here once you add or import.\nFILMSTRIP\nNo images yet.\nLIBRARY\n0 patients · 0 images\n│\nReady\nDB: panda_gallery.db\n│\nv4.0-dev"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_menu_reference.html",
+    "relative": "v4_0/v4_0_menu_reference.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\24_v4_0_v4_0_menu_reference.png",
+    "title": "Panda Gallery v4.0 — Menu & Shortcut Reference",
+    "size": {
+      "width": 1440,
+      "height": 3550
+    },
+    "error": null,
+    "textSample": "← Design index / menu & shortcut reference\nPANDAGallery — Menu & Shortcut Reference\nComplete menu bar / submenu / keyboard shortcut map for v4.0\nMENU BAR LAYOUT\nAll six top-level menus with their dropdown contents expanded inline. Hover a top-level item to see the emphasis state.\nFile\nEdit\nView\nTemplates\nCompare\nHelp\nFILE\nOpen Image…\nCtrl+O\nImport Images to Patient…\nCtrl+I\nExport As…\nCtrl+Shift+E\nQuick Export\nCtrl+E\nPrint…\nCtrl+P\nExit\nCtrl+Q\n \nEDIT\nUndo\nCtrl+Z\nRedo\nCtrl+Y\nCopy Adjustments\nCtrl+Shift+C\nPaste Adjustments\nCtrl+Shift+V\n \nCOMPARE\nNew Comparison…\nCtrl+Shift+M\nVIEW\nFit in View\nHome\nZoom In\nCtrl+=\nZoom Out\nCtrl+−\nFullscreen\nF11\nReset Layout\n☐ Show Deleted Items\n☐ Show Archived Patients\n☑ Show Slot Numbers\n☑ Show Sensor Numbers\nTesting\nStart workflow recording\nCtrl+Alt+R\nStop workflow recording\nCtrl+Alt+S\nCapture workflow frame\nF12\nAbort workflow recording\nCtrl+Alt+A\nDelete last workflow\nCtrl+Alt+⌫\nShow Instructions\nCtrl+Alt+I\nSettings…\n \nTEMPLATES\nDesign New Template…\nTemplate Library…\nCtrl+T\nNew Freeform Arrangement\nMount New Series\nFull Mouth (18)\nBitewing (4)\nPeriapical (14)\n2×3 (6)\nBrowse Template Library…\nOpen Recent Series\nFull Mouth — Adams — 2026-03-14\nBitewing — A"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_palette_typography.html",
+    "relative": "v4_0/v4_0_palette_typography.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\25_v4_0_v4_0_palette_typography.png",
+    "title": "Panda Gallery v4.0 — Palette & Typography",
+    "size": {
+      "width": 1440,
+      "height": 3012
+    },
+    "error": null,
+    "textSample": "← Design index / palette & typography\nPANDAGallery — Design Tokens\nAtomic design layer · colors from styles.py · type stack from app config\nCOLOR · SURFACE\nFive-step dark navy scale. All surface colors in the app come from this scale — no ad-hoc hex values in component code.\ncanvas\n#14141f\nDeepest — viewport background, scroll areas\nchrome\n#161625\nTitle bar, menu bar, toolbar, status bar\npane\n#1a1a2e\nMain window, side panes, dialogs\npane-raised\n#22223a\nButtons, inputs, hover state base\npane-selected\n#2a2a4e\nSelected state, pressed state\nCOLOR · BORDER & DIVIDER\nborder-soft\n#232336\nSubtle section dividers, row borders\nborder\n#2a2a3e\nDefault component borders\nborder-hover\n#3a3a4e\nHover state for borders, scrollbar handles\nCOLOR · TEXT\nAa Bb Cc 123\ntext\n#e0ddd5\nPrimary cream — body text, labels\nAa Bb Cc 123\ntext-muted\n#888888\nSecondary info, counts, captions\nAa Bb Cc 123\ntext-dim\n#555555\nDisabled state, tertiary info, placeholders\nCOLOR · ACCENT (SIGNATURE)\nPeach / coral scale used for selection, focus, brand accent. The logo wordmark uses the 3-stop gradient across accent-hover → accent → accent-ink.\naccent-light\n#f0b98c\nWordmark highlight, subtle glow top-stop\naccent\n#e8a87c\nSignatu"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_present_mockup.html",
+    "relative": "v4_0/v4_0_present_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\26_v4_0_v4_0_present_mockup.png",
+    "title": "Panda Gallery v4.0 — Present mode",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "PRESENT MODE · VIEWS:\nA · single image fullscreen\nB · before / after\nC · dentist's control screen\nLIVE · EXTERNAL DISPLAY\nPATIENT\nAdams, Deborah\n#00842 · F · 57 · visit 2026-03-14\nAnnotations on\nPeriapical · Upper right quadrant\nIMAGE 1 OF 3 · CAPTURED 2026-03-14\n◀\n1 / 3\n▶\n✦\n⇄\n⊕\n✕"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_right_panel_study.html",
+    "relative": "v4_0/v4_0_right_panel_study.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\27_v4_0_v4_0_right_panel_study.png",
+    "title": "Panda Gallery v4.0 — Right Panel Study",
+    "size": {
+      "width": 1440,
+      "height": 6647
+    },
+    "error": null,
+    "textSample": "PANDAGallery — Right Panel Study\nLightroom sliders · collapsible sections · tool inventory with rationale\n1 · LIGHTROOM SLIDER — ANATOMY\n\nYour lightroom_slider.py already implements most of what LR does — fine/coarse arrow keys, scroll wheel, inline numeric entry, double-click-label-to-reset, drag tooltips, two-tier rendering. This study is about visual polish plus one piece of behavior worth adding (the center detent + bidirectional fill for bipolar sliders).\n\nExposure\n+0.60\nlabel · double-click resets\ncenter detent (0)\nthumb · cream\nfill from center (peach, 80%)\nvalue · mono · click to edit\nCompare bipolar vs unipolar fill behavior — the fill direction communicates the sign of the change at a glance:\nShadows\n−100\nHighlights\n−82\nContrast\n0\nClarity\n+42\nStrength\n65%\n↑ unipolar (0-100) · fill from left, no center detent\nALREADY IN LIGHTROOMSLIDER\nFine-step (arrow keys), coarse-step (shift+arrow), scroll wheel adjust, inline numeric editing, double-click label to reset, drag tooltip, dragStarted / dragEnded for two-tier rendering, disabled-state palette.\nWORTH ADDING\nCenter detent + bidirectional fill for bipolar sliders — ~10 lines in paintEvent. Track tick at center, fill draws from"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_shell_mockup_v1_library.html",
+    "relative": "v4_0/v4_0_shell_mockup_v1_library.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\28_v4_0_v4_0_shell_mockup_v1_library.png",
+    "title": "PG v4.0 — UI Shell Mockup v1 — Library module",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "P\nPanda Gallery v4.0\n◀\n▶\n▦\nLibrary\n⌘1\n◩\nArrange\n⌘2\n▶\nPresent\n⌘3\n↓\nImport\n↑\nExport\n▶\nPresent\nPATIENTS\n247\nDA\nAdams, Deborah\n#00842 · F · 1968\n24\nMB\nBergstrom, Martin\n#00591 · M · 1975\n12\nCC\nChen, Caroline\n#01203 · F · 1990\n8\nRD\nDavis, Roberto\n#00776 · M · 1982\n31\nLE\nEng, Linda\n#01055 · F · 1971\n18\nJF\nFischer, James\n#00428 · M · 1964\n45\nSG\nGupta, Sanjay\n#01108 · M · 1988\n6\nKH\nHalvorsen, Karen\n#00912 · F · 1979\n15\nJI\nIkeda, Jennifer\n#01267 · F · 1993\n4\nTJ\nJansen, Thomas\n#00338 · M · 1958\n62\n+\nNew\n⋯\nMore\nLibrary\n›\nAdams, Deborah\n·\n24 images\n▦\nGrid\n☰\nList\n◱\nCompare\nSize\nPA\n2026-03-14\n01\nPA\n2026-03-14\n02\nBW\n2026-03-14\n03\nBW\n2026-03-14\n04\nPhoto\n2026-03-14\n05\nPhoto\n2026-03-14\n06\nPA\n2026-01-22\n07\nPA\n2026-01-22\n08\nBW\n2026-01-22\n09\nPhoto\n2026-01-22\n10\nPhoto\n2026-01-22\n11\nPAN\n2025-11-08\n12\nPA\n2025-11-08\n13\nPA\n2025-11-08\n14\nBW\n2025-11-08\n15\nFILMSTRIP · ALL VISITS\n◀\n▶\n✕\n▼\nPATIENT INFO\nName\nAdams, Deborah\nID\n#00842\nSex\nFemale\nDOB\n1968-04-22\nAge\n57\nFirst visit\n2021-06-14\nLast visit\n2026-03-14\n▼\nFILTER\n3 active\nIMAGE TYPE\nRadiograph\nPhoto\nScan\nRADIOGRAPH KIND\nPA\nBW\nPAN\nCBCT\nDATE RANGE\n→\nFLAGS\n⚑ Flagged\n★ Favorite\n◷ Recent\n▼\nSORT\nDate captured (newest first)\nDate captured (oldest first)\nImage type, "
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_splash_mockup.html",
+    "relative": "v4_0/v4_0_splash_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\29_v4_0_v4_0_splash_mockup.png",
+    "title": "Panda Gallery v4.0 — Splash",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "◂ Index\nPANDA\nGALLERY  ·  V4.0\nLoading patient database · 247 patients\nPanda Dental Software\n© 2026  ·  panda_gallery.db  ·  v4.0-dev"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_template_editor_mockup.html",
+    "relative": "v4_0/v4_0_template_editor_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\30_v4_0_v4_0_template_editor_mockup.png",
+    "title": "Panda Gallery v4.0 — Template Editor",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "PANDAGallery\n›\nTemplate Editor\n›\nunsaved · 18 slots · 3 rows\nSENSOR PALETTE\nDrag a sensor onto the canvas to add a slot. Double-click a slot to change its size.\n0\nPediatric\n22 × 35 mm\n0\n1\nAnterior\n24 × 40 mm\n4\n2\nAdult\n31 × 41 mm · default\n10\n3\nBitewing\n27 × 54 mm\n4\n4\nOcclusal\n57 × 76 mm\n0\nTotal slots: 18\nLimit: 60\nView:\nDesign\nPreview\nGrid:\n5\n10\n20\nSnap\nZoom:\n−\n100%\n+\nFit\n↶ Undo\n↷ Redo\n1\nSIZE 2\n2\nSIZE 2\n3\nSIZE 1\n4\nSIZE 1\n5\nSIZE 1\n6\nSIZE 2\n7\nSIZE 2\n8\nBW · SIZE 3\n9\nBW · SIZE 3\n10\nBW · SIZE 3\n11\nBW · SIZE 3\n12\nSIZE 2\n13\nSIZE 2\n14\nSIZE 1\n15\nSIZE 2\n16\nSIZE 2\n17\nSIZE 2\n18\nSIZE 2\nSLOT 7 — PROPERTIES\nSENSOR SIZE\n0 · Ped\n1 · Ant\n2 · Adult\n3 · BW\n4 · Occ\nORIENTATION\nPortrait\nLandscape\nPOSITION & SIZE\nX\nY\nWidth\nHeight\nSize 2 locked · 31 × 41 mm\nLABEL\nTooth #\nRegion\nACTIONS\nDuplicate\nAlign\nRemove slot\nModified · 2 slots changed · auto-index: left-to-right, top-to-bottom\nCancel\nSave as New\nSave Template"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_0_toolbar_reference.html",
+    "relative": "v4_0/v4_0_toolbar_reference.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\31_v4_0_v4_0_toolbar_reference.png",
+    "title": "Panda Gallery v4.0 — Toolbar & Panel Reference",
+    "size": {
+      "width": 1440,
+      "height": 1897
+    },
+    "error": null,
+    "textSample": "← Design index / toolbars & panels\nPANDAGallery — Toolbars & Panels\nEvery clickable control in the shell — top toolbar, tool strip, right-panel tabs\nTOP TOOLBAR\nPersistent strip below the menu bar. Always visible. Canvas-bound actions are disabled when no image is loaded.\n📂\nOpen\n↶\nUndo\n↷\nRedo\n⊕\nZoom+\n⊖\nZoom−\n⊡\nFit\n↑\nExport\n⎙\nPrint\nOpen\nOpen a single image file (Ctrl+O) — quick edit without a patient association.\nUndo / Redo\nPer-image edit history (Ctrl+Z / Ctrl+Y). Separate from Back / Forward navigation.\nZoom+ / Zoom−\nStep zoom (Ctrl+= / Ctrl+−). Mouse wheel also zooms on the canvas directly.\nFit\nFit image to viewport (Home). First thing you reach for after loading an image.\nExport\nExport with annotations baked in. PNG / JPEG / TIFF / BMP.\nPrint\nPrint preview dialog — lets user pick printer, paper size, fit-to-page.\nTOOL STRIP · DRAWING & ANNOTATION\nVertical column on the left of the canvas. Visible only in loupe (single-image) mode. Single-key shortcuts match Lightroom / Photoshop convention.\n⌖\nV\n✎\nB\n▭\nR\n⬭\nE\n↗\nA\nT\nT\n⌗\nC\n⊢⊣\nM\n◐\nI\n\nV · Select — move, resize, and re-select existing annotations. Default tool.\n\nB · Brush — freehand vector strokes. Adjustable width and color in the Dr"
+  },
+  {
+    "file": "C:\\panda-gallery\\workflows\\design\\v4_0\\v4_1_preferences_mockup.html",
+    "relative": "v4_0/v4_1_preferences_mockup.html",
+    "screenshot": "C:\\CODEX PG\\CODEX Claude UX Mockup Review\\CODEX rendered screenshots\\32_v4_0_v4_1_preferences_mockup.png",
+    "title": "Panda Gallery v4.1 — Preferences",
+    "size": {
+      "width": 1440,
+      "height": 980
+    },
+    "error": null,
+    "textSample": "PANDAGallery\n›\nPreferences\nv4.1-dev\nWORKFLOW\n⚙\nGeneral\n▦\nLibrary\n✎\nEditor\n◩\nArrange\n▶\nPresentation\nDISPLAY\n◐\nAppearance\nEditor\nDefault tools, adjustment behavior, and annotation colors\nDEFAULTS\nTool on image open\nWhich tool activates when you open an image in the editor.\nSelect (V)\nBrush (B)\nLast used\nInvert radiographs by default\nAuto-toggle the Invert checkbox when opening a detected radiograph.\nOn\nOff\nAsk me\nRadiograph adjustment preset\nStarting slider values for a newly-opened radiograph. User-saved presets appear here once you create them.\nNone (zeroed)\nPerio read\nEndo check\nCaries detection\nPre-op mount\n──────────\nManage presets…\nPhoto adjustment preset\nStarting slider values for a newly-opened photo.\nNone (zeroed)\nAuto-enhance\nClinical photo\nANNOTATIONS\nDefault annotation color\nShape and brush tools will start with this color each session.\nDefault stroke width\nStarting brush / shape stroke thickness.\n1\n2\n3\n4\n5\nSnap shape annotations to grid\nRectangles, ellipses, and arrows snap to 10-pixel grid when drawing.\nBEHAVIOR\nBrush smoothing\nSmooths freehand brush strokes for cleaner lines. Higher values reduce jitter but also reduce precision.\nOff\nLow\nMed\nHigh\nUndo history depth\nMax"
+  }
+]
