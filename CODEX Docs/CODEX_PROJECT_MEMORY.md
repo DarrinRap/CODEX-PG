@@ -81,3 +81,14 @@ Configured: 2026-04-24 18:51:53 -07:00
 - Local repo: `C:\CODEX PG`
 - Branch: `main` tracks `origin/main`.
 - Use `C:\CODEX PG\CODEX Automation\CODEX_backup_to_github.ps1` after meaningful changes.
+
+## Panda Gallery Read-Only Reference Access
+
+Configured: 2026-04-24 18:56:29 -07:00
+
+- Source folder: `C:\panda-gallery`.
+- Codex may read all files from `C:\panda-gallery` as reference material.
+- Codex must not write, edit, delete, move, stage, commit, push, or mutate anything inside `C:\panda-gallery` unless Darrin explicitly overrides this boundary later.
+- Read-only reference policy folder: `C:\CODEX PG\CODEX Panda Gallery Readonly Reference`.
+- Inventory generated: `CODEX_PANDA_GALLERY_INVENTORY.md` and `CODEX_PANDA_GALLERY_FILE_INDEX.csv`.
+- Last inventory count: 6,249 files.

@@ -77,3 +77,16 @@ GitHub remote is configured and pushed successfully.
 - Local branch: `main`
 - Tracking branch: `origin/main`
 - Normal backup command: `powershell -ExecutionPolicy Bypass -File "C:\CODEX PG\CODEX Automation\CODEX_backup_to_github.ps1"`
+
+## Panda Gallery Read-Only Reference Status
+
+Updated: 2026-04-24 18:56:29 -07:00
+
+Codex read-only reference access is documented for `C:\panda-gallery`.
+
+- Policy: `C:\CODEX PG\CODEX Panda Gallery Readonly Reference\CODEX_READONLY_POLICY.md`
+- Inventory summary: `C:\CODEX PG\CODEX Panda Gallery Readonly Reference\CODEX_PANDA_GALLERY_INVENTORY.md`
+- Inventory CSV: `C:\CODEX PG\CODEX Panda Gallery Readonly Reference\CODEX_PANDA_GALLERY_FILE_INDEX.csv`
+- Indexed files: 6,249
+
+Important: do not write into `C:\panda-gallery`; all Codex-derived files belong under `C:\CODEX PG`.
