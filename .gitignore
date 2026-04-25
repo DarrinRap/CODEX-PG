@@ -1,0 +1,11 @@
+﻿# CODEX docs
+*.tmp
+*.bak
+*.log
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+build/
+dist/
