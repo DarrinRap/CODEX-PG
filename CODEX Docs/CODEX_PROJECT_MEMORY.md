@@ -92,3 +92,19 @@ Configured: 2026-04-24 18:56:29 -07:00
 - Read-only reference policy folder: `C:\CODEX PG\CODEX Panda Gallery Readonly Reference`.
 - Inventory generated: `CODEX_PANDA_GALLERY_INVENTORY.md` and `CODEX_PANDA_GALLERY_FILE_INDEX.csv`.
 - Last inventory count: 6,249 files.
+
+<!-- CODEX_HANDOFF_AUTOMATION_START -->
+## Handoff Automation
+
+Last generated: 2026-04-24 19:02:50 -07:00
+
+Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
+
+Trigger words:
+
+- CODEX HANDOFF: update handoff snapshot, generate resume prompt, run GitHub backup.
+- CODEX CHECKPOINT: same as handoff, used mid-project.
+- CODEX BACKUP: run GitHub backup only.
+- CODEX RESUME PG: fresh-chat startup instruction.
+<!-- CODEX_HANDOFF_AUTOMATION_END -->
+

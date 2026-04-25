@@ -90,3 +90,19 @@ Codex read-only reference access is documented for `C:\panda-gallery`.
 - Indexed files: 6,249
 
 Important: do not write into `C:\panda-gallery`; all Codex-derived files belong under `C:\CODEX PG`.
+
+<!-- CODEX_AUTOMATED_HANDOFF_START -->
+## Automated Handoff Snapshot
+
+Generated: 2026-04-24 19:02:50 -07:00
+Mode: `Handoff`
+
+- Last automated handoff: `C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md`
+- Fresh chat resume prompt: `C:\CODEX PG\CODEX Docs\CODEX_RESUME_PROMPT.txt`
+- GitHub repo: `https://github.com/DarrinRap/CODEX-PG.git`
+- Current branch: `main`
+- Origin: `https://github.com/DarrinRap/CODEX-PG.git`
+
+Use trigger word `CODEX RESUME PG` in a fresh chat and paste the contents of `CODEX_RESUME_PROMPT.txt` if needed.
+<!-- CODEX_AUTOMATED_HANDOFF_END -->
+

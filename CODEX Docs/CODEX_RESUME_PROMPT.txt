@@ -1,0 +1,18 @@
+﻿CODEX RESUME PG
+
+Read these first:
+C:\CODEX PG\CODEX Docs\CODEX_PROJECT_MEMORY.md
+C:\CODEX PG\CODEX Docs\CODEX_CURRENT_HANDOFF.md
+C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md
+
+Then check:
+C:\CODEX PG git status
+GitHub repo: https://github.com/DarrinRap/CODEX-PG.git
+
+Remember:
+- All Codex files stay under C:\CODEX PG
+- Every Codex folder starts with CODEX
+- C:\panda-gallery is read-only reference only
+- Continue from the latest handoff
+
+Latest automated handoff generated: 2026-04-24 19:02:50 -07:00
