@@ -1,0 +1,115 @@
+[
+  {
+    "evidence_id": "ev_region_0001",
+    "kind": "region_screenshot",
+    "label": "Step 1 manual region capture",
+    "step_n": 1,
+    "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\screenshots\\region_1_1.png",
+    "package_path": "evidence/ev_region_0001.png",
+    "remote_path": null,
+    "mime_type": "image/png",
+    "sha256": "4b5c5c92cec3b23e6a294fc0eea43234ef5126c5a64f4c6c531ac8430ab0b844",
+    "bytes": 68,
+    "created_at": "2026-04-24T20:34:14-07:00",
+    "capture": {
+      "capture_type": "manual_region",
+      "include_cursor": false,
+      "monitor_index": null,
+      "bounds": null
+    },
+    "transcript_ref": null,
+    "discarded": false,
+    "privacy": {
+      "contains_phi": "no",
+      "deidentified": true,
+      "redaction_state": "synthetic_sample"
+    }
+  },
+  {
+    "evidence_id": "ev_step_auto_0001",
+    "kind": "step_auto_screenshot",
+    "label": "Step 1 automatic failure screenshot",
+    "step_n": 1,
+    "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\screenshots\\step_1_auto_fail.png",
+    "package_path": "evidence/ev_step_auto_0001.png",
+    "remote_path": null,
+    "mime_type": "image/png",
+    "sha256": "4b5c5c92cec3b23e6a294fc0eea43234ef5126c5a64f4c6c531ac8430ab0b844",
+    "bytes": 68,
+    "created_at": "2026-04-24T20:34:14-07:00",
+    "capture": {
+      "capture_type": "auto_fail_screenshot",
+      "include_cursor": false,
+      "monitor_index": null,
+      "bounds": null
+    },
+    "transcript_ref": null,
+    "discarded": false,
+    "privacy": {
+      "contains_phi": "no",
+      "deidentified": true,
+      "redaction_state": "synthetic_sample"
+    }
+  },
+  {
+    "evidence_id": "ev_region_0002",
+    "kind": "region_screenshot",
+    "label": "Step 4 manual region capture",
+    "step_n": 4,
+    "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\screenshots\\region_4_1.png",
+    "package_path": "evidence/ev_region_0002.png",
+    "remote_path": null,
+    "mime_type": "image/png",
+    "sha256": "4b5c5c92cec3b23e6a294fc0eea43234ef5126c5a64f4c6c531ac8430ab0b844",
+    "bytes": 68,
+    "created_at": "2026-04-24T20:34:14-07:00",
+    "capture": {
+      "capture_type": "manual_region",
+      "include_cursor": false,
+      "monitor_index": null,
+      "bounds": null
+    },
+    "transcript_ref": null,
+    "discarded": false,
+    "privacy": {
+      "contains_phi": "no",
+      "deidentified": true,
+      "redaction_state": "synthetic_sample"
+    }
+  },
+  {
+    "evidence_id": "ev_transcript_span_0001",
+    "kind": "transcript_span",
+    "label": "Transcript span describing Step 1 placement issue",
+    "step_n": 1,
+    "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\transcripts\\transcript.md",
+    "package_path": "source/transcript.md",
+    "remote_path": null,
+    "mime_type": "text/markdown",
+    "sha256": "9cb2f56bdb04ade5ecc2a7a14795b07cdfdae69de1846c0874c0acb94cef9edf",
+    "bytes": 541,
+    "created_at": "2026-04-24T20:34:14-07:00",
+    "capture": {
+      "capture_type": "transcript_span",
+      "include_cursor": null,
+      "monitor_index": null,
+      "bounds": null
+    },
+    "transcript_ref": {
+      "transcript_ref_id": "tr_0001",
+      "transcript_source": "source/transcript.md",
+      "start_seconds": 12.4,
+      "end_seconds": 18.9,
+      "text_excerpt": "I captured a region, and the review dialog opened in the center.",
+      "frame_ids": [
+        "ev_region_0001"
+      ]
+    },
+    "discarded": false,
+    "privacy": {
+      "contains_phi": "no",
+      "deidentified": true,
+      "redaction_state": "synthetic_sample"
+    }
+  }
+]

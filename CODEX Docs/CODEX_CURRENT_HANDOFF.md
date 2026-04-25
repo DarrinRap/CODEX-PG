@@ -206,3 +206,20 @@ Installed: 2026-04-24 20:09:42 -07:00
 Use Playwright for local HTML mockup screenshots, contact sheets, responsive checks, and future browser-style dashboard/spec testing. It is not the primary test tool for the live Python/PySide desktop app.
 
 
+
+## Audit MVP Starter Pack Created
+
+Created: 2026-04-24 20:43:16 -07:00
+
+- Starter pack folder: C:\CODEX PG\CODEX Audit MVP Starter Pack
+- README: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX_AUDIT_MVP_STARTER_PACK_README.md
+- Claude prompt: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX docs\CODEX_CLAUDE_INTEGRATION_PROMPT.md
+- Mockup/spec references: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX docs\CODEX_MOCKUP_AND_SPEC_REFERENCES.md
+- Reference builder: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX scripts\audit_mvp_reference_builder.py
+- Validator: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX scripts\validate_audit_mvp_contracts.py
+- Sample source session: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX samples\sample_source_session
+- Generated expected package: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX samples\expected_package\session_package_session_20260424_194422
+- Sample issue extraction JSON: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX samples\sample_audit_issue_extraction_v1.json
+- Validation report: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX validation output\CODEX_validation_report.json
+
+Verification completed: Python scripts compile, builder generated the expected package, and validator returned ok: true with zero errors and zero warnings. C:\panda-gallery was not edited.
