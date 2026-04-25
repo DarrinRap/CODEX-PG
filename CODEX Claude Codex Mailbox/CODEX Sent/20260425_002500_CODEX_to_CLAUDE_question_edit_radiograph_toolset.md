@@ -36,6 +36,17 @@ Please review the spec when you have time and push back on:
 3. Whether the preset set is clinically sensible or should be renamed/reduced.
 4. Whether Measurement needs to be v4.0 rather than v4.1.
 5. Whether any tool in the proposed right-panel structure conflicts with the v4 mockup direction.
+6. Whether any Lightroom/Photoshop-inspired tools are relevant enough for dentistry to include, specifically Black/White point handles, Fine Detail, Edge Detail, Scatter Reduction, and Advanced Curve.
+
+## Addendum: Darrin Constraint
+
+Darrin specifically asked to add tools from Adobe Lightroom and Photoshop only if relevant to dentistry. Codex updated the spec with a dentistry-filter translation table:
+
+- Include or consider only tools that improve radiograph readability, orientation, documentation, or comparison.
+- Reject creative/photo-retouching tools from diagnostic radiograph workflow.
+- Explicitly exclude Healing, Clone Stamp, Content-Aware Fill, Generative Fill, Liquify, Transform Warp, creative color grading, HSL, vignettes, artistic filters, and style presets.
+- Treat Black/White point handles as the safest addition because they belong to the Window/Level/Levels mental model.
+- Defer Fine Detail, Edge Detail, Scatter Reduction, and Advanced Curve until clinical tuning images and workflow review exist.
 
 This does not block Codex's current planning work. Darrin remains the approval gate for any production implementation.
 

@@ -253,6 +253,56 @@ Recommended placement:
 - Requires calibration workflow before it can be trusted.
 - Treat as v4.1 unless Darrin promotes it.
 
+## Lightroom / Photoshop Tool Translation
+
+Lightroom and Photoshop are useful references for interaction patterns, but PG should not copy their creative editing surface. The dental rule is simple: include tools only when they improve image readability, orientation, documentation, or comparison without implying diagnosis or altering clinical truth.
+
+Recommended translations:
+
+| Source idea | PG dentistry translation | Use in PG? | Reason |
+|---|---|---|---|
+| Lightroom Tone Curve | Window/Level plus optional Curves Advanced control | Yes, but hide Curves under Advanced | Curves can rescue under/overexposed radiographs, but Window/Level is the safer default mental model |
+| Lightroom Blacks / Whites | Black point / White point handles in histogram | Yes | Helps set usable density range without forcing users into abstract curves |
+| Lightroom Clarity | Radiograph Clarity | Yes | Clinically useful local contrast when tuned conservatively |
+| Lightroom Texture | Fine Detail | Maybe P1/P2 | Can help enamel margins, trabeculation, calculus, and restorative margins, but overlaps with Clarity |
+| Lightroom Dehaze | Scatter / Fog Reduction | Maybe P2 | Could help low-contrast sensor images, but the word Dehaze is not dental vocabulary |
+| Lightroom Sharpening with Masking | Edge Detail with edge mask | Maybe P2 | Useful only if edge-preserving and noise-aware; never a generic Sharpness slider for radiographs |
+| Lightroom Noise Reduction | Edge-preserving Noise Reduction | Maybe P2 | Useful for noisy sensor images, risky if it erases subtle findings |
+| Lightroom Profiles | Diagnostic Presets | Yes | Presets should map to clinical review intent, not creative looks |
+| Lightroom Copy/Paste Settings | Apply Previous / Copy Adjustments / Paste Adjustments | Yes | Important for a radiograph series captured under similar conditions |
+| Photoshop Levels | Window/Level + black/white handles | Yes | Levels is the right Photoshop ancestor for radiographs |
+| Photoshop Curves | Advanced Curve | Maybe P2/P3 | Powerful but easy to misuse; should not be the primary clinical control |
+| Photoshop Dodge/Burn | Local Brighten / Local Darken annotation-style overlay | Probably later | Potentially useful for presentation callouts, but should be non-destructive and clearly marked as local emphasis |
+| Photoshop Smart Sharpen | Edge Detail | Maybe P2 | Only if tuned for radiographs and constrained to avoid artifacts |
+| Photoshop Camera Raw before/after | Before/After compare | Yes | Builds trust and helps prevent over-processing |
+| Photoshop History | History snapshots | Yes | Needed for non-destructive clinical review |
+| Photoshop Crop / Straighten | Crop / Rotate / Flip / Straighten | Yes | Orientation and framing are core clinical usability |
+| Photoshop Spot Healing / Clone Stamp | Remove from diagnostic workflow | No | Can alter evidence; any blemish cleanup belongs outside diagnostic radiograph editing |
+| Photoshop Generative Fill / Remove | Exclude entirely | No | Not appropriate for dental radiographs or clinical evidence |
+| Photoshop Liquify / Transform Warp | Exclude entirely | No | Changes anatomy and has no role in diagnostic review |
+
+Recommended PG tool names:
+
+| Photo-editor term | PG term |
+|---|---|
+| Levels | Window/Level |
+| Blacks / Whites | Black Point / White Point |
+| Clarity | Clarity |
+| Texture | Fine Detail |
+| Dehaze | Scatter Reduction |
+| Sharpening | Edge Detail |
+| Noise Reduction | Noise Reduction |
+| Profiles | Diagnostic Presets |
+| Copy/Paste Settings | Apply Previous / Copy Adjustments |
+
+Design guardrails:
+
+- Keep creative color controls out of radiographs: Vibrance, Saturation, Color Grading, HSL, Split Toning, Lens Blur, Vignette, artistic filters, and style presets.
+- Do not include pixel-removal tools in diagnostic radiograph mode: Healing, Clone, Content-Aware Fill, Generative Fill, or object removal.
+- Any local adjustment must be visibly non-destructive and documented in history.
+- Any tool that can change perceived pathology must have conservative defaults, Before/After access, and reset.
+- If a tool is mostly useful for patient presentation rather than diagnosis, put it in annotation/presentation workflow rather than the primary radiograph Adjust section.
+
 ## Interaction Flow: Radiograph Review
 
 ```mermaid
@@ -305,9 +355,14 @@ Goal: a dentist should get to a readable radiograph in under 10 seconds without 
 | P1 | Before/After | Prevents over-processing and builds trust |
 | P1 | History snapshots | Lets user compare diagnostic tuning states |
 | P1 | Crop / rotate / flip | Fixes orientation/framing before review |
+| P1 | Black/White point handles | Practical, clinically relevant Levels-style control |
+| P2 | Fine Detail | Lightroom Texture analogue; useful but overlaps with Clarity |
+| P2 | Edge Detail | Photoshop/Lightroom sharpening analogue, only if edge-preserving |
 | P2 | Noise reduction | Useful, but risky if poorly tuned |
+| P2 | Scatter Reduction | Dehaze analogue for low-contrast sensor images, needs clinical tuning |
 | P2 | Copy/Paste/Apply Previous | Speeds series-wide consistency |
 | P2 | Measurement | Clinically valuable but calibration-sensitive |
+| P3 | Advanced Curve | Powerful Photoshop/Lightroom control, but too easy to overuse |
 | P3 | Export presets | Valuable after review flow is stable |
 
 ## Current To Future Control Mapping
@@ -324,6 +379,7 @@ Goal: a dentist should get to a readable radiograph in under 10 seconds without 
 | Histogram | Upgrade into Window/Level control |
 | Radiograph note | Replace with useful controls, not just a label |
 | Reset All | Split into Reset Radiograph Adjustments and Reset to Original |
+| Photo-style creative controls | Hide from radiographs unless clinically translated |
 
 ## Edit State Implications
 
@@ -335,7 +391,12 @@ Recommended additive future state:
 radiograph_preset: str | null
 window: float | null
 level: float | null
+black_point: float | null
+white_point: float | null
 clarity: float
+fine_detail: float
+edge_detail: float
+scatter_reduction: float
 noise_reduction: float
 legacy_brightness: float
 legacy_contrast: float
@@ -422,7 +483,9 @@ No code first. Produce HTML/CSS mockup states:
 
 - Radiograph loaded, Standard preset selected.
 - Window/Level handles in histogram.
+- Black/White point handles in histogram if included in the first mockup.
 - Clarity slider adjusted.
+- Advanced disclosure containing only clinically relevant Lightroom/Photoshop-inspired tools.
 - Before/After active.
 - Photo loaded, photo controls visible.
 - Unknown image type with override selector.
@@ -443,11 +506,15 @@ Add multi-scale local contrast backend and preview/full-res rendering.
 
 Add presets after Window/Level and Clarity exist, so presets drive real controls.
 
-### Stage 6: Legacy Auto Enhance Removal
+### Stage 6: Clinically Relevant Advanced Detail Tools
+
+Evaluate Fine Detail, Edge Detail, Scatter Reduction, and Advanced Curve only after the core radiograph path is stable.
+
+### Stage 7: Legacy Auto Enhance Removal
 
 Remove Auto Enhance and Strength only after replacement tools are stable.
 
-### Stage 7: Measurement Tool
+### Stage 8: Measurement Tool
 
 Build only after calibration UX is designed and approved.
 
@@ -458,6 +525,7 @@ Build only after calibration UX is designed and approved.
 3. Are the initial presets Standard / Endo / Perio / Caries / Flat clinically right?
 4. Should Clarity default to 0, or should Standard preset apply mild clarity automatically?
 5. Is Measurement important enough for v4.0, or should it stay v4.1?
+6. Should any Lightroom/Photoshop-derived advanced tools ship in v4.0, or should v4.0 stay focused on Window/Level, Clarity, Invert, Before/After, and History?
 
 ## Codex Recommendation
 
@@ -470,5 +538,6 @@ For v4.0, prioritize the radiograph read path:
 5. Before/After.
 6. History.
 
-This gives PG a clinical advantage without pretending to diagnose. It also avoids the current failure mode where a single Auto Enhance button does too much and too little at the same time.
+Add Lightroom/Photoshop-inspired controls only after they pass the dentistry filter. Codex recommends Black/White point handles as the safest addition because they are part of the Window/Level mental model. Fine Detail, Edge Detail, Scatter Reduction, and Advanced Curve should be deferred until PG has clinical images to tune against.
 
+This gives PG a clinical advantage without pretending to diagnose. It also avoids the current failure mode where a single Auto Enhance button does too much and too little at the same time.
