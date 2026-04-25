@@ -155,3 +155,16 @@ Created: 2026-04-24 19:41:06 -07:00
 - File verified: 1,030 lines, no hidden control characters detected.
 
 Recommended use: share this Markdown file directly with Claude before asking for Panda Gallery modernization work. It is intentionally specific and task-oriented, with recommendations designed to avoid broad rewrites.
+
+## CODEX PG Skills Created
+
+Created: 2026-04-24 19:49:53 -07:00
+
+- Skills folder: C:\CODEX PG\CODEX Skills
+- Project Orientation skill: C:\CODEX PG\CODEX Skills\CODEX PG Project Orientation\SKILL.md
+- Code Review skill: C:\CODEX PG\CODEX Skills\CODEX PG Code Review\SKILL.md
+- Claude Task Writer skill: C:\CODEX PG\CODEX Skills\CODEX PG Claude Task Writer\SKILL.md
+- Index: C:\CODEX PG\CODEX Skills\CODEX_SKILLS_INDEX.md
+- Optional installer script: C:\CODEX PG\CODEX Skills\CODEX_install_project_skills.ps1
+
+Purpose: make Codex more consistent on Panda Gallery orientation, 6 C's code review, and Claude-ready task prompt writing. Skills were created under C:\CODEX PG first to respect the project folder rule. Installing them into Codex's live skills directory should be a separate explicit action because that writes outside C:\CODEX PG.
