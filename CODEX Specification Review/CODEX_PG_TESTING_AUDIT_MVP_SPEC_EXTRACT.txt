@@ -1,0 +1,42 @@
+﻿PG Testing + Audit Module
+MVP v1 Developer Implementation Specification
+(Revised for Existing Audio Capture + Transcription)
+1. Executive Summary
+The PG Testing + Audit Module is a structured testing and review system for the PG Demo App.
+Testers install the PG Demo App on their Windows PC or Mac and perform guided testing sessions inside the actual application.
+Important Existing Condition
+Audio capture and transcription are already working.
+This means:
+- tester voice commentary is already being recorded
+- transcription with timestamps is already functioning
+This MVP begins after transcription exists.
+The remaining work is:
+- screenshot capture alignment
+- session packaging
+- Dropbox transfer
+- AI issue extraction
+- PG audit dashboard
+- approval workflow
+- email communication
+- searchable audit archive
+This dramatically simplifies development and accelerates MVP delivery.
+2. Core Workflow
+Tester Runs PG Demo App
+→ Audio + Transcript Already Captured
+→ Periodic Screenshots Captured
+→ Session Package Created
+→ Auto Upload to Dropbox
+→ Backend Audit Processing
+→ AI Splits + Categorizes Issues
+→ Issues Enter PG Priority Queue
+→ PG Reviews + Approves Responses
+→ Shared Team Email Sends Response
+→ Issue Closed + Archived
+3. Final Rule
+If a feature does not directly improve:
+1. session capture
+2. Dropbox transfer
+3. AI triage
+4. PG approval speed
+5. searchable audit integrity
+…it does not belong in MVP v1.

@@ -118,3 +118,15 @@ Created: 2026-04-24 19:06:20 -07:00
 - Copy method: `robocopy` with hidden files and empty directories included, junctions excluded.
 - GitHub backup status: destination is intentionally ignored by `.gitignore` and is local-only.
 - Copy log: `C:\CODEX PG\CODEX Backup Logs\CODEX_copy_claude_pg_data_20260424_190538.log`
+
+## Specification Review Completed
+
+Completed: 2026-04-24 19:13:05 -07:00
+
+- Review folder: `C:\CODEX PG\CODEX Specification Review`
+- Main report: `C:\CODEX PG\CODEX Specification Review\CODEX_SPECIFICATION_REVIEW_REPORT.md`
+- Manifest: `CODEX_SPEC_REVIEW_MANIFEST.csv`
+- Heading digest: `CODEX_SPEC_HEADING_DIGEST.md`
+- External MVP DOCX extract: `CODEX_PG_TESTING_AUDIT_MVP_SPEC_EXTRACT.txt`
+
+Key conclusion: the spec corpus is rich but fragmented. Next best step is to create a master spec index and canonical Testing + Audit data contracts before implementation.
