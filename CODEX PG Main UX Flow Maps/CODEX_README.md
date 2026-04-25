@@ -12,6 +12,9 @@ This folder contains Codex-authored UX flow maps for the main Panda Gallery clin
 - `CODEX_TEMPLATE_STUDIO_OVERHAUL_SPEC_v1.md`
   Focused proposal for replacing the current Template Designer / Template View / Freeform split with one unified Arrange model using per-slot constraints.
 
+- `CODEX_PG_USER_PROCESS_STREAMLINING_MAP_v1.md`
+  End-to-end user process optimization map focused on fewer clicks, fewer repeated decisions, context-aware actions, and least-friction movement across Library, Arrange, Edit/Review, Compare, and Present.
+
 ## Design Authority
 
 Primary authority remains the live Panda Gallery v4 planning and mockup files:
