@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>#130 Region capture mockup v1 — Shift+F12</title>
+<style>
+  :root {
+    --bg-page: #0d0d18;
+    --bg-dialog: #1a1a2e;
+    --bg-tab-pane: #14141f;
+    --text: #e0ddd5;
+    --text-muted: #888;
+    --accent: #e8a87c;
+    --accent-green: #5ab87a;
+    --border: #2a2a3e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  h1 {
+    font-size: 18px;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+
+  .preamble {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0 0 24px;
+    max-width: 900px;
+  }
+
+  h2.section {
+    font-size: 14px;
+    color: var(--accent);
+    margin: 32px 0 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+  }
+
+  .scenario-label {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .scenario-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 6px;
+  }
+
+  /* ---------------------------------------------------------------------
+     Mock display: a 1280x720 stand-in for the user's screen at the moment
+     Shift+F12 fires. Inside is a fake PG MainWindow.
+     --------------------------------------------------------------------- */
+  .display {
+    position: relative;
+    width: 1024px;
+    height: 576px;
+    background: #2a3142;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+
+  /* Fake PG MainWindow content — generic light-on-dark UI */
+  .fake-pg {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, #1a1a2e 0 32px, #14141f 32px 100%);
+    color: var(--text);
+    padding: 4px 0 0;
+  }
+  .fake-pg .menu {
+    height: 24px;
+    background: #161625;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    padding: 0 12px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    font-size: 11px;
+  }
+  .fake-pg .toolbar {
+    height: 32px;
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .fake-pg .body {
+    position: absolute;
+    top: 56px; left: 0; right: 0; bottom: 24px;
+    display: flex;
+  }
+  .fake-pg .sidebar-l {
+    width: 200px;
+    border-right: 1px solid var(--border);
+    padding: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .fake-pg .sidebar-l .patient-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 4px;
+    margin-bottom: 4px;
+    border-radius: 3px;
+  }
+  .fake-pg .sidebar-l .patient-row.active {
+    background: #2a2a4e;
+    color: var(--accent);
+  }
+  .fake-pg .avatar {
+    width: 24px; height: 24px;
+    background: #444;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .fake-pg .canvas {
+    flex: 1;
+    background:
+      radial-gradient(ellipse at center, #2a3142 0%, #1a1a2e 80%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .fake-pg .sidebar-r {
+    width: 220px;
+    border-left: 1px solid var(--border);
+    padding: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .fake-pg .statusbar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 24px;
+    background: #161625;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ---------------------------------------------------------------------
+     STATE 2 — Dim overlay with see-through cutout.
+     --------------------------------------------------------------------- */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    cursor: crosshair;
+    z-index: 10;
+  }
+  .overlay-banner {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-dialog);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 14px;
+    color: var(--text);
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  .overlay-banner kbd {
+    background: var(--bg-tab-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  /* The cutout — a window into the unfimmed screen behind. Implemented
+     with mix-blend-mode so the dimmed overlay is "punched through." */
+  .cutout {
+    position: absolute;
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+    /* The shadow IS the dim overlay — the rect itself is transparent.
+       Replaces the outer .overlay div for the dim effect. */
+    pointer-events: none;
+  }
+  .cutout-with-overlay {
+    position: absolute;
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+    z-index: 11;
+  }
+  .dimensions-label {
+    position: absolute;
+    background: var(--bg-dialog);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: "Consolas", monospace;
+    pointer-events: none;
+  }
+  .crosshair-cursor {
+    position: absolute;
+    width: 18px; height: 18px;
+    pointer-events: none;
+    z-index: 12;
+  }
+  .crosshair-cursor::before, .crosshair-cursor::after {
+    content: '';
+    position: absolute;
+    background: var(--accent);
+  }
+  .crosshair-cursor::before {
+    left: 50%; top: 0; width: 1px; height: 100%; transform: translateX(-50%);
+  }
+  .crosshair-cursor::after {
+    top: 50%; left: 0; height: 1px; width: 100%; transform: translateY(-50%);
+  }
+
+  /* ---------------------------------------------------------------------
+     STATE 3 — Green flash inside captured rect.
+     --------------------------------------------------------------------- */
+  .flash {
+    position: absolute;
+    background: rgba(90, 184, 122, 0.45);
+    border: 2px solid var(--accent-green);
+    pointer-events: none;
+    z-index: 12;
+  }
+
+  /* ---------------------------------------------------------------------
+     Toast notification.
+     --------------------------------------------------------------------- */
+  .toast {
+    position: absolute;
+    right: 16px;
+    bottom: 40px;
+    background: var(--bg-dialog);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    cursor: pointer;
+    min-width: 240px;
+    z-index: 13;
+  }
+  .toast-title {
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .toast-action {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  /* ---------------------------------------------------------------------
+     Review dialog.
+     --------------------------------------------------------------------- */
+  .review-dialog {
+    background: var(--bg-dialog);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0;
+    width: 480px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+    margin: 0 auto;
+  }
+  .review-titlebar {
+    background: #161625;
+    border-bottom: 1px solid var(--border);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    padding: 6px 14px;
+    color: var(--text);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .review-titlebar .x {
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .review-content {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .review-image {
+    background:
+      linear-gradient(135deg,
+        rgba(90, 184, 122, 0.10),
+        rgba(232, 168, 124, 0.10)),
+      #2a3142;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-style: italic;
+  }
+  .review-meta {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: "Consolas", monospace;
+  }
+  .review-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    /* INVARIANT: 10px gap fixed (per #129) */
+  }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg-tab-pane);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .btn-destructive {
+    color: #d46a6a;
+    border-color: rgba(212, 106, 106, 0.55);
+  }
+
+  /* ---------------------------------------------------------------------
+     Scenario block.
+     --------------------------------------------------------------------- */
+  .scenario {
+    margin-bottom: 36px;
+  }
+
+  .annotation {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-style: italic;
+    margin-top: 8px;
+    text-align: center;
+    max-width: 1024px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .annotation strong {
+    color: var(--accent);
+    font-style: normal;
+  }
+</style>
+</head>
+<body>
+  <h1>#130 region capture — mockup v1 (Shift+F12)</h1>
+  <p class="preamble">
+    Five states of the region-capture flow. Each "display" is a 1024×576 stand-in
+    for the user's screen at that moment. Background shows a generic PG main window.
+    Hotkey: <strong>Shift+F12</strong>. Single-display v1 — overlay paints on cursor's
+    display only. Toast click is the only path to the review dialog.
+  </p>
+
+  <!-- =================================================================== -->
+  <!-- STATE 1 — Idle                                                       -->
+  <!-- =================================================================== -->
+  <h2 class="section">State 1 — Idle (default)</h2>
+  <div class="scenario">
+    <div class="scenario-label">BEFORE Shift+F12</div>
+    <div class="display">
+      <div class="fake-pg">
+        <div class="menu"><span style="color:var(--accent)">File</span><span>Edit</span><span>View</span><span>Templates</span><span>Compare</span></div>
+        <div class="toolbar"><span style="color:var(--text)">Open</span><span>Undo</span><span>Redo</span><span>Zoom+</span><span>Zoom-</span><span>Fit</span><span style="margin-left:auto">Export</span><span>Print</span></div>
+        <div class="body">
+          <div class="sidebar-l">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PATIENTS</div>
+            <div class="patient-row active"><div class="avatar"></div>Chen, James</div>
+            <div class="patient-row"><div class="avatar"></div>Mitchell, Sarah</div>
+          </div>
+          <div class="canvas">Panda Gallery</div>
+          <div class="sidebar-r">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PROPERTIES</div>
+            <div>Info · Adjust · Drawing · Layers</div>
+          </div>
+        </div>
+        <div class="statusbar"><span>Ready</span><span>100%</span></div>
+      </div>
+    </div>
+    <div class="annotation">PG runs normally. F12 captures the whole window. <strong>Shift+F12</strong> is wired but inactive.</div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- STATE 2 — Region selection mid-drag                                  -->
+  <!-- =================================================================== -->
+  <h2 class="section">State 2 — Region selection (mid-drag)</h2>
+  <div class="scenario">
+    <div class="scenario-label">SHIFT+F12 PRESSED · USER DRAGGING</div>
+    <div class="display">
+      <!-- Background PG (dimmed by overlay) -->
+      <div class="fake-pg">
+        <div class="menu"><span style="color:var(--accent)">File</span><span>Edit</span><span>View</span><span>Templates</span><span>Compare</span></div>
+        <div class="toolbar"><span style="color:var(--text)">Open</span><span>Undo</span><span>Redo</span><span>Zoom+</span><span>Zoom-</span><span>Fit</span><span style="margin-left:auto">Export</span><span>Print</span></div>
+        <div class="body">
+          <div class="sidebar-l">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PATIENTS</div>
+            <div class="patient-row active"><div class="avatar"></div>Chen, James</div>
+            <div class="patient-row"><div class="avatar"></div>Mitchell, Sarah</div>
+          </div>
+          <div class="canvas">Panda Gallery</div>
+          <div class="sidebar-r">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PROPERTIES</div>
+            <div>Info · Adjust · Drawing · Layers</div>
+          </div>
+        </div>
+        <div class="statusbar"><span>Ready</span><span>100%</span></div>
+      </div>
+
+      <!-- The cutout — its outer shadow IS the dim overlay (everything outside
+           the rect goes dark). Inside is transparent so PG shows full brightness. -->
+      <div class="cutout-with-overlay" style="left: 360px; top: 140px; width: 280px; height: 200px;"></div>
+
+      <!-- Banner -->
+      <div class="overlay-banner" style="z-index: 12;">
+        Drag to capture region. <kbd>Esc</kbd> to cancel.
+      </div>
+
+      <!-- Live dimensions label near the drag-end (cursor) -->
+      <div class="dimensions-label" style="left: 648px; top: 348px; z-index: 13;">280 × 200 px</div>
+
+      <!-- Crosshair cursor at drag-end -->
+      <div class="crosshair-cursor" style="left: 632px; top: 332px;"></div>
+    </div>
+    <div class="annotation">Overlay dims everything outside the dragged rectangle. The cutout shows the original PG content at full brightness. Peach <strong>#e8a87c</strong> outline. Live dimensions label tracks the cursor.</div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- STATE 3 — Green flash on capture                                     -->
+  <!-- =================================================================== -->
+  <h2 class="section">State 3 — Capture flash (mouse release)</h2>
+  <div class="scenario">
+    <div class="scenario-label">~80MS GREEN FLASH INSIDE CAPTURED RECT</div>
+    <div class="display">
+      <div class="fake-pg">
+        <div class="menu"><span style="color:var(--accent)">File</span><span>Edit</span><span>View</span><span>Templates</span><span>Compare</span></div>
+        <div class="toolbar"><span style="color:var(--text)">Open</span><span>Undo</span><span>Redo</span><span>Zoom+</span><span>Zoom-</span><span>Fit</span><span style="margin-left:auto">Export</span><span>Print</span></div>
+        <div class="body">
+          <div class="sidebar-l">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PATIENTS</div>
+            <div class="patient-row active"><div class="avatar"></div>Chen, James</div>
+            <div class="patient-row"><div class="avatar"></div>Mitchell, Sarah</div>
+          </div>
+          <div class="canvas">Panda Gallery</div>
+          <div class="sidebar-r">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PROPERTIES</div>
+            <div>Info · Adjust · Drawing · Layers</div>
+          </div>
+        </div>
+        <div class="statusbar"><span>Ready</span><span>100%</span></div>
+      </div>
+
+      <div class="flash" style="left: 360px; top: 140px; width: 280px; height: 200px;"></div>
+    </div>
+    <div class="annotation">Reuses the v4.12-v4.13 <strong>_CaptureFlash</strong> pattern from #127. Same Python-ref-hold trick to avoid GC reaping before paintEvent — the lesson in DEBUGGING_LESSONS.md. ~80ms duration; overlay is destroyed immediately after.</div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- STATE 4 — Toast notification                                         -->
+  <!-- =================================================================== -->
+  <h2 class="section">State 4 — Toast notification (3s lifetime)</h2>
+  <div class="scenario">
+    <div class="scenario-label">CAPTURE COMPLETE · TOAST APPEARS BOTTOM-RIGHT</div>
+    <div class="display">
+      <div class="fake-pg">
+        <div class="menu"><span style="color:var(--accent)">File</span><span>Edit</span><span>View</span><span>Templates</span><span>Compare</span></div>
+        <div class="toolbar"><span style="color:var(--text)">Open</span><span>Undo</span><span>Redo</span><span>Zoom+</span><span>Zoom-</span><span>Fit</span><span style="margin-left:auto">Export</span><span>Print</span></div>
+        <div class="body">
+          <div class="sidebar-l">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PATIENTS</div>
+            <div class="patient-row active"><div class="avatar"></div>Chen, James</div>
+            <div class="patient-row"><div class="avatar"></div>Mitchell, Sarah</div>
+          </div>
+          <div class="canvas">Panda Gallery</div>
+          <div class="sidebar-r">
+            <div style="color:var(--accent);font-weight:600;font-size:10px;letter-spacing:1px;margin-bottom:8px">PROPERTIES</div>
+            <div>Info · Adjust · Drawing · Layers</div>
+          </div>
+        </div>
+        <div class="statusbar"><span>Ready</span><span>100%</span></div>
+      </div>
+      <div class="toast">
+        <span class="toast-title">Region captured</span>
+        <span class="toast-action">Click to review · Saved to step_3 manual_screenshots</span>
+      </div>
+    </div>
+    <div class="annotation">Toast click is the <strong>only</strong> path to the review dialog (locked). Auto-dismiss after 3000ms; image stays on disk regardless. With active session: location appended to current step's <code>manual_screenshots[]</code> in <code>results_latest.json</code> and <code>step_state_changed</code> fires so Claude reads on next turn.</div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- STATE 5 — Review dialog                                              -->
+  <!-- =================================================================== -->
+  <h2 class="section">State 5 — Review dialog (toast clicked)</h2>
+  <div class="scenario">
+    <div class="scenario-label">MODAL · SAVE / DISCARD / RE-CAPTURE</div>
+    <div class="review-dialog">
+      <div class="review-titlebar">
+        <span>Region capture — Review</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="review-content">
+        <div class="review-image">[ captured image preview · 280 × 200 ]</div>
+        <div class="review-meta">
+          <span>region_3_1.png · 12.4 KB</span>
+          <span>2026-04-24 16:54:07</span>
+        </div>
+        <div class="review-buttons">
+          <button class="btn btn-destructive">Discard</button>
+          <button class="btn">Re-capture</button>
+          <button class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+    <div class="annotation"><strong>Save</strong> is default (Enter). <strong>Esc</strong> = Discard (deletes the PNG). <strong>Re-capture</strong> deletes the PNG, closes the dialog, and immediately re-enters State 2 with the cursor-display overlay.</div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- Notes                                                                -->
+  <!-- =================================================================== -->
+  <h2 class="section">Implementation notes</h2>
+  <p class="preamble">
+    Phase 1 ships State 1 → State 2 → State 3, plus the file-write to disk.
+    No toast, no review, no session-integration — just the capture loop. ~250 LOC
+    in new <code>region_capture.py</code> + ~20 LOC in <code>panda_gallery.py</code>
+    for the shortcut + menu + handler.<br><br>
+
+    Phase 2 adds the toast and review dialog (~80 LOC).<br><br>
+
+    Phase 3 wires <code>append_manual_screenshot</code> +
+    <code>_active_step_n</code> + <code>step_state_changed</code> fire (~30 LOC
+    across <code>results_writer.py</code> and <code>instruction_pane.py</code>).<br><br>
+
+    Phase 4 is the pane test plan and manual verification.<br><br>
+
+    All four phases ship as separate <code>vX.YZ</code> commits so regressions
+    are bisectable.
+  </p>
+
+</body>
+</html>

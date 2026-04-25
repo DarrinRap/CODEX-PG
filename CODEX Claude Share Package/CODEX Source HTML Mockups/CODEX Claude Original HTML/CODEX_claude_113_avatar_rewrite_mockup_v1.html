@@ -1,0 +1,324 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>#113 Avatar Rewrite — Mockup v1</title>
+<style>
+  /* Real palette from styles.py */
+  :root {
+    --bg:        #1a1a2e;
+    --bg-card:   #22223a;
+    --sep:       #2a2a3e;
+    --text:      #e0ddd5;
+    --muted:     #666;
+    --accent:    #e8a87c;
+    --accent-2:  #d4945a;
+
+    --photo-size:   36px;
+    --photo-radius: 8px;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: "Segoe UI", sans-serif; margin: 0; padding: 24px; }
+  h1 { font-size: 18px; margin: 0 0 6px; color: var(--accent); }
+  h2 { font-size: 14px; margin: 32px 0 12px; color: var(--text); border-bottom: 1px solid var(--sep); padding-bottom: 6px; }
+  .note { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+  .row-set { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; }
+  .col { min-width: 280px; }
+  .col h3 { font-size: 12px; color: var(--muted); margin: 0 0 8px; font-weight: normal; }
+
+  /* Patient list panel - approximates real rendering */
+  .panel {
+    background: var(--bg);
+    border-radius: 4px;
+    width: var(--panel-width, 420px);
+    padding: 8px 0;
+  }
+  .panel.w320 { --panel-width: 320px; }
+  .panel.w420 { --panel-width: 420px; }
+  .panel.w600 { --panel-width: 600px; }
+
+  .row {
+    display: flex;
+    align-items: center;
+    height: 50px;
+    padding: 4px 8px 4px 14px;
+    border-bottom: 1px solid #1a1a2e;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .row.selected {
+    background: #2a2a4e;
+    border-left: 3px solid var(--accent);
+    padding-left: 11px;
+  }
+
+  /* THE AVATAR - paintEvent-equivalent rendering */
+  .avatar {
+    width: var(--photo-size);
+    height: var(--photo-size);
+    border-radius: var(--photo-radius);
+    flex: 0 0 auto;
+    overflow: hidden;
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .avatar.panda {
+    background: var(--bg-card);
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  /* Info column */
+  .info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .name { font-size: 12px; font-weight: bold; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .name.archived { color: var(--muted); }
+  .detail { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Count badge */
+  .badge {
+    height: 22px;
+    min-width: 22px;
+    padding: 0 8px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    background: rgba(232, 168, 124, 0.15);
+    border: 1px solid rgba(232, 168, 124, 0.30);
+    color: var(--accent);
+    flex: 0 0 auto;
+  }
+  .badge.zero {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    color: #444;
+  }
+
+  /* Radius comparison grid */
+  .radius-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; max-width: 720px; }
+  .radius-grid .cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .radius-grid .cell .label { font-size: 11px; color: var(--muted); }
+  .radius-grid .avatar { width: 48px; height: 48px; }
+
+  .radius-grid .avatar.r0 { border-radius: 0; }
+  .radius-grid .avatar.r4 { border-radius: 4px; }
+  .radius-grid .avatar.r6 { border-radius: 6px; }
+  .radius-grid .avatar.r8 { border-radius: 8px; }
+  .radius-grid .avatar.r12 { border-radius: 12px; }
+  .radius-grid .avatar.r50 { border-radius: 50%; }
+
+  /* DPR simulation — show the same avatar at 1x, 2x, 3x rendered size */
+  .dpr-grid { display: flex; gap: 32px; align-items: flex-start; }
+  .dpr-grid .cell { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .dpr-grid .cell .label { font-size: 11px; color: var(--muted); }
+  .dpr-grid .avatar { width: 36px; height: 36px; }
+  .dpr-grid .cell.size-2x .avatar { width: 72px; height: 72px; border-radius: 16px; }
+  .dpr-grid .cell.size-3x .avatar { width: 108px; height: 108px; border-radius: 24px; }
+
+  /* Mock source images using gradients and data URLs */
+  .placeholder-xray { background: linear-gradient(135deg, #444 0%, #888 40%, #222 80%); }
+  .placeholder-alfred { background: radial-gradient(circle at 40% 35%, #f4d4a8 0%, #c89060 50%, #6b3820 100%); }
+  .placeholder-panda { background: var(--bg-card); color: var(--text); font-size: 22px; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<h1>Bug #113 — Avatar Rewrite Mockup v1</h1>
+<p class="note">Target: replace QLabel+setPixmap+border-radius approach with a custom QWidget that paints via QPainter directly. Rounded-square, 8px radius, 36×36 logical. Qt's paintEvent rendering pipeline is inherently DPR-aware — no pixmap DPR juggling, no QLabel anchoring surprises, no QSS border-radius clip gaps.</p>
+
+<h2>Patient list — 420px panel width (typical)</h2>
+<div class="panel w420">
+  <div class="row">
+    <div class="avatar"><div class="placeholder-xray" style="width:100%;height:100%"></div></div>
+    <div class="info">
+      <div class="name">Davis, Carol</div>
+      <div class="detail">PT-000001 &bull; 555-0123</div>
+    </div>
+    <div class="badge">25</div>
+  </div>
+  <div class="row">
+    <div class="avatar"><div class="placeholder-xray" style="width:100%;height:100%"></div></div>
+    <div class="info">
+      <div class="name">Johnson, Alice</div>
+      <div class="detail">PT-000002 &bull; 555-0124</div>
+    </div>
+    <div class="badge">21</div>
+  </div>
+  <div class="row">
+    <div class="avatar"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div>
+    <div class="info">
+      <div class="name">Rapoport, Adam</div>
+      <div class="detail">PT-000003 &bull; 555-0125</div>
+    </div>
+    <div class="badge">21</div>
+  </div>
+  <div class="row">
+    <div class="avatar panda">🐼</div>
+    <div class="info">
+      <div class="name">Williams, Bob</div>
+      <div class="detail">PT-000004 &bull; 555-0126</div>
+    </div>
+    <div class="badge zero">0</div>
+  </div>
+  <div class="row selected">
+    <div class="avatar"><div class="placeholder-xray" style="width:100%;height:100%"></div></div>
+    <div class="info">
+      <div class="name">Smith, John (selected)</div>
+      <div class="detail">PT-000005 &bull; 555-0127</div>
+    </div>
+    <div class="badge">8</div>
+  </div>
+  <div class="row">
+    <div class="avatar"><div class="placeholder-xray" style="width:100%;height:100%"></div></div>
+    <div class="info">
+      <div class="name archived">Archived Patient</div>
+      <div class="detail">PT-000006 &bull; 555-0128</div>
+    </div>
+    <div class="badge zero">0</div>
+  </div>
+</div>
+
+<h2>Other panel widths</h2>
+<div class="row-set">
+  <div class="col">
+    <h3>320px (narrow)</h3>
+    <div class="panel w320">
+      <div class="row">
+        <div class="avatar"><div class="placeholder-xray" style="width:100%;height:100%"></div></div>
+        <div class="info">
+          <div class="name">Davis, Carol</div>
+          <div class="detail">PT-000001 &bull; 555-0123</div>
+        </div>
+        <div class="badge">25</div>
+      </div>
+      <div class="row">
+        <div class="avatar"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div>
+        <div class="info">
+          <div class="name">Rapoport, Adam</div>
+          <div class="detail">PT-000003 &bull; 555-0125</div>
+        </div>
+        <div class="badge">21</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3>600px (wide)</h3>
+    <div class="panel w600">
+      <div class="row">
+        <div class="avatar"><div class="placeholder-xray" style="width:100%;height:100%"></div></div>
+        <div class="info">
+          <div class="name">Davis, Carol</div>
+          <div class="detail">PT-000001 &bull; 555-0123</div>
+        </div>
+        <div class="badge">25</div>
+      </div>
+      <div class="row">
+        <div class="avatar"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div>
+        <div class="info">
+          <div class="name">Rapoport, Adam</div>
+          <div class="detail">PT-000003 &bull; 555-0125</div>
+        </div>
+        <div class="badge">21</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>Radius comparison — pick the right corner radius</h2>
+<p class="note">All 48px for clarity. Current spec: 8px. Linear/Figma house style: 6–8px. A smaller radius reads cleaner at 36px real size.</p>
+<div class="radius-grid">
+  <div class="cell"><div class="avatar r0"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div><span class="label">0px (square)</span></div>
+  <div class="cell"><div class="avatar r4"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div><span class="label">4px</span></div>
+  <div class="cell"><div class="avatar r6"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div><span class="label">6px</span></div>
+  <div class="cell"><div class="avatar r8"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div><span class="label">8px ★</span></div>
+  <div class="cell"><div class="avatar r12"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div><span class="label">12px</span></div>
+  <div class="cell"><div class="avatar r50"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div><span class="label">circle</span></div>
+</div>
+
+<h2>DPR scale preview — same avatar at 1× / 2× / 3×</h2>
+<p class="note">Your display is 300% scaling. The rewrite paints directly in paintEvent at widget native resolution, so Qt handles DPR automatically — avatar stays crisp at any scale.</p>
+<div class="dpr-grid">
+  <div class="cell">
+    <div class="avatar"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div>
+    <span class="label">1× (36px)</span>
+  </div>
+  <div class="cell size-2x">
+    <div class="avatar"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div>
+    <span class="label">2× (72px)</span>
+  </div>
+  <div class="cell size-3x">
+    <div class="avatar"><div class="placeholder-alfred" style="width:100%;height:100%"></div></div>
+    <span class="label">3× (108px) ← your display</span>
+  </div>
+</div>
+
+<h2>Implementation sketch</h2>
+<pre style="background: #14141f; border: 1px solid var(--sep); padding: 12px; border-radius: 4px; font-size: 12px; color: var(--text); overflow-x: auto;">
+class _PatientAvatar(QWidget):
+    """Rounded-square patient photo, painted in paintEvent for DPR-safe rendering."""
+
+    def __init__(self, size=36, radius=8, parent=None):
+        super().__init__(parent)
+        self._size = size
+        self._radius = radius
+        self._pixmap = None    # the pre-cropped square source pixmap
+        self._is_panda = False # panda fallback flag
+        self.setFixedSize(size, size)
+
+    def set_photo(self, path):
+        pm = QPixmap(path) if path and os.path.isfile(path) else QPixmap()
+        if pm.isNull():
+            self._pixmap = None
+            self._is_panda = True
+        else:
+            # center-crop to square
+            s = min(pm.width(), pm.height())
+            x = (pm.width() - s) // 2
+            y = (pm.height() - s) // 2
+            self._pixmap = pm.copy(x, y, s, s)
+            self._is_panda = False
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+        # Clip to rounded square
+        path = QPainterPath()
+        path.addRoundedRect(0, 0, self._size, self._size, self._radius, self._radius)
+        p.setClipPath(path)
+
+        # Fill background
+        p.fillRect(0, 0, self._size, self._size, QColor("#22223a"))
+
+        if self._pixmap is not None:
+            # drawPixmap scales source into widget rect in one pass
+            p.drawPixmap(0, 0, self._size, self._size, self._pixmap)
+        elif self._is_panda:
+            p.setPen(QPen(QColor("#555")))
+            p.setFont(QFont("Segoe UI", 16))
+            p.drawText(QRectF(0, 0, self._size, self._size),
+                       Qt.AlignmentFlag.AlignCenter, "\U0001F43C")
+        p.end()
+</pre>
+
+<p class="note" style="margin-top: 24px;">Key differences from the QLabel approach:<br>
+• No QPixmap created by us — Qt creates the target backing buffer via paintEvent, at correct DPR automatically.<br>
+• No setPixmap / QLabel alignment surprises — we own the paint.<br>
+• No border-radius QSS trick — real clip via QPainterPath.<br>
+• Pattern matches _CountBadge in same file, which renders correctly at 300% DPR.<br>
+• Single source-of-truth size: setFixedSize(36, 36) and paintEvent uses self._size.</p>
+
+</body>
+</html>

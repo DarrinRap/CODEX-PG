@@ -1,0 +1,232 @@
+{
+  "schema": "pg.session_package.v1",
+  "schema_version": 1,
+  "package_id": "pkg_sample_session_20260424_194422",
+  "session_id": "session_20260424_194422",
+  "run_id": "run_20260424_194435",
+  "package_state": "local_ready",
+  "created_at": "2026-04-24T20:39:57-07:00",
+  "created_by": "codex-audit-mvp-starter-pack",
+  "source_system": {
+    "app_name": "Panda Gallery",
+    "app_version": "4.23",
+    "source_root": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session",
+    "source_root_policy": "synthetic_sample_or_read_only_reference"
+  },
+  "tester_session": {
+    "title": "#130 Phase 3 sample audit package",
+    "instructions_source": "workflows/instructions_latest.json",
+    "started_at": "2026-04-24T19:44:22-07:00",
+    "completed_at": "2026-04-24T19:48:10-07:00"
+  },
+  "sources": [
+    {
+      "source_id": "src_results_latest",
+      "kind": "results_json",
+      "original_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\results_latest.json",
+      "package_path": "source/results_latest.json",
+      "required": true,
+      "sha256": "eb400abcc22ecc7afcb72e453ca906b23bf649e0418dfb59f9ff54b24114a7d6",
+      "bytes": 1545,
+      "captured_at": "2026-04-24T20:34:14-07:00"
+    },
+    {
+      "source_id": "src_metadata",
+      "kind": "metadata_json",
+      "original_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\metadata\\metadata.json",
+      "package_path": "source/metadata.json",
+      "required": false,
+      "sha256": "639f56e17c9c46cd4f1adf6c6e8546a8526b5b6da07f3e9badddfab8b84bd90f",
+      "bytes": 599,
+      "captured_at": "2026-04-24T20:34:14-07:00"
+    },
+    {
+      "source_id": "src_transcript",
+      "kind": "transcript_markdown",
+      "original_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\transcripts\\transcript.md",
+      "package_path": "source/transcript.md",
+      "required": false,
+      "sha256": "9cb2f56bdb04ade5ecc2a7a14795b07cdfdae69de1846c0874c0acb94cef9edf",
+      "bytes": 541,
+      "captured_at": "2026-04-24T20:34:14-07:00"
+    },
+    {
+      "source_id": "src_latest",
+      "kind": "latest_pointer",
+      "original_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\LATEST.txt",
+      "package_path": "source/LATEST.txt",
+      "required": false,
+      "sha256": "3cc508eb6cb4d6732f1a815fd51f23db7d3c05fdd4520080b0d9198cbb9dba9b",
+      "bytes": 28,
+      "captured_at": "2026-04-24T20:34:14-07:00"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev_region_0001",
+      "kind": "region_screenshot",
+      "label": "Step 1 manual region capture",
+      "step_n": 1,
+      "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\screenshots\\region_1_1.png",
+      "package_path": "evidence/ev_region_0001.png",
+      "remote_path": null,
+      "mime_type": "image/png",
+      "sha256": "4b5c5c92cec3b23e6a294fc0eea43234ef5126c5a64f4c6c531ac8430ab0b844",
+      "bytes": 68,
+      "created_at": "2026-04-24T20:34:14-07:00",
+      "capture": {
+        "capture_type": "manual_region",
+        "include_cursor": false,
+        "monitor_index": null,
+        "bounds": null
+      },
+      "transcript_ref": null,
+      "discarded": false,
+      "privacy": {
+        "contains_phi": "no",
+        "deidentified": true,
+        "redaction_state": "synthetic_sample"
+      }
+    },
+    {
+      "evidence_id": "ev_step_auto_0001",
+      "kind": "step_auto_screenshot",
+      "label": "Step 1 automatic failure screenshot",
+      "step_n": 1,
+      "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\screenshots\\step_1_auto_fail.png",
+      "package_path": "evidence/ev_step_auto_0001.png",
+      "remote_path": null,
+      "mime_type": "image/png",
+      "sha256": "4b5c5c92cec3b23e6a294fc0eea43234ef5126c5a64f4c6c531ac8430ab0b844",
+      "bytes": 68,
+      "created_at": "2026-04-24T20:34:14-07:00",
+      "capture": {
+        "capture_type": "auto_fail_screenshot",
+        "include_cursor": false,
+        "monitor_index": null,
+        "bounds": null
+      },
+      "transcript_ref": null,
+      "discarded": false,
+      "privacy": {
+        "contains_phi": "no",
+        "deidentified": true,
+        "redaction_state": "synthetic_sample"
+      }
+    },
+    {
+      "evidence_id": "ev_region_0002",
+      "kind": "region_screenshot",
+      "label": "Step 4 manual region capture",
+      "step_n": 4,
+      "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\screenshots\\region_4_1.png",
+      "package_path": "evidence/ev_region_0002.png",
+      "remote_path": null,
+      "mime_type": "image/png",
+      "sha256": "4b5c5c92cec3b23e6a294fc0eea43234ef5126c5a64f4c6c531ac8430ab0b844",
+      "bytes": 68,
+      "created_at": "2026-04-24T20:34:14-07:00",
+      "capture": {
+        "capture_type": "manual_region",
+        "include_cursor": false,
+        "monitor_index": null,
+        "bounds": null
+      },
+      "transcript_ref": null,
+      "discarded": false,
+      "privacy": {
+        "contains_phi": "no",
+        "deidentified": true,
+        "redaction_state": "synthetic_sample"
+      }
+    },
+    {
+      "evidence_id": "ev_transcript_span_0001",
+      "kind": "transcript_span",
+      "label": "Transcript span describing Step 1 placement issue",
+      "step_n": 1,
+      "source_path": "C:\\CODEX PG\\CODEX Audit MVP Starter Pack\\CODEX samples\\sample_source_session\\transcripts\\transcript.md",
+      "package_path": "source/transcript.md",
+      "remote_path": null,
+      "mime_type": "text/markdown",
+      "sha256": "9cb2f56bdb04ade5ecc2a7a14795b07cdfdae69de1846c0874c0acb94cef9edf",
+      "bytes": 541,
+      "created_at": "2026-04-24T20:34:14-07:00",
+      "capture": {
+        "capture_type": "transcript_span",
+        "include_cursor": null,
+        "monitor_index": null,
+        "bounds": null
+      },
+      "transcript_ref": {
+        "transcript_ref_id": "tr_0001",
+        "transcript_source": "source/transcript.md",
+        "start_seconds": 12.4,
+        "end_seconds": 18.9,
+        "text_excerpt": "I captured a region, and the review dialog opened in the center.",
+        "frame_ids": [
+          "ev_region_0001"
+        ]
+      },
+      "discarded": false,
+      "privacy": {
+        "contains_phi": "no",
+        "deidentified": true,
+        "redaction_state": "synthetic_sample"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "step_n": 1,
+      "kind": "single",
+      "title": "Capture region screenshot",
+      "outcome": "FAIL",
+      "note": "Review dialog opened centered instead of anchored beside the instruction pane.",
+      "evidence_ids": [
+        "ev_region_0001",
+        "ev_step_auto_0001"
+      ],
+      "source_result_index": 0
+    },
+    {
+      "step_n": 2,
+      "kind": "checklist",
+      "title": "Verify action bar stays reachable",
+      "outcome": "PASS",
+      "note": "PASS/FAIL/SKIP row stayed visible at 440 px and 380 px.",
+      "evidence_ids": [],
+      "source_result_index": 1
+    },
+    {
+      "step_n": 3,
+      "kind": "action",
+      "title": "Open Testing Settings dialog",
+      "outcome": "ACK",
+      "note": "Action acknowledged after opening View > Testing > Settings.",
+      "evidence_ids": [],
+      "source_result_index": 2
+    },
+    {
+      "step_n": 4,
+      "kind": "single",
+      "title": "Confirm mic status indicator",
+      "outcome": "PASS",
+      "note": "Mic status row displayed active levels without changing pane height.",
+      "evidence_ids": [
+        "ev_region_0002"
+      ],
+      "source_result_index": 3
+    }
+  ],
+  "upload": null,
+  "integrity": {
+    "hash_algorithm": "sha256",
+    "manifest_without_integrity_sha256": "3125f07e026382874641e4a2dd89daf58f0b4b4db8c19a73456fed19481913d9",
+    "file_count": 11,
+    "total_bytes": 13599,
+    "generated_by_version": "codex-audit-mvp-starter-pack-v1"
+  },
+  "missing_sources": [],
+  "warnings": []
+}

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.1 — Preferences</title>
+<style>
+  :root {
+    --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+    --pane-selected:#2a2a4e; --border:#2a2a3e; --border-soft:#232336;
+    --text:#e0ddd5; --text-muted:#888; --text-dim:#555;
+    --accent:#e8a87c; --accent-hover:#d4945a; --accent-soft:rgba(232,168,124,0.12);
+    --accent-border:rgba(232,168,124,0.45); --accent-ink:#1a1a2e;
+    --ok:#7fb069; --warn:#f39c12; --err:#e74c3c;
+    --font-ui:"Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:"Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: rgba(10, 10, 20, 0.85);
+    color: var(--text); font-family: var(--font-ui); font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Modal backdrop */
+  .backdrop {
+    width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(232,168,124,0.06) 0%, transparent 50%),
+      rgba(8, 8, 14, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+  }
+
+  /* Preferences dialog */
+  .dialog {
+    width: 100%; max-width: 900px;
+    height: 100%; max-height: 640px;
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.6),
+      0 0 120px rgba(232,168,124,0.08);
+    display: grid;
+    grid-template-rows: 52px 1fr 60px;
+    grid-template-columns: 200px 1fr;
+    grid-template-areas:
+      "titlebar titlebar"
+      "nav       content"
+      "footer   footer";
+    overflow: hidden;
+  }
+
+  /* Titlebar */
+  .titlebar {
+    grid-area: titlebar;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 20px;
+  }
+  .tb-icon {
+    width: 22px; height: 22px; margin-right: 10px;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkoAAAJKCAYAAADTI2qZAAASKElEQVR4nO3dQVIjxxKAYTHhgxDBkvsfhSUR3AQvxmMDVknd6q6qzKzv277F03RLlT/ZAl8uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVPE0+wUAwKM+3t8+Z/7/P7+8mqPFucEAhDQ7go4QUHW4kQBMkzmGjhBSebhRAAy3aiD9JJjic4MA6EYQ7SeeYnEzADidQDpOMMXgJgBwmDAaQzyN54ID8DCBNIdgGseFBmAzYRSPaOrLxQXgLoEUn2Dq46/ZLwCAeIQR/CaUAPiXQILvhBLA4sQRtP2a/QIAmEckwW02SgALEUawj40SwCJEEuxnowRQmDiCY2yUAIoSSXCcjRJAIeIIzmWjBFCESILz2SgBJCeQoB8bJYDERBL0ZaMEkJBAgjFslACSEUkwjlACSEQkwVhCCSAJkQTjCSWABEQSzCGUAIITSTCPUAIITCTBXEIJICiRBPMJJYCARBLEIJQAghFJEIdQAghEJEEsQgkAoEEoAQRhmwTxCCWAAEQSxCSUACYTSRCXUAIAaBBKABPZJkFsQgkAoEEoAUximwTxCSWACUQS5CCUAAAahBIAQMNfs18AkFe2x0fPL69Ps1/D5ZLvusHKQhwaQDyrDvPeMbXqdaW/KD8IVOOiQmGG8nitYeVe0JtQ6sNFhcQMX+APodSH7yhBcGIIYB6hBAGIIYCYhBIMIoYA8hFK0IkwAshPKMEJRBFATUIJdhJFAOsQSnCHMAJYl1CCH4QRAH8IJZYnjABoEUosSRwBsIVQYhniCIC9hBJlCSMAjhJKlCKOADiTUCI1YQRAT0KJlAQSACMIJdIQRwCMJpQITyABMItQIiRxBEAEQolQBBIAkQglphNHAEQllJhCHAGQgVBiKIEEQCZCiWFEUh/PL69Ps1+DewtUNf2ApTYD9Lrnl9en1rWJED49eU9AH9XPjllcVLpYeRg6rPpa+b0Ftzh7+nBROV3VQeYQyqHq+w/ucUb14aJyikrDyWFTS6X3Jtzi7OrDReWwbIPIYcIf2d67cIuzrQ8XlYdFHzIODfaK/p6GW5x5fbio7BZ1mDgk6CHq+x1+cgb24aKyy8yh4RAgEgFFNM7IPlxUNhs9GHzoyUI0EYEzsw8XlU16DwIfcCoRTszgHO3DRWWzsw5/H2ZWIpoYxdnah4vKLo8e+j7AIJroyznbh/8oLqfzYQWgCgON3a79VCyOYBtbJXpxDvdho8RuPowArOLX7BcAsBI/aEAuQgkAoEEoAQA0CCWAwTx+gzyEEgBAg1ACAGgQSgAADUIJYALfU4IchBIAQINQApjEVgniE0oAAA1CCQCgQSgBTOTxG8QmlAAAGoQSwGS2ShCXUAIAaBBKAAANQgkgAI/fICahBADQIJQAgrBVgniEEgBAg1ACAGgQSgCBePwGsQglgGDEEsQhlAAAGoQSQEC2ShCDUAIISizBfEIJAKBBKAEANAglgMA8foO5hBJAcGIJ5hFKAAANQgkgAVslmEMoASQhlmA8oQQA0CCUABKxVYKxhBJAMmIJxhFKAAANQgkgIVslGEMoASQllqA/oQQA0CCUABKzVYK+hBJAcmIJ+hFKAAWIJehDKAEUIZbgfEIJAKBBKAEUYqsE5xJKAMWIJTiPUAIoSCzBOYQSQFFiCY4TSgCFiSU4RigBFCeW4HFCCWABYgkeI5QAFiGWYD+hBADQIJQAFmKrBPsIJYDFPL+8Pgkm2EYoASxKLMF9QglgYWIJbhNKAIsTS9AmlAAQS9AglAC4XC5iCa4RSgD8SyzBd0IJgG/EEvxHKAHwP/7WEvwmlABoEkusTigBcJNYYmVCCYC7xBKrEkoAbCKWWJFQAmAzscRqhBIAu/iNOFYilAB4iFhiBUIJgIeJJaoTSgAc4lEclQklAE4hlqhIKAFwGrFENUIJgFN5FEclQgmALsQSFQglALqxXSI7oQRAd2KJrIQSAEOIJTISSgAM41Ec2QglAIYTTGQhlACYRiwRnVACYCqxRGRCCYDpPIojKqEEQBiCiWiEEgDhiCWiEEoAhCSWiEAoARCWR3HMJpQACE8wMYtQAiANscRoQgmAVGyXGEkoAZCSWGIEoQRAWrZL9CaUAEhPMNGLUAKgDMHE2YQSAOWIJc4ilAAoyXaJMwglAEoTTBwhlABYgmDiEUIJgKUIJvYQSgAsSTCxhVACYGmCiVuEEgBc/EkBrvOmAIArPt7fPme/hj2EXh82SgBwhUdyXC42SgCwWeQtk6jrw0YJADayZVqPmw0AB0TZMgm4PmyUAOAAW6ba3FgA6GD0pkms9eGiAkBnI6JJKPXhogLAQL2iSSj14aICwGRnxJNQ6sNFBYDAtkaUUAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFjc0+wXAJzv4/3tc8T/z/PLqzMEKM0hB0mNiqFHiSigAgcZBBc9iPYSUEAmDiwIploYbSGegKgcTjDZimF0j3AConAYwSQCaTvhBMzi8IHBBNIxogkYyYEDgwikcwkmYAQHDXQmkPoSTEBPDhjoRCCNJ5qAszlU4GQCKQbRBJzh1+wXAJWIpDjcC+AMfuKCExjK8dkwAY+wUYKDRFIO7hPwCD9hwQGGb062S8BWDgt4gECqQTAB93j0BjuJpDrcS+AeP03BDgZrXbZLwDUOBthIJK1BMAFfefQGG4ikdbjXwFdCCe4wONfjngN/CCW4wcBcl3sPXC6+owRNBiV/+N4SrMtGCeAO0QzrEkpwhcHIT94TsCahBD8YiLR4b8B6hBLADmIJ1iKU4AtDkC28T2AdQgn+Yfixh/cLrEEoATxILEF9QgngALEEtQkluBh2HOP9A3UJJYATiCWoSSgBnEQsQT1CCQCgQSixPFsAzuT9BLUIJYCTiSWoQygBdCCWoAahBADQIJQAOrFVgvyEEkBHYglyE0oAAA1CieU9v7w+zX4N1GarBHkJJQCABqEEMICtEuQklODi8RtjiCXIRygBADQIJYCBbJUgF6EE//D4DYCfhBJ8IZYYwVYJ8hBKAAANQgl+sFViBFslyEEowRViCYDLRSgBTGOrBPEJJWiwVQJAKMENYglgbUIJ7hBL9OTxG8QmlGADsQSwJqEEG4klerFVgriEEuzw/PL6JJgA1iGU4AFiCWANQgkeJJYA6nPQwwl8x4QziG+Ix0YJTmDAcQbBDfEIJTiJL3oD1COU4GSCCaAOoQSdiCWA/BzkMIDvnrCHyIY4bJRgAI/jAHJycMMENkzcI6whBhslmMCGCSAHBzUEYcvEV0IaYrBRgiAMRoB4HMwQlA0T4hnms1GCoHyPCWA+hzAkYcO0JrEMc9koQRIGJsB4QgkS8TgOYCyhBAkJJoAxhBIkJpbq8900mEsoQXK2SwD9OFyhGBuImsQwzGGjBMUYqADnEUpQkFgCOIdQgqJ8dwngOIcoLMJ3l/ITvjCejRIswpAF2E8owULEUm62gjCeUILFiCWA7YQSLEgsAWwjlGBRfisO4D6hBIsTSwBtQgkQS4n4QjeMJZSAy+UilgCuEUrAv8QSwHdCCfhGLMXn8RuMI5SA/xFLAL8JJeAqsQQglAAAmoQS0OSPUgKrE0oACflCN4whlIC7bJWAVQklYBOxBKxIKAGbiaVYPH6D/oQSAECDUAJ2sVUCViKUgN3EErAKoQQ8RCwBKxBKAAANQgl4mK0SUJ1QAg4RS3P5EwHQl1ACDhNLQFVCCQCgQSgBp7BVAioSSsBpxBJQjVACTiWWxvOFbuhHKAEANAgl4HS2SkAVQgnoQiwBFQgloBuxBGQnlICuxBKQmVACuhNLQFZCCRhCLAEZCSVgGLEEZCOUAAAahBIwlK0SkIlQAoYTS0AWQgmYQiwBGQglYBqxBEQnlICpxNJxriH0I5SA6Qx6ICqhBIQgloCIhBIQhlgCohFKQChiaR/XC/oSSkA4hj8QhVACQhJLQARCCQhLLAGzOYSAFD7e3z5nv4ZohCT0Z6MEANDgpxEgFZul32yTYAwbJSAVgQCMJJSAdFaPpdX//TCSUAJSEgvACEIJSGvFWFrx3wwz+cABJazwJW+RBOP50AGlVA0mkQRzePQGlFIxKCr+myALoQSUUyksKv1bICMfQKC0zI/iRBLM50MILCFTMAkkiMOHEVhK9GASSRCLDySwrEjRJJAgJh9MYGmzY0kgQWw+oABfjAongQQ5+KACXNEjmMQRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4TzNfgHU8PH+9nnrf39+efVeAyAdw4v/uRc9IwgrACIwjLhcLjHiqEU0ATCLAbSQyDH0KBEFQE+GTHEV46hFNAFwNoOlkJWiaCvxBMARhkgBAmkb0QTAXgZHQsLoHMIJgHsMikQE0vnEEgC3GBKBCaPxhBMAX/2a/QK4TiTN4boD8JWfngMxpOOxYQJYm41SECIpJvcFYG1+Wp7IEM7HhglgLTZKk4iknNw3gLX46Xgwg7YO2yWA+myUBhJJtbifAPX5iXgAA7U+2yWAmmyUOhNJa3CfAWryU3BHhueabJcA6rBR6kQkAUB+QqkDkbQ29x+gDqEEHYglgBqEEgBAg1ACAGgQStCJx28A+QklAIAGoQQA0CCUoBN/eBIgP6EEANAglAAAGoRSBx65AEANQgk6EMsANQilTgxKAMhPKAEANAiljmyV1uS+A9QhlOBEIgmgFqHUmcEJAHkJJTiJKAaoRygNYIACQE5CaRCxVJv7C1CTUIKDRBJAXUJpIAMVAHIxuCf4eH/7nP0aOE74AtRnozSBAQsAOQilScRSbu4fwBqE0kSGbU7uG8A6hNJkhm4u7hfAWoRSAIZvDu4TwHqEUhCGcGzuD8CahFIghnFM7gvAuoRSMIZyLO4HwNqEUkCGcwzuAwBCKShDei7XH4DLRSiFZljP4boD8IdQCs7QHsv1BuAroZSA4T2G6wzAT0IpCUO8L9cXgGuEUiKGeR+uKwAtQikZQ/1cricAtwilhAz3c7iOANxjUCT28f72Ofs1ZCSQANjKwChAMG0nkgDYw6O3Agz/bVwnAPYSSkWIgNtcHwAeYXgU4zHcdwIJgCNslIoRBv9xLQA4yiApbsUNk0AC4Cw2SsWtFg2r/XsB6MtQWUT1zZJAAqAHG6VFVA6Jyv82AOYyYBZVYcMkkADozaBZWNZYEkgAjGLgcLlcckSTQAJgNN9R4nK5xI+Q6K8PgJoMH66avWESRgBEYBhx04xgEkkARGEgsUnvYBJHAETkO0pMJ5IAiEoosYmYAWBFQgkAoEEoAQA0CCU28/gNgNUIJQCABqEEANAglNilx+O32X8FHABahBIAQINQIgRbJQAi8ltMPKRH2PiturX9fE95PwAR2CgB09koAlH9NfsFAOsSSEB0Vts8zOM3jmi9f7wHgEg8eiMUG4b6Pt7fPt1nIAuP3oAh7sWRTRIQkY0SDzPY2EokAVk5nDik1yMUg7MGgQRkZ6NESL7DktuW7yGJJCADocQhhh1fbf2itvcNkIVQIixbpTz2/CabSAIycWBxip5RY7DGtee+u49ARv48ALDb3jAWSUBWDi9OY6tU2yP3130DsvMdJVLwfaV5Hv1L2iIJqMBBxql6B43hO8aR++geAZU40DidWMpLIAF852DjdCMekxnK5zl6v9wLoDIHHF2M+k6RIf2Ys+6P6w9U55CjG7EUx9n3wjUHVuGwo5vRv6lmeH/nP1gMcJwDj65m/Fr/ioPc37AC6MMBSHdiqQ+PNgH6cwAyxOw/GJl52HuECTCPA5FhZsfS5RI/AmZfo+jXB2A0hyJDzQ6Ba86Mg4j/vnvEEUCbA5LhMsZEVSIJ4DaHJFOIpTmEEcA+v2a/ANZkYI/nmgPs5+BkKpulPkQRwDlslJjKQD+fawpwHgcqYdguPUYYAfTjgCUcwbSNQALoz0FLWILpN0EEMI8DmPBWDiaRBDCXQ5hUKkaTGAKIywFNOlViSSABxOegpoxoASWEAPJzkFNW73ASQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQx98/3O6yP/615QAAAABJRU5ErkJggg==');
+    background-size: contain; background-position: center; background-repeat: no-repeat;
+    filter: drop-shadow(0 0 4px rgba(232,168,124,0.15));
+  }
+  .tb-title { font-size: 14px; color: var(--text); }
+  .tb-title b {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700; letter-spacing: 1.5px; margin-right: 4px;
+  }
+  .tb-sep { color: var(--text-dim); margin: 0 10px; }
+  .tb-subtitle {
+    color: var(--text-muted); font-size: 12px;
+  }
+  .tb-spacer { flex: 1; }
+  .tb-ver {
+    font-family: var(--font-mono); color: var(--text-dim);
+    font-size: 10px; letter-spacing: 0.5px;
+  }
+
+  /* Navigation sidebar */
+  .nav {
+    grid-area: nav;
+    background: var(--canvas);
+    border-right: 1px solid var(--border);
+    padding: 14px 8px;
+    display: flex; flex-direction: column; gap: 2px;
+    overflow-y: auto;
+  }
+  .nav-item {
+    padding: 10px 12px;
+    color: var(--text); font-size: 13px;
+    border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    border-left: 2px solid transparent;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .nav-item:hover {
+    background: var(--pane-raised);
+  }
+  .nav-item.active {
+    background: var(--pane-selected);
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  .nav-icon {
+    width: 18px;
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-group-label {
+    padding: 14px 14px 4px;
+    color: var(--text-dim); font-size: 9.5px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+
+  /* Content panel */
+  .content {
+    grid-area: content;
+    overflow-y: auto;
+    padding: 24px 32px 32px;
+    background: var(--pane);
+  }
+  .content-head {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .content-title {
+    font-size: 18px; color: var(--text);
+    font-weight: 400; letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .content-subtitle {
+    color: var(--text-muted); font-size: 12px;
+  }
+
+  /* Section within a tab */
+  .sect {
+    margin-bottom: 22px;
+  }
+  .sect-title {
+    color: var(--accent); font-size: 10.5px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* Preference row */
+  .pref {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+    padding: 10px 0;
+    align-items: start;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .pref:last-child { border-bottom: none; }
+
+  .pref-label {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .pref-name {
+    color: var(--text); font-size: 13px;
+    font-weight: 500;
+  }
+  .pref-help {
+    color: var(--text-muted); font-size: 11.5px;
+    line-height: 1.4;
+  }
+  .pref-help code {
+    font-family: var(--font-mono); color: var(--accent);
+    background: var(--pane-raised);
+    padding: 0 4px; border-radius: 2px; font-size: 10.5px;
+  }
+
+  .pref-control {
+    display: flex; align-items: center; justify-content: flex-end;
+  }
+
+  /* Form controls */
+  .select {
+    background: var(--pane-raised); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 10px; border-radius: 3px;
+    font-size: 12px; font-family: var(--font-ui);
+    outline: none; cursor: pointer; min-width: 160px;
+  }
+  .select:hover { border-color: var(--border-hover); }
+  .select:focus { border-color: var(--accent); }
+
+  .input {
+    background: var(--pane-raised); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 10px; border-radius: 3px;
+    font-size: 12px; font-family: var(--font-ui);
+    outline: none; width: 100%;
+  }
+  .input:focus { border-color: var(--accent); }
+
+  /* Toggle switch */
+  .toggle {
+    width: 38px; height: 22px;
+    background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 12px; cursor: pointer; position: relative;
+    transition: background 0.18s;
+  }
+  .toggle::after {
+    content: "";
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: var(--text-muted); border-radius: 50%;
+    transition: left 0.18s, background 0.18s;
+  }
+  .toggle.on {
+    background: var(--accent); border-color: var(--accent-hover);
+  }
+  .toggle.on::after {
+    left: 18px; background: var(--accent-ink);
+  }
+
+  /* Segmented control */
+  .segment {
+    display: flex; background: var(--pane-raised);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: 2px; gap: 2px;
+  }
+  .segment-btn {
+    padding: 5px 14px;
+    background: transparent;
+    color: var(--text-muted);
+    border: none; border-radius: 2px;
+    font-size: 11.5px; font-family: var(--font-ui);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .segment-btn.active {
+    background: var(--pane-selected); color: var(--accent);
+  }
+  .segment-btn:hover:not(.active) { color: var(--text); }
+
+  /* Color swatch row (for accent) */
+  .swatches {
+    display: flex; gap: 6px;
+  }
+  .swatch {
+    width: 24px; height: 24px;
+    border-radius: 3px; cursor: pointer;
+    border: 2px solid var(--border);
+    transition: transform 0.12s;
+  }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.active {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--canvas), 0 0 0 3px var(--accent);
+  }
+
+  /* Footer */
+  .footer {
+    grid-area: footer;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 20px; gap: 10px;
+  }
+  .footer-reset {
+    background: transparent; color: var(--text-muted);
+    border: none; font-size: 12px; cursor: pointer;
+    padding: 8px 10px; font-family: var(--font-ui);
+    text-decoration: none;
+  }
+  .footer-reset:hover { color: var(--err); text-decoration: underline; }
+  .footer-spacer { flex: 1; }
+  .btn {
+    height: 32px; padding: 0 18px;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 12px; cursor: pointer; font-family: var(--font-ui);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary {
+    background: var(--accent); color: var(--accent-ink);
+    border-color: var(--accent); font-weight: 600;
+  }
+  .btn.primary:hover {
+    background: var(--accent-hover); border-color: var(--accent-hover);
+  }
+
+  /* Footnote */
+  .footnote {
+    color: var(--text-dim); font-size: 10.5px; line-height: 1.5;
+    font-style: italic; padding: 12px 0 0;
+    border-top: 1px dashed var(--border-soft);
+    margin-top: 18px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="backdrop">
+
+  <div class="dialog">
+
+    <div class="titlebar">
+      <div class="tb-icon"></div>
+      <div class="tb-title"><b>PANDA</b>Gallery</div>
+      <span class="tb-sep">›</span>
+      <span class="tb-subtitle">Preferences</span>
+      <div class="tb-spacer"></div>
+      <span class="tb-ver">v4.1-dev</span>
+    </div>
+
+    <div class="nav">
+
+      <div class="nav-group-label">Workflow</div>
+      <div class="nav-item"><span class="nav-icon">⚙</span>General</div>
+      <div class="nav-item"><span class="nav-icon">▦</span>Library</div>
+      <div class="nav-item active"><span class="nav-icon">✎</span>Editor</div>
+      <div class="nav-item"><span class="nav-icon">◩</span>Arrange</div>
+      <div class="nav-item"><span class="nav-icon">▶</span>Presentation</div>
+
+      <div class="nav-group-label">Display</div>
+      <div class="nav-item"><span class="nav-icon">◐</span>Appearance</div>
+
+    </div>
+
+    <div class="content">
+
+      <div class="content-head">
+        <div class="content-title">Editor</div>
+        <div class="content-subtitle">Default tools, adjustment behavior, and annotation colors</div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-title">Defaults</div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Tool on image open</div>
+            <div class="pref-help">Which tool activates when you open an image in the editor.</div>
+          </div>
+          <div class="pref-control">
+            <select class="select">
+              <option>Select (V)</option>
+              <option>Brush (B)</option>
+              <option selected>Last used</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Invert radiographs by default</div>
+            <div class="pref-help">Auto-toggle the <code>Invert</code> checkbox when opening a detected radiograph.</div>
+          </div>
+          <div class="pref-control">
+            <div class="segment">
+              <button class="segment-btn">On</button>
+              <button class="segment-btn">Off</button>
+              <button class="segment-btn active">Ask me</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Radiograph adjustment preset</div>
+            <div class="pref-help">Starting slider values for a newly-opened radiograph. User-saved presets appear here once you create them.</div>
+          </div>
+          <div class="pref-control">
+            <select class="select">
+              <option>None (zeroed)</option>
+              <option selected>Perio read</option>
+              <option>Endo check</option>
+              <option>Caries detection</option>
+              <option>Pre-op mount</option>
+              <option disabled>──────────</option>
+              <option>Manage presets…</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Photo adjustment preset</div>
+            <div class="pref-help">Starting slider values for a newly-opened photo.</div>
+          </div>
+          <div class="pref-control">
+            <select class="select">
+              <option selected>None (zeroed)</option>
+              <option>Auto-enhance</option>
+              <option>Clinical photo</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="sect">
+        <div class="sect-title">Annotations</div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Default annotation color</div>
+            <div class="pref-help">Shape and brush tools will start with this color each session.</div>
+          </div>
+          <div class="pref-control">
+            <div class="swatches">
+              <div class="swatch active" style="background: var(--accent);"></div>
+              <div class="swatch" style="background: #e74c3c;"></div>
+              <div class="swatch" style="background: #f39c12;"></div>
+              <div class="swatch" style="background: #7fb069;"></div>
+              <div class="swatch" style="background: #88aacc;"></div>
+              <div class="swatch" style="background: #e0ddd5;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Default stroke width</div>
+            <div class="pref-help">Starting brush / shape stroke thickness.</div>
+          </div>
+          <div class="pref-control">
+            <div class="segment">
+              <button class="segment-btn">1</button>
+              <button class="segment-btn">2</button>
+              <button class="segment-btn active">3</button>
+              <button class="segment-btn">4</button>
+              <button class="segment-btn">5</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Snap shape annotations to grid</div>
+            <div class="pref-help">Rectangles, ellipses, and arrows snap to 10-pixel grid when drawing.</div>
+          </div>
+          <div class="pref-control">
+            <div class="toggle"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="sect">
+        <div class="sect-title">Behavior</div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Brush smoothing</div>
+            <div class="pref-help">Smooths freehand brush strokes for cleaner lines. Higher values reduce jitter but also reduce precision.</div>
+          </div>
+          <div class="pref-control">
+            <div class="segment">
+              <button class="segment-btn">Off</button>
+              <button class="segment-btn active">Low</button>
+              <button class="segment-btn">Med</button>
+              <button class="segment-btn">High</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Undo history depth</div>
+            <div class="pref-help">Maximum number of edit actions kept per image. Higher = more memory use.</div>
+          </div>
+          <div class="pref-control">
+            <select class="select">
+              <option>20 steps</option>
+              <option selected>50 steps</option>
+              <option>100 steps</option>
+              <option>Unlimited</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Auto-save interval</div>
+            <div class="pref-help">How often annotations and adjustments are saved to the database while editing.</div>
+          </div>
+          <div class="pref-control">
+            <select class="select">
+              <option>Off (on exit only)</option>
+              <option>30 seconds</option>
+              <option selected>1 minute</option>
+              <option>5 minutes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pref">
+          <div class="pref-label">
+            <div class="pref-name">Grid overlay on canvas</div>
+            <div class="pref-help">Optional overlay for alignment. Appears on the editor canvas only, never in exports.</div>
+          </div>
+          <div class="pref-control">
+            <div class="segment">
+              <button class="segment-btn active">Off</button>
+              <button class="segment-btn">2×2</button>
+              <button class="segment-btn">3×3</button>
+              <button class="segment-btn">Rule ⅓</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="footnote">
+        Changes apply immediately. Preferences are stored locally via QSettings under <code style="font-family: var(--font-mono); color: var(--accent); background: var(--pane-raised); padding: 0 4px; border-radius: 2px;">editor/*</code>.
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <button class="footer-reset">Reset this tab to defaults</button>
+      <div class="footer-spacer"></div>
+      <button class="btn">Cancel</button>
+      <button class="btn primary">Done</button>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

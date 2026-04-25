@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Palette &amp; Typography</title>
+<style>
+  :root {
+    --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+    --pane-selected:#2a2a4e; --border:#2a2a3e; --border-soft:#232336;
+    --text:#e0ddd5; --text-muted:#888; --text-dim:#555;
+    --accent:#e8a87c; --accent-hover:#d4945a;
+    --font-ui:"Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:"Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { min-height:100%; background:var(--canvas); color:var(--text); font-family:var(--font-ui); font-size:14px; line-height:1.5; }
+  body { padding: 32px 24px 80px; }
+  .page-max { max-width: 1100px; margin: 0 auto; }
+
+  .crumbs { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: 24px; letter-spacing: 0.5px; }
+  .crumbs a { color: var(--accent); text-decoration: none; }
+
+  h1 { font-size: 24px; font-weight: 300; margin-bottom: 4px; }
+  h1 b { background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; letter-spacing: 2px; margin-right: 4px; }
+  .subtitle { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; margin-bottom: 32px; letter-spacing: 1px; }
+
+  .section { margin-bottom: 48px; }
+  .section h2 {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .section-intro { color: var(--text-muted); margin-bottom: 24px; max-width: 720px; }
+
+  /* Color swatches */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .swatch {
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  .swatch-chip { height: 80px; }
+  .swatch-meta { padding: 10px 12px 12px; }
+  .swatch-name { font-size: 13px; color: var(--text); font-weight: 600; margin-bottom: 2px; }
+  .swatch-hex { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 0.3px; }
+  .swatch-role { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+
+  /* Type specimen */
+  .type-demo {
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px; padding: 24px; margin-bottom: 16px;
+  }
+  .type-row { display: grid; grid-template-columns: 140px 1fr; gap: 20px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); align-items: baseline; }
+  .type-row:last-child { border-bottom: none; }
+  .type-label { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+  .type-h1 { font-size: 28px; font-weight: 300; letter-spacing: 0.3px; }
+  .type-h2 { font-size: 22px; font-weight: 600; }
+  .type-h3 { font-size: 16px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; }
+  .type-body { font-size: 14px; }
+  .type-small { font-size: 12px; color: var(--text-muted); }
+  .type-mono { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: 0.5px; }
+  .type-caption { font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
+
+  /* Spacing/radius demo */
+  .tokens-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .token-card {
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px; padding: 12px;
+    text-align: center;
+  }
+  .token-vis {
+    margin: 8px auto 10px; display: flex; align-items: center; justify-content: center;
+    height: 60px;
+  }
+  .token-box { background: var(--accent); opacity: 0.8; }
+  .token-name { font-size: 11px; color: var(--text); font-weight: 600; }
+  .token-val { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+</style></head>
+<body>
+<div class="page-max">
+
+  <div class="crumbs">
+    <a href="INDEX.html">← Design index</a> / palette &amp; typography
+  </div>
+
+  <h1><b>PANDA</b>Gallery — Design Tokens</h1>
+  <div class="subtitle">Atomic design layer · colors from styles.py · type stack from app config</div>
+
+  <div class="section">
+    <h2>Color · surface</h2>
+    <div class="section-intro">Five-step dark navy scale. All surface colors in the app come from this scale — no ad-hoc hex values in component code.</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#14141f;"></div><div class="swatch-meta"><div class="swatch-name">canvas</div><div class="swatch-hex">#14141f</div><div class="swatch-role">Deepest — viewport background, scroll areas</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#161625;"></div><div class="swatch-meta"><div class="swatch-name">chrome</div><div class="swatch-hex">#161625</div><div class="swatch-role">Title bar, menu bar, toolbar, status bar</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#1a1a2e;"></div><div class="swatch-meta"><div class="swatch-name">pane</div><div class="swatch-hex">#1a1a2e</div><div class="swatch-role">Main window, side panes, dialogs</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#22223a;"></div><div class="swatch-meta"><div class="swatch-name">pane-raised</div><div class="swatch-hex">#22223a</div><div class="swatch-role">Buttons, inputs, hover state base</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#2a2a4e;"></div><div class="swatch-meta"><div class="swatch-name">pane-selected</div><div class="swatch-hex">#2a2a4e</div><div class="swatch-role">Selected state, pressed state</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Color · border &amp; divider</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#232336;"></div><div class="swatch-meta"><div class="swatch-name">border-soft</div><div class="swatch-hex">#232336</div><div class="swatch-role">Subtle section dividers, row borders</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#2a2a3e;"></div><div class="swatch-meta"><div class="swatch-name">border</div><div class="swatch-hex">#2a2a3e</div><div class="swatch-role">Default component borders</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#3a3a4e;"></div><div class="swatch-meta"><div class="swatch-name">border-hover</div><div class="swatch-hex">#3a3a4e</div><div class="swatch-role">Hover state for borders, scrollbar handles</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Color · text</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#e0ddd5; color:#1a1a2e; font-family:var(--font-ui); font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:center;">Aa Bb Cc 123</div><div class="swatch-meta"><div class="swatch-name">text</div><div class="swatch-hex">#e0ddd5</div><div class="swatch-role">Primary cream — body text, labels</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#1a1a2e; color:#888; font-family:var(--font-ui); font-size:13px; display:flex; align-items:center; justify-content:center;">Aa Bb Cc 123</div><div class="swatch-meta"><div class="swatch-name">text-muted</div><div class="swatch-hex">#888888</div><div class="swatch-role">Secondary info, counts, captions</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#1a1a2e; color:#555; font-family:var(--font-ui); font-size:13px; display:flex; align-items:center; justify-content:center;">Aa Bb Cc 123</div><div class="swatch-meta"><div class="swatch-name">text-dim</div><div class="swatch-hex">#555555</div><div class="swatch-role">Disabled state, tertiary info, placeholders</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Color · accent (signature)</h2>
+    <div class="section-intro">Peach / coral scale used for selection, focus, brand accent. The logo wordmark uses the 3-stop gradient across accent-hover → accent → accent-ink.</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#f0b98c;"></div><div class="swatch-meta"><div class="swatch-name">accent-light</div><div class="swatch-hex">#f0b98c</div><div class="swatch-role">Wordmark highlight, subtle glow top-stop</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#e8a87c;"></div><div class="swatch-meta"><div class="swatch-name">accent</div><div class="swatch-hex">#e8a87c</div><div class="swatch-role">Signature peach — focus rings, selection border, primary button</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#d4945a;"></div><div class="swatch-meta"><div class="swatch-name">accent-hover</div><div class="swatch-hex">#d4945a</div><div class="swatch-role">Hover state on accent fills, slider track fill</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:rgba(232,168,124,0.12); border: 1px solid rgba(232,168,124,0.45);"></div><div class="swatch-meta"><div class="swatch-name">accent-soft</div><div class="swatch-hex">#e8a87c @12%</div><div class="swatch-role">Selected row background, active chip fill</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Color · semantic</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#7fb069;"></div><div class="swatch-meta"><div class="swatch-name">ok</div><div class="swatch-hex">#7fb069</div><div class="swatch-role">Success — live / recording / online indicator</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#f39c12;"></div><div class="swatch-meta"><div class="swatch-name">warn</div><div class="swatch-hex">#f39c12</div><div class="swatch-role">Warnings — low mic level, unsaved state</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#e74c3c;"></div><div class="swatch-meta"><div class="swatch-name">err</div><div class="swatch-hex">#e74c3c</div><div class="swatch-role">Destructive actions, End Session, error states</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Typography</h2>
+    <div class="section-intro">Two-family system: <b style="color:var(--accent);">Segoe UI</b> for everything readable, <b style="color:var(--accent);">Cascadia Mono</b> for numbers, IDs, dates, filenames, and keyboard shortcuts. The monospace treatment is deliberate — precision reads as clinical competence.</div>
+
+    <div class="type-demo">
+      <div class="type-row"><div class="type-label">Display</div><div class="type-h1">Panda Gallery</div></div>
+      <div class="type-row"><div class="type-label">Heading 2</div><div class="type-h2">Adams, Deborah</div></div>
+      <div class="type-row"><div class="type-label">Heading 3</div><div class="type-h3">Patient Info</div></div>
+      <div class="type-row"><div class="type-label">Body</div><div class="type-body">The quick brown fox jumps over the lazy dog 0123456789</div></div>
+      <div class="type-row"><div class="type-label">Small</div><div class="type-small">Secondary metadata · 24 images · last visit 2026-03-14</div></div>
+      <div class="type-row"><div class="type-label">Mono</div><div class="type-mono">#00842 · 1456×1112 · PA_03_14_01.png</div></div>
+      <div class="type-row"><div class="type-label">Caption</div><div class="type-caption">Filter · 3 active · Sort descending</div></div>
+    </div>
+
+    <div style="color: var(--text-muted); font-size: 12px; line-height: 1.6; max-width: 720px;">
+      <p><b style="color: var(--accent);">Segoe UI</b> is the existing app font stack declared in styles.py — <code style="font-family: var(--font-mono); color: var(--accent); background: var(--pane-raised); padding: 1px 5px; border-radius: 2px;">Segoe UI, SF Pro, Noto Sans, sans-serif</code>. Kept unchanged for v4.0: changing the body font would be cosmetic churn without user benefit.</p>
+      <p style="margin-top: 10px;"><b style="color: var(--accent);">Cascadia Mono</b> is proposed as the monospace family for v4.0, with Consolas as Windows fallback. Use for: patient IDs, numerical fields, filenames, dimensions, keyboard shortcut hints, version numbers, DB paths. NOT for body text, labels, or anything a human reads as prose.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Spacing · radius · motion</h2>
+    <div class="section-intro">Small, fixed scales. No one-off magic numbers.</div>
+
+    <div class="tokens-grid">
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:4px;height:4px;"></div></div><div class="token-name">xs</div><div class="token-val">4 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:8px;height:8px;"></div></div><div class="token-name">sm</div><div class="token-val">8 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:12px;height:12px;"></div></div><div class="token-name">md</div><div class="token-val">12 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:16px;height:16px;"></div></div><div class="token-name">lg</div><div class="token-val">16 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:24px;height:24px;"></div></div><div class="token-name">xl</div><div class="token-val">24 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:32px;height:32px;"></div></div><div class="token-name">2xl</div><div class="token-val">32 px</div></div>
+    </div>
+
+    <div class="tokens-grid" style="margin-top: 20px;">
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:2px;"></div></div><div class="token-name">radius-sm</div><div class="token-val">2 px — chips, badges</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:4px;"></div></div><div class="token-name">radius-md</div><div class="token-val">4 px — buttons, inputs</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:6px;"></div></div><div class="token-name">radius-lg</div><div class="token-val">6 px — cards, panels</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:8px;"></div></div><div class="token-name">radius-xl</div><div class="token-val">8 px — avatars, containers</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:60px;height:28px;border-radius:999px;"></div></div><div class="token-name">radius-pill</div><div class="token-val">999 px — wordmark pill</div></div>
+    </div>
+
+    <div style="color: var(--text-muted); font-size: 12px; line-height: 1.6; max-width: 720px; margin-top: 24px;">
+      <p><b style="color: var(--accent);">Motion:</b> 0.15s for most state transitions, 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) for the splash fade-in. Blinking "LIVE" dot in Present mode: 1.5s infinite. No bouncy / spring / playful motion — this is medical software.</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

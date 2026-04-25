@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Splash</title>
+<style>
+  :root {
+    --canvas:       #14141f;
+    --chrome:       #161625;
+    --pane:         #1a1a2e;
+    --pane-raised:  #22223a;
+    --border:       #2a2a3e;
+    --text:         #e0ddd5;
+    --text-muted:   #888;
+    --text-dim:     #555;
+    --accent:       #e8a87c;
+    --accent-hover: #d4945a;
+    --accent-soft:  rgba(232, 168, 124, 0.12);
+    --accent-border:rgba(232, 168, 124, 0.45);
+    --accent-ink:   #1a1a2e;
+    --font-ui:      "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    --font-mono:    "Cascadia Mono", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--font-ui);
+    overflow: hidden;
+  }
+
+  /* ===== Ambient atmosphere ===== */
+  .atmosphere {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 45%, rgba(232, 168, 124, 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 80% 50% at 50% 100%, rgba(232, 168, 124, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* Subtle grain/noise */
+  .grain {
+    position: fixed; inset: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    background-image:
+      repeating-radial-gradient(circle at 0 0, transparent 0, var(--text) 1px, transparent 2px, transparent 4px);
+  }
+
+  /* ===== Splash layout ===== */
+  .splash {
+    position: relative;
+    width: 100vw; height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-stage {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    margin-bottom: 80px;
+    animation: fadeUp 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .panda-mark {
+    width: 220px; height: 220px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 0 30px rgba(232, 168, 124, 0.1));
+  }
+
+  .wordmark-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .pill {
+    background: linear-gradient(180deg, #22223a 0%, #1a1a2e 100%);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 24px 56px;
+    position: relative;
+    box-shadow:
+      0 0 60px rgba(232, 168, 124, 0.08),
+      inset 0 0 0 1px rgba(232, 168, 124, 0.06);
+  }
+
+  .wordmark {
+    font-family: var(--font-ui);
+    font-size: 72px;
+    font-weight: 700;
+    letter-spacing: 10px;
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 40px rgba(232, 168, 124, 0.3);
+    line-height: 1;
+  }
+
+  .tagline {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--text-muted);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    padding-left: 56px;
+  }
+  .tagline .version {
+    color: var(--accent);
+  }
+
+  /* ===== Status area ===== */
+  .status-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    min-height: 80px;
+    animation: fadeIn 1.4s 0.4s both ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .loading-bar {
+    width: 320px;
+    height: 2px;
+    background: var(--pane-raised);
+    border-radius: 1px;
+    overflow: hidden;
+    position: relative;
+  }
+  .loading-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+    animation: slide 1.8s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { left: -40%; }
+    100% { left: 100%; }
+  }
+
+  .status-line {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .status-line .ok { color: var(--accent); }
+
+  /* ===== Footer ===== */
+  .splash-footer {
+    position: absolute;
+    bottom: 32px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 40px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+  .splash-footer .right { color: var(--text-dim); }
+  .splash-footer .right b { color: var(--text-muted); font-weight: 400; }
+
+  /* Responsive: scale down on narrower windows */
+  @media (max-width: 900px) {
+    .logo-stage { gap: 30px; flex-direction: column; }
+    .panda-mark { width: 160px; height: 160px; }
+    .wordmark { font-size: 54px; letter-spacing: 7px; }
+    .pill { padding: 18px 40px; }
+    .tagline { padding-left: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="atmosphere"></div>
+  <div class="grain"></div>
+  <a href="INDEX.html" style="position: absolute; top: 20px; left: 20px; color: #888; text-decoration: none; font-family: 'Cascadia Mono', monospace; font-size: 11px; letter-spacing: 0.5px; padding: 6px 10px; border: 1px solid #2a2a3e; border-radius: 4px; z-index: 10;">◂ Index</a>
+
+  <div class="splash">
+    <div class="logo-stage">
+      <div class="panda-mark"></div>
+      <div class="wordmark-wrap">
+        <div class="pill"><div class="wordmark">PANDA</div></div>
+        <div class="tagline">Gallery &nbsp;·&nbsp; <span class="version">v4.0</span></div>
+      </div>
+    </div>
+
+    <div class="status-area">
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <div class="status-line">Loading patient database<span class="ok"> · 247 patients</span></div>
+    </div>
+
+    <div class="splash-footer">
+      <div>Panda Dental Software</div>
+      <div class="right">© 2026 &nbsp;·&nbsp; <b>panda_gallery.db</b> &nbsp;·&nbsp; v4.0-dev</div>
+    </div>
+  </div>
+</body>
+</html>

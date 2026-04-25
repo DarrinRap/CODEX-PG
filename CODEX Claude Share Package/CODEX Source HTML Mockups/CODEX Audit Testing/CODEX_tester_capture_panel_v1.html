@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CODEX Tester Capture Panel v1</title>
+<style>
+:root{--bg:#0a0a12;--panel:#14141f;--panel2:#1a1a2e;--line:#2a2a3e;--soft:#232336;--text:#e0ddd5;--muted:#888;--dim:#60606d;--accent:#e8a87c;--pass:#7fb069;--fail:#d46a6a;--skip:#8a8a9a}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:13px/1.45 "Segoe UI",Arial,sans-serif;display:grid;place-items:center}.pane{width:640px;min-height:640px;background:var(--panel);border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;padding:16px 22px;gap:12px;box-shadow:0 18px 60px rgba(0,0,0,.35)}.top{display:flex;align-items:center;justify-content:space-between}.progress{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.07em}.help{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted)}.title{color:var(--accent);font-size:17px;font-weight:650}.body{color:var(--text);max-height:64px;overflow:auto}.stats{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:8px 10px}.mic{display:flex;align-items:center;gap:9px;color:var(--muted)}.bars{display:flex;gap:3px;align-items:end;height:16px}.bars span{width:4px;border-radius:2px;background:var(--pass)}.bars span:nth-child(1){height:5px}.bars span:nth-child(2){height:9px}.bars span:nth-child(3){height:14px}.bars span:nth-child(4){height:11px}.bars span:nth-child(5){height:7px}.counts{display:flex;gap:8px;color:var(--muted);font-size:12px}.counts b:nth-child(1){color:var(--pass)}.counts b:nth-child(3){color:var(--fail)}.counts b:nth-child(5){color:var(--skip)}.checklist{background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden;flex:1}.row{display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start;padding:12px 16px 12px 14px;border-bottom:1px solid var(--soft);border-left:2px solid transparent}.row:last-child{border-bottom:0}.row.active{background:rgba(232,168,124,.045);border-left-color:var(--accent)}.dot{width:14px;height:14px;border-radius:50%;border:1.5px solid #6a6a78;margin-top:3px}.active .dot{border-color:var(--accent)}.pass .dot{background:var(--pass);border-color:var(--pass)}.fail .dot{background:var(--fail);border-color:var(--fail)}.label{color:var(--muted)}.active .label{color:var(--text);font-weight:550}.fail-panel{background:rgba(212,106,106,.06);border:1px solid rgba(212,106,106,.38);border-radius:4px;padding:10px 12px;display:grid;gap:8px}.fail-panel h3{margin:0;color:var(--fail);font-size:10px;text-transform:uppercase;letter-spacing:.1em}.textarea{min-height:64px;background:#11111b;border:1px solid var(--line);border-radius:3px;color:var(--text);padding:8px 10px}.actions{display:flex;gap:10px}.actions .spacer{flex:1}.btn{min-height:34px;padding:0 14px;background:transparent;border:1px solid var(--line);border-radius:4px;color:var(--muted);font:inherit}.btn.pass{color:#5ab87a;border-color:rgba(90,184,122,.6)}.btn.fail{color:var(--accent);border-color:var(--accent)}.btn.skip{color:var(--skip);border-color:rgba(138,138,154,.6)}.btn:hover{background:#202034;color:var(--text)}</style>
+</head>
+<body>
+  <section class="pane">
+    <div class="top"><div class="progress">Step 2 of 5</div><div class="help">?</div></div>
+    <div class="title">Capture and confirm the checkout workflow</div>
+    <div class="body">Run the requested workflow in the live app. Answer each checkpoint as you go. Use Shift+F12 when a region screenshot is more useful than a full-window capture.</div>
+    <div class="stats"><div class="mic"><div class="bars"><span></span><span></span><span></span><span></span><span></span></div><span>Mic recording - transcript live</span></div><div class="counts"><b>2 pass</b><span>·</span><b>1 fail</b><span>·</span><b>0 skip</b></div></div>
+    <div class="checklist">
+      <div class="row pass"><div class="dot"></div><div class="label">The first patient image loads without visible delay</div></div>
+      <div class="row fail"><div class="dot"></div><div class="label">The checkout button stays visible after resizing the pane</div></div>
+      <div class="row active"><div class="dot"></div><div class="label">The confirmation dialog appears centered and readable</div></div>
+      <div class="row"><div class="dot"></div><div class="label">The final success state is clear enough for a new tester</div></div>
+    </div>
+    <div class="fail-panel"><h3>Fail note</h3><div class="textarea">Button wrapped under the footer at 520px wide. Screenshot attached with Shift+F12.</div></div>
+    <div class="actions"><button class="btn">Cancel</button><button class="btn">Pause</button><button class="btn">← Back</button><span class="spacer"></span><button class="btn pass">PASS</button><button class="btn fail">FAIL</button><button class="btn skip">SKIP</button></div>
+  </section>
+</body>
+</html>

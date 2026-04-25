@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>#129 Sizing rule mockup v1 — Settings dialog</title>
+<style>
+  :root {
+    --bg-page: #0d0d18;
+    --bg-dialog: #1a1a2e;
+    --bg-tab-pane: #14141f;
+    --text: #e0ddd5;
+    --text-muted: #888;
+    --text-disabled: #555;
+    --accent: #e8a87c;
+    --border: #2a2a3e;
+    --border-strong: #2a2a4e;
+    --groupbox-border: #2a2a3e;
+    --tab-bg: #22223a;
+    --tab-active-bg: #2a2a4e;
+  }
+
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  h1 {
+    font-size: 18px;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+
+  .preamble {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0 0 24px;
+    max-width: 900px;
+  }
+
+  .invariants {
+    background: var(--bg-dialog);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin: 0 0 28px;
+    max-width: 900px;
+  }
+
+  .invariants h2 {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    margin: 0 0 8px;
+  }
+
+  .invariants ol {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.7;
+  }
+
+  .invariants ol li strong {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .row {
+    display: flex;
+    gap: 24px;
+    margin: 0 0 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .scenario {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .scenario-label {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+
+  .scenario-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* ---- Dialog ---- */
+  .dialog {
+    background: var(--bg-dialog);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 20px 14px;
+    gap: 12px;
+  }
+
+  .dialog-titlebar {
+    color: var(--text);
+    font-size: 13px;
+    margin: -18px -20px 0;
+    padding: 6px 14px;
+    background: #161625;
+    border-bottom: 1px solid var(--border);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dialog-titlebar .x {
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex;
+    gap: 0;
+  }
+
+  .tab {
+    padding: 6px 14px;
+    background: var(--tab-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-right: 0;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .tab.active {
+    background: var(--tab-active-bg);
+    color: var(--accent);
+  }
+
+  .tab-pane {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    border-top-left-radius: 0;
+    padding: 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ---- Form rows ---- */
+  .form-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .checkbox {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--text-muted);
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .checkbox.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .form-label {
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .reset-btn {
+    padding: 6px 14px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    align-self: flex-start;
+  }
+
+  /* ---- Bottom button row ---- */
+  .button-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    /* INVARIANT 2: 10px gap is FIXED */
+  }
+
+  .btn-close {
+    padding: 6px 14px;
+    background: var(--accent);
+    color: var(--bg-tab-pane);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ---- Floor / comfortable / oversized scenarios ---- */
+  /* These widths are illustrative — actual floor will be derived from
+     compute_min_size() at runtime. The numbers shown are reasonable
+     candidates given the current content. */
+  .dialog.at-floor {
+    width: 320px;
+    /* widest required for: tab labels (Pane, Session) + 1 checkbox text wrap +
+       Reset button + 10px gap to right edge + Close button cluster */
+  }
+
+  .dialog.comfortable {
+    width: 380px;
+    /* floor × 1.15 ≈ 368, rounded to 380 */
+  }
+
+  .dialog.oversized {
+    width: 560px;
+  }
+
+  /* ---- Annotations ---- */
+  .annotation {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-style: italic;
+    margin-top: 4px;
+  }
+
+  .annotation strong {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  /* ---- Textarea (FAIL panel) demo ---- */
+  .textarea-demo {
+    background: var(--bg-dialog);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    margin-top: 8px;
+    width: 380px;
+  }
+
+  .textarea-label {
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .textarea {
+    background: var(--bg-tab-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    padding: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+
+  .textarea.two-line-floor {
+    /* INVARIANT 4: 2 visible lines minimum */
+    min-height: calc(1.5em * 2 + 16px);
+    /* line-height × 2 + vertical padding */
+  }
+
+  .textarea.too-tall {
+    min-height: 200px;
+  }
+
+  /* ---- Floor demo (rule 3 — text wraps, doesn't clip) ---- */
+  .wrap-demo .form-label {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  /* ---- Section headers ---- */
+  h2.section {
+    font-size: 14px;
+    color: var(--accent);
+    margin: 32px 0 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+  }
+</style>
+</head>
+<body>
+  <h1>#129 sizing rule — Settings dialog mockup v1</h1>
+  <p class="preamble">
+    Visual target for the four-invariant sizing rule. Each scenario shows the
+    Testing — Settings dialog (Pane tab) at a different width. Buttons stay
+    intact across all widths; text wraps at the narrow end; gap between buttons
+    is constant 10px. Default width on first open = floor × 1.15.
+  </p>
+
+  <div class="invariants">
+    <h2>The four invariants</h2>
+    <ol>
+      <li><strong>Buttons all visible.</strong> Every button in the active cluster fully rendered. None clipped, none hidden.</li>
+      <li><strong>Inter-button spacing fixed.</strong> 10px gap between buttons. Never compressed. Window can't shrink past the point where compression would be required.</li>
+      <li><strong>Text never clipped.</strong> Labels word-wrap freely (window grows vertically). No horizontal truncation.</li>
+      <li><strong>Multi-line inputs ≥ 2 lines.</strong> Any QTextEdit has min-height = 2 lines of rendered font + padding.</li>
+    </ol>
+  </div>
+
+  <h2 class="section">Settings dialog — three widths</h2>
+
+  <div class="row">
+
+    <!-- ===== AT FLOOR ===== -->
+    <div class="scenario">
+      <div class="scenario-label">AT FLOOR — 320 px</div>
+      <div class="scenario-meta">smallest valid size</div>
+      <div class="dialog at-floor">
+        <div class="dialog-titlebar">
+          <span>Testing — Settings</span>
+          <span class="x">✕</span>
+        </div>
+        <div class="tabs">
+          <div class="tab active">Pane</div>
+          <div class="tab">Session</div>
+        </div>
+        <div class="tab-pane">
+          <div class="form-row">
+            <span class="checkbox checked"></span>
+            <span class="form-label">Remember pane size and position</span>
+          </div>
+          <div class="form-row wrap-demo">
+            <span class="checkbox"></span>
+            <span class="form-label">Show pane in screenshots and recordings</span>
+          </div>
+          <div class="form-row wrap-demo">
+            <span class="checkbox checked"></span>
+            <span class="form-label">Include mouse cursor in F12 captures</span>
+          </div>
+          <button class="reset-btn">Reset pane size and position</button>
+        </div>
+        <div class="button-row">
+          <button class="btn-close">Close</button>
+        </div>
+      </div>
+      <div class="annotation">Width is the longest single button (Reset…) + horizontal padding. Below this, Reset would clip → INVARIANT 1 violated.</div>
+    </div>
+
+    <!-- ===== COMFORTABLE ===== -->
+    <div class="scenario">
+      <div class="scenario-label">COMFORTABLE — 380 px</div>
+      <div class="scenario-meta">first-open default (floor × 1.15)</div>
+      <div class="dialog comfortable">
+        <div class="dialog-titlebar">
+          <span>Testing — Settings</span>
+          <span class="x">✕</span>
+        </div>
+        <div class="tabs">
+          <div class="tab active">Pane</div>
+          <div class="tab">Session</div>
+        </div>
+        <div class="tab-pane">
+          <div class="form-row">
+            <span class="checkbox checked"></span>
+            <span class="form-label">Remember pane size and position</span>
+          </div>
+          <div class="form-row">
+            <span class="checkbox"></span>
+            <span class="form-label">Show pane in screenshots and recordings</span>
+          </div>
+          <div class="form-row">
+            <span class="checkbox checked"></span>
+            <span class="form-label">Include mouse cursor in F12 captures</span>
+          </div>
+          <button class="reset-btn">Reset pane size and position</button>
+        </div>
+        <div class="button-row">
+          <button class="btn-close">Close</button>
+        </div>
+      </div>
+      <div class="annotation">Comfortable margin around all controls. Labels on single lines.</div>
+    </div>
+
+    <!-- ===== OVERSIZED ===== -->
+    <div class="scenario">
+      <div class="scenario-label">OVERSIZED — 560 px</div>
+      <div class="scenario-meta">user-dragged wider</div>
+      <div class="dialog oversized">
+        <div class="dialog-titlebar">
+          <span>Testing — Settings</span>
+          <span class="x">✕</span>
+        </div>
+        <div class="tabs">
+          <div class="tab active">Pane</div>
+          <div class="tab">Session</div>
+        </div>
+        <div class="tab-pane">
+          <div class="form-row">
+            <span class="checkbox checked"></span>
+            <span class="form-label">Remember pane size and position</span>
+          </div>
+          <div class="form-row">
+            <span class="checkbox"></span>
+            <span class="form-label">Show pane in screenshots and recordings</span>
+          </div>
+          <div class="form-row">
+            <span class="checkbox checked"></span>
+            <span class="form-label">Include mouse cursor in F12 captures</span>
+          </div>
+          <button class="reset-btn">Reset pane size and position</button>
+        </div>
+        <div class="button-row">
+          <button class="btn-close">Close</button>
+        </div>
+      </div>
+      <div class="annotation">Same content, more horizontal breathing room. Persisted to QSettings on close.</div>
+    </div>
+
+  </div>
+
+  <h2 class="section">FAIL textarea — 2-line minimum (invariant 4)</h2>
+
+  <div class="row">
+    <div class="scenario">
+      <div class="scenario-label">FLOOR — 2 lines visible</div>
+      <div class="scenario-meta">min-height = lineSpacing × 2 + padding</div>
+      <div class="textarea-demo">
+        <div class="textarea-label">DESCRIBE WHAT FAILED</div>
+        <textarea class="textarea two-line-floor" placeholder="What happened? Steps to reproduce, observed vs expected…"></textarea>
+      </div>
+      <div class="annotation">Smallest valid textarea. Below this would be INVARIANT 4 violated.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-label">USER-EXPANDED</div>
+      <div class="scenario-meta">user dragged taller</div>
+      <div class="textarea-demo">
+        <div class="textarea-label">DESCRIBE WHAT FAILED</div>
+        <textarea class="textarea too-tall" placeholder="What happened? Steps to reproduce, observed vs expected…"></textarea>
+      </div>
+      <div class="annotation">User can grow vertically; floor stays at 2 lines. Current code uses fixed 60px max-84px clamp — to be replaced with derived floor.</div>
+    </div>
+  </div>
+
+  <h2 class="section">Implementation notes</h2>
+
+  <p class="preamble">
+    <strong style="color: var(--accent)">compute_min_size()</strong> on
+    <code style="color: var(--accent)">TestingSettingsDialog</code> returns
+    <code>QSize(min_w, min_h)</code> derived from: button-cluster widths (with fixed gaps),
+    longest single-line label that can't wrap (tab labels, button text), multi-line
+    input floors (lineSpacing × 2 + padding), and vertical padding/spacing constants.<br><br>
+
+    Called from <code>__init__</code> for initial sizing, and from any layout-
+    affecting state change. <code>setMinimumSize()</code> applied; current
+    geometry honored if user has dragged wider.<br><br>
+
+    Default-size policy on first open (no persisted geometry): <code>resize(min_size × 1.15)</code>.
+    Persisted geometry (#128) wins on subsequent opens.<br><br>
+
+    <strong style="color: var(--accent)">Existing widgets to remove:</strong>
+    <code>setMinimumWidth(420)</code> in <code>TestingSettingsDialog.__init__</code> →
+    derived from compute_min_size now. <code>_FailNoteEdit.setMinimumHeight(60)</code> /
+    <code>setMaximumHeight(84)</code> → replaced with derived floor + uncapped grow
+    (let user resize; floor enforced by invariant 4).
+  </p>
+
+</body>
+</html>

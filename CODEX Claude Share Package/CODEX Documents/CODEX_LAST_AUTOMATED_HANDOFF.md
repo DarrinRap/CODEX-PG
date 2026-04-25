@@ -1,0 +1,61 @@
+﻿# CODEX Last Automated Handoff
+
+Generated: 2026-04-24 20:20:52 -07:00
+Mode: Checkpoint
+
+## Current Git State
+
+- Local repo: `C:\CODEX PG`
+- GitHub repo: `https://github.com/DarrinRap/CODEX-PG.git`
+- Branch: `main`
+- Origin: `https://github.com/DarrinRap/CODEX-PG.git`
+- Indexed project file count, excluding .git: 3794
+
+## Git Status
+
+```text
+## main...origin/main
+ M "CODEX Docs/CODEX_CURRENT_HANDOFF.md"
+ M "CODEX Docs/CODEX_PROJECT_MEMORY.md"
+?? "CODEX Canonical Specs/"
+```
+
+## Recent Commits
+
+```text
+c3daea1 CODEX backup 2026-04-24 20:12:56
+7988d22 CODEX backup 2026-04-24 20:09:52
+86f0696 CODEX backup 2026-04-24 20:05:00
+2f33b38 CODEX backup 2026-04-24 19:50:06
+fee041d CODEX backup 2026-04-24 19:41:16
+```
+
+## Fresh Chat Resume Prompt
+
+```text
+CODEX RESUME PG
+
+Read these first:
+C:\CODEX PG\CODEX Docs\CODEX_PROJECT_MEMORY.md
+C:\CODEX PG\CODEX Docs\CODEX_CURRENT_HANDOFF.md
+C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md
+
+Then check:
+C:\CODEX PG git status
+GitHub repo: https://github.com/DarrinRap/CODEX-PG.git
+
+Remember:
+- All Codex files stay under C:\CODEX PG
+- Every Codex folder starts with CODEX
+- C:\panda-gallery is read-only reference only
+- Continue from the latest handoff
+
+Latest automated handoff generated: 2026-04-24 20:20:52 -07:00
+```
+
+## Trigger Words
+
+- CODEX HANDOFF: run full handoff plus GitHub backup.
+- CODEX CHECKPOINT: save a progress checkpoint plus GitHub backup.
+- CODEX BACKUP: run GitHub backup only.
+- CODEX RESUME PG: start a new chat from memory and handoff files.

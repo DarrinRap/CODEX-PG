@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery — Instruction Pane redesign v1 (closes #107 #108 #110 #111)</title>
+<style>
+  :root {
+    /* Palette — all pulled from existing styles.py; nothing new. */
+    --bg-deep:     #14141f;
+    --bg-pane:     #1a1a2e;
+    --bg-hover:    #22223a;
+    --border:      #2a2a3e;
+    --border-soft: #232336;
+    --text:        #e0ddd5;
+    --text-dim:    #6a6a78;
+    --text-muted:  #888;
+    --text-strong: #ffffff;
+    --accent:      #e8a87c;
+    --accent-dim:  #d4945a;
+    --ok:          #5ab87a;
+    --ok-dot:      #7fb069;
+    --ok-soft:     rgba(90, 184, 122, 0.10);
+    --ok-border:   rgba(90, 184, 122, 0.55);
+    --fail:        #d46a6a;
+    --fail-soft:   rgba(212, 106, 106, 0.06);
+    --fail-border: rgba(212, 106, 106, 0.35);
+    --skip:        #8a8a9a;
+    --skip-border: rgba(138, 138, 154, 0.55);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0a0a12; color: var(--text);
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    font-size: 13px; line-height: 1.45;
+  }
+  .page { padding: 40px 32px 96px; max-width: 2000px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 6px; color: var(--text-strong); }
+  .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+  .sub code { background: var(--bg-pane); padding: 1px 5px; border-radius: 3px; font-size: 12px; color: var(--accent); }
+
+  h2 {
+    font-size: 16px; font-weight: 600;
+    margin: 40px 0 8px; color: var(--text-strong);
+  }
+  h2 + .h2sub { font-size: 12px; color: var(--text-muted); margin: 0 0 18px; }
+
+  .principles {
+    background: var(--bg-pane);
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    margin: 16px 0 32px;
+    border-radius: 3px;
+  }
+  .principles h3 { margin: 0 0 6px; font-size: 13px; color: var(--accent); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .principles ul { margin: 0; padding-left: 20px; color: var(--text); font-size: 13px; }
+  .principles li { margin: 3px 0; }
+
+  /* === Pane container === */
+  .rack {
+    display: flex; gap: 28px; flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .pane-wrap {
+    display: flex; flex-direction: column;
+  }
+  .pane-label {
+    font-size: 11px; color: var(--text-muted);
+    letter-spacing: 0.8px; text-transform: uppercase;
+    margin-bottom: 6px; padding-left: 2px;
+  }
+  .pane-label .tag {
+    background: var(--bg-pane);
+    color: var(--accent);
+    padding: 2px 7px; border-radius: 3px;
+    font-size: 10px; letter-spacing: 0.6px;
+    margin-left: 6px;
+  }
+  .pane-footer-note {
+    font-size: 11px; color: var(--text-dim);
+    margin-top: 6px; padding-left: 2px;
+    max-width: 560px;
+  }
+  .pane-footer-note em { color: var(--text-muted); font-style: normal; }
+
+  .pane {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  .pane.w560 { width: 560px; min-height: 640px; }
+  .pane.w480 { width: 480px; min-height: 560px; }
+  .pane.w420 { width: 420px; min-height: 560px; }
+
+  /* === Pane inner layout (root vertical stack) === */
+  .p-inner {
+    display: flex; flex-direction: column; flex: 1 1 auto;
+    padding: 20px 22px 16px;
+    gap: 14px;
+  }
+  .p-header {
+    display: flex; align-items: center; justify-content: flex-end;
+    height: 22px; margin-bottom: -6px;
+  }
+  .p-help {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-muted); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .p-progress {
+    font-size: 11px; color: var(--text-muted);
+    letter-spacing: 0.6px; text-transform: uppercase;
+    margin-bottom: -4px;
+  }
+  .p-title {
+    font-size: 17px; font-weight: 600;
+    color: var(--accent); letter-spacing: -0.1px;
+    line-height: 1.3;
+  }
+  .p-context {
+    background: var(--bg-pane);
+    border-left: 3px solid var(--border);
+    padding: 10px 14px;
+    color: var(--text-muted);
+    font-size: 12px;
+    border-radius: 0 3px 3px 0;
+  }
+  .p-body {
+    color: var(--text);
+    font-size: 13px; line-height: 1.55;
+  }
+  .p-body p { margin: 0 0 8px; }
+  .p-body p:last-child { margin-bottom: 0; }
+
+  .p-expected {
+    background: var(--bg-pane);
+    border-left: 3px solid var(--ok);
+    border-radius: 0 4px 4px 0;
+    padding: 12px 16px;
+  }
+  .p-expected-hdr {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1.3px; text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .p-expected-body { color: #c8c5bb; font-size: 13px; line-height: 1.5; }
+
+  .p-spacer { flex: 1 1 auto; min-height: 12px; }
+
+  /* Checklist view */
+  .p-checklist {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    flex: 1 1 auto;
+    display: flex; flex-direction: column;
+    min-height: 160px;
+  }
+  .p-checklist-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 2px 0;
+  }
+  .c-row {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 10px;
+    padding: 12px 16px 12px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    border-left: 2px solid transparent;
+    align-items: start;
+  }
+  .c-row:last-child { border-bottom: none; }
+  .c-row .c-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid var(--text-dim);
+    background: transparent;
+    margin-top: 3px;
+  }
+  .c-row .c-label {
+    font-size: 13px; color: var(--text-muted);
+    line-height: 1.45;
+  }
+  .c-row[data-state="active"] {
+    background: rgba(232, 168, 124, 0.04);
+    border-left-color: var(--accent);
+  }
+  .c-row[data-state="active"] .c-dot { border-color: var(--accent); }
+  .c-row[data-state="active"] .c-label { color: var(--text); font-weight: 500; }
+  .c-row[data-state="pass"] .c-dot { background: var(--ok-dot); border-color: var(--ok-dot); }
+  .c-row[data-state="fail"] .c-dot { background: var(--fail); border-color: var(--fail); }
+  .c-row[data-state="skip"] .c-dot {
+    border-color: var(--skip);
+    position: relative;
+  }
+  .c-row[data-state="skip"] .c-dot::after {
+    content: ""; position: absolute;
+    top: 50%; left: 3px; right: 3px; height: 1.5px;
+    background: var(--skip); transform: translateY(-50%);
+  }
+  .c-row[data-state="fail"] .c-inline-note {
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: var(--fail-soft);
+    border-left: 2px solid var(--fail);
+    border-radius: 0 3px 3px 0;
+  }
+  .c-row[data-state="fail"] .c-inline-note-hdr {
+    font-size: 10px; font-weight: 700; color: var(--fail);
+    letter-spacing: 1.1px; text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .c-row[data-state="fail"] .c-inline-note-body {
+    font-size: 12px; color: var(--text); line-height: 1.5;
+  }
+
+  /* Summary strip (above action bar, checklist-only, when any answered) */
+  .p-summary {
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 4px 4px;
+    font-size: 12px; color: var(--text-muted);
+    gap: 10px;
+  }
+  .p-summary .count { font-weight: 600; }
+  .p-summary .count.ok   { color: var(--ok-dot); }
+  .p-summary .count.fail { color: var(--fail); }
+  .p-summary .count.skip { color: var(--skip); }
+  .p-summary .sep { color: var(--text-dim); }
+
+  /* FAIL panel (replaces row-internal panel from prior design — always at pane-bottom, anchored above action bar) */
+  .p-fail-panel {
+    background: var(--bg-pane);
+    border: 1px solid var(--fail-border);
+    border-radius: 5px;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .p-fail-panel-hdr {
+    font-size: 10px; font-weight: 700; color: var(--fail);
+    letter-spacing: 1.1px; text-transform: uppercase;
+  }
+  .p-fail-panel-edit {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 13px; line-height: 1.5;
+    min-height: 64px;
+    max-height: 84px;
+    overflow-y: auto;
+    resize: none;
+    width: 100%;
+    font-family: inherit;
+  }
+  .p-fail-panel-edit:focus { border-color: var(--accent); outline: none; }
+  .p-fail-panel-edit.empty::before {
+    content: "What happened? Steps to reproduce, observed vs expected…";
+    color: var(--text-dim);
+  }
+
+  /* Action bar — pane footer, always reachable */
+  .p-actionbar {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding-top: 4px;
+    margin-top: 2px;
+  }
+  .p-actionbar .spacer { flex: 1 1 auto; }
+  .btn {
+    padding: 8px 16px;
+    font-size: 12px; font-weight: 500;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    min-height: 32px;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg-hover); color: var(--text); }
+  .btn.pass {
+    color: var(--ok);
+    border-color: var(--ok-border);
+  }
+  .btn.pass:hover { background: var(--ok-soft); border-color: var(--ok); }
+  .btn.fail {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .btn.fail:hover { background: rgba(232, 168, 124, 0.10); }
+  .btn.skip {
+    color: var(--skip);
+    border-color: var(--skip-border);
+  }
+  .btn.skip:hover { background: rgba(138, 138, 154, 0.10); }
+  .btn.next {
+    background: var(--accent);
+    color: var(--bg-deep);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .btn.next:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
+  .btn.save {
+    color: var(--fail);
+    border-color: var(--fail);
+  }
+  .btn.save:hover { background: rgba(212, 106, 106, 0.10); }
+  .btn[data-state="disabled"] {
+    color: #444; border-color: var(--border); cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .btn.wide { min-width: 76px; }
+
+  /* Call-out annotations */
+  .callout {
+    position: relative;
+    border: 1px dashed var(--accent);
+    border-radius: 4px;
+  }
+  .callout::after {
+    content: attr(data-note);
+    position: absolute;
+    top: -20px; right: 0;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.3px;
+    background: #0a0a12;
+    padding: 0 4px;
+  }
+
+  .legend {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    margin: 20px 0 32px;
+    padding: 16px 20px;
+    background: var(--bg-pane);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-sw {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid var(--text-dim);
+  }
+  .legend-sw.pending  {}
+  .legend-sw.active   { border-color: var(--accent); }
+  .legend-sw.pass     { background: var(--ok-dot); border-color: var(--ok-dot); }
+  .legend-sw.fail     { background: var(--fail); border-color: var(--fail); }
+  .legend-sw.skip     { border-color: var(--skip); position: relative; }
+  .legend-sw.skip::after {
+    content: ""; position: absolute;
+    top: 50%; left: 3px; right: 3px; height: 1.5px;
+    background: var(--skip); transform: translateY(-50%);
+  }
+
+  .changelog {
+    margin-top: 60px; padding: 20px 24px;
+    background: var(--bg-pane);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .changelog h3 { margin: 0 0 10px; font-size: 13px; color: var(--accent); font-weight: 600; letter-spacing: 0.5px; }
+  .changelog ul { margin: 0; padding-left: 22px; color: var(--text); }
+  .changelog li { margin: 4px 0; }
+  .changelog li .k { color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Instruction Pane — redesign v1</h1>
+<p class="sub">Target file: <code>instruction_pane.py</code> · Closes: <code>#107</code> (two-row footer waste) · <code>#108</code> (oversized FAIL textarea) · <code>#110</code> (in-row PASS/FAIL/SKIP scroll out of view) · <code>#111</code> (cramped/not modern)</p>
+
+<div class="principles">
+  <h3>Design principles</h3>
+  <ul>
+    <li><strong>Action bar is always reachable.</strong> PASS / FAIL / SKIP / Next live at the pane bottom, sibling to Cancel / Pause / Back. They never scroll with content.</li>
+    <li><strong>Breathing room.</strong> Root padding 20/22, section gap 14, button height 32, all uniform. No squished corners.</li>
+    <li><strong>FAIL textarea is capped.</strong> min 64, max 84, internal scroll on overflow. Never dominates the pane.</li>
+    <li><strong>One content area per step kind.</strong> Single-expected shows body + EXPECTED + filler. Checklist shows body + scrolling list + summary strip. Mutually exclusive.</li>
+    <li><strong>Summary strip is subtle but present.</strong> Right-aligned, muted text, one line above the action bar. Counts use the existing dot colors.</li>
+    <li><strong>No new colors.</strong> Everything pulled from styles.py.</li>
+  </ul>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-sw pending"></span>pending</div>
+  <div class="legend-item"><span class="legend-sw active"></span>active</div>
+  <div class="legend-item"><span class="legend-sw pass"></span>pass</div>
+  <div class="legend-item"><span class="legend-sw fail"></span>fail</div>
+  <div class="legend-item"><span class="legend-sw skip"></span>skip</div>
+</div>
+
+<!-- ================================================================= -->
+<!-- State 1: single-expected idle -->
+<!-- ================================================================= -->
+
+<h2>State 1 — Single-expected step, idle</h2>
+<p class="h2sub">Active buttons: Cancel · Pause · ← Back · PASS · FAIL</p>
+
+<div class="rack">
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560 (default) <span class="tag">DESKTOP</span></div>
+    <div class="pane w560">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 3 of 8 · T-A2-open</div>
+        <div class="p-title">Open the Import dialog</div>
+        <div class="p-context">Context loaded from step 1 — the first-step-only context block renders here when present.</div>
+        <div class="p-body">
+          <p>Click <strong>File → Import</strong>, or press <kbd>Ctrl+I</kbd>. The dialog should open within 200ms.</p>
+          <p>If the Settings dialog is currently open, close it first.</p>
+        </div>
+        <div class="p-expected">
+          <div class="p-expected-hdr">Expected</div>
+          <div class="p-expected-body">Import dialog visible on top of MainWindow. Title bar reads "Import images." No console errors.</div>
+        </div>
+        <div class="p-spacer"></div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+          <button class="btn pass wide">PASS</button>
+          <button class="btn fail wide">FAIL</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane-footer-note"><em>New default width — 560px</em>. Previous default was 420px; the bump gives real breathing room for long bodies and for the action bar.</div>
+  </div>
+
+  <div class="pane-wrap">
+    <div class="pane-label">Width 480 (medium)</div>
+    <div class="pane w480">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 3 of 8 · T-A2-open</div>
+        <div class="p-title">Open the Import dialog</div>
+        <div class="p-body">
+          <p>Click <strong>File → Import</strong>, or press <kbd>Ctrl+I</kbd>.</p>
+        </div>
+        <div class="p-expected">
+          <div class="p-expected-hdr">Expected</div>
+          <div class="p-expected-body">Import dialog visible. Title bar reads "Import images."</div>
+        </div>
+        <div class="p-spacer"></div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+          <button class="btn pass wide">PASS</button>
+          <button class="btn fail wide">FAIL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- State 2: single-expected FAIL panel open -->
+<!-- ================================================================= -->
+
+<h2>State 2 — Single-expected, FAIL panel open</h2>
+<p class="h2sub">Active buttons: Cancel · Pause · ← Back · (panel) Cancel · SAVE FAIL. Textarea capped at 84px — no matter how much you type, the action bar stays reachable.</p>
+
+<div class="rack">
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560 · textarea empty → SAVE FAIL disabled</div>
+    <div class="pane w560">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 3 of 8 · T-A2-open</div>
+        <div class="p-title">Open the Import dialog</div>
+        <div class="p-body">
+          <p>Click <strong>File → Import</strong>, or press <kbd>Ctrl+I</kbd>.</p>
+        </div>
+        <div class="p-expected">
+          <div class="p-expected-hdr">Expected</div>
+          <div class="p-expected-body">Import dialog visible. Title bar reads "Import images."</div>
+        </div>
+        <div class="p-spacer"></div>
+        <div class="p-fail-panel">
+          <div class="p-fail-panel-hdr">Describe what failed</div>
+          <div class="p-fail-panel-edit empty" contenteditable="true"></div>
+          <div class="p-actionbar" style="padding-top:0;margin-top:0;">
+            <span class="spacer"></span>
+            <button class="btn">Cancel</button>
+            <button class="btn save" data-state="disabled">SAVE FAIL</button>
+          </div>
+        </div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+        </div>
+      </div>
+    </div>
+    <div class="pane-footer-note"><em>Two action rows:</em> the FAIL panel carries its own Cancel/SAVE FAIL (Esc / Enter). The pane's own Cancel/Pause/Back stay below. PASS/FAIL buttons hide while panel is open — you're committed to saving or cancelling.</div>
+  </div>
+
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560 · textarea has text → SAVE FAIL enabled</div>
+    <div class="pane w560">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 3 of 8 · T-A2-open</div>
+        <div class="p-title">Open the Import dialog</div>
+        <div class="p-body">
+          <p>Click <strong>File → Import</strong>, or press <kbd>Ctrl+I</kbd>.</p>
+        </div>
+        <div class="p-expected">
+          <div class="p-expected-hdr">Expected</div>
+          <div class="p-expected-body">Import dialog visible. Title bar reads "Import images."</div>
+        </div>
+        <div class="p-spacer"></div>
+        <div class="p-fail-panel">
+          <div class="p-fail-panel-hdr">Describe what failed</div>
+          <div class="p-fail-panel-edit" contenteditable="true">Dialog appears but title bar reads "Untitled dialog" instead of "Import images."
+
+Also: the OK button appears before the Cancel button, which is inverted from every other dialog in the app.</div>
+          <div class="p-actionbar" style="padding-top:0;margin-top:0;">
+            <span class="spacer"></span>
+            <button class="btn">Cancel</button>
+            <button class="btn save">SAVE FAIL</button>
+          </div>
+        </div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+        </div>
+      </div>
+    </div>
+    <div class="pane-footer-note"><em>Even with 4+ lines typed</em>, the textarea hits its 84px cap and scrolls internally. Buttons stay reachable.</div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- State 3: checklist, no answers -->
+<!-- ================================================================= -->
+
+<h2>State 3 — Checklist step, nothing answered yet</h2>
+<p class="h2sub">Active buttons: Cancel · Pause · ← Back · PASS · FAIL · SKIP. Summary strip hidden (any_answered=false).</p>
+
+<div class="rack">
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560</div>
+    <div class="pane w560">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 4 of 8 · T-A3-import</div>
+        <div class="p-title">Verify Import dialog fields</div>
+        <div class="p-body">
+          <p>With the Import dialog open from the previous step, check each field in turn.</p>
+        </div>
+        <div class="p-checklist">
+          <div class="p-checklist-scroll">
+            <div class="c-row" data-state="active">
+              <div class="c-dot"></div>
+              <div class="c-label">Path picker accepts both forward slashes and backslashes without error. Try pasting a Windows path.</div>
+            </div>
+            <div class="c-row" data-state="pending">
+              <div class="c-dot"></div>
+              <div class="c-label">Patient dropdown lists all 4 existing patients plus a "+ New patient" option at the bottom.</div>
+            </div>
+            <div class="c-row" data-state="pending">
+              <div class="c-dot"></div>
+              <div class="c-label">"Cancel" and "Import" buttons are positioned correctly — Cancel on the left, Import on the right (primary).</div>
+            </div>
+            <div class="c-row" data-state="pending">
+              <div class="c-dot"></div>
+              <div class="c-label">Dialog can be dismissed with Esc without creating a phantom patient entry.</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+          <button class="btn pass wide">PASS</button>
+          <button class="btn fail wide">FAIL</button>
+          <button class="btn skip wide">SKIP</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane-footer-note"><strong>#110 fix:</strong> PASS/FAIL/SKIP are siblings of Cancel/Pause/Back. Scrolling the checklist does not move them. Active row is marked with amber accent + solid amber dot border; other rows are muted.</div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- State 4: checklist, 1 pass 0 fail 0 skip -->
+<!-- ================================================================= -->
+
+<h2>State 4 — Checklist, one item answered</h2>
+<p class="h2sub">Summary strip visible above action bar. Active row advances to item 2.</p>
+
+<div class="rack">
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560 — strip with 1 pass</div>
+    <div class="pane w560">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 4 of 8 · T-A3-import</div>
+        <div class="p-title">Verify Import dialog fields</div>
+        <div class="p-body">
+          <p>With the Import dialog open from the previous step, check each field in turn.</p>
+        </div>
+        <div class="p-checklist">
+          <div class="p-checklist-scroll">
+            <div class="c-row" data-state="pass">
+              <div class="c-dot"></div>
+              <div class="c-label">Path picker accepts both forward slashes and backslashes without error. Try pasting a Windows path.</div>
+            </div>
+            <div class="c-row" data-state="active">
+              <div class="c-dot"></div>
+              <div class="c-label">Patient dropdown lists all 4 existing patients plus a "+ New patient" option at the bottom.</div>
+            </div>
+            <div class="c-row" data-state="pending">
+              <div class="c-dot"></div>
+              <div class="c-label">"Cancel" and "Import" buttons are positioned correctly — Cancel on the left, Import on the right (primary).</div>
+            </div>
+            <div class="c-row" data-state="pending">
+              <div class="c-dot"></div>
+              <div class="c-label">Dialog can be dismissed with Esc without creating a phantom patient entry.</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-summary">
+          <span class="count ok">1 pass</span>
+          <span class="sep">·</span>
+          <span class="count fail">0 fail</span>
+          <span class="sep">·</span>
+          <span class="count skip">0 skip</span>
+        </div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+          <button class="btn pass wide">PASS</button>
+          <button class="btn fail wide">FAIL</button>
+          <button class="btn skip wide">SKIP</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane-footer-note"><strong>#111 addresses "strip too subtle":</strong> kept right-aligned and muted (respects the existing design language), but now with proper padding + font 12px (was 11) + closer to the action bar so the eye picks it up naturally during answering.</div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- State 5: checklist FAIL panel open — the biggest win -->
+<!-- ================================================================= -->
+
+<h2>State 5 — Checklist, FAIL panel open</h2>
+<p class="h2sub"><strong>This is the #110 + #108 fix in one frame.</strong> FAIL panel mounts at pane-bottom, anchored above the action bar. Textarea capped. Action bar for the panel (Cancel / SAVE FAIL) sits immediately below the textarea. Pane's own Cancel/Pause/Back still below that.</p>
+
+<div class="rack">
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560 · panel open, text typed</div>
+    <div class="pane w560">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 4 of 8 · T-A3-import</div>
+        <div class="p-title">Verify Import dialog fields</div>
+        <div class="p-body">
+          <p>With the Import dialog open from the previous step, check each field in turn.</p>
+        </div>
+        <div class="p-checklist">
+          <div class="p-checklist-scroll">
+            <div class="c-row" data-state="pass">
+              <div class="c-dot"></div>
+              <div class="c-label">Path picker accepts both forward slashes and backslashes.</div>
+            </div>
+            <div class="c-row" data-state="active">
+              <div class="c-dot"></div>
+              <div class="c-label">Patient dropdown lists all 4 existing patients plus a "+ New patient" option.</div>
+            </div>
+            <div class="c-row" data-state="pending">
+              <div class="c-dot"></div>
+              <div class="c-label">"Cancel" and "Import" buttons are positioned correctly.</div>
+            </div>
+            <div class="c-row" data-state="pending">
+              <div class="c-dot"></div>
+              <div class="c-label">Dialog can be dismissed with Esc.</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-fail-panel">
+          <div class="p-fail-panel-hdr">Describe what failed — item 2</div>
+          <div class="p-fail-panel-edit" contenteditable="true">Dropdown shows only 3 patients — Williams, Bob is missing. Verified in DB that patient row exists.
+
+"+ New patient" option also missing from the bottom of the dropdown.</div>
+          <div class="p-actionbar" style="padding-top:0;margin-top:0;">
+            <span class="spacer"></span>
+            <button class="btn">Cancel</button>
+            <button class="btn save">SAVE FAIL</button>
+          </div>
+        </div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+        </div>
+      </div>
+    </div>
+    <div class="pane-footer-note"><strong>Architectural change from current:</strong> FAIL panel no longer lives inside the checklist row. It mounts at pane-bottom where it cannot be scrolled past, and where the action bar for the panel (<em>Cancel / SAVE FAIL</em>) is always at the same y-coordinate regardless of checklist length or row label height. This single move closes <strong>#108</strong> (textarea sizing) and <strong>#110</strong> (scroll-to-save) together.</div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- State 6: checklist all answered, re-answer state -->
+<!-- ================================================================= -->
+
+<h2>State 6 — Checklist all answered (re-answer state)</h2>
+<p class="h2sub">After first-completion auto-advance fires once, if user goes Back to this step the Next button takes over from PASS/FAIL/SKIP. Strip shows final counts.</p>
+
+<div class="rack">
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560 — 2 pass, 1 fail, 1 skip</div>
+    <div class="pane w560">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Step 4 of 8 · T-A3-import</div>
+        <div class="p-title">Verify Import dialog fields</div>
+        <div class="p-body">
+          <p>With the Import dialog open from the previous step, check each field in turn.</p>
+        </div>
+        <div class="p-checklist">
+          <div class="p-checklist-scroll">
+            <div class="c-row" data-state="pass">
+              <div class="c-dot"></div>
+              <div class="c-label">Path picker accepts both forward slashes and backslashes.</div>
+            </div>
+            <div class="c-row" data-state="fail">
+              <div class="c-dot"></div>
+              <div class="c-label">Patient dropdown lists all 4 existing patients plus a "+ New patient" option.
+                <div class="c-inline-note">
+                  <div class="c-inline-note-hdr">FAIL</div>
+                  <div class="c-inline-note-body">Dropdown shows only 3 patients — Williams, Bob is missing.</div>
+                </div>
+              </div>
+            </div>
+            <div class="c-row" data-state="pass">
+              <div class="c-dot"></div>
+              <div class="c-label">"Cancel" and "Import" buttons are positioned correctly.</div>
+            </div>
+            <div class="c-row" data-state="skip">
+              <div class="c-dot"></div>
+              <div class="c-label">Dialog can be dismissed with Esc.</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-summary">
+          <span class="count ok">2 pass</span>
+          <span class="sep">·</span>
+          <span class="count fail">1 fail</span>
+          <span class="sep">·</span>
+          <span class="count skip">1 skip</span>
+        </div>
+        <div class="p-actionbar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">← Back</button>
+          <span class="spacer"></span>
+          <button class="btn next wide">Next →</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane-footer-note"><strong>#107 fix:</strong> Next button lives in the same action bar as everything else — no separate footer row below the scroll area. The old <code>_footer</code> widget inside <code>ChecklistStepView</code> is deleted.</div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- State 7: summary view -->
+<!-- ================================================================= -->
+
+<h2>State 7 — Instructions complete (summary)</h2>
+<p class="h2sub">Single Close button replaces all action buttons. Summary strip hidden.</p>
+
+<div class="rack">
+  <div class="pane-wrap">
+    <div class="pane-label">Width 560</div>
+    <div class="pane w560" style="min-height:400px">
+      <div class="p-inner">
+        <div class="p-header"><button class="p-help">?</button></div>
+        <div class="p-progress">Complete</div>
+        <div class="p-title">✓ Instructions complete</div>
+        <div class="p-body">
+          <p>8 steps finished in 12m 34s.</p>
+        </div>
+        <div class="p-spacer"></div>
+        <div class="p-actionbar">
+          <span class="spacer"></span>
+          <button class="btn pass wide">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- Changelog / handoff -->
+<!-- ================================================================= -->
+
+<div class="changelog">
+  <h3>What changes in code (summary)</h3>
+  <ul>
+    <li><span class="k">REMOVED:</span> <code>_ChecklistRow._actions_host</code> + row-level PASS/FAIL/SKIP buttons + their signals (<code>pass_clicked</code>, <code>fail_clicked</code>, <code>skip_clicked</code>) + slots (<code>_on_row_pass</code>, etc.).</li>
+    <li><span class="k">REMOVED:</span> <code>ChecklistStepView._footer</code> + <code>_summary_lbl</code> + <code>_next_btn</code> + <code>_update_footer</code>.</li>
+    <li><span class="k">REMOVED from styles.py:</span> <code>#checklistBtnPass</code>, <code>#checklistBtnFail</code>, <code>#checklistBtnSkip</code>, <code>#checklistFooter</code>, <code>#checklistFooterSummary</code>, <code>#checklistFooterNext</code> QSS blocks.</li>
+    <li><span class="k">KEPT:</span> <code>_ChecklistRow._extra_host</code> for <code>show_fail_note</code> (the inline red note strip on answered-FAIL rows, visible in state 6).</li>
+    <li><span class="k">MOVED:</span> FAIL panel from row-internal (<code>_ChecklistRow.show_fail_panel</code>) to pane-level (reuse existing <code>InstructionPane._fail_panel_host</code>, currently only used on single-expected). Both step kinds route to the same panel.</li>
+    <li><span class="k">ADDED:</span> Pane-level <code>_skip_btn</code> and <code>_next_btn</code> in the button row (stubs already exist from v3.69). Wire clicks to <code>_on_skip</code> and <code>_on_checklist_advance</code>.</li>
+    <li><span class="k">ADDED:</span> <code>_checklist_summary_lbl</code> — already present since v3.70 chunk 2. Keep as-is, continue to populate via <code>summary_changed</code> signal (chunk 3 code).</li>
+    <li><span class="k">CHANGED:</span> <code>MIN_SIZE = (560, 480)</code>, <code>DEFAULT_SIZE = (560, 640)</code>. Pane root padding 20/22. Section spacing 14.</li>
+    <li><span class="k">CHANGED:</span> <code>_FailNoteEdit</code> gains <code>setMaximumHeight(84)</code>. min stays ≥60.</li>
+    <li><span class="k">UNCHANGED:</span> keyboard shortcuts, pause contract, _on_checklist_state_changed wiring, results file writes, screenshot capture, WDA exclusion, schema validation.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

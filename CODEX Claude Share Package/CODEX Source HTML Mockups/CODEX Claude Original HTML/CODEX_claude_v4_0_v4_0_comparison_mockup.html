@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Comparison</title>
+<style>
+  :root {
+    --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+    --pane-selected:#2a2a4e; --border:#2a2a3e; --border-soft:#232336;
+    --text:#e0ddd5; --text-muted:#888; --text-dim:#555;
+    --accent:#e8a87c; --accent-hover:#d4945a; --accent-soft:rgba(232,168,124,0.12);
+    --accent-border:rgba(232,168,124,0.45); --accent-ink:#1a1a2e;
+    --ok:#7fb069; --warn:#f39c12; --err:#e74c3c;
+    --font-ui:"Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:"Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: var(--canvas); color: var(--text);
+    font-family: var(--font-ui); font-size: 13px; overflow: hidden;
+  }
+
+  .app {
+    width: 100vw; height: 100vh;
+    background: var(--canvas);
+    display: grid;
+    grid-template-rows: 44px 40px 1fr 120px 26px;
+    grid-template-columns: 1fr 300px;
+    grid-template-areas:
+      "titlebar titlebar"
+      "toolbar  toolbar"
+      "stage    notes"
+      "filmstrip notes"
+      "statusbar statusbar";
+  }
+
+  /* Title bar */
+  .titlebar {
+    grid-area: titlebar;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 16px;
+  }
+  .tb-icon {
+    width: 22px; height: 22px; margin-right: 10px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain; background-position: center; background-repeat: no-repeat;
+    filter: drop-shadow(0 0 4px rgba(232,168,124,0.15));
+  }
+  .tb-title { font-size: 13px; color: var(--text); margin-right: 10px; }
+  .tb-title b {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700; letter-spacing: 1.5px; margin-right: 4px;
+  }
+  .breadcrumb {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-muted); font-size: 12px;
+  }
+  .breadcrumb-sep { color: var(--text-dim); font-size: 11px; }
+  .breadcrumb-current { color: var(--text); }
+  .tb-spacer { flex: 1; }
+  .back-btn {
+    height: 28px; padding: 0 12px;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 12px; cursor: pointer; font-family: var(--font-ui);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Toolbar */
+  .toolbar {
+    grid-area: toolbar;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 16px;
+  }
+  .tg { display: flex; align-items: center; gap: 4px; padding: 0 10px; }
+  .tg + .tg { border-left: 1px solid var(--border); }
+  .tg-label {
+    color: var(--text-muted); font-size: 10.5px;
+    margin-right: 6px; letter-spacing: 0.3px;
+  }
+  .btn {
+    height: 26px; padding: 0 10px;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 11px; font-family: var(--font-ui); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.active {
+    background: var(--pane-selected); color: var(--accent);
+    border-color: var(--accent);
+  }
+  .btn.primary {
+    background: var(--accent); color: var(--accent-ink);
+    border-color: var(--accent); font-weight: 600;
+  }
+  .btn.primary:hover {
+    background: var(--accent-hover); border-color: var(--accent-hover);
+  }
+  .zoom-readout {
+    color: var(--text); font-family: var(--font-mono);
+    font-size: 11px; padding: 0 6px;
+    min-width: 46px; text-align: center;
+  }
+
+  /* Stage — the side-by-side images */
+  .stage {
+    grid-area: stage;
+    background: #0a0a14;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    overflow: hidden;
+  }
+  .viewport {
+    position: relative;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+  .viewport:last-child { border-right: none; }
+  .vp-label {
+    position: absolute;
+    top: 12px; left: 12px;
+    padding: 4px 10px;
+    background: rgba(20,20,31,0.85);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text); font-size: 11px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    z-index: 5;
+    backdrop-filter: blur(8px);
+  }
+  .vp-label .date { color: var(--text-muted); margin-left: 6px; }
+  .vp-label.after .tag { color: var(--accent); }
+
+  .vp-stage {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+    position: relative;
+  }
+
+  /* Fake radiograph stages — same image with different "times" */
+  .radio {
+    width: 100%; max-width: 520px;
+    aspect-ratio: 4/3;
+    background:
+      radial-gradient(ellipse at 50% 45%, #7a7a8a 0%, #30304a 40%, #0a0a14 100%);
+    border-radius: 2px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .radio.before {
+    /* Lower contrast — the "before" */
+    background:
+      radial-gradient(ellipse at 50% 45%, #5a5a6a 0%, #30304a 40%, #14141f 100%);
+    filter: brightness(0.8) contrast(0.85);
+  }
+  .radio.after {
+    /* Higher contrast — post Auto Enhance */
+    background:
+      radial-gradient(ellipse at 50% 45%, #9a9aaa 0%, #2a2a40 40%, #05050a 100%);
+    filter: contrast(1.15);
+  }
+
+  /* Annotations (visible on after) */
+  .anno {
+    position: absolute;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .anno::after {
+    content: attr(data-label);
+    position: absolute; top: -22px; left: 0;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 1px 6px; font-size: 10px; font-weight: 600; border-radius: 2px;
+    font-family: var(--font-mono); white-space: nowrap;
+  }
+  .anno.circle { border-radius: 50%; }
+
+  /* Split / swipe mode divider */
+  .divider {
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 2px;
+    background: var(--accent);
+    opacity: 0.4;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .divider::before {
+    content: "";
+    position: absolute; top: 50%; left: 50%;
+    width: 28px; height: 28px;
+    margin-top: -14px; margin-left: -14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--accent-ink);
+    box-shadow: 0 0 12px rgba(232,168,124,0.4);
+  }
+  .divider::after {
+    content: "↔";
+    position: absolute; top: 50%; left: 50%;
+    width: 28px; height: 28px;
+    margin-top: -14px; margin-left: -14px;
+    color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+  }
+
+  /* Filmstrip */
+  .filmstrip {
+    grid-area: filmstrip;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .fs-hdr {
+    height: 24px; padding: 0 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .fs-label {
+    color: var(--text-dim); font-size: 10px; font-weight: 600;
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .fs-hint {
+    color: var(--text-muted); font-size: 10.5px;
+    font-family: var(--font-mono);
+  }
+  .fs-scroll {
+    flex: 1; overflow-x: auto; overflow-y: hidden;
+    padding: 8px 12px;
+  }
+  .fs-row { display: flex; gap: 6px; height: 100%; }
+  .fs-thumb {
+    aspect-ratio: 4/3; height: 100%;
+    border: 1.5px solid transparent; border-radius: 3px;
+    flex-shrink: 0; cursor: pointer;
+    position: relative;
+  }
+  .fs-thumb:hover { border-color: var(--border); }
+  .fs-thumb.left-picked {
+    border-color: var(--text-muted);
+    box-shadow: 0 0 0 1px rgba(136,136,136,0.4);
+  }
+  .fs-thumb.left-picked::before {
+    content: "A";
+    position: absolute; top: 3px; left: 3px;
+    background: var(--text-muted); color: var(--canvas);
+    padding: 0 5px; font-size: 9px; font-weight: 700;
+    border-radius: 2px; font-family: var(--font-mono);
+  }
+  .fs-thumb.right-picked {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-border);
+  }
+  .fs-thumb.right-picked::before {
+    content: "B";
+    position: absolute; top: 3px; left: 3px;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 0 5px; font-size: 9px; font-weight: 700;
+    border-radius: 2px; font-family: var(--font-mono);
+  }
+  .thumb-img {
+    width: 100%; height: 100%;
+    border-radius: 2px;
+  }
+  .radio-1 { background: radial-gradient(ellipse at 60% 45%, #4a4a5a, #1f1f2e 55%, #0a0a14); }
+  .radio-2 { background: radial-gradient(ellipse at 40% 50%, #555566, #252538 50%, #0f0f18); }
+  .radio-3 { background: radial-gradient(ellipse at 50% 55%, #4e4e5e, #21212f 55%, #0d0d16); }
+  .radio-4 { background: radial-gradient(ellipse at 55% 45%, #525262, #23233a 55%, #0a0a14); }
+  .radio-5 { background: radial-gradient(ellipse at 45% 50%, #4d4d5d, #202030 55%, #090912); }
+  .radio-6 { background: radial-gradient(ellipse at 50% 50%, #6a6a7a, #252540 55%, #0a0a14); filter: contrast(1.1); }
+
+  /* Notes panel on right */
+  .notes {
+    grid-area: notes;
+    background: var(--pane);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    min-height: 0;
+  }
+  .notes-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .notes-title {
+    color: var(--accent); font-size: 10.5px; font-weight: 700;
+    letter-spacing: 1.8px; text-transform: uppercase;
+  }
+  .notes-body {
+    flex: 1; overflow-y: auto; padding: 14px 16px;
+  }
+
+  .nsect {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 10px 0;
+  }
+  .nsect:last-child { border-bottom: none; }
+  .nsect-title {
+    color: var(--text-muted); font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .nsect-meta {
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-dim);
+    font-weight: 400; letter-spacing: 0.3px;
+  }
+
+  .ninfo-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 11.5px;
+  }
+  .ninfo-row .col { display: flex; flex-direction: column; gap: 1px; }
+  .ninfo-row .k { color: var(--text-dim); font-size: 10px; letter-spacing: 0.3px; }
+  .ninfo-row .v { color: var(--text); font-family: var(--font-mono); font-size: 11px; }
+  .ninfo-row .col.accent .k { color: var(--accent); }
+
+  .diff-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 4px; align-items: center;
+    padding: 4px 0;
+    font-size: 11.5px;
+  }
+  .diff-label { color: var(--text-muted); font-size: 11px; grid-column: 1 / -1; margin-bottom: 2px; }
+  .diff-bar {
+    height: 6px; background: var(--pane-raised);
+    border-radius: 3px; overflow: hidden;
+    position: relative;
+  }
+  .diff-fill {
+    position: absolute; top: 0; bottom: 0;
+    background: var(--accent); opacity: 0.8; border-radius: 3px;
+  }
+  .diff-fill.left  { right: 50%; }
+  .diff-fill.right { left: 50%; }
+  .diff-center {
+    color: var(--text-dim); font-family: var(--font-mono);
+    font-size: 10px; text-align: center;
+  }
+  .diff-val-l, .diff-val-r {
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--text);
+  }
+  .diff-val-l { text-align: right; padding-right: 4px; }
+  .diff-val-r { text-align: left; padding-left: 4px; }
+
+  .notes-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 3px; color: var(--text);
+    font-size: 12px; font-family: var(--font-ui);
+    padding: 8px 10px; outline: none; resize: vertical;
+    line-height: 1.5;
+  }
+  .notes-textarea:focus { border-color: var(--accent); }
+
+  .notes-actions {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-soft);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  }
+
+  /* Status bar */
+  .statusbar {
+    grid-area: statusbar;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 14px; gap: 16px;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .sb-mode {
+    color: #9a9aa8; font-weight: 700; letter-spacing: 1.5px;
+    padding-right: 14px; border-right: 1px solid var(--border);
+    font-size: 10.5px;
+  }
+  .sb-sep { color: var(--border); }
+  .sb-item { font-family: var(--font-mono); font-size: 10.5px; }
+  .sb-spacer { flex: 1; }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="titlebar">
+    <div class="tb-icon"></div>
+    <div class="tb-title"><b>PANDA</b>Gallery</div>
+    <div class="breadcrumb">
+      <span class="breadcrumb-sep">›</span>
+      <span>Adams, Deborah</span>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Compare — before / after treatment</span>
+    </div>
+    <div class="tb-spacer"></div>
+    <button class="back-btn">← Back to Library</button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+
+    <div class="tg">
+      <span class="tg-label">Layout:</span>
+      <button class="btn active">Side-by-side</button>
+      <button class="btn">Stacked</button>
+      <button class="btn">Grid (4)</button>
+      <button class="btn">Split swipe</button>
+    </div>
+
+    <div class="tg">
+      <span class="tg-label">Zoom:</span>
+      <button class="btn" style="padding: 0 8px;">−</button>
+      <span class="zoom-readout">135%</span>
+      <button class="btn" style="padding: 0 8px;">+</button>
+      <button class="btn">Fit</button>
+      <button class="btn active" title="Synchronized pan/zoom">🔗 Sync</button>
+    </div>
+
+    <div class="tg">
+      <span class="tg-label">Overlay:</span>
+      <button class="btn active">Annotations</button>
+      <button class="btn">Measurements</button>
+      <button class="btn">Heatmap diff</button>
+    </div>
+
+    <div style="flex: 1;"></div>
+
+    <div class="tg">
+      <button class="btn">Export as image</button>
+      <button class="btn primary">Save as Series</button>
+    </div>
+
+  </div>
+
+  <!-- Stage -->
+  <div class="stage">
+
+    <div class="viewport">
+      <div class="vp-label">
+        <span class="tag">A · BEFORE</span>
+        <span class="date">2026-01-22 · PA_01_22_03</span>
+      </div>
+      <div class="vp-stage">
+        <div class="radio before"></div>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vp-label after">
+        <span class="tag">B · AFTER</span>
+        <span class="date">2026-03-14 · PA_03_14_07</span>
+      </div>
+      <div class="vp-stage">
+        <div class="radio after">
+          <div class="anno" data-label="#15 apex" style="top: 32%; left: 46%; width: 18%; height: 20%;"></div>
+          <div class="anno circle" data-label="PDL" style="top: 52%; left: 30%; width: 12%; height: 18%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optional: centered divider for swipe mode (kept subtle) -->
+    <div class="divider"></div>
+
+  </div>
+
+  <!-- Filmstrip -->
+  <div class="filmstrip">
+    <div class="fs-hdr">
+      <div class="fs-label">Filmstrip · Adams, Deborah · all PAs &amp; BWs</div>
+      <div class="fs-hint">Click to set A · Shift+Click to set B</div>
+    </div>
+    <div class="fs-scroll">
+      <div class="fs-row">
+        <div class="fs-thumb left-picked"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-4"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+        <div class="fs-thumb right-picked"><div class="thumb-img radio-6"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-4"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes panel -->
+  <div class="notes">
+    <div class="notes-head">
+      <div class="notes-title">Comparison · A ↔ B</div>
+    </div>
+    <div class="notes-body">
+
+      <div class="nsect">
+        <div class="nsect-title">
+          <span>Metadata</span>
+          <span class="nsect-meta">52 days apart</span>
+        </div>
+        <div class="ninfo-row">
+          <div class="col">
+            <span class="k">A · DATE</span>
+            <span class="v">2026-01-22</span>
+          </div>
+          <div class="col accent">
+            <span class="k">B · DATE</span>
+            <span class="v">2026-03-14</span>
+          </div>
+        </div>
+        <div class="ninfo-row">
+          <div class="col">
+            <span class="k">A · DIMENSIONS</span>
+            <span class="v">1456 × 1112</span>
+          </div>
+          <div class="col accent">
+            <span class="k">B · DIMENSIONS</span>
+            <span class="v">1456 × 1112</span>
+          </div>
+        </div>
+        <div class="ninfo-row">
+          <div class="col">
+            <span class="k">A · CATEGORY</span>
+            <span class="v">PA · Size 2</span>
+          </div>
+          <div class="col accent">
+            <span class="k">B · CATEGORY</span>
+            <span class="v">PA · Size 2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nsect">
+        <div class="nsect-title">
+          <span>Adjustment delta</span>
+          <span class="nsect-meta">3 edits</span>
+        </div>
+        <div class="diff-row">
+          <div class="diff-label">Brightness</div>
+          <div class="diff-val-l">0</div>
+          <div class="diff-bar">
+            <div class="diff-fill right" style="width: 7.5%;"></div>
+          </div>
+          <div class="diff-val-r">+15</div>
+        </div>
+        <div class="diff-row">
+          <div class="diff-label">Contrast</div>
+          <div class="diff-val-l">0</div>
+          <div class="diff-bar">
+            <div class="diff-fill right" style="width: 15%;"></div>
+          </div>
+          <div class="diff-val-r">+30</div>
+        </div>
+        <div class="diff-row">
+          <div class="diff-label">Sharpness</div>
+          <div class="diff-val-l">0</div>
+          <div class="diff-bar">
+            <div class="diff-fill right" style="width: 12.5%;"></div>
+          </div>
+          <div class="diff-val-r">+25</div>
+        </div>
+        <div class="diff-row">
+          <div class="diff-label">Invert</div>
+          <div class="diff-val-l">—</div>
+          <div class="diff-center" style="color: var(--accent);">✓</div>
+          <div class="diff-val-r">on</div>
+        </div>
+      </div>
+
+      <div class="nsect">
+        <div class="nsect-title">
+          <span>Clinical notes</span>
+          <span class="nsect-meta">Adams, Deborah</span>
+        </div>
+        <textarea class="notes-textarea" placeholder="Observations, comparisons, treatment notes…">52-day interval follow-up on #15. Apical radiolucency visible in A appears reduced post-RCT (B). PDL space at #14-15 shows improved clarity with contrast enhancement applied to B.</textarea>
+      </div>
+
+      <div class="nsect">
+        <div class="nsect-title">
+          <span>Tags</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+          <span style="padding: 2px 8px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 3px; font-size: 10.5px; font-family: var(--font-mono);">endo</span>
+          <span style="padding: 2px 8px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 3px; font-size: 10.5px; font-family: var(--font-mono);">follow-up</span>
+          <span style="padding: 2px 8px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 3px; font-size: 10.5px; font-family: var(--font-mono);">#15</span>
+          <button style="padding: 2px 8px; background: transparent; color: var(--text-dim); border: 1px dashed var(--border); border-radius: 3px; font-size: 10.5px; cursor: pointer;">+ add tag</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="notes-actions">
+      <button class="btn">Export PDF report</button>
+      <button class="btn primary">Send to Present</button>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span class="sb-mode">COMPARE</span>
+    <span class="sb-item">2 images</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">sync on · 135% · fit both</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">notes unsaved</span>
+    <span class="sb-spacer"></span>
+    <span class="sb-item">v4.0-dev</span>
+  </div>
+
+</div>
+
+</body>
+</html>

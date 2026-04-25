@@ -1,0 +1,3113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Design Mockups</title>
+<style>
+/* ==========================================================================
+   MASTER TAB STYLES — applied to the top-level tab bar
+   ========================================================================== */
+html, body { margin: 0; padding: 0; background: #14141f; color: #e0ddd5; font-family: "Segoe UI", "SF Pro", sans-serif; }
+
+.master-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #0e0e18;
+  border-bottom: 1px solid #2a2a3e;
+  display: flex;
+  align-items: stretch;
+  padding: 0 16px;
+  overflow-x: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.mt-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px 10px 0;
+  margin-right: 16px;
+  border-right: 1px solid #2a2a3e;
+  flex-shrink: 0;
+}
+.mt-brand-mark {
+  width: 28px; height: 28px;
+  background-image: url('data:image/png;base64,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');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 6px rgba(232, 168, 124, 0.18));
+}
+.mt-brand-text {
+  font-size: 13px; color: #e0ddd5; letter-spacing: 0.3px;
+}
+.mt-brand-text b {
+  background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-weight: 700; letter-spacing: 2px; margin-right: 4px;
+}
+.mt-brand-ver {
+  color: #555; font-family: "Cascadia Mono", "Consolas", monospace; font-size: 10px; margin-left: 6px;
+}
+
+.mt-btn {
+  padding: 0 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #888;
+  font-size: 13px;
+  font-family: "Segoe UI", "SF Pro", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  position: relative;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+.mt-btn:hover { color: #e0ddd5; background: rgba(232, 168, 124, 0.04); }
+.mt-btn.active { color: #e8a87c; border-bottom-color: #e8a87c; }
+.mt-btn .mt-ico { margin-right: 8px; opacity: 0.7; font-size: 14px; }
+.mt-btn.active .mt-ico { opacity: 1; }
+
+.mt-group-sep {
+  width: 1px; background: #2a2a3e; margin: 12px 8px;
+}
+
+/* Top-level tab panels */
+.mt-panel { display: none; }
+.mt-panel.active { display: block; }
+
+/* Splash panel — give it a fixed viewport-filling stage rather than 100vh absolute */
+.mt-panel.splash-scope {
+  position: relative;
+  height: calc(100vh - 50px);
+  overflow: hidden;
+}
+.mt-panel.splash-scope .splash { position: relative; height: 100%; width: 100%; }
+.mt-panel.splash-scope .atmosphere, .mt-panel.splash-scope .grain { position: absolute; }
+.mt-panel.splash-scope .splash-footer { position: absolute; }
+
+/* Shell (multiview) panel — fill viewport below master tabs */
+.mt-panel.shell-scope { height: calc(100vh - 50px); overflow: hidden; }
+.mt-panel.shell-scope .view { height: 100%; }
+
+/* Reference panel padding */
+.mt-panel.ref-scope {
+  padding: 32px 24px 80px;
+  min-height: calc(100vh - 50px);
+  overflow-y: auto;
+}
+.mt-panel.ref-scope .page-max { max-width: 1200px; margin: 0 auto; }
+
+/* ==========================================================================
+   SPLASH STYLES (scoped)
+   ========================================================================== */
+
+  :root {
+    --canvas:       #14141f;
+    --chrome:       #161625;
+    --pane:         #1a1a2e;
+    --pane-raised:  #22223a;
+    --border:       #2a2a3e;
+    --text:         #e0ddd5;
+    --text-muted:   #888;
+    --text-dim:     #555;
+    --accent:       #e8a87c;
+    --accent-hover: #d4945a;
+    --accent-soft:  rgba(232, 168, 124, 0.12);
+    --accent-border:rgba(232, 168, 124, 0.45);
+    --accent-ink:   #1a1a2e;
+    --font-ui:      "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    --font-mono:    "Cascadia Mono", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--font-ui);
+    overflow: hidden;
+  }
+
+  /* ===== Ambient atmosphere ===== */
+  .atmosphere {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 45%, rgba(232, 168, 124, 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 80% 50% at 50% 100%, rgba(232, 168, 124, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* Subtle grain/noise */
+  .grain {
+    position: fixed; inset: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    background-image:
+      repeating-radial-gradient(circle at 0 0, transparent 0, var(--text) 1px, transparent 2px, transparent 4px);
+  }
+
+  /* ===== Splash layout ===== */
+  .splash {
+    position: relative;
+    width: 100vw; height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-stage {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    margin-bottom: 80px;
+    animation: fadeUp 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .panda-mark {
+    width: 220px; height: 220px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 0 30px rgba(232, 168, 124, 0.1));
+  }
+
+  .wordmark-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .pill {
+    background: linear-gradient(180deg, #22223a 0%, #1a1a2e 100%);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 24px 56px;
+    position: relative;
+    box-shadow:
+      0 0 60px rgba(232, 168, 124, 0.08),
+      inset 0 0 0 1px rgba(232, 168, 124, 0.06);
+  }
+
+  .wordmark {
+    font-family: var(--font-ui);
+    font-size: 72px;
+    font-weight: 700;
+    letter-spacing: 10px;
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 40px rgba(232, 168, 124, 0.3);
+    line-height: 1;
+  }
+
+  .tagline {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--text-muted);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    padding-left: 56px;
+  }
+  .tagline .version {
+    color: var(--accent);
+  }
+
+  /* ===== Status area ===== */
+  .status-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    min-height: 80px;
+    animation: fadeIn 1.4s 0.4s both ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .loading-bar {
+    width: 320px;
+    height: 2px;
+    background: var(--pane-raised);
+    border-radius: 1px;
+    overflow: hidden;
+    position: relative;
+  }
+  .loading-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+    animation: slide 1.8s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { left: -40%; }
+    100% { left: 100%; }
+  }
+
+  .status-line {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .status-line .ok { color: var(--accent); }
+
+  /* ===== Footer ===== */
+  .splash-footer {
+    position: absolute;
+    bottom: 32px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 40px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+  .splash-footer .right { color: var(--text-dim); }
+  .splash-footer .right b { color: var(--text-muted); font-weight: 400; }
+
+  /* Responsive: scale down on narrower windows */
+  @media (max-width: 900px) {
+    .logo-stage { gap: 30px; flex-direction: column; }
+    .panda-mark { width: 160px; height: 160px; }
+    .wordmark { font-size: 54px; letter-spacing: 7px; }
+    .pill { padding: 18px 40px; }
+    .tagline { padding-left: 0; }
+  }
+
+
+/* ==========================================================================
+   MULTIVIEW / SHELL STYLES
+   ========================================================================== */
+
+  :root {
+    /* ============================================================
+       Palette: extracted verbatim from styles.py DARK_THEME_QSS
+       ============================================================ */
+    --canvas:          #14141f;
+    --chrome:          #161625;
+    --pane:            #1a1a2e;
+    --pane-raised:     #22223a;
+    --pane-selected:   #2a2a4e;
+    --border:          #2a2a3e;
+    --border-hover:    #3a3a4e;
+    --border-soft:     #232336;
+    --divider:         #1a1a2e;
+
+    --text:            #e0ddd5;
+    --text-muted:      #888;
+    --text-dim:        #555;
+    --text-heading:    #e0ddd5;
+
+    --accent:          #e8a87c;
+    --accent-hover:    #d4945a;
+    --accent-soft:     rgba(232, 168, 124, 0.12);
+    --accent-border:   rgba(232, 168, 124, 0.45);
+    --accent-ink:      #1a1a2e;
+
+    --mode-library:    #9a9aa8;
+    --mode-arrange:    #e8a87c;
+    --mode-present:    #7fb069;
+
+    --ok:              #7fb069;
+    --warn:            #f39c12;
+    --err:             #e74c3c;
+    --err-soft:        rgba(212, 106, 106, 0.08);
+
+    --font-ui:         "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    --font-mono:       "Cascadia Mono", "Consolas", monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* View switcher at top */
+  .switcher {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .switcher-label {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-right: 8px;
+  }
+  .switcher-home {
+    display: inline-flex; align-items: center;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    margin-right: 16px;
+  }
+  .switcher-home:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .switch-btn {
+    padding: 6px 14px;
+    background: var(--pane-raised);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font-ui);
+  }
+  .switch-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .switch-btn.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .view {
+    display: none;
+    height: calc(100vh - 49px);
+  }
+  .view.active { display: block; }
+
+  /* ============================================================
+     SHARED SHELL
+     ============================================================ */
+  .app {
+    width: 100%;
+    height: 100%;
+    background: var(--canvas);
+    display: grid;
+    grid-template-rows: 44px 1fr 120px 26px;
+    grid-template-columns: 240px 1fr 300px;
+    grid-template-areas:
+      "titlebar titlebar titlebar"
+      "leftpane viewport rightpane"
+      "leftpane filmstrip rightpane"
+      "statusbar statusbar statusbar";
+  }
+  .app.no-filmstrip {
+    grid-template-rows: 44px 1fr 26px;
+    grid-template-areas:
+      "titlebar titlebar titlebar"
+      "leftpane viewport rightpane"
+      "statusbar statusbar statusbar";
+  }
+  .app.arrange-layout {
+    grid-template-columns: 200px 1fr 320px;
+  }
+  .app.present-layout {
+    grid-template-columns: 0 1fr 0;
+    grid-template-rows: 44px 1fr 100px 26px;
+    grid-template-areas:
+      "titlebar titlebar titlebar"
+      "viewport viewport viewport"
+      "filmstrip filmstrip filmstrip"
+      "statusbar statusbar statusbar";
+  }
+
+  @media (max-width: 1200px) {
+    .app {
+      grid-template-columns: 220px 1fr;
+      grid-template-areas:
+        "titlebar titlebar"
+        "leftpane viewport"
+        "leftpane filmstrip"
+        "statusbar statusbar";
+    }
+    .rightpane { display: none; }
+  }
+
+  /* ============================================================
+     TITLE BAR
+     ============================================================ */
+  .titlebar {
+    grid-area: titlebar;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: stretch;
+    padding: 0 12px 0 16px;
+    gap: 4px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 18px;
+    border-right: 1px solid var(--border);
+    margin-right: 12px;
+    color: var(--text-heading);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    font-size: 13px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 0 6px rgba(232, 168, 124, 0.15));
+  }
+  .brand-version {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 400;
+    font-family: var(--font-mono);
+    margin-left: 2px;
+  }
+  .brand-panda {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    font-size: 13px;
+    margin-right: 4px;
+  }
+  .brand-gallery {
+    color: var(--text);
+    font-weight: 400;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+
+  .navgroup {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-right: 14px;
+  }
+  .navbtn {
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .navbtn:hover { background: var(--pane-raised); border-color: var(--border); }
+  .navbtn[disabled] { color: var(--text-dim); cursor: default; }
+  .navbtn[disabled]:hover { background: transparent; border-color: transparent; }
+
+  .tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .tab {
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--mode-library);
+  }
+  .tab.active.arrange { border-bottom-color: var(--mode-arrange); }
+  .tab.active.present { border-bottom-color: var(--mode-present); }
+  .tab-icon { font-size: 14px; opacity: 0.9; }
+  .tab-kbd {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-left: 2px;
+  }
+
+  .titlebar-spacer { flex: 1 1 auto; }
+
+  .global-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .gbtn {
+    height: 28px;
+    padding: 0 10px;
+    background: var(--pane-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    font-family: var(--font-ui);
+  }
+  .gbtn:hover { background: var(--pane-selected); border-color: var(--accent); color: var(--accent); }
+  .gbtn-icon { font-size: 13px; }
+  .gbtn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  .gbtn.primary:hover { background: var(--accent-hover); color: var(--accent-ink); }
+  .gbtn.ghost { background: transparent; }
+
+  /* ============================================================
+     LEFT PANE
+     ============================================================ */
+  .leftpane {
+    grid-area: leftpane;
+    background: var(--pane);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .pane-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .pane-title {
+    color: var(--text-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .pane-count {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  .patient-search {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .patient-search input {
+    width: 100%;
+    background: var(--pane-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--font-ui);
+    outline: none;
+  }
+  .patient-search input:focus { border-color: var(--accent); }
+  .patient-search input::placeholder { color: var(--text-dim); }
+
+  .patient-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 4px 0;
+    min-height: 0;
+  }
+  .patient-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+  .patient-item:hover { background: var(--pane-raised); }
+  .patient-item.active {
+    background: var(--pane-selected);
+    border-left-color: var(--accent);
+  }
+  .patient-avatar {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: var(--pane-raised);
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .patient-item.active .patient-avatar {
+    box-shadow: 0 0 0 2px var(--accent), 0 0 8px rgba(232, 168, 124, 0.3);
+  }
+  /* Patient photos — in real app these come from patient.photo_path. Mockup uses base64 gradients representing user-uploaded photos. */
+  .patient-avatar.pa-DA { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAAEXklEQVR4nO2YX0xbVRzHz72l/6At9M/on8to+Vu6rmtxKonDbCRLtFMR3dDFFTRkS9SnvThliYlJH6aRRB5MjA+4F62NPOoDwZgSMycu6kBx7eqwilspDBgrtEBp78+HSy6lEJfcW6KHnE/6cO75nXvy/fSc3p6WCg6Nob1ICcvCf51hVygBIGJYQcRwg4jhBhHDDSKGG3tXjJwVMYOI4QYRww0ihhtEDDeIGG6QsyJuELGdeOPcCYqi+Mscy2azuZXV9ftL6cTc/Ru/x+8uJP/ldq2m7NzpY/k9nwx+O3dvSXCefIq5YhKalshouUxaoSm1MoYWd13k1tQ3399cTq/tON7ZyBT0zMVGEymV0VItPgwNIsifyOFw0DSt1+u9Xu/w8DDX2VRf/eKJw1JqfcfbnQ1VBWl8Pt/1ayExkXiKuWLn3/7QYGRW06nPv7w6PTP3ctdLCCGDXvf0sYMDgyMVOmP+YCtjKFcrufba2ppcLkcIWSwWbSnK5XI0TYsMU7QVQwgBAoSQorSswdE8nVLfiSe4/sbGBliKZde3rJvLvp+/sbe3l293nnr+VmRM1GIBAEBRxQDxpVwuF/1rni8985T3x6tf89WSEtpea+ZKU1NT/f398cQsd9nR0RGd+EFMKo7iim1h+u4iX2ppafnlpyt8qanWIpOWcKVgMKip0E/+vcBdKpVKl922kk6JCQbFFSswW06t8hWZTLa8OMuyLFc61LT53AsEAq7Drb9Fb/M9Pt+ZievfiQkGADQAEvzaaSvmV6n8ai6XXUmnAJBapbQyBq4zHA6Pj4+7Hnp8dj55JzHHdba2ti5MT4oJBiDurAhbs7MA+bOVKmR8O5PJLC4uAotYFg7Zq/mv9UAgYDBWVZqtLAvhyQRj2hA+3nZkfnZaazAJzlbMx33B/mRMOr49OjpK0xK5QgkAbsfmPvT7/X6/f/tU3d3dr7x64egTLwgOs1tiEgntOWDlS8FgkLE2AEL7TTq9Vv3AqWw2m0qWAZZFFPXAwTuyWw+PJ4+6teVlXHckEhkYGHB6HgMAj3PT1m63U1upqanhqyefe/bPyRuCsxX5dK+QS6vM+iMPN9ZbNz4eMzMz7e3t6gqD+9E2CU257Bv7MB6PR6PR1y58oNtnzp9h4V5Sp9UghDo7Oz++fKq61iEsSdHEwuHw9s6hoaGenp7kUrrr9XdoWtJUxyjkUq4UCoVUGq3WYCoIELs9z4mpVCpHnSWTWZVK5QLyFHMrZrPZZDIZi8VCoVBfX5/H4/F6vUpNZc/5S1q9EQCaD9r4wSMjI9a6A9vn/GMqwY/x+c5Efr0mLBv11rufCXg/eN672AUsu/k+0RKpVKYsU5Vr95mYGmdza6V5y2+QwcvvT94c49rek2fdj7Rtn3Pi5ytfffER17bVO0+fvSggGPXmpU8F3Pb/h/w1gBt7V4z8r4gZRAw3iBhuEDHcIGK4QcRwg5wVcYOI4QYRww0ihhtEDDf2rNg/kYM2uq8/16wAAAAASUVORK5CYII=); }
+  .patient-avatar.pa-MB { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAAD90lEQVR4nO2YXUwTWRTHz7TTMl1qAVuJVAkiRVu7RFgEIxg/2WhiiFGj2CqxMbsbyAZ3w2pifDO++GBMJIjFB6ISE4MPRtGkT4vfGg2olUhDrWnTdYWUtZRiB0acuw+Dk9qPiJNqveT+nmb+c+b0/HKnM9NSN88dh9kIjRBK9wxfBSKGGzRCfLpn+CrQs3TBZvWlSMSwgojhBhHDDSKGG+SVCjdm86VIxLCCiOEGEcMNIoYbRAw3JIpZj5yiKJm467x14/ldR0zNyi0WQ2mVuDseHLnadjRZBwBAiJ/iJt+FgiP/ej1PH4y89koYTESGJBHTRVdcdu3Ok+gCRYaq8MeK6Jrht6Hmk53JOgAARckUGarsXL2htGqT7S99yWppswmkRkyv16vziqamPogFhtJVcloRP33CDiaTiaIohmEsFgvPT/+MWle7q8/7Ns1iALD/l98ev/CIR5esWJPoAkna4XiT5eyR/T8Xa1zO3o8LSCm0C/3D/6VHjGXZsbExAKiurv4nzAtHFxSXqLO1ADA0NDSTFRNzuVxGf5gQQ61W5xz0fVuxj4NxHHfh/Hlhe+tOq+/NCELItHK9kNjt9k/Hh/gOMcKZmhwx9Pv94cjEtxWLot1+RkisVusjlz9LNz+vcCkARCKRjo6Oma+YTC5fZC7XG8xCEgqFurq6cjSZ0iZMwXPM4/G8evG0yFzGMMzyqg2G8ulvV2dn57vxcLxAfIeBgYGYxO1219fXh0OjK0yF0iakAVLwgPb03S4ylwFAQ2Nj7jydELa2tlaaF8fVzujjCgoKfm9seHm/W5PJSJswNXdFv7s/8OY1AOTn52cwKgDo6enp7+9f+5MxxilhB+F2T9O00Wh0OBwAoFQq6/fZKjbvfh/1CPkiUiOGeN7deys6aWlpMRbk5WmzYgqTdTjWsMN+eF/zjqqBvy+L4ebabVfuPEurGEKDfXdZNiLs+ny+7u7uDRXLElYm64AQogDUCsRNsEJI0/TwOM9OcukU4ybYwb57wm5bW1u2WlViWPilYgghlVqjZFRiPjo6GgiGJUyYmrd7ocnD6xf//OPAzV4XAGxfV04BxPZGie+K0x0oKkubW127VwydTqfX62WU5RKGTKUYANTVVNbVVIphwpWJPz3+dg8AgUDAZrMtmJczV5OZLrEEAuKBzybRcBwXDAZdLpfD4Whvb38/yTbt3ChtQur0ob2fr0pE04mLPEIAoMpQnDhQl6xskptqPnVJ2NZlzzn669b4DtHQcpmKUc6fm7WsUL96efEPjFLaeFTrwT3SzvzOIX8N4AYRww0ihhtEDDeIGG4QMdwgYrhBxHCDiOEGEcMNIoYbRAw3iBhu/A/ENuCvl6ZloAAAAABJRU5ErkJggg==); }
+  .patient-avatar.pa-CC { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAADGUlEQVR4nO2aT0gUURzHZ3be1troONOuOOKkq66bWrvr4sGSwhAXkj14KaNAwo4FQVEd6tKhg9Sxe0FQhw4RKEF42A5LaG6gEkGhls7mzuL4D12dbJ3XYWMoD9a8N2LzmA9zeDt8ee/35f34/fa9XXrs5RuKRICu63sdw64AIIR7HcOuQLAxnVRj5O6YUzxshWPMbgCd3KroFA9b4TRou0HyjjnFw1aQa4zgBk2sMVKLh5OK9oJgY+SmIqnFg9RUtLBBFwtcVajeK4ksX+L27Ne3tr6vaxuruYW0kp1KL2XmMfWmsGbHGDcIdx6rDgV/f+liXGCfm+VLfIfEHx56eHg4WFWLpkfABbFh3ODkhbgRZSqVisfjgiCwLBuNRvv7+3O5XHZRffr6BZoeDQsuTKOnT/Dl3sI4kUh0dXVJPvFKd+/h6jrAgLm57LVLlwMtRyCEhbXM6tHATUWhokxq/JUw+Xy+r6+vvtJ/5+JVNwCFl35R8ouSqi7WSzUQQrN65MBwjUlNdcZ4aGgoLcsPr98DDLNtWm+pcD7WDSE0q0cODLdBeyvLjfHIyEi4rtHHCTvMaVaPDO6OedgiY6woSkDy7zyhWT0y2OWe/uNTKcv9ZUKzelRwf4PeWF1nea4wFkUxnV7ZeUKzemRw+5gqZ4y5Wltbl9dWrNUjg2vs68RnI9BYLLamb1qrR8YFdYjzqLLycXSsECgA4Nbd20urK9s0B7jiSOdxND3yY8F3xYlXb0GxJ9jYQFFUR0dHmdenvJ9ckBVd1zmf4A8FG9qaM1/k54nBs6fiCHo0LDiPbWpa8sngeGT8zLkemqZDkXAoEt6mmfw2M5WZKaxlVo+GNSdohqKX3k33Pus52tbS3t4eCAR4ntc0TVXV2dnZZDI5MDBAQcpYy6weAfrxzQf4xgyUxfnkh9FP8nR2WV3XNDcAJUXsQY4PVtY0B5pqK6ow9f8O/ejGfTwv/ykkX3E7lzm2guR7RceYrXD+/WY3yDVGcIMm1hipxcNJRXtBsDFyU5HU4kFqKjoN2mYQbMw5ttgLgo05VdFe/AQGF+nZD3nF+wAAAABJRU5ErkJggg==); }
+  .patient-avatar.pa-RD { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAAD/klEQVR4nO2ZT0zbVhzH37PT2A4EcEwCUaQ1ygRTOm0LqlS0rWqybodGIBBqThuV1hyoVmlVpJ6K2ntAaEVIu0xCuwZp6tobYgcuW+AyOiqVP4pE2rBBkiYi4IYQSPx6cOUFGjLmGLXPep9T8n3+2d9vfs7vRQ58+DAM9IgBIfS2PZwKJBhukGC4QYLhhkGnuYABAH0m0/OtSIJhBQmGG/od9zrumE6DkQ0aM0gw3CDjHjdIMNzQbzCyQVfhxo0fIKQqFYTQwUFRFLObm2tPn/6xtZWsWYIkSTo42C8Wd0Ux++LFeiz2Zza7odpPJRqPewih0cgKgkMQHG73Zw8e/JTJrNY4nKJohuEYhmtqEhyOTo/ny1jsSTT6y+7uTp1OKFQHlSdyu90QQrvdPjo6Kis0TV+5Mri09E+NEoqiBEHw+/0zMzOy2NHxcW/vLQhN9RhDCGk5PO7dG2xr40Uxlk4nbbZ2AIDZbM5k6Hx+z2RiqpbcvfuNzcYXCnuPHv2YSv197VoQACAIrZcvfzs1NWKxNKg2o1nHAACy2NjI7u1tKaLValtdXa9RAgDiOMbtfk8Un2xsrMt6Z2dnPs+XSiXV3rQPhhCCECpiJpPZ3n75nyUIoXK59OzZX8pST09/NLqk2pv2wQAALS1tslIul+fm5kwmtnaJQjr9XFnq7u5eWIip9qbldwwhwHHm8+e/Mpt5WZmYmEgknjudF4+7CkKgcimf/3cYGo3GXK4oSaii/f8Dg5qiaiwvL1e+TSaTIyMj4+PjPt8nFov5hCeBh0OUy1KhUDxu8NTmtH5SMQxjs1kHBj6/dOmjmpc4dH9yXKPyen9/P5fLVb2BT4KW+xjLsl6vN5FIAAB4nr9zZ3hw8DtJOrYEvPEda293Kkvz8/MUBVnWqM6blsMjFOrv6emIRMYlSZKVgYGv19YKNUoOWaHoc+c+VZYikcjZs21vZD8pGk9FmqZo+uXjx7/LCoQwELgejydrlCh4vYHm5lZZX1lZmZyc9Hhcqr2dyj62uPib0jSfz5fNGo4rAQAwDOd0fhgIhDyeL2QllUr19fW1tJguXPhAtTdtx/1r69ns5uJitKvroqwPDX0/NTXmcrUfOf7IIJWZnp4OBoOimLt5s5eioGp7WnYMVDRtYWG6smnb22zVklKptLOzE4/HZ2dnx8bGPB6P3+9vaqJDoX5BMNfjDYbDQXUficzw8M+S9Nru7dtXrdZmZSmdzt2//6sSZmjI73LZj5QAACiKOnOGbmhgeb7R4Wjt6nrfbrfUY0kGhsPX6z/LO4h+n3mQYJhBguEG+VMCN/QbjDzixgwSDDfIuMcNEgw39BuMbNCYQcY9bpBguEGC4YZug70COKTJezy18vUAAAAASUVORK5CYII=); }
+  .patient-avatar.pa-LE { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAABxElEQVR4nO2ZsUoDQRCG5857A4NaiIXdvpWVZVDQQgMiViIGLK4JKChaWJlYCDaKhRZayHV3jUU0hEQx4AvsWgQk3l3CXnaXZIb5qrDMDf9Pdv5d7rzLhwZQJJBSTlqDEwKl1KQ1OIGNYSOQVI0pDg9csDFscHhgg+5WJGuM7oyRNcbhgQu6xjg8kMHhgQ2eMWwQNsbhgQs74bG1suZ5Xv937ers+6enU5nLyfVFt/dlLslXNhjseFTZ/2x3dSpzCXer7WbLXJJ9YwCgQKtSCOFliKJIwfDntXETHlJqti3vbZQW5rLr5qqcHNBSgWZb/cqi2ElFBTAYCLn7s2ilIU7iXl8uTWNxHKdW3jut4/q5FQ1OUnFEqo1W8/HWPD2sWZHk5Bu0lFKnrRAiSZLU4uLykhVJjrYiaLZdrZRn50uZxy1I4vAowlQYs3Q+/jufFKjhbfUrjbB/pcqGOAA07m+eouexK8fAUdynuavfvj6+FKo0xI6xzeqOP+Nnr+p/hGHYv/PrVxrirR9sm//vUwjh12/8MgcXdI3RnTGyxjg8cEHXGIcHMjg8sMEzhg3Cxjg8cMHhgQ3CxqiGB88YMtgYNn4BVZ5r7+eGgZcAAAAASUVORK5CYII=); }
+  .patient-avatar.pa-JF { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAACBklEQVR4nO2Zv0sCcRTA/Z5nUWBBRj+uIPtBcTQENTi0NtTS1BAELYE11BBNCUVLuoRItUSQCA0JCvUHSI1N4uZFkEHRXZRQkq7XUJjYHZS+L8c73md8fn3vffjyvff1ZNfnEYcdEXVdt7oHLpAYNkgMGySGDduKCVY3wAvb7hiJYYPEsEFi2LCtGA1obJAYNkgMGySGDXixWf8uY9/jMRUPf7y9/I4bcpXYf8+rUG3wHdCrO8ePWv6Pi9d3o7mHZ6jSgg5NdQWjuCzL7BeZTEb/WV4v3M+Ysa3DcbC91NPlMVwPUpe/mEmvZnEoLNsxszgUJFYrhgLZbLYq8qrmLhOHgHW5PxXN4lXc3D1tRc4A2+B/8zCykmVZUZSq4Ei/BNiMCJXov4Q3F6XONn756XFfK2YH7C8Hrx5IrFZsIia6Git/mxSLRavEgOdYu+Qtpy4UCqqqNrrEr49O99acTuHrIq8oCtg13gSwHXM6RU+31zc1X47EYjGXKLS4m8oloqGVyq9AlTYERqyjd2hmYaMykkqlAoHA5PiwwBhXATMgB3SpVNI0LZ1Ox+PxZDIpD0pz0z7A/P+CRUPLIIlu77Xg0UWDS2x1N/dJ7b6xwYnRAcZActcCOwn6LSvOE3r9hg0SwwaJYYP+g8YGiWGDxLBBYtiwrRgNaGyQGDZIDBskhg3bin0CjXd6vaRM/gIAAAAASUVORK5CYII=); }
+  /* No-photo fallback: initials in a muted rounded square with the pane-raised fill. */
+  .patient-avatar.pa-SG { background-image: url('data:image/png;base64,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'); }
+  .patient-avatar.pa-KH { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAEfklEQVR4nO3dW1MTZxzH8WdDgCBpimUYpNI0RY4BBJrhjIiKeCDjta/AN+XLyEERD+NICaZNJ5OZepyMIBjTEGMoKOGU7QW96IX7xE6T57eE3+eGizyz+We/s+SwO4nmdk8KwrGgBzjurId/crl97BzHkM1mFTwC4BgAjAHAGACMAcAYAIwBwBgAjAHAGACMAcAYAIwBwBgAjAHAGACMAcAYAIwBwBgAjAHAGACMAcAYAIwBwBgAjAHAGACMAcAYAIwBwBgAjAHAGACMAcAYAIwBwBgAjAHAGACMAcAYAIwBwKxF36Lb7ZqYOPvFm3Rdv33bV3ALdnuN1zvucJwwWpDNbvr9oc+fc0W8UyGEw1F78+Ylo1v9/sVEIv012/lPih/gf3I4Tni943Z7jdGCTOavQCC0vb2jcqrSMVeAujr77OxYba3NaEE6vREMhnK5XZVTlZSJApw8+Y3XO1ZTU220IJX6GAwu7e7uqZyq1MwSoL7+29nZUZutymhBMpm5c2dpb6/cvtfIFAEaGuquXx+trq40WpBIpO/efbq/f6ByKjXwARobv7t2baSqynCStbX1e/fCZbn3BTxAU1P91avDlZWGY7x9++f8/K8HB3mVU6mEDNDc3DAzM2S1VhgtWF5+f/9+JJ8v270vgAGczsbLlwcrKgzfisfj7x49+j2f11VOpR4mgMvVND3tsVgM9/6rV6uPH0d1vcz3voAEOHPm9IULP1ssmtGCFy9WnjyJHYe9L9QHaG//4fz5fk0z3PvPni0vLMRUjoSlNICmafK9H4vFl5b+UDkSnOojQLL3o9HX4fDzUtzjrVs3ir7ZYsG/ETsUibyMRF6ipwAwRYBw+Hk0+ho9BYYpzoj9+9TKcWOKAFNTA52dP6KnwDBFACHE5GSf2+1CTwFglgBCiImJsz09LegpVFP9JKzruuSV6NhYj8WixWLx4t5jUU7Kl4jSI0DX9YcPC3y+NjLS3d/fpmwkONX/guLxdw8e/Cb/hHloqMvj6VA2EhbgOeDNm/fz8wUaeDwdg4OdykYCwjwJr6wk5+bC8vNcAwPtw8NuZSOhwF4Fra6m5uYKnGfv62sdHe1RNhIE8mXo2tp6wWsdentbxsd7lY2kHvh9QCKRDgZD8qt9urt/Onfuy9d9lgH8G7FkMhMIhOTXu3V1ueQnEo4ufAAhRCr1MRAI7ezIGnR0OKemBsqvgSkCCCHW17N+/6L8qtu2tmb5yeSjyCwBhBAfPmz4/b/IrztvbT198aKnnBqYKIAQIpPZ9PkW5acHWlq+n54elFzScrSY7mFks5s+3+KnT7IGLtepmRnZRV1HiBkfw8bGls+3sLW1LVnjdDZeuTJUBg20w1/U5u8Jq8ffEzYFBgBjADAGAGMAMAYAYwAwBgBjADAGAGMAMAYAYwAwBgBjADAGAGMAMAYAYwAwBgBjADAGAGMAMAYAYwAwBgBjADAGAGMAMAYAYwAwBgBjADAGAGMAMAYAYwAwBgBjADAGAGMAMAYAYwCwf766+PB7C0g9HgFgfwPe1TKdvuglUgAAAABJRU5ErkJggg=='); }
+  .patient-avatar.pa-JI { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAACdklEQVR4nO3dwUobURhA4bGdhlCCinZR6kJxOYv2BST0HXw8H6N7XbkVpDAL6SJS0GCaIBHqZGbMdWGXnbSLmZxJPN8mi3sHfjjcDAQu2UiSfiTOG3qA1y5++ciykp3jFep248gTgDMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMALKYHqJQkB0dHn/+6FEI4OflW+4MITwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwFYyQAiBHqE27Q3Q6VReHsnz9fnXs/YG6PXeVy1lWb7MSRrV3gB7ex+qltYpQEvviO3vf9za6lWtjkb3C55N00GaDmofqSFtPAE7O5v9/pcFG25ufi1tmKa16AR0Ou+2t3uHh5+S5CCO31ZtK8un29vxMgdrVCsCHB9/3d3d/M/NaTrI86LReZapjV9BCxRFeXn5g56iTqsUIIRwenrx+DijB6nTygQIIZyff7++HtKD1KwV74B/enj4fXZ2MRxO6EHq1/YAk8k0TQdXVz/L8omepREtCjCfz/O8zPNiNivG4+lodH93NxmPp/RczdpIkn4URVm2Pj9vrYpuN45W6CW8rgwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwA+3NP+OXKpJbPEwB7BkFjeSwrIOE+AAAAAElFTkSuQmCC'); }
+  .patient-avatar.pa-TJ { background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAACpUlEQVR4nO3dMUsbYRyA8bNNQyhBRTvUWlDE6YYWulZCcXfy4/kNXLOfU9aAFDJIB6VgxDQhaKnJ5cx1UFoKiQbUe+zd81tCuJfcHx7eXAg5MheGtUCcF/QARVe6eRgMEnaOAqpUSoE7AGcAmAFgBoAZAGYAmAFgBoAZAGYAmAFgBoAZAGYAmAFgBoAZAGYAmAFgBoAZAGYAmAFgBoAZAGYAmAFgBoAZAGYAmAFgBoAZAGYAmAFgBoAZAGYAWCnj8+3sfF5ZWX7SU/T7P/f3oz9Pw3B9a+vDxJVpmu7t1Z90mHu5A2AGgBkAZgCYAWAGgGX9MbReb9y7Znv70+bm+4mH2u3uLK/wH3EHwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMADADwAwAMwDMALBCB0jTlB6hAAHK5am//otj/t/T8h+gWn097dBgEGc5yUT5D7C6+mbaoecQIOsf584iippR1HyUl1pbe7uwUJ12tNPpP8pZHiLPO2Bpab5W+3jHgtPTH5kNM81z3AEPVC6/Wlysbmy8C8P1UunltGVJct1ud7McbKJcBdjd/bK8PD/j4lbrOI5HTzrPLPL8FnSH0Sg5PPxGTxEExQyQpmkUNa+uhvQgQVDAAGmaNhpfT07O6EFu5eoacK/Ly18HB82zsx49yF9FCdDrXbRax0dH35Pkmp7lHzkMMB6P4ziJ49FwOOp2Lzqd/vl5r9u9oOeabC4Ma0EQDAb811JFU6mUggJehJ8bA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8AMADMAzAAwA8Bu7xO+uWVS2XMHwH4DcQCA1Z1SXioAAAAASUVORK5CYII='); }
+  .patient-avatar.pa-fallback {
+    background-color: var(--pane-raised);
+    color: var(--text-muted);
+  }
+  .patient-avatar.pa-fallback::after {
+    content: attr(data-initials);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: 0.5px;
+  }
+  .patient-meta { flex: 1 1 auto; min-width: 0; }
+  .patient-name {
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .patient-item.active .patient-name { color: var(--accent); }
+  .patient-sub {
+    color: var(--text-dim);
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    margin-top: 1px;
+  }
+  .patient-count {
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--pane-raised);
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .leftpane-footer {
+    padding: 8px 10px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    gap: 6px;
+  }
+  .leftpane-footer .gbtn { flex: 1 1 0; justify-content: center; }
+
+  /* ============================================================
+     VIEWPORT
+     ============================================================ */
+  .viewport {
+    grid-area: viewport;
+    background: var(--canvas);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .vport-bar {
+    height: 40px;
+    padding: 0 16px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+  .breadcrumb-sep { color: var(--text-dim); font-size: 11px; }
+  .breadcrumb-current { color: var(--text); font-weight: 500; }
+
+  .vport-spacer { flex: 1 1 auto; }
+
+  .view-controls { display: flex; gap: 4px; }
+  .vc-btn {
+    height: 28px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    font-family: var(--font-ui);
+  }
+  .vc-btn:hover { background: var(--pane-raised); color: var(--text); }
+  .vc-btn.active { background: var(--pane-selected); color: var(--accent); border-color: var(--accent-border); }
+  .vc-ico { font-size: 13px; }
+
+  .thumb-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .thumb-size input[type=range] { width: 80px; accent-color: var(--accent); }
+
+  .grid-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px;
+    min-height: 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  .thumb {
+    aspect-ratio: 4/3;
+    background: #0a0a12;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .thumb:hover { border-color: var(--border-hover); }
+  .thumb.selected { border-color: var(--accent); }
+
+  .thumb-img {
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .thumb-badges {
+    position: absolute;
+    top: 6px; left: 6px; right: 6px;
+    display: flex; gap: 4px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    padding: 2px 7px;
+    background: rgba(20,20,31,0.85);
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--text);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--border);
+  }
+  .badge.xray { color: #a0c4e8; border-color: rgba(160,196,232,0.4); }
+  .badge.photo { color: var(--accent); border-color: var(--accent-border); }
+
+  .thumb-meta {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 6px 8px 5px;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 100%);
+    color: var(--text);
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .thumb-num { color: var(--text-dim); }
+
+  /* Fake radiograph/photo gradients — tuned for navy canvas */
+  .radio-1 { background: radial-gradient(ellipse at 60% 45%, #4a4a5a 0%, #1f1f2e 55%, #0a0a14 100%); }
+  .radio-2 { background: radial-gradient(ellipse at 40% 50%, #555566 0%, #252538 50%, #0f0f18 100%); }
+  .radio-3 { background: radial-gradient(ellipse at 50% 55%, #4e4e5e 0%, #21212f 55%, #0d0d16 100%); }
+  .radio-4 { background: radial-gradient(ellipse at 55% 45%, #525262 0%, #23233a 55%, #0a0a14 100%); }
+  .radio-5 { background: radial-gradient(ellipse at 45% 50%, #4d4d5d 0%, #202030 55%, #090912 100%); }
+  .radio-6 { background: radial-gradient(ellipse at 50% 50%, #505060 0%, #202030 55%, #0a0a14 100%); }
+  .photo-1 { background: linear-gradient(145deg, #c39770 0%, #8b6240 40%, #4a3520 100%); }
+  .photo-2 { background: linear-gradient(145deg, #d4a885 0%, #9a7050 50%, #5a4028 100%); }
+  .photo-3 { background: linear-gradient(145deg, #b88a68 0%, #7e5838 50%, #40301c 100%); }
+  .photo-4 { background: linear-gradient(145deg, #caa079 0%, #946a48 50%, #503820 100%); }
+
+  /* ============================================================
+     FILMSTRIP
+     ============================================================ */
+  .filmstrip {
+    grid-area: filmstrip;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .fs-hdr {
+    height: 24px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .fs-label {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .fs-controls { display: flex; gap: 2px; }
+  .fs-btn {
+    width: 22px; height: 22px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  .fs-btn:hover { background: var(--pane-raised); color: var(--text); }
+
+  .fs-scroll {
+    flex: 1 1 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 12px;
+  }
+  .fs-row {
+    display: flex;
+    gap: 6px;
+    height: 100%;
+  }
+  .fs-thumb {
+    aspect-ratio: 4/3;
+    height: 100%;
+    border: 1.5px solid transparent;
+    border-radius: 3px;
+    flex-shrink: 0;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .fs-thumb:hover { border-color: var(--border-hover); }
+  .fs-thumb.active { border-color: var(--accent); }
+
+  /* ============================================================
+     RIGHT PANE
+     ============================================================ */
+  .rightpane {
+    grid-area: rightpane;
+    background: var(--pane);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .section {
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-hdr:hover { background: var(--pane-raised); }
+  .section-arrow {
+    width: 10px; height: 10px;
+    color: var(--text-muted);
+    font-size: 9px;
+    transition: transform 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .section.collapsed .section-arrow { transform: rotate(-90deg); }
+  .section-title {
+    flex: 1 1 auto;
+    color: var(--text-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .section-badge {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: var(--font-mono);
+  }
+  .section-body { padding: 4px 14px 14px; }
+  .section.collapsed .section-body { display: none; }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+  .info-row + .info-row { border-top: 1px solid var(--border-soft); }
+  .info-k { color: var(--text-muted); }
+  .info-v { color: var(--text); font-family: var(--font-mono); font-size: 11.5px; }
+
+  .filter-group { margin-bottom: 10px; }
+  .filter-label {
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    padding: 4px 9px;
+    background: var(--pane-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+  .chip.on {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  .date-range {
+    display: flex; gap: 6px; align-items: center;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .date-range input {
+    flex: 1 1 0;
+    background: var(--pane-raised);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 4px 6px;
+    color: var(--text);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  .sort-select {
+    width: 100%;
+    background: var(--pane-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--font-ui);
+  }
+
+  .meta-thumb {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+
+  /* Sliders (LR-style) for right panel — used in Loupe and Arrange */
+  .slider-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 44px;
+    gap: 8px;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 11.5px;
+  }
+  .slider-row .s-label { color: var(--text-muted); }
+  .slider-row input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    background: transparent;
+  }
+  .slider-row .s-val {
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-align: right;
+  }
+
+  /* ============================================================
+     STATUS BAR
+     ============================================================ */
+  .statusbar {
+    grid-area: statusbar;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .sb-mode {
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding-right: 14px;
+    border-right: 1px solid var(--border);
+  }
+  .sb-mode.library { color: var(--mode-library); }
+  .sb-mode.arrange { color: var(--mode-arrange); }
+  .sb-mode.present { color: var(--mode-present); }
+  .sb-sep { color: var(--border); }
+  .sb-spacer { flex: 1 1 auto; }
+  .sb-item { font-family: var(--font-mono); }
+  .sb-rec {
+    color: var(--mode-present);
+    font-weight: 700;
+    letter-spacing: 0.8px;
+  }
+  .sb-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--mode-present); margin-right: 6px;
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.4; } }
+
+  /* ============================================================
+     EMPTY STATE (View B)
+     ============================================================ */
+  .empty-state {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+  }
+  .empty-icon {
+    width: 96px; height: 96px;
+    margin-bottom: 24px;
+    background: var(--pane);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px;
+    color: var(--accent);
+  }
+  .empty-title {
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 0.2px;
+  }
+  .empty-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+    max-width: 440px;
+  }
+  .empty-steps {
+    display: flex;
+    gap: 20px;
+    max-width: 720px;
+  }
+  .empty-step {
+    flex: 1 1 0;
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: left;
+  }
+  .empty-step-num {
+    display: inline-block;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 50%;
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 24px;
+    margin-bottom: 10px;
+  }
+  .empty-step-title {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .empty-step-body {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .empty-step-kbd {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 8px;
+    background: var(--pane-raised);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  /* ============================================================
+     LOUPE (View C) — single image big, dev panel on right
+     ============================================================ */
+  .loupe-stage {
+    flex: 1 1 auto;
+    background: var(--canvas);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    position: relative;
+    min-height: 0;
+  }
+  .loupe-image {
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 4/3;
+    width: min(900px, 100%);
+    background: radial-gradient(ellipse at 55% 50%, #6a6a7a 0%, #252538 40%, #0a0a14 100%);
+    border-radius: 3px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .loupe-anno {
+    position: absolute;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+  }
+  .loupe-anno::after {
+    content: attr(data-label);
+    position: absolute;
+    top: -22px; left: 0;
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 2px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  /* Tool strip for Loupe (editor tools) — between viewport and right panel */
+  .tool-strip {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .tool-btn {
+    width: 34px; height: 34px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tool-btn:hover { background: var(--pane-raised); color: var(--text); }
+  .tool-btn.active {
+    background: var(--pane-selected);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .tool-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 2px;
+  }
+
+  /* ============================================================
+     ARRANGE (View D) — unified canvas
+     ============================================================ */
+  .arrange-canvas {
+    flex: 1 1 auto;
+    background: var(--canvas);
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .arrange-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+  }
+  .arr-sheet {
+    position: absolute;
+    background: #0a0a12;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .arr-slot {
+    position: absolute;
+    background: var(--pane-raised);
+    border: 1px dashed var(--border-hover);
+    border-radius: 2px;
+  }
+  .arr-slot.filled {
+    border-style: solid;
+    border-color: var(--border);
+    overflow: hidden;
+  }
+  .arr-slot.selected {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  .arr-slot-content {
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+  .arr-slot-num {
+    position: absolute;
+    top: 4px; left: 4px;
+    background: rgba(20,20,31,0.8);
+    color: var(--text-muted);
+    padding: 1px 5px;
+    font-size: 9px;
+    font-family: var(--font-mono);
+    border-radius: 2px;
+  }
+
+  /* Arrangement toolbar within viewport */
+  .arr-tools {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    gap: 2px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .arr-tools .tool-btn { width: 30px; height: 30px; font-size: 13px; }
+
+  /* ============================================================
+     PRESENT (View E) — dual-monitor side-by-side
+     ============================================================ */
+  .present-split {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    background: var(--canvas);
+    min-height: 0;
+  }
+  .monitor {
+    display: flex;
+    flex-direction: column;
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .monitor-label {
+    padding: 6px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .monitor-label.control { color: var(--accent); }
+  .monitor-label.patient { color: var(--mode-present); }
+  .monitor-res {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .monitor-stage {
+    flex: 1 1 auto;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    min-height: 0;
+  }
+  .monitor.control .monitor-stage {
+    background: var(--canvas);
+    padding: 16px;
+  }
+  .monitor-image {
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 4/3;
+    width: min(500px, 100%);
+    background: radial-gradient(ellipse at 55% 50%, #6a6a7a 0%, #252538 40%, #0a0a14 100%);
+    border-radius: 2px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+    position: relative;
+  }
+  .monitor.patient .monitor-stage::before {
+    content: "LIVE";
+    position: absolute;
+    top: 8px; right: 10px;
+    background: var(--mode-present);
+    color: var(--accent-ink);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-family: var(--font-mono);
+  }
+  .present-controls {
+    padding: 10px 14px;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .present-ctrl-label {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-right: auto;
+  }
+
+  /* Scrollbar styling to match app */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--canvas); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 5px;
+    border: 2px solid var(--canvas);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+
+/* ==========================================================================
+   MENU REFERENCE STYLES (sections renamed)
+   ========================================================================== */
+
+  :root {
+    --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+    --pane-selected:#2a2a4e; --border:#2a2a3e; --border-soft:#232336;
+    --text:#e0ddd5; --text-muted:#888; --text-dim:#555;
+    --accent:#e8a87c; --accent-hover:#d4945a; --accent-soft:rgba(232,168,124,0.12);
+    --accent-border:rgba(232,168,124,0.45); --accent-ink:#1a1a2e;
+    --font-ui:"Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:"Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { min-height:100%; background:var(--canvas); color:var(--text); font-family:var(--font-ui); font-size:14px; line-height:1.5; }
+  body { padding: 32px 24px 80px; }
+  .page-max { max-width: 1200px; margin: 0 auto; }
+
+  .crumbs { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: 24px; letter-spacing: 0.5px; }
+  .crumbs a { color: var(--accent); text-decoration: none; }
+  .crumbs a:hover { text-decoration: underline; }
+
+  h1 { font-size: 24px; font-weight: 300; margin-bottom: 4px; letter-spacing: 0.3px; }
+  h1 b { background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; letter-spacing: 2px; margin-right: 4px; }
+  .subtitle { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; margin-bottom: 32px; letter-spacing: 1px; }
+
+  /* Live menu bar demo */
+  .menubar-demo {
+    background: var(--chrome); border: 1px solid var(--border); border-radius: 6px 6px 0 0;
+    display: flex; padding: 0 8px; position: relative;
+  }
+  .mb-item {
+    padding: 8px 14px; color: var(--text); font-size: 13px; cursor: pointer;
+    position: relative;
+  }
+  .mb-item:hover, .mb-item.open {
+    background: var(--pane-selected); color: var(--accent);
+  }
+  .mb-item::before { content: ""; position: absolute; left: 6px; bottom: 6px; width: 6px; height: 1.5px; background: var(--accent); opacity: 0; }
+  .mb-item.open::before { opacity: 1; }
+  /* Underlined accelerator */
+  .mb-item .u { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; }
+
+  .menubar-body {
+    background: var(--pane); border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  /* Menu dropdown rendering */
+  .menu {
+    background: var(--pane); border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 0; min-width: 260px; display: inline-block; width: 100%;
+  }
+  .menu-header {
+    font-family: var(--font-mono); font-size: 10px; color: var(--accent); letter-spacing: 1.5px;
+    padding: 4px 14px 8px; border-bottom: 1px solid var(--border-soft); margin-bottom: 4px;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .menu-item {
+    display: grid; grid-template-columns: 1fr auto; gap: 16px;
+    padding: 6px 14px; font-size: 13px; color: var(--text); cursor: default;
+    align-items: center;
+  }
+  .menu-item:hover { background: var(--pane-selected); color: var(--accent); }
+  .menu-item[aria-disabled="true"] { color: var(--text-dim); }
+  .menu-item.has-submenu::after { content: "›"; color: var(--text-muted); margin-left: 4px; grid-column: 2; }
+  .menu-item .kbd {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+  }
+  .menu-sep { height: 1px; background: var(--border); margin: 4px 8px; }
+
+  /* Submenu preview indent */
+  .submenu {
+    margin-left: 16px; margin-top: 4px; padding: 4px 0; background: var(--pane-raised);
+    border: 1px solid var(--border-soft); border-radius: 3px;
+  }
+  .submenu .menu-item { font-size: 12px; padding: 4px 12px; }
+
+  /* Section */
+  .ref-section { margin-bottom: 40px; }
+  .ref-section h2 {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .ref-section-intro { color: var(--text-muted); margin-bottom: 20px; max-width: 720px; }
+
+  /* Shortcut table */
+  table {
+    width: 100%; border-collapse: collapse; background: var(--pane);
+    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  th {
+    background: var(--chrome); padding: 10px 14px; text-align: left;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent); border-bottom: 1px solid var(--border);
+  }
+  td { padding: 8px 14px; font-size: 13px; border-bottom: 1px solid var(--border-soft); }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text-muted); }
+  td.kbd { font-family: var(--font-mono); color: var(--accent); letter-spacing: 0.5px; }
+  td.note { color: var(--text-dim); font-size: 12px; }
+
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .twocol { grid-template-columns: 1fr; } .menubar-body { grid-template-columns: 1fr; } }
+
+
+
+/* ==========================================================================
+   TOOLBAR REFERENCE STYLES (sections renamed)
+   ========================================================================== */
+
+  :root {
+    --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+    --pane-selected:#2a2a4e; --border:#2a2a3e; --border-soft:#232336;
+    --text:#e0ddd5; --text-muted:#888; --text-dim:#555;
+    --accent:#e8a87c; --accent-soft:rgba(232,168,124,0.12); --accent-border:rgba(232,168,124,0.45);
+    --accent-ink:#1a1a2e;
+    --font-ui:"Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:"Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { min-height:100%; background:var(--canvas); color:var(--text); font-family:var(--font-ui); font-size:14px; line-height:1.5; }
+  body { padding: 32px 24px 80px; }
+  .page-max { max-width: 1200px; margin: 0 auto; }
+
+  .crumbs { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: 24px; letter-spacing: 0.5px; }
+  .crumbs a { color: var(--accent); text-decoration: none; }
+
+  h1 { font-size: 24px; font-weight: 300; margin-bottom: 4px; letter-spacing: 0.3px; }
+  h1 b { background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; letter-spacing: 2px; margin-right: 4px; }
+  .subtitle { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; margin-bottom: 32px; letter-spacing: 1px; }
+
+  .ref-section { margin-bottom: 48px; }
+  .ref-section h2 {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .ref-section-intro { color: var(--text-muted); margin-bottom: 24px; max-width: 820px; }
+
+  /* Live toolbar demo */
+  .tb-demo {
+    background: var(--chrome); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px; display: flex; align-items: center; gap: 4px; margin-bottom: 12px; overflow-x: auto;
+  }
+  .tb-btn {
+    height: 34px; min-width: 34px; padding: 0 10px;
+    background: transparent; border: 1px solid transparent; border-radius: 4px;
+    color: var(--text); font-size: 13px; font-family: var(--font-ui); cursor: pointer;
+    display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  }
+  .tb-btn:hover { background: var(--pane-raised); border-color: var(--border); }
+  .tb-btn.on { background: var(--pane-selected); color: var(--accent); border-color: var(--accent); }
+  .tb-btn .ico { font-size: 15px; }
+  .tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+  /* Tool strip (vertical) */
+  .tool-strip-demo {
+    display: inline-flex; flex-direction: column; gap: 2px; padding: 6px;
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .ts-btn {
+    width: 40px; height: 40px; background: transparent; border: 1px solid transparent;
+    border-radius: 4px; color: var(--text); font-size: 17px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .ts-btn:hover { background: var(--pane-raised); }
+  .ts-btn.on { background: var(--pane-selected); color: var(--accent); border-color: var(--accent); }
+  .ts-btn .key {
+    position: absolute; bottom: 2px; right: 3px;
+    font-size: 9px; color: var(--text-dim); font-family: var(--font-mono);
+  }
+  .ts-btn.on .key { color: var(--accent); }
+  .ts-sep { height: 1px; background: var(--border); margin: 4px 2px; }
+
+  /* Panel tabs */
+  .tabs-demo {
+    background: var(--chrome); border: 1px solid var(--border); border-radius: 6px 6px 0 0;
+    display: flex; padding: 4px; gap: 2px;
+    border-bottom: none;
+  }
+  .tab-btn {
+    flex: 1 1 0; height: 32px; padding: 0 10px; background: var(--pane-raised);
+    border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 12px; cursor: pointer;
+  }
+  .tab-btn:hover { border-color: var(--accent); }
+  .tab-btn.on { background: var(--pane-selected); color: var(--accent); border-color: var(--accent); }
+
+  /* Reference rows */
+  .ref-grid {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 14px 20px;
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px;
+    padding: 16px 20px;
+  }
+  .ref-grid .ico-cell {
+    width: 32px; height: 32px; background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 15px;
+    color: var(--accent); font-family: var(--font-mono); font-weight: 700;
+  }
+  .ref-grid .label-cell strong { color: var(--text); font-weight: 600; display: block; margin-bottom: 2px; }
+  .ref-grid .label-cell span { color: var(--text-muted); font-size: 12px; }
+  .ref-grid .kbd-cell { color: var(--accent); font-family: var(--font-mono); font-size: 12px; align-self: center; }
+
+  .layout-diagram {
+    display: flex; gap: 40px; align-items: flex-start; margin-top: 20px;
+  }
+  .diagram-caption {
+    font-size: 12px; color: var(--text-muted); line-height: 1.6; max-width: 420px;
+  }
+  .diagram-caption b { color: var(--accent); }
+
+  .mini { margin-top: 12px; }
+  .mini-row { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--border-soft); }
+  .mini-row:last-child { border-bottom: none; }
+  .mini-tag { font-size: 10px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent); border-radius: 3px; border: 1px solid var(--accent-border); font-family: var(--font-mono); letter-spacing: 0.4px; align-self: start; }
+  .mini-desc { font-size: 12px; color: var(--text-muted); }
+
+
+
+/* ==========================================================================
+   PALETTE/TYPOGRAPHY REFERENCE STYLES (sections renamed)
+   ========================================================================== */
+
+  :root {
+    --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+    --pane-selected:#2a2a4e; --border:#2a2a3e; --border-soft:#232336;
+    --text:#e0ddd5; --text-muted:#888; --text-dim:#555;
+    --accent:#e8a87c; --accent-hover:#d4945a;
+    --font-ui:"Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:"Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { min-height:100%; background:var(--canvas); color:var(--text); font-family:var(--font-ui); font-size:14px; line-height:1.5; }
+  body { padding: 32px 24px 80px; }
+  .page-max { max-width: 1100px; margin: 0 auto; }
+
+  .crumbs { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: 24px; letter-spacing: 0.5px; }
+  .crumbs a { color: var(--accent); text-decoration: none; }
+
+  h1 { font-size: 24px; font-weight: 300; margin-bottom: 4px; }
+  h1 b { background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; letter-spacing: 2px; margin-right: 4px; }
+  .subtitle { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; margin-bottom: 32px; letter-spacing: 1px; }
+
+  .ref-section { margin-bottom: 48px; }
+  .ref-section h2 {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .ref-section-intro { color: var(--text-muted); margin-bottom: 24px; max-width: 720px; }
+
+  /* Color swatches */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .swatch {
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  .swatch-chip { height: 80px; }
+  .swatch-meta { padding: 10px 12px 12px; }
+  .swatch-name { font-size: 13px; color: var(--text); font-weight: 600; margin-bottom: 2px; }
+  .swatch-hex { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 0.3px; }
+  .swatch-role { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+
+  /* Type specimen */
+  .type-demo {
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px; padding: 24px; margin-bottom: 16px;
+  }
+  .type-row { display: grid; grid-template-columns: 140px 1fr; gap: 20px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); align-items: baseline; }
+  .type-row:last-child { border-bottom: none; }
+  .type-label { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+  .type-h1 { font-size: 28px; font-weight: 300; letter-spacing: 0.3px; }
+  .type-h2 { font-size: 22px; font-weight: 600; }
+  .type-h3 { font-size: 16px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; }
+  .type-body { font-size: 14px; }
+  .type-small { font-size: 12px; color: var(--text-muted); }
+  .type-mono { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: 0.5px; }
+  .type-caption { font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
+
+  /* Spacing/radius demo */
+  .tokens-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .token-card {
+    background: var(--pane); border: 1px solid var(--border); border-radius: 6px; padding: 12px;
+    text-align: center;
+  }
+  .token-vis {
+    margin: 8px auto 10px; display: flex; align-items: center; justify-content: center;
+    height: 60px;
+  }
+  .token-box { background: var(--accent); opacity: 0.8; }
+  .token-name { font-size: 11px; color: var(--text); font-weight: 600; }
+  .token-val { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+
+
+/* Override splash's fixed body sizing so it works inside our tab */
+html, body { overflow: auto; }
+body { min-height: 100vh; }
+</style>
+</head>
+<body>
+
+<!-- ==========================================================================
+     MASTER TAB BAR
+     ========================================================================== -->
+<div class="master-tabs">
+  <div class="mt-brand">
+    <div class="mt-brand-mark"></div>
+    <div class="mt-brand-text"><b>PANDA</b>Gallery<span class="mt-brand-ver">v4.0</span></div>
+  </div>
+
+  <button class="mt-btn active" data-panel="splash" onclick="showPanel('splash')"><span class="mt-ico">✦</span>Splash</button>
+  <button class="mt-btn" data-panel="shell" onclick="showPanel('shell')"><span class="mt-ico">▦</span>Main shell</button>
+
+  <div class="mt-group-sep"></div>
+
+  <button class="mt-btn" data-panel="menu" onclick="showPanel('menu')"><span class="mt-ico">☰</span>Menus &amp; shortcuts</button>
+  <button class="mt-btn" data-panel="toolbar" onclick="showPanel('toolbar')"><span class="mt-ico">⚒</span>Toolbars</button>
+  <button class="mt-btn" data-panel="palette" onclick="showPanel('palette')"><span class="mt-ico">◐</span>Palette &amp; type</button>
+</div>
+
+<!-- ==========================================================================
+     PANEL: SPLASH
+     ========================================================================== -->
+<div class="mt-panel active splash-scope" id="panel-splash">
+  
+  <div class="atmosphere"></div>
+  <div class="grain"></div>
+  
+
+  <div class="splash">
+    <div class="logo-stage">
+      <div class="panda-mark"></div>
+      <div class="wordmark-wrap">
+        <div class="pill"><div class="wordmark">PANDA</div></div>
+        <div class="tagline">Gallery &nbsp;·&nbsp; <span class="version">v4.0</span></div>
+      </div>
+    </div>
+
+    <div class="status-area">
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <div class="status-line">Loading patient database<span class="ok"> · 247 patients</span></div>
+    </div>
+
+    <div class="splash-footer">
+      <div>Panda Dental Software</div>
+      <div class="right">© 2026 &nbsp;·&nbsp; <b>panda_gallery.db</b> &nbsp;·&nbsp; v4.0-dev</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==========================================================================
+     PANEL: SHELL (multiview with its own inner tabs)
+     ========================================================================== -->
+<div class="mt-panel shell-scope" id="panel-shell">
+  
+
+<!-- ============================================================
+     VIEW SWITCHER
+     ============================================================ -->
+<div class="switcher">
+  <a class="switcher-home" href="INDEX.html" title="Back to design index">◂ Index</a>
+  <span class="switcher-label">View:</span>
+  <button class="switch-btn active" data-view="library" onclick="showView('library', event)">Library · patient selected</button>
+  <button class="switch-btn" data-view="empty" onclick="showView('empty', event)">Library · empty state</button>
+  <button class="switch-btn" data-view="loupe" onclick="showView('loupe', event)">Library · loupe</button>
+  <button class="switch-btn" data-view="arrange" onclick="showView('arrange', event)">Arrange · canvas</button>
+  <button class="switch-btn" data-view="present" onclick="showView('present', event)">Present · dual-monitor</button>
+</div>
+
+<!-- ============================================================
+     VIEW A: LIBRARY (patient selected) — same as the fit-to-window version
+     ============================================================ -->
+<div class="view active" id="view-library">
+  <div class="app">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div><span class="brand-panda">PANDA</span> <span class="brand-gallery">Gallery</span> <span class="brand-version">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn" title="Back (Alt+Left)">◀</button>
+        <button class="navbtn" disabled title="Forward (Alt+Right)">▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab"><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab"><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="titlebar-spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn"><span class="gbtn-icon">↓</span><span>Import</span></button>
+        <button class="gbtn"><span class="gbtn-icon">↑</span><span>Export</span></button>
+        <button class="gbtn primary"><span class="gbtn-icon">▶</span><span>Present</span></button>
+      </div>
+    </div>
+
+    <div class="leftpane">
+      <div class="pane-hdr">
+        <div class="pane-title">Patients</div>
+        <div class="pane-count">247</div>
+      </div>
+      <div class="patient-search"><input type="text" placeholder="Search patients…"></div>
+      <div class="patient-list">
+        <div class="patient-item active">
+          <div class="patient-avatar pa-DA"></div>
+          <div class="patient-meta"><div class="patient-name">Adams, Deborah</div><div class="patient-sub">#00842 · F · 1968</div></div>
+          <div class="patient-count">24</div>
+        </div>
+        <div class="patient-item"><div class="patient-avatar pa-MB"></div><div class="patient-meta"><div class="patient-name">Bergstrom, Martin</div><div class="patient-sub">#00591 · M · 1975</div></div><div class="patient-count">12</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-CC"></div><div class="patient-meta"><div class="patient-name">Chen, Caroline</div><div class="patient-sub">#01203 · F · 1990</div></div><div class="patient-count">8</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-RD"></div><div class="patient-meta"><div class="patient-name">Davis, Roberto</div><div class="patient-sub">#00776 · M · 1982</div></div><div class="patient-count">31</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-LE"></div><div class="patient-meta"><div class="patient-name">Eng, Linda</div><div class="patient-sub">#01055 · F · 1971</div></div><div class="patient-count">18</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-JF"></div><div class="patient-meta"><div class="patient-name">Fischer, James</div><div class="patient-sub">#00428 · M · 1964</div></div><div class="patient-count">45</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-SG"></div><div class="patient-meta"><div class="patient-name">Gupta, Sanjay</div><div class="patient-sub">#01108 · M · 1988</div></div><div class="patient-count">6</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-KH"></div><div class="patient-meta"><div class="patient-name">Halvorsen, Karen</div><div class="patient-sub">#00912 · F · 1979</div></div><div class="patient-count">15</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-JI"></div><div class="patient-meta"><div class="patient-name">Ikeda, Jennifer</div><div class="patient-sub">#01267 · F · 1993</div></div><div class="patient-count">4</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-TJ"></div><div class="patient-meta"><div class="patient-name">Jansen, Thomas</div><div class="patient-sub">#00338 · M · 1958</div></div><div class="patient-count">62</div></div>
+      </div>
+      <div class="leftpane-footer">
+        <button class="gbtn"><span class="gbtn-icon">+</span><span>New</span></button>
+        <button class="gbtn"><span class="gbtn-icon">⋯</span><span>More</span></button>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vport-bar">
+        <div class="breadcrumb">
+          <span>Library</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Adams, Deborah</span>
+          <span class="breadcrumb-sep">·</span>
+          <span>24 images</span>
+        </div>
+        <div class="vport-spacer"></div>
+        <div class="view-controls">
+          <button class="vc-btn active"><span class="vc-ico">▦</span><span>Grid</span></button>
+          <button class="vc-btn"><span class="vc-ico">☰</span><span>List</span></button>
+          <button class="vc-btn"><span class="vc-ico">◱</span><span>Compare</span></button>
+        </div>
+        <div class="thumb-size">
+          <span>Size</span>
+          <input type="range" min="120" max="280" value="180">
+        </div>
+      </div>
+      <div class="grid-scroll">
+        <div class="grid">
+          <div class="thumb selected"><div class="thumb-img radio-1"></div><div class="thumb-badges"><span class="badge xray">PA</span></div><div class="thumb-meta"><span>2026-03-14</span><span class="thumb-num">01</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-2"></div><div class="thumb-badges"><span class="badge xray">PA</span></div><div class="thumb-meta"><span>2026-03-14</span><span class="thumb-num">02</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-3"></div><div class="thumb-badges"><span class="badge xray">BW</span></div><div class="thumb-meta"><span>2026-03-14</span><span class="thumb-num">03</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-4"></div><div class="thumb-badges"><span class="badge xray">BW</span></div><div class="thumb-meta"><span>2026-03-14</span><span class="thumb-num">04</span></div></div>
+          <div class="thumb"><div class="thumb-img photo-1"></div><div class="thumb-badges"><span class="badge photo">Photo</span></div><div class="thumb-meta"><span>2026-03-14</span><span class="thumb-num">05</span></div></div>
+          <div class="thumb"><div class="thumb-img photo-2"></div><div class="thumb-badges"><span class="badge photo">Photo</span></div><div class="thumb-meta"><span>2026-03-14</span><span class="thumb-num">06</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-5"></div><div class="thumb-badges"><span class="badge xray">PA</span></div><div class="thumb-meta"><span>2026-01-22</span><span class="thumb-num">07</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-6"></div><div class="thumb-badges"><span class="badge xray">PA</span></div><div class="thumb-meta"><span>2026-01-22</span><span class="thumb-num">08</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-1"></div><div class="thumb-badges"><span class="badge xray">BW</span></div><div class="thumb-meta"><span>2026-01-22</span><span class="thumb-num">09</span></div></div>
+          <div class="thumb"><div class="thumb-img photo-3"></div><div class="thumb-badges"><span class="badge photo">Photo</span></div><div class="thumb-meta"><span>2026-01-22</span><span class="thumb-num">10</span></div></div>
+          <div class="thumb"><div class="thumb-img photo-4"></div><div class="thumb-badges"><span class="badge photo">Photo</span></div><div class="thumb-meta"><span>2026-01-22</span><span class="thumb-num">11</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-3"></div><div class="thumb-badges"><span class="badge xray">PAN</span></div><div class="thumb-meta"><span>2025-11-08</span><span class="thumb-num">12</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-2"></div><div class="thumb-badges"><span class="badge xray">PA</span></div><div class="thumb-meta"><span>2025-11-08</span><span class="thumb-num">13</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-5"></div><div class="thumb-badges"><span class="badge xray">PA</span></div><div class="thumb-meta"><span>2025-11-08</span><span class="thumb-num">14</span></div></div>
+          <div class="thumb"><div class="thumb-img radio-4"></div><div class="thumb-badges"><span class="badge xray">BW</span></div><div class="thumb-meta"><span>2025-11-08</span><span class="thumb-num">15</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filmstrip">
+      <div class="fs-hdr">
+        <div class="fs-label">Filmstrip · all visits</div>
+        <div class="fs-controls">
+          <button class="fs-btn">◀</button>
+          <button class="fs-btn">▶</button>
+          <button class="fs-btn">✕</button>
+        </div>
+      </div>
+      <div class="fs-scroll">
+        <div class="fs-row">
+          <div class="fs-thumb active"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-4"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-3"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-4"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-4"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightpane">
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Patient Info</div></div>
+        <div class="section-body">
+          <div class="info-row"><span class="info-k">Name</span><span class="info-v">Adams, Deborah</span></div>
+          <div class="info-row"><span class="info-k">ID</span><span class="info-v">#00842</span></div>
+          <div class="info-row"><span class="info-k">Sex</span><span class="info-v">Female</span></div>
+          <div class="info-row"><span class="info-k">DOB</span><span class="info-v">1968-04-22</span></div>
+          <div class="info-row"><span class="info-k">Age</span><span class="info-v">57</span></div>
+          <div class="info-row"><span class="info-k">First visit</span><span class="info-v">2021-06-14</span></div>
+          <div class="info-row"><span class="info-k">Last visit</span><span class="info-v">2026-03-14</span></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Filter</div><div class="section-badge">3 active</div></div>
+        <div class="section-body">
+          <div class="filter-group">
+            <div class="filter-label">Image type</div>
+            <div class="chip-row"><span class="chip on">Radiograph</span><span class="chip on">Photo</span><span class="chip">Scan</span></div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Radiograph kind</div>
+            <div class="chip-row"><span class="chip on">PA</span><span class="chip on">BW</span><span class="chip">PAN</span><span class="chip">CBCT</span></div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Date range</div>
+            <div class="date-range"><input type="text" value="2025-01-01"><span>→</span><input type="text" value="2026-04-23"></div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Selected Image</div></div>
+        <div class="section-body">
+          <div class="meta-thumb radio-1"></div>
+          <div class="info-row"><span class="info-k">Captured</span><span class="info-v">2026-03-14</span></div>
+          <div class="info-row"><span class="info-k">Type</span><span class="info-v">Periapical</span></div>
+          <div class="info-row"><span class="info-k">Region</span><span class="info-v">#14-16</span></div>
+          <div class="info-row"><span class="info-k">File</span><span class="info-v">PA_03_14_01</span></div>
+          <div class="info-row"><span class="info-k">Size</span><span class="info-v">1456×1112</span></div>
+        </div>
+      </div>
+      <div class="section collapsed">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Notes &amp; Tags</div><div class="section-badge">3</div></div>
+        <div class="section-body"></div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode library">LIBRARY</span>
+      <span class="sb-item">1 of 24 selected</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">Filter: Radiograph, Photo · PA, BW</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">Sort: Date captured ↓</span>
+      <span class="sb-spacer"></span>
+      <span class="sb-item">DB: panda_gallery.db</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     VIEW B: LIBRARY — EMPTY STATE (no patient selected)
+     ============================================================ -->
+<div class="view" id="view-empty">
+  <div class="app no-filmstrip">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div><span class="brand-panda">PANDA</span> <span class="brand-gallery">Gallery</span> <span class="brand-version">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn" disabled>◀</button>
+        <button class="navbtn" disabled>▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab"><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab"><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="titlebar-spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn ghost" disabled><span class="gbtn-icon">↓</span><span>Import</span></button>
+        <button class="gbtn ghost" disabled><span class="gbtn-icon">↑</span><span>Export</span></button>
+      </div>
+    </div>
+
+    <div class="leftpane">
+      <div class="pane-hdr">
+        <div class="pane-title">Patients</div>
+        <div class="pane-count">247</div>
+      </div>
+      <div class="patient-search"><input type="text" placeholder="Search patients…"></div>
+      <div class="patient-list">
+        <div class="patient-item"><div class="patient-avatar pa-DA"></div><div class="patient-meta"><div class="patient-name">Adams, Deborah</div><div class="patient-sub">#00842 · F · 1968</div></div><div class="patient-count">24</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-MB"></div><div class="patient-meta"><div class="patient-name">Bergstrom, Martin</div><div class="patient-sub">#00591 · M · 1975</div></div><div class="patient-count">12</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-CC"></div><div class="patient-meta"><div class="patient-name">Chen, Caroline</div><div class="patient-sub">#01203 · F · 1990</div></div><div class="patient-count">8</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-RD"></div><div class="patient-meta"><div class="patient-name">Davis, Roberto</div><div class="patient-sub">#00776 · M · 1982</div></div><div class="patient-count">31</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-LE"></div><div class="patient-meta"><div class="patient-name">Eng, Linda</div><div class="patient-sub">#01055 · F · 1971</div></div><div class="patient-count">18</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-JF"></div><div class="patient-meta"><div class="patient-name">Fischer, James</div><div class="patient-sub">#00428 · M · 1964</div></div><div class="patient-count">45</div></div>
+      </div>
+      <div class="leftpane-footer">
+        <button class="gbtn"><span class="gbtn-icon">+</span><span>New Patient</span></button>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vport-bar">
+        <div class="breadcrumb">
+          <span style="color: var(--text-dim);">Library · no patient selected</span>
+        </div>
+        <div class="vport-spacer"></div>
+      </div>
+      <div class="empty-state">
+        <div class="empty-icon">▦</div>
+        <div class="empty-title">Welcome to Panda Gallery</div>
+        <div class="empty-sub">Start by selecting a patient from the list on the left — or create a new one. Everything in the app is organized around who the images belong to.</div>
+        <div class="empty-steps">
+          <div class="empty-step">
+            <span class="empty-step-num">1</span>
+            <div class="empty-step-title">Select a patient</div>
+            <div class="empty-step-body">Click a patient in the list, or search by name or ID.</div>
+            <span class="empty-step-kbd">Ctrl+F</span>
+          </div>
+          <div class="empty-step">
+            <span class="empty-step-num">2</span>
+            <div class="empty-step-title">Import their images</div>
+            <div class="empty-step-body">Drag and drop files, or use the Import button once a patient is selected.</div>
+            <span class="empty-step-kbd">Ctrl+I</span>
+          </div>
+          <div class="empty-step">
+            <span class="empty-step-num">3</span>
+            <div class="empty-step-title">Arrange &amp; present</div>
+            <div class="empty-step-body">Switch to Arrange to build layouts, then Present for the patient-facing view.</div>
+            <span class="empty-step-kbd">Ctrl+2 / Ctrl+3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightpane">
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Quick Actions</div></div>
+        <div class="section-body">
+          <div style="color: var(--text-muted); font-size: 12px; line-height: 1.6;">
+            <p>Select a patient to see their details, filters, and image metadata here.</p>
+          </div>
+        </div>
+      </div>
+      <div class="section collapsed">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Recent Patients</div><div class="section-badge">5</div></div>
+      </div>
+      <div class="section collapsed">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Tips</div></div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode library">LIBRARY</span>
+      <span class="sb-item">No patient selected</span>
+      <span class="sb-spacer"></span>
+      <span class="sb-item">DB: panda_gallery.db</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     VIEW C: LOUPE — single image zoomed, editor panel
+     ============================================================ -->
+<div class="view" id="view-loupe">
+  <div class="app">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div><span class="brand-panda">PANDA</span> <span class="brand-gallery">Gallery</span> <span class="brand-version">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn">◀</button>
+        <button class="navbtn">▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab"><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab"><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="titlebar-spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn"><span class="gbtn-icon">↓</span><span>Import</span></button>
+        <button class="gbtn"><span class="gbtn-icon">↑</span><span>Export</span></button>
+        <button class="gbtn primary"><span class="gbtn-icon">▶</span><span>Present</span></button>
+      </div>
+    </div>
+
+    <div class="leftpane">
+      <div class="pane-hdr">
+        <div class="pane-title">Patients</div>
+        <div class="pane-count">247</div>
+      </div>
+      <div class="patient-search"><input type="text" placeholder="Search patients…"></div>
+      <div class="patient-list">
+        <div class="patient-item active"><div class="patient-avatar pa-DA"></div><div class="patient-meta"><div class="patient-name">Adams, Deborah</div><div class="patient-sub">#00842 · F · 1968</div></div><div class="patient-count">24</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-MB"></div><div class="patient-meta"><div class="patient-name">Bergstrom, Martin</div><div class="patient-sub">#00591 · M · 1975</div></div><div class="patient-count">12</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-CC"></div><div class="patient-meta"><div class="patient-name">Chen, Caroline</div><div class="patient-sub">#01203 · F · 1990</div></div><div class="patient-count">8</div></div>
+        <div class="patient-item"><div class="patient-avatar pa-RD"></div><div class="patient-meta"><div class="patient-name">Davis, Roberto</div><div class="patient-sub">#00776 · M · 1982</div></div><div class="patient-count">31</div></div>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vport-bar">
+        <div class="breadcrumb">
+          <span>Library</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>Adams, Deborah</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">PA_03_14_01</span>
+        </div>
+        <div class="vport-spacer"></div>
+        <div class="view-controls">
+          <button class="vc-btn"><span class="vc-ico">▦</span><span>Grid</span></button>
+          <button class="vc-btn active"><span class="vc-ico">◈</span><span>Loupe</span></button>
+          <button class="vc-btn"><span class="vc-ico">◱</span><span>Compare</span></button>
+          <button class="vc-btn"><span class="vc-ico">⟲</span><span>Before/After</span></button>
+        </div>
+        <div class="thumb-size">
+          <span>Fit</span>
+          <input type="range" min="25" max="400" value="100">
+          <span style="color: var(--text); font-family: var(--font-mono);">100%</span>
+        </div>
+      </div>
+      <div class="loupe-stage">
+        <div class="tool-strip">
+          <button class="tool-btn active" title="Select (V)">⌖</button>
+          <button class="tool-btn" title="Brush (B)">✎</button>
+          <button class="tool-btn" title="Rectangle (R)">▭</button>
+          <button class="tool-btn" title="Ellipse (E)">⬭</button>
+          <button class="tool-btn" title="Arrow (A)">↗</button>
+          <button class="tool-btn" title="Text (T)">T</button>
+          <div class="tool-sep"></div>
+          <button class="tool-btn" title="Crop (C)">⌗</button>
+          <button class="tool-btn" title="Measure (M)">⊢⊣</button>
+          <div class="tool-sep"></div>
+          <button class="tool-btn" title="Invert (I)">◐</button>
+        </div>
+        <div class="loupe-image">
+          <div class="loupe-anno" data-label="#15 apex" style="top: 30%; left: 45%; width: 90px; height: 60px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filmstrip">
+      <div class="fs-hdr">
+        <div class="fs-label">Filmstrip · Adams, Deborah · all visits</div>
+        <div class="fs-controls"><button class="fs-btn">◀</button><button class="fs-btn">▶</button><button class="fs-btn">✕</button></div>
+      </div>
+      <div class="fs-scroll">
+        <div class="fs-row">
+          <div class="fs-thumb active"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-4"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-3"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-4"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightpane">
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Adjust</div></div>
+        <div class="section-body">
+          <div class="slider-row"><span class="s-label">Brightness</span><input type="range" min="-100" max="100" value="15"><span class="s-val">+15</span></div>
+          <div class="slider-row"><span class="s-label">Contrast</span><input type="range" min="-100" max="100" value="25"><span class="s-val">+25</span></div>
+          <div class="slider-row"><span class="s-label">Sharpness</span><input type="range" min="0" max="200" value="120"><span class="s-val">120</span></div>
+          <div class="slider-row"><span class="s-label">Saturation</span><input type="range" min="-100" max="100" value="0"><span class="s-val">0</span></div>
+          <div style="margin-top: 8px; display: flex; gap: 6px;">
+            <button class="gbtn" style="flex:1;"><span>Reset</span></button>
+            <button class="gbtn" style="flex:1;"><span>Copy</span></button>
+            <button class="gbtn" style="flex:1;"><span>Paste</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">History</div><div class="section-badge">7 steps</div></div>
+        <div class="section-body">
+          <div style="display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; font-family: var(--font-mono);">
+            <div style="padding: 4px 6px; color: var(--text-dim);">Open image</div>
+            <div style="padding: 4px 6px; color: var(--text-dim);">Brightness +10</div>
+            <div style="padding: 4px 6px; color: var(--text-dim);">Brightness +15</div>
+            <div style="padding: 4px 6px; color: var(--text-dim);">Contrast +20</div>
+            <div style="padding: 4px 6px; color: var(--text-dim);">Sharpness 110</div>
+            <div style="padding: 4px 6px; color: var(--text-dim);">Sharpness 120</div>
+            <div style="padding: 4px 6px; background: var(--pane-selected); color: var(--accent); border-left: 2px solid var(--accent);">Contrast +25 ← current</div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Annotations</div><div class="section-badge">1</div></div>
+        <div class="section-body">
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px;">
+            <div style="padding: 6px 8px; background: var(--pane-raised); border: 1px solid var(--accent-border); border-radius: 3px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--accent);">▭ #15 apex</span>
+              <span style="color: var(--text-dim); font-family: var(--font-mono); font-size: 10px;">rect</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section collapsed">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Metadata</div></div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode library">LOUPE</span>
+      <span class="sb-item">PA_03_14_01</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">1456×1112 · 100%</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">3 edits · 1 annotation</span>
+      <span class="sb-spacer"></span>
+      <span class="sb-item">7/24 in patient</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     VIEW D: ARRANGE — unified canvas
+     ============================================================ -->
+<div class="view" id="view-arrange">
+  <div class="app arrange-layout">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div><span class="brand-panda">PANDA</span> <span class="brand-gallery">Gallery</span> <span class="brand-version">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn">◀</button>
+        <button class="navbtn">▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab active arrange"><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab"><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="titlebar-spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn"><span class="gbtn-icon">⎙</span><span>Print</span></button>
+        <button class="gbtn"><span class="gbtn-icon">↑</span><span>Export</span></button>
+        <button class="gbtn primary"><span class="gbtn-icon">▶</span><span>Present</span></button>
+      </div>
+    </div>
+
+    <div class="leftpane">
+      <div class="pane-hdr">
+        <div class="pane-title">Images</div>
+        <div class="pane-count">24</div>
+      </div>
+      <div class="patient-search"><input type="text" placeholder="Filter this patient…"></div>
+      <div class="patient-list" style="padding: 8px;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--accent); border-radius: 3px; overflow: hidden;"><div class="thumb-img radio-2"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img radio-3"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img radio-4"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img photo-1"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img photo-2"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img radio-5"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img radio-6"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb" style="aspect-ratio: 4/3; height: auto; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden;"><div class="thumb-img photo-3"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vport-bar">
+        <div class="breadcrumb">
+          <span>Arrange</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>Adams, Deborah</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Full Mouth Series · 2026-03-14</span>
+        </div>
+        <div class="vport-spacer"></div>
+        <div class="view-controls">
+          <button class="vc-btn"><span class="vc-ico">💾</span><span>Save</span></button>
+          <button class="vc-btn"><span class="vc-ico">☰</span><span>Library</span></button>
+        </div>
+        <div class="thumb-size">
+          <span>Zoom</span>
+          <input type="range" min="25" max="200" value="75">
+          <span style="color: var(--text); font-family: var(--font-mono);">75%</span>
+        </div>
+      </div>
+      <div class="arrange-canvas">
+        <div class="arrange-grid-bg"></div>
+        <div class="arr-tools">
+          <button class="tool-btn active" title="Select">⌖</button>
+          <button class="tool-btn" title="Add slot">▢</button>
+          <button class="tool-btn" title="Align">⫴</button>
+          <button class="tool-btn" title="Distribute">⋮⋮⋮</button>
+          <div class="tool-sep" style="width:1px; height:auto; margin: 0 4px;"></div>
+          <button class="tool-btn" title="Snap to grid">⌗</button>
+          <button class="tool-btn" title="Lock layout">🔒</button>
+        </div>
+
+        <!-- Page-like sheet -->
+        <div class="arr-sheet" style="top: 40px; left: 40px; right: 40px; bottom: 40px;">
+          <!-- Full mouth series layout — simplified 18-slot approximation -->
+          <!-- Top row: upper posterior -->
+          <div class="arr-slot filled" style="top: 4%; left: 4%; width: 13%; height: 18%;"><div class="arr-slot-num">01</div><div class="arr-slot-content radio-1"></div></div>
+          <div class="arr-slot filled" style="top: 4%; left: 18.5%; width: 13%; height: 18%;"><div class="arr-slot-num">02</div><div class="arr-slot-content radio-2"></div></div>
+          <div class="arr-slot filled" style="top: 4%; left: 33%; width: 13%; height: 18%;"><div class="arr-slot-num">03</div><div class="arr-slot-content radio-3"></div></div>
+          <div class="arr-slot filled selected" style="top: 4%; left: 54%; width: 13%; height: 18%;"><div class="arr-slot-num">04</div><div class="arr-slot-content radio-4"></div></div>
+          <div class="arr-slot filled" style="top: 4%; left: 68.5%; width: 13%; height: 18%;"><div class="arr-slot-num">05</div><div class="arr-slot-content radio-5"></div></div>
+          <div class="arr-slot filled" style="top: 4%; left: 83%; width: 13%; height: 18%;"><div class="arr-slot-num">06</div><div class="arr-slot-content radio-6"></div></div>
+          <!-- Upper bitewings -->
+          <div class="arr-slot filled" style="top: 26%; left: 14%; width: 17%; height: 14%;"><div class="arr-slot-num">07</div><div class="arr-slot-content radio-2"></div></div>
+          <div class="arr-slot filled" style="top: 26%; left: 69%; width: 17%; height: 14%;"><div class="arr-slot-num">08</div><div class="arr-slot-content radio-4"></div></div>
+          <!-- Middle row: anteriors -->
+          <div class="arr-slot filled" style="top: 42%; left: 22%; width: 17%; height: 18%;"><div class="arr-slot-num">09</div><div class="arr-slot-content radio-3"></div></div>
+          <div class="arr-slot filled" style="top: 42%; left: 41%; width: 17%; height: 18%;"><div class="arr-slot-num">10</div><div class="arr-slot-content radio-1"></div></div>
+          <div class="arr-slot filled" style="top: 42%; left: 60%; width: 17%; height: 18%;"><div class="arr-slot-num">11</div><div class="arr-slot-content radio-5"></div></div>
+          <!-- Lower bitewings -->
+          <div class="arr-slot filled" style="top: 62%; left: 14%; width: 17%; height: 14%;"><div class="arr-slot-num">12</div><div class="arr-slot-content radio-6"></div></div>
+          <div class="arr-slot filled" style="top: 62%; left: 69%; width: 17%; height: 14%;"><div class="arr-slot-num">13</div><div class="arr-slot-content radio-1"></div></div>
+          <!-- Bottom row: lower posterior -->
+          <div class="arr-slot filled" style="top: 78%; left: 4%; width: 13%; height: 18%;"><div class="arr-slot-num">14</div><div class="arr-slot-content radio-4"></div></div>
+          <div class="arr-slot filled" style="top: 78%; left: 18.5%; width: 13%; height: 18%;"><div class="arr-slot-num">15</div><div class="arr-slot-content radio-2"></div></div>
+          <div class="arr-slot" style="top: 78%; left: 33%; width: 13%; height: 18%;"><div class="arr-slot-num">16</div></div>
+          <div class="arr-slot filled" style="top: 78%; left: 54%; width: 13%; height: 18%;"><div class="arr-slot-num">17</div><div class="arr-slot-content radio-3"></div></div>
+          <div class="arr-slot filled" style="top: 78%; left: 68.5%; width: 13%; height: 18%;"><div class="arr-slot-num">18</div><div class="arr-slot-content radio-5"></div></div>
+          <div class="arr-slot" style="top: 78%; left: 83%; width: 13%; height: 18%;"><div class="arr-slot-num">19</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightpane">
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Arrangement</div></div>
+        <div class="section-body">
+          <div class="info-row"><span class="info-k">Template</span><span class="info-v">Full Mouth</span></div>
+          <div class="info-row"><span class="info-k">Slots</span><span class="info-v">17 / 19</span></div>
+          <div class="info-row"><span class="info-k">Saved</span><span class="info-v">Modified</span></div>
+          <div class="info-row"><span class="info-k">Size</span><span class="info-v">Letter · L</span></div>
+          <div style="margin-top: 10px; display: flex; gap: 6px;">
+            <button class="gbtn" style="flex:1;"><span>Save As…</span></button>
+            <button class="gbtn" style="flex:1;"><span>Reset</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Selected Slot</div><div class="section-badge">#04</div></div>
+        <div class="section-body">
+          <div class="meta-thumb radio-4"></div>
+          <div class="info-row"><span class="info-k">Position</span><span class="info-v">#14 molar</span></div>
+          <div class="info-row"><span class="info-k">Image</span><span class="info-v">PA_03_14_04</span></div>
+          <div class="info-row"><span class="info-k">Rotation</span><span class="info-v">0°</span></div>
+          <div class="info-row"><span class="info-k">Flip</span><span class="info-v">None</span></div>
+          <div style="margin-top: 10px; display: flex; gap: 6px;">
+            <button class="gbtn" style="flex:1;"><span>Replace</span></button>
+            <button class="gbtn" style="flex:1;"><span>Clear</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Library</div></div>
+        <div class="section-body">
+          <div style="color: var(--text-muted); font-size: 11.5px; margin-bottom: 6px;">Saved arrangements</div>
+          <div style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">
+            <div style="padding: 6px 8px; background: var(--pane-selected); color: var(--accent); border-radius: 3px; border-left: 2px solid var(--accent);">Full Mouth Series</div>
+            <div style="padding: 6px 8px; color: var(--text); cursor: pointer;">Bitewing Set (4)</div>
+            <div style="padding: 6px 8px; color: var(--text); cursor: pointer;">Periapical Set (14)</div>
+            <div style="padding: 6px 8px; color: var(--text); cursor: pointer;">Perio Exam Custom</div>
+            <div style="padding: 6px 8px; color: var(--text); cursor: pointer;">2×3 Photo Grid</div>
+          </div>
+        </div>
+      </div>
+      <div class="section collapsed">
+        <div class="section-hdr"><div class="section-arrow">▼</div><div class="section-title">Page Setup</div></div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode arrange">ARRANGE</span>
+      <span class="sb-item">Full Mouth Series · modified</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">Slot #04 selected</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">17 of 19 slots filled</span>
+      <span class="sb-spacer"></span>
+      <span class="sb-item">Zoom 75%</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     VIEW E: PRESENT — dual-monitor mirror
+     ============================================================ -->
+<div class="view" id="view-present">
+  <div class="app present-layout">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div><span class="brand-panda">PANDA</span> <span class="brand-gallery">Gallery</span> <span class="brand-version">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn">◀</button>
+        <button class="navbtn">▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab"><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab active present"><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="titlebar-spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn"><span class="gbtn-icon">⏸</span><span>Pause</span></button>
+        <button class="gbtn"><span class="gbtn-icon">⊟</span><span>Layout</span></button>
+        <button class="gbtn primary" style="background: var(--err); border-color: var(--err); color: white;"><span class="gbtn-icon">■</span><span>End Session</span></button>
+      </div>
+    </div>
+
+    <div class="present-split">
+      <!-- Control monitor (what Darrin sees) -->
+      <div class="monitor control">
+        <div class="monitor-label control">
+          <span>◉ Control Monitor (Monitor 1)</span>
+          <span class="monitor-res">2560×1440</span>
+        </div>
+        <div class="monitor-stage">
+          <div class="monitor-image">
+            <div class="loupe-anno" data-label="#15 apex" style="top: 30%; left: 45%; width: 80px; height: 50px;"></div>
+          </div>
+        </div>
+        <div class="present-controls">
+          <span class="present-ctrl-label">Clinician controls</span>
+          <button class="gbtn"><span>◀ Prev</span></button>
+          <button class="gbtn"><span>Next ▶</span></button>
+          <button class="gbtn"><span>+ Annotate</span></button>
+          <button class="gbtn"><span>Adjust</span></button>
+        </div>
+      </div>
+
+      <!-- Patient monitor (what the patient sees) -->
+      <div class="monitor patient">
+        <div class="monitor-label patient">
+          <span>◉ Patient Monitor (Monitor 2) · Mirrored</span>
+          <span class="monitor-res">1920×1080</span>
+        </div>
+        <div class="monitor-stage">
+          <div class="monitor-image">
+            <div class="loupe-anno" data-label="#15 apex" style="top: 30%; left: 45%; width: 80px; height: 50px;"></div>
+          </div>
+        </div>
+        <div class="present-controls">
+          <span class="present-ctrl-label" style="color: var(--mode-present);">Zero chrome · patient-facing</span>
+          <span class="present-ctrl-label" style="font-family: var(--font-mono);">Esc to exit</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="filmstrip">
+      <div class="fs-hdr">
+        <div class="fs-label">Presentation sequence · Adams, Deborah · 2026-03-14</div>
+        <div class="fs-controls">
+          <button class="fs-btn">◀</button>
+          <button class="fs-btn">▶</button>
+        </div>
+      </div>
+      <div class="fs-scroll">
+        <div class="fs-row">
+          <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+          <div class="fs-thumb active"><div class="thumb-img radio-4"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+          <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-1"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-2"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-3"></div></div>
+          <div class="fs-thumb"><div class="thumb-img photo-4"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode present"><span class="sb-dot"></span>PRESENTING</span>
+      <span class="sb-item">Adams, Deborah</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">Image 4 of 10</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">Monitor 2: 1920×1080 @ 60Hz</span>
+      <span class="sb-spacer"></span>
+      <span class="sb-item">Session 00:04:23</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showView(name, fromEvent) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+    var view = document.getElementById('view-' + name);
+    if (view) view.classList.add('active');
+    // Find the matching button and activate it
+    document.querySelectorAll('.switch-btn').forEach(function(b) {
+      if (b.getAttribute('data-view') === name) b.classList.add('active');
+    });
+    if (fromEvent) fromEvent.preventDefault();
+    if (history.replaceState) history.replaceState(null, '', '#' + name);
+  }
+  // Initial load — respect the hash if present
+  window.addEventListener('DOMContentLoaded', function() {
+    var hash = (location.hash || '').replace('#', '');
+    var valid = ['library', 'empty', 'loupe', 'arrange', 'present'];
+    if (valid.indexOf(hash) !== -1) showView(hash, null);
+  });
+</script>
+
+
+</div>
+
+<!-- ==========================================================================
+     PANEL: MENU REFERENCE
+     ========================================================================== -->
+<div class="mt-panel ref-scope" id="panel-menu">
+  <div class="page-max">
+  
+
+
+  
+
+  <h1><b>PANDA</b>Gallery — Menu &amp; Shortcut Reference</h1>
+  <div class="subtitle">Complete menu bar / submenu / keyboard shortcut map for v4.0</div>
+
+  <div class="ref-section">
+    <h2>Menu bar layout</h2>
+    <div class="section-intro">All six top-level menus with their dropdown contents expanded inline. Hover a top-level item to see the emphasis state.</div>
+
+    <div class="menubar-demo">
+      <div class="mb-item open"><span class="u">F</span>ile</div>
+      <div class="mb-item"><span class="u">E</span>dit</div>
+      <div class="mb-item"><span class="u">V</span>iew</div>
+      <div class="mb-item"><span class="u">T</span>emplates</div>
+      <div class="mb-item"><span class="u">C</span>ompare</div>
+      <div class="mb-item"><span class="u">H</span>elp</div>
+    </div>
+
+    <div class="menubar-body">
+      <div>
+        <div class="menu">
+          <div class="menu-header">File</div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">O</span>pen Image…</span><span class="kbd">Ctrl+O</span></div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">I</span>mport Images to Patient…</span><span class="kbd">Ctrl+I</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>Export <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">A</span>s…</span><span class="kbd">Ctrl+Shift+E</span></div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">Q</span>uick Export</span><span class="kbd">Ctrl+E</span></div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">P</span>rint…</span><span class="kbd">Ctrl+P</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>E<span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">x</span>it</span><span class="kbd">Ctrl+Q</span></div>
+        </div>
+
+        <div class="menu" style="margin-top: 16px;">
+          <div class="menu-header">Edit</div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">U</span>ndo</span><span class="kbd">Ctrl+Z</span></div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">R</span>edo</span><span class="kbd">Ctrl+Y</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>Copy Ad<span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">j</span>ustments</span><span class="kbd">Ctrl+Shift+C</span></div>
+          <div class="menu-item"><span>Paste Adjust<span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">m</span>ents</span><span class="kbd">Ctrl+Shift+V</span></div>
+        </div>
+
+        <div class="menu" style="margin-top: 16px;">
+          <div class="menu-header">Compare</div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">N</span>ew Comparison…</span><span class="kbd">Ctrl+Shift+M</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="menu">
+          <div class="menu-header">View</div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">F</span>it in View</span><span class="kbd">Home</span></div>
+          <div class="menu-item"><span>Zoom <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">I</span>n</span><span class="kbd">Ctrl+=</span></div>
+          <div class="menu-item"><span>Zoom <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">O</span>ut</span><span class="kbd">Ctrl+−</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>Full<span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">s</span>creen</span><span class="kbd">F11</span></div>
+          <div class="menu-item"><span>Reset <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">L</span>ayout</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>☐ Show <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">D</span>eleted Items</span></div>
+          <div class="menu-item"><span>☐ Show <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">A</span>rchived Patients</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>☑ Show Slot Numbers</span></div>
+          <div class="menu-item"><span>☑ Show Sensor Numbers</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item has-submenu"><span>Testing</span></div>
+          <div class="submenu">
+            <div class="menu-item"><span>Start workflow recording</span><span class="kbd">Ctrl+Alt+R</span></div>
+            <div class="menu-item"><span>Stop workflow recording</span><span class="kbd">Ctrl+Alt+S</span></div>
+            <div class="menu-sep"></div>
+            <div class="menu-item"><span>Capture workflow frame</span><span class="kbd">F12</span></div>
+            <div class="menu-sep"></div>
+            <div class="menu-item"><span>Abort workflow recording</span><span class="kbd">Ctrl+Alt+A</span></div>
+            <div class="menu-item"><span>Delete last workflow</span><span class="kbd">Ctrl+Alt+⌫</span></div>
+            <div class="menu-sep"></div>
+            <div class="menu-item"><span>Show Instructions</span><span class="kbd">Ctrl+Alt+I</span></div>
+            <div class="menu-sep"></div>
+            <div class="menu-item"><span>Settings…</span></div>
+          </div>
+        </div>
+
+        <div class="menu" style="margin-top: 16px;">
+          <div class="menu-header">Templates</div>
+          <div class="menu-item"><span><span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">D</span>esign New Template…</span></div>
+          <div class="menu-item"><span>Template <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">L</span>ibrary…</span><span class="kbd">Ctrl+T</span></div>
+          <div class="menu-item"><span>New <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">F</span>reeform Arrangement</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item has-submenu"><span>Mount <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">N</span>ew Series</span></div>
+          <div class="submenu">
+            <div class="menu-item"><span>Full Mouth (18)</span></div>
+            <div class="menu-item"><span>Bitewing (4)</span></div>
+            <div class="menu-item"><span>Periapical (14)</span></div>
+            <div class="menu-item"><span>2×3 (6)</span></div>
+            <div class="menu-sep"></div>
+            <div class="menu-item"><span>Browse Template Library…</span></div>
+          </div>
+          <div class="menu-sep"></div>
+          <div class="menu-item has-submenu"><span>Open <span style="text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px;">R</span>ecent Series</span></div>
+          <div class="submenu">
+            <div class="menu-item"><span>Full Mouth — Adams — 2026-03-14</span></div>
+            <div class="menu-item"><span>Bitewing — Adams — 2026-01-22</span></div>
+            <div class="menu-item"><span>Periapical — Adams — 2025-11-08</span></div>
+            <div class="menu-item"><span>Perio Exam — Fischer — 2025-11-04</span></div>
+            <div class="menu-item"><span>Full Mouth — Bergstrom — 2025-09-20</span></div>
+          </div>
+        </div>
+
+        <div class="menu" style="margin-top: 16px;">
+          <div class="menu-header">Help <span style="color:var(--text-dim);font-family:var(--font-ui);font-weight:400;letter-spacing:0;text-transform:none;">(v4.0 new)</span></div>
+          <div class="menu-item"><span>Keyboard Shortcuts…</span><span class="kbd">Ctrl+/</span></div>
+          <div class="menu-item"><span>What's New in v4.0…</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>Panda Gallery Documentation</span></div>
+          <div class="menu-item"><span>Report a Bug…</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item"><span>About Panda Gallery…</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Keyboard shortcuts · complete list</h2>
+    <div class="section-intro">Every shortcut from panda_gallery.py plus a few v4.0 additions. Split by scope.</div>
+
+    <div class="twocol">
+
+      <div>
+        <table>
+          <thead><tr><th colspan="2">File &amp; Edit</th></tr></thead>
+          <tbody>
+            <tr><td>Open image</td><td class="kbd">Ctrl+O</td></tr>
+            <tr><td>Import to patient</td><td class="kbd">Ctrl+I</td></tr>
+            <tr><td>Quick export</td><td class="kbd">Ctrl+E</td></tr>
+            <tr><td>Export As…</td><td class="kbd">Ctrl+Shift+E</td></tr>
+            <tr><td>Print</td><td class="kbd">Ctrl+P</td></tr>
+            <tr><td>Quit</td><td class="kbd">Ctrl+Q</td></tr>
+            <tr><td>Undo</td><td class="kbd">Ctrl+Z</td></tr>
+            <tr><td>Redo</td><td class="kbd">Ctrl+Y</td></tr>
+            <tr><td>Copy adjustments</td><td class="kbd">Ctrl+Shift+C</td></tr>
+            <tr><td>Paste adjustments</td><td class="kbd">Ctrl+Shift+V</td></tr>
+          </tbody>
+        </table>
+
+        <table style="margin-top: 20px;">
+          <thead><tr><th colspan="2">View &amp; Navigation</th></tr></thead>
+          <tbody>
+            <tr><td>Fit in view</td><td class="kbd">Home</td></tr>
+            <tr><td>Zoom in</td><td class="kbd">Ctrl+=</td></tr>
+            <tr><td>Zoom out</td><td class="kbd">Ctrl+−</td></tr>
+            <tr><td>Fullscreen</td><td class="kbd">F11</td></tr>
+            <tr><td>Escape (exit mode)</td><td class="kbd">Esc</td></tr>
+            <tr><td>Previous image</td><td class="kbd">←</td></tr>
+            <tr><td>Next image</td><td class="kbd">→</td></tr>
+            <tr class="v4new"><td>Back (nav history) ⟵ v4.0</td><td class="kbd">Alt+←</td></tr>
+            <tr class="v4new"><td>Forward (nav history) ⟵ v4.0</td><td class="kbd">Alt+→</td></tr>
+            <tr class="v4new"><td>Library module ⟵ v4.0</td><td class="kbd">Ctrl+1</td></tr>
+            <tr class="v4new"><td>Arrange module ⟵ v4.0</td><td class="kbd">Ctrl+2</td></tr>
+            <tr class="v4new"><td>Present module ⟵ v4.0</td><td class="kbd">Ctrl+3</td></tr>
+            <tr class="v4new"><td>Start presentation ⟵ v4.0</td><td class="kbd">Ctrl+Shift+P</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <table>
+          <thead><tr><th colspan="2">Drawing / Editor Tools</th></tr></thead>
+          <tbody>
+            <tr><td>Select tool</td><td class="kbd">V</td></tr>
+            <tr><td>Brush</td><td class="kbd">B</td></tr>
+            <tr><td>Rectangle</td><td class="kbd">R</td></tr>
+            <tr><td>Ellipse</td><td class="kbd">E</td></tr>
+            <tr><td>Arrow</td><td class="kbd">A</td></tr>
+            <tr><td>Text</td><td class="kbd">T</td></tr>
+            <tr><td>Crop</td><td class="kbd">C</td></tr>
+            <tr><td>Invert</td><td class="kbd">I</td></tr>
+            <tr><td>Pan (hold, then drag)</td><td class="kbd">Space</td></tr>
+            <tr><td>Constrain (square / circle)</td><td class="kbd">Shift</td></tr>
+          </tbody>
+        </table>
+
+        <table style="margin-top: 20px;">
+          <thead><tr><th colspan="2">Arrange / Compare</th></tr></thead>
+          <tbody>
+            <tr><td>Template library</td><td class="kbd">Ctrl+T</td></tr>
+            <tr><td>New comparison</td><td class="kbd">Ctrl+Shift+M</td></tr>
+            <tr><td>Mount series (context)</td><td class="note">no shortcut</td></tr>
+            <tr><td>Freeform arrangement</td><td class="note">no shortcut</td></tr>
+          </tbody>
+        </table>
+
+        <table style="margin-top: 20px;">
+          <thead><tr><th colspan="2">Workflow / Testing</th></tr></thead>
+          <tbody>
+            <tr><td>Start workflow recording</td><td class="kbd">Ctrl+Alt+R</td></tr>
+            <tr><td>Stop workflow recording</td><td class="kbd">Ctrl+Alt+S</td></tr>
+            <tr><td>Capture frame</td><td class="kbd">F12</td></tr>
+            <tr><td>Abort workflow</td><td class="kbd">Ctrl+Alt+A</td></tr>
+            <tr><td>Delete last workflow</td><td class="kbd">Ctrl+Alt+Backspace</td></tr>
+            <tr><td>Show instruction pane</td><td class="kbd">Ctrl+Alt+I</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Notes &amp; open questions</h2>
+    <div class="section-intro">Flagged for review before implementation.</div>
+    <table>
+      <tr><td>Help menu — proposed new</td><td class="note">Not in the current code; adding for v4.0. "Keyboard Shortcuts…" (Ctrl+/) dialog covers UX §4.4 discoverability.</td></tr>
+      <tr><td>Module tab shortcuts (Ctrl+1/2/3)</td><td class="note">Proposed per PG_V4_MVP_PLAN §9.5. Lightroom convention. Audit for conflicts before Week 3.</td></tr>
+      <tr><td>Ctrl+Shift+P for presentation</td><td class="note">Proposed per PG_V4_MVP_PLAN §9.4. Clear of F11 and module shortcuts.</td></tr>
+      <tr><td>Alt+Left / Alt+Right nav history</td><td class="note">Browser convention. Proposed for bug #116 nav history feature.</td></tr>
+      <tr><td>E toggle Library ↔ Loupe</td><td class="note">UX §2.3 proposed this. NOT currently wired; consider for v4.0 Week 3.</td></tr>
+      <tr><td>L lights-out cycling</td><td class="note">UX §2.6 proposed. NOT currently wired; out of v4.0 scope unless trivial.</td></tr>
+    </table>
+  </div>
+
+</div>
+
+  </div>
+</div>
+
+<!-- ==========================================================================
+     PANEL: TOOLBAR REFERENCE
+     ========================================================================== -->
+<div class="mt-panel ref-scope" id="panel-toolbar">
+  <div class="page-max">
+  
+
+
+  
+
+  <h1><b>PANDA</b>Gallery — Toolbars &amp; Panels</h1>
+  <div class="subtitle">Every clickable control in the shell — top toolbar, tool strip, right-panel tabs</div>
+
+  <div class="ref-section">
+    <h2>Top toolbar</h2>
+    <div class="section-intro">Persistent strip below the menu bar. Always visible. Canvas-bound actions are disabled when no image is loaded.</div>
+
+    <div class="tb-demo">
+      <button class="tb-btn"><span class="ico">📂</span><span>Open</span></button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn"><span class="ico">↶</span><span>Undo</span></button>
+      <button class="tb-btn"><span class="ico">↷</span><span>Redo</span></button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn"><span class="ico">⊕</span><span>Zoom+</span></button>
+      <button class="tb-btn"><span class="ico">⊖</span><span>Zoom−</span></button>
+      <button class="tb-btn"><span class="ico">⊡</span><span>Fit</span></button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn"><span class="ico">↑</span><span>Export</span></button>
+      <button class="tb-btn"><span class="ico">⎙</span><span>Print</span></button>
+    </div>
+
+    <div class="mini">
+      <div class="mini-row"><span class="mini-tag">Open</span><span class="mini-desc">Open a single image file (Ctrl+O) — quick edit without a patient association.</span></div>
+      <div class="mini-row"><span class="mini-tag">Undo / Redo</span><span class="mini-desc">Per-image edit history (Ctrl+Z / Ctrl+Y). Separate from Back / Forward navigation.</span></div>
+      <div class="mini-row"><span class="mini-tag">Zoom+ / Zoom−</span><span class="mini-desc">Step zoom (Ctrl+= / Ctrl+−). Mouse wheel also zooms on the canvas directly.</span></div>
+      <div class="mini-row"><span class="mini-tag">Fit</span><span class="mini-desc">Fit image to viewport (Home). First thing you reach for after loading an image.</span></div>
+      <div class="mini-row"><span class="mini-tag">Export</span><span class="mini-desc">Export with annotations baked in. PNG / JPEG / TIFF / BMP.</span></div>
+      <div class="mini-row"><span class="mini-tag">Print</span><span class="mini-desc">Print preview dialog — lets user pick printer, paper size, fit-to-page.</span></div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Tool strip · drawing &amp; annotation</h2>
+    <div class="section-intro">Vertical column on the left of the canvas. Visible only in loupe (single-image) mode. Single-key shortcuts match Lightroom / Photoshop convention.</div>
+
+    <div class="layout-diagram">
+      <div class="tool-strip-demo">
+        <button class="ts-btn on" title="Select">⌖<span class="key">V</span></button>
+        <button class="ts-btn" title="Brush">✎<span class="key">B</span></button>
+        <button class="ts-btn" title="Rectangle">▭<span class="key">R</span></button>
+        <button class="ts-btn" title="Ellipse">⬭<span class="key">E</span></button>
+        <button class="ts-btn" title="Arrow">↗<span class="key">A</span></button>
+        <button class="ts-btn" title="Text">T<span class="key">T</span></button>
+        <div class="ts-sep"></div>
+        <button class="ts-btn" title="Crop">⌗<span class="key">C</span></button>
+        <button class="ts-btn" title="Measure (v4.1)">⊢⊣<span class="key">M</span></button>
+        <div class="ts-sep"></div>
+        <button class="ts-btn" title="Invert">◐<span class="key">I</span></button>
+      </div>
+
+      <div class="diagram-caption">
+        <p><b>V · Select</b> — move, resize, and re-select existing annotations. Default tool.</p>
+        <p><b>B · Brush</b> — freehand vector strokes. Adjustable width and color in the Drawing panel.</p>
+        <p><b>R · Rectangle</b> · <b>E · Ellipse</b> · <b>A · Arrow</b> — shape annotations with resize handles. Hold Shift to constrain (square / circle).</p>
+        <p><b>T · Text</b> — editable text annotation; double-click to edit in place.</p>
+        <p><b>C · Crop</b> — non-destructive crop. Can be reset any time.</p>
+        <p><b>I · Invert</b> — one-shot toggle (not a persistent tool). Returns to Select after firing.</p>
+        <p style="color: var(--text-dim); margin-top: 10px;"><b>M · Measure</b> is proposed for v4.1 per UX design doc §3.6 (calibrated radiograph ruler).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Right-panel tabs · properties &amp; editing</h2>
+    <div class="section-intro">Six tabs swap what the right panel shows. Adjust / Drawing / Layers / History are gated behind "image loaded." Series shows only when viewing an arrangement.</div>
+
+    <div style="background: var(--pane); border: 1px solid var(--border); border-radius: 6px; padding: 12px;">
+      <div class="tabs-demo">
+        <button class="tab-btn">Info</button>
+        <button class="tab-btn on">Adjust</button>
+        <button class="tab-btn">Drawing</button>
+        <button class="tab-btn">Layers</button>
+        <button class="tab-btn">History</button>
+        <button class="tab-btn" style="color: var(--text-dim);">Series</button>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="mini-row"><span class="mini-tag">Info</span><span class="mini-desc">Filename, date captured, dimensions, file size, image type, category. Shows for library selection or loaded image.</span></div>
+      <div class="mini-row"><span class="mini-tag">Adjust</span><span class="mini-desc">Brightness · Contrast · Sharpness · Saturation sliders. Auto-enhance button. Copy / Paste / Reset adjustments. Adaptive — context-appropriate controls for radiograph vs photo.</span></div>
+      <div class="mini-row"><span class="mini-tag">Drawing</span><span class="mini-desc">Brush width, color swatches, fill / stroke options for shape tools. Auto-activates when you pick a drawing tool.</span></div>
+      <div class="mini-row"><span class="mini-tag">Layers</span><span class="mini-desc">Visibility toggles, z-order, delete. Every annotation is a layer.</span></div>
+      <div class="mini-row"><span class="mini-tag">History</span><span class="mini-desc">Undo stack visualized. Click any step to jump back. Named snapshots (proposed). Scoped per-image.</span></div>
+      <div class="mini-row"><span class="mini-tag">Series</span><span class="mini-desc">Shown only in Arrange module. Template info, slot count, Mount All / Clear All, Edit in Designer, Export / Print.</span></div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Status bar · bottom chrome</h2>
+    <div class="section-intro">Bottom-of-window strip. Mode label on the left (color-coded), contextual info in the middle, permanent counters on the right.</div>
+
+    <div style="background: var(--chrome); border: 1px solid var(--border); border-radius: 6px; padding: 0 14px; display: flex; align-items: center; gap: 16px; font-size: 11px; color: var(--text-muted); height: 28px; font-family: var(--font-mono);">
+      <span style="color: #9a9aa8; font-weight: 700; letter-spacing: 1.5px; padding-right: 14px; border-right: 1px solid var(--border);">LIBRARY</span>
+      <span>1 of 24 selected</span>
+      <span style="color: var(--border);">│</span>
+      <span>Filter: Radiograph, Photo · PA, BW</span>
+      <span style="color: var(--border);">│</span>
+      <span>Sort: Date captured ↓</span>
+      <span style="flex: 1;"></span>
+      <span>DB: panda_gallery.db</span>
+      <span style="color: var(--border);">│</span>
+      <span>v4.0-dev</span>
+    </div>
+
+    <div class="mini">
+      <div class="mini-row"><span class="mini-tag">Mode label</span><span class="mini-desc">LIBRARY (cool gray) · LOUPE (gray) · ARRANGE (peach) · PRESENTING (green, blinking dot).</span></div>
+      <div class="mini-row"><span class="mini-tag">Context</span><span class="mini-desc">Selection count · active filters · sort. Changes with the current module.</span></div>
+      <div class="mini-row"><span class="mini-tag">Permanent</span><span class="mini-desc">DB path · app version. Always shown.</span></div>
+    </div>
+  </div>
+
+</div>
+
+  </div>
+</div>
+
+<!-- ==========================================================================
+     PANEL: PALETTE / TYPOGRAPHY
+     ========================================================================== -->
+<div class="mt-panel ref-scope" id="panel-palette">
+  <div class="page-max">
+  
+
+
+  
+
+  <h1><b>PANDA</b>Gallery — Design Tokens</h1>
+  <div class="subtitle">Atomic design layer · colors from styles.py · type stack from app config</div>
+
+  <div class="ref-section">
+    <h2>Color · surface</h2>
+    <div class="section-intro">Five-step dark navy scale. All surface colors in the app come from this scale — no ad-hoc hex values in component code.</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#14141f;"></div><div class="swatch-meta"><div class="swatch-name">canvas</div><div class="swatch-hex">#14141f</div><div class="swatch-role">Deepest — viewport background, scroll areas</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#161625;"></div><div class="swatch-meta"><div class="swatch-name">chrome</div><div class="swatch-hex">#161625</div><div class="swatch-role">Title bar, menu bar, toolbar, status bar</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#1a1a2e;"></div><div class="swatch-meta"><div class="swatch-name">pane</div><div class="swatch-hex">#1a1a2e</div><div class="swatch-role">Main window, side panes, dialogs</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#22223a;"></div><div class="swatch-meta"><div class="swatch-name">pane-raised</div><div class="swatch-hex">#22223a</div><div class="swatch-role">Buttons, inputs, hover state base</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#2a2a4e;"></div><div class="swatch-meta"><div class="swatch-name">pane-selected</div><div class="swatch-hex">#2a2a4e</div><div class="swatch-role">Selected state, pressed state</div></div></div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Color · border &amp; divider</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#232336;"></div><div class="swatch-meta"><div class="swatch-name">border-soft</div><div class="swatch-hex">#232336</div><div class="swatch-role">Subtle section dividers, row borders</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#2a2a3e;"></div><div class="swatch-meta"><div class="swatch-name">border</div><div class="swatch-hex">#2a2a3e</div><div class="swatch-role">Default component borders</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#3a3a4e;"></div><div class="swatch-meta"><div class="swatch-name">border-hover</div><div class="swatch-hex">#3a3a4e</div><div class="swatch-role">Hover state for borders, scrollbar handles</div></div></div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Color · text</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#e0ddd5; color:#1a1a2e; font-family:var(--font-ui); font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:center;">Aa Bb Cc 123</div><div class="swatch-meta"><div class="swatch-name">text</div><div class="swatch-hex">#e0ddd5</div><div class="swatch-role">Primary cream — body text, labels</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#1a1a2e; color:#888; font-family:var(--font-ui); font-size:13px; display:flex; align-items:center; justify-content:center;">Aa Bb Cc 123</div><div class="swatch-meta"><div class="swatch-name">text-muted</div><div class="swatch-hex">#888888</div><div class="swatch-role">Secondary info, counts, captions</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#1a1a2e; color:#555; font-family:var(--font-ui); font-size:13px; display:flex; align-items:center; justify-content:center;">Aa Bb Cc 123</div><div class="swatch-meta"><div class="swatch-name">text-dim</div><div class="swatch-hex">#555555</div><div class="swatch-role">Disabled state, tertiary info, placeholders</div></div></div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Color · accent (signature)</h2>
+    <div class="section-intro">Peach / coral scale used for selection, focus, brand accent. The logo wordmark uses the 3-stop gradient across accent-hover → accent → accent-ink.</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#f0b98c;"></div><div class="swatch-meta"><div class="swatch-name">accent-light</div><div class="swatch-hex">#f0b98c</div><div class="swatch-role">Wordmark highlight, subtle glow top-stop</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#e8a87c;"></div><div class="swatch-meta"><div class="swatch-name">accent</div><div class="swatch-hex">#e8a87c</div><div class="swatch-role">Signature peach — focus rings, selection border, primary button</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#d4945a;"></div><div class="swatch-meta"><div class="swatch-name">accent-hover</div><div class="swatch-hex">#d4945a</div><div class="swatch-role">Hover state on accent fills, slider track fill</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:rgba(232,168,124,0.12); border: 1px solid rgba(232,168,124,0.45);"></div><div class="swatch-meta"><div class="swatch-name">accent-soft</div><div class="swatch-hex">#e8a87c @12%</div><div class="swatch-role">Selected row background, active chip fill</div></div></div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Color · semantic</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:#7fb069;"></div><div class="swatch-meta"><div class="swatch-name">ok</div><div class="swatch-hex">#7fb069</div><div class="swatch-role">Success — live / recording / online indicator</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#f39c12;"></div><div class="swatch-meta"><div class="swatch-name">warn</div><div class="swatch-hex">#f39c12</div><div class="swatch-role">Warnings — low mic level, unsaved state</div></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:#e74c3c;"></div><div class="swatch-meta"><div class="swatch-name">err</div><div class="swatch-hex">#e74c3c</div><div class="swatch-role">Destructive actions, End Session, error states</div></div></div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Typography</h2>
+    <div class="section-intro">Two-family system: <b style="color:var(--accent);">Segoe UI</b> for everything readable, <b style="color:var(--accent);">Cascadia Mono</b> for numbers, IDs, dates, filenames, and keyboard shortcuts. The monospace treatment is deliberate — precision reads as clinical competence.</div>
+
+    <div class="type-demo">
+      <div class="type-row"><div class="type-label">Display</div><div class="type-h1">Panda Gallery</div></div>
+      <div class="type-row"><div class="type-label">Heading 2</div><div class="type-h2">Adams, Deborah</div></div>
+      <div class="type-row"><div class="type-label">Heading 3</div><div class="type-h3">Patient Info</div></div>
+      <div class="type-row"><div class="type-label">Body</div><div class="type-body">The quick brown fox jumps over the lazy dog 0123456789</div></div>
+      <div class="type-row"><div class="type-label">Small</div><div class="type-small">Secondary metadata · 24 images · last visit 2026-03-14</div></div>
+      <div class="type-row"><div class="type-label">Mono</div><div class="type-mono">#00842 · 1456×1112 · PA_03_14_01.png</div></div>
+      <div class="type-row"><div class="type-label">Caption</div><div class="type-caption">Filter · 3 active · Sort descending</div></div>
+    </div>
+
+    <div style="color: var(--text-muted); font-size: 12px; line-height: 1.6; max-width: 720px;">
+      <p><b style="color: var(--accent);">Segoe UI</b> is the existing app font stack declared in styles.py — <code style="font-family: var(--font-mono); color: var(--accent); background: var(--pane-raised); padding: 1px 5px; border-radius: 2px;">Segoe UI, SF Pro, Noto Sans, sans-serif</code>. Kept unchanged for v4.0: changing the body font would be cosmetic churn without user benefit.</p>
+      <p style="margin-top: 10px;"><b style="color: var(--accent);">Cascadia Mono</b> is proposed as the monospace family for v4.0, with Consolas as Windows fallback. Use for: patient IDs, numerical fields, filenames, dimensions, keyboard shortcut hints, version numbers, DB paths. NOT for body text, labels, or anything a human reads as prose.</p>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h2>Spacing · radius · motion</h2>
+    <div class="section-intro">Small, fixed scales. No one-off magic numbers.</div>
+
+    <div class="tokens-grid">
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:4px;height:4px;"></div></div><div class="token-name">xs</div><div class="token-val">4 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:8px;height:8px;"></div></div><div class="token-name">sm</div><div class="token-val">8 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:12px;height:12px;"></div></div><div class="token-name">md</div><div class="token-val">12 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:16px;height:16px;"></div></div><div class="token-name">lg</div><div class="token-val">16 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:24px;height:24px;"></div></div><div class="token-name">xl</div><div class="token-val">24 px</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:32px;height:32px;"></div></div><div class="token-name">2xl</div><div class="token-val">32 px</div></div>
+    </div>
+
+    <div class="tokens-grid" style="margin-top: 20px;">
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:2px;"></div></div><div class="token-name">radius-sm</div><div class="token-val">2 px — chips, badges</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:4px;"></div></div><div class="token-name">radius-md</div><div class="token-val">4 px — buttons, inputs</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:6px;"></div></div><div class="token-name">radius-lg</div><div class="token-val">6 px — cards, panels</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:40px;height:40px;border-radius:8px;"></div></div><div class="token-name">radius-xl</div><div class="token-val">8 px — avatars, containers</div></div>
+      <div class="token-card"><div class="token-vis"><div class="token-box" style="width:60px;height:28px;border-radius:999px;"></div></div><div class="token-name">radius-pill</div><div class="token-val">999 px — wordmark pill</div></div>
+    </div>
+
+    <div style="color: var(--text-muted); font-size: 12px; line-height: 1.6; max-width: 720px; margin-top: 24px;">
+      <p><b style="color: var(--accent);">Motion:</b> 0.15s for most state transitions, 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) for the splash fade-in. Blinking "LIVE" dot in Present mode: 1.5s infinite. No bouncy / spring / playful motion — this is medical software.</p>
+    </div>
+  </div>
+
+</div>
+
+  </div>
+</div>
+
+<script>
+  function showPanel(name) {
+    document.querySelectorAll('.mt-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.mt-btn').forEach(function(b) { b.classList.remove('active'); });
+    var panel = document.getElementById('panel-' + name);
+    if (panel) panel.classList.add('active');
+    document.querySelectorAll('.mt-btn').forEach(function(b) {
+      if (b.getAttribute('data-panel') === name) b.classList.add('active');
+    });
+    if (history.replaceState) history.replaceState(null, '', '#' + name);
+    // Scroll to top of panel when switching
+    window.scrollTo(0, 0);
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    var hash = (location.hash || '').replace('#', '').split('/')[0];
+    var valid = ['splash', 'shell', 'menu', 'toolbar', 'palette'];
+    if (valid.indexOf(hash) !== -1) showPanel(hash);
+  });
+
+  // Inner multiview tab switcher (from the original multiview file)
+  
+  function showView(name, fromEvent) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+    var view = document.getElementById('view-' + name);
+    if (view) view.classList.add('active');
+    // Find the matching button and activate it
+    document.querySelectorAll('.switch-btn').forEach(function(b) {
+      if (b.getAttribute('data-view') === name) b.classList.add('active');
+    });
+    if (fromEvent) fromEvent.preventDefault();
+    if (history.replaceState) history.replaceState(null, '', '#' + name);
+  }
+  // Initial load — respect the hash if present
+  window.addEventListener('DOMContentLoaded', function() {
+    var hash = (location.hash || '').replace('#', '');
+    var valid = ['library', 'empty', 'loupe', 'arrange', 'present'];
+    if (valid.indexOf(hash) !== -1) showView(hash, null);
+  });
+
+</script>
+
+</body>
+</html>

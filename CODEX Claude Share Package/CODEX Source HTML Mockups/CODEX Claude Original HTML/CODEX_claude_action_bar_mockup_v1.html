@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PG — Unified Action Bar Mockup v1 (#107 + #110)</title>
+<style>
+  :root {
+    --bg-deep:     #14141f;
+    --bg-pane:     #1a1a2e;
+    --bg-hover:    #22223a;
+    --border:      #2a2a3e;
+    --border-soft: #232336;
+    --text:        #e0ddd5;
+    --text-muted:  #888;
+    --text-dim:    #6a6a78;
+    --accent:      #e8a87c;
+    --accent-dim:  #d4945a;
+    --ok:          #5ab87a;
+    --ok-soft:     rgba(90, 184, 122, 0.10);
+    --ok-border:   rgba(90, 184, 122, 0.55);
+    --fail:        #e8a87c;
+    --fail-border: #e8a87c;
+    --fail-soft:   rgba(232, 168, 124, 0.10);
+    --skip:        #8a8a9a;
+    --skip-border: rgba(138, 138, 154, 0.55);
+    --skip-soft:   rgba(138, 138, 154, 0.12);
+    --dot-pass:    #7fb069;
+    --dot-fail:    #d46a6a;
+    --dot-skip:    #8a8a9a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0d0d18; color: var(--text);
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    font-size: 13px; line-height: 1.4;
+  }
+
+  .page { padding: 32px 24px 80px; max-width: 2400px; margin: 0 auto; }
+
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; max-width: 900px; }
+
+  h2 {
+    font-size: 14px; font-weight: 600;
+    margin: 40px 0 10px; color: var(--text);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  h3 {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--accent);
+    margin: 20px 0 10px;
+  }
+
+  .callout {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 28px;
+    max-width: 1100px;
+  }
+  .callout .tag {
+    font-size: 10px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  .callout p { margin: 6px 0; color: var(--text); }
+  .callout code {
+    background: #0a0a14; padding: 1px 5px; border-radius: 2px;
+    font-size: 12px; color: #c8c5bb;
+  }
+
+  .panes { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .pane-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .pane-label {
+    font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .pane-label .width { color: var(--accent); font-weight: 700; margin-left: 6px; }
+
+  .pane {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: flex; flex-direction: column;
+    min-height: 460px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  .pane.w430 { width: 430px; }
+  .pane.w360 { width: 360px; }
+
+  .progress {
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .title {
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .body {
+    color: var(--text);
+    font-size: 13px;
+    padding: 4px 0;
+    margin-bottom: 10px;
+    white-space: pre-line;
+  }
+
+  .expected {
+    background: var(--bg-pane);
+    border-left: 3px solid var(--ok);
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .expected .hdr {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .expected .txt {
+    color: #c8c5bb;
+    font-size: 13px;
+  }
+
+  .checklist-scroll {
+    flex: 1;
+    overflow-y: auto;
+    border-radius: 3px;
+    max-height: 240px;
+    border: 1px dashed rgba(138,138,154,0.15);
+    background: var(--bg-deep);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    border-left: 2px solid transparent;
+  }
+  .row:last-child { border-bottom: none; }
+  .row.active { border-left-color: var(--accent); }
+
+  .dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-dim);
+    margin-top: 3px;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .dot.active  { border-color: var(--accent); }
+  .dot.pass    { border-color: var(--dot-pass); background: var(--dot-pass); }
+  .dot.fail    { border-color: var(--dot-fail); background: var(--dot-fail); }
+  .dot.skip    { border-color: var(--dot-skip); position: relative; }
+  .dot.skip::after {
+    content: ""; position: absolute;
+    left: 3px; right: 3px; top: 5px;
+    height: 1.5px; background: var(--dot-skip); border-radius: 1px;
+  }
+
+  .row .label { color: var(--text); font-size: 13px; }
+  .row.pass .label  { color: var(--text-muted); }
+  .row.fail .label  { color: var(--text-muted); }
+  .row.skip .label  { color: var(--text-muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+
+  .row .fail-note {
+    margin-top: 8px;
+    background: rgba(212, 106, 106, 0.08);
+    border-left: 2px solid var(--dot-fail);
+    padding: 8px 10px;
+    border-radius: 2px;
+  }
+  .row .fail-note .hdr {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    color: var(--dot-fail); margin-bottom: 2px;
+  }
+  .row .fail-note .body {
+    font-size: 12px; color: var(--text); margin-bottom: 0; white-space: normal;
+  }
+
+  .row-fail-panel {
+    margin-top: 8px;
+    background: var(--bg-pane);
+    border-left: 2px solid var(--dot-fail);
+    padding: 8px 10px;
+    border-radius: 2px;
+  }
+  .row-fail-panel .hdr {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    color: var(--text-muted); margin-bottom: 4px;
+  }
+  .row-fail-panel textarea {
+    width: 100%; min-height: 44px; max-height: 60px; resize: vertical;
+    background: var(--bg-deep); color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 6px 8px; font: inherit;
+  }
+  .row-fail-panel textarea:focus { outline: 1px solid var(--accent); }
+  .row-fail-panel .panel-buttons {
+    display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px;
+  }
+
+  .summary-strip {
+    display: flex; justify-content: flex-end; align-items: center;
+    padding: 6px 8px;
+    margin-top: 8px;
+    background: var(--bg-pane);
+    border-radius: 3px;
+    font-size: 11px;
+    gap: 6px;
+  }
+  .summary-strip .count-pass { color: var(--dot-pass); font-weight: 600; }
+  .summary-strip .count-fail { color: var(--dot-fail); font-weight: 600; }
+  .summary-strip .count-skip { color: var(--dot-skip); font-weight: 600; }
+  .summary-strip .dotsep { color: var(--text-muted); }
+
+  .action-bar {
+    display: flex; gap: 8px; justify-content: flex-end; align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .btn {
+    padding: 6px 14px;
+    font-size: 12px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg-hover); }
+  .btn.compact { padding: 5px 10px; }
+  .btn.pass   { color: var(--ok); border-color: var(--ok-border); padding: 6px 14px; }
+  .btn.pass:hover { background: var(--ok-soft); border-color: var(--ok); }
+  .btn.fail   { color: var(--fail); border-color: var(--fail-border); padding: 6px 14px; }
+  .btn.fail:hover { background: var(--fail-soft); }
+  .btn.skip   { color: var(--skip); border-color: var(--skip-border); padding: 6px 14px; }
+  .btn.skip:hover { background: var(--skip-soft); border-color: var(--skip); }
+  .btn.next   { color: var(--ok); border-color: var(--ok-border); padding: 6px 14px; }
+  .btn.next:hover { background: var(--ok-soft); border-color: var(--ok); }
+  .btn.disabled { color: #444; border-color: #2a2a4e; cursor: default; }
+
+  .action-bar .spacer { flex: 1; }
+
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
+    padding: 8px 12px; background: var(--bg-pane); border-radius: 3px;
+    border-left: 2px solid var(--accent);
+  }
+  .legend .chip { display: inline-flex; gap: 6px; align-items: center; }
+  .legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+  .legend .new { background: var(--accent); }
+  .legend .same { background: var(--text-dim); }
+
+  .arrow-note {
+    font-size: 11px; color: var(--accent);
+    font-style: italic;
+    margin-top: 6px; padding-left: 8px;
+    border-left: 2px solid var(--accent);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Unified Action Bar &mdash; #107 + #110 bundled fix (Mockup v1)</h1>
+  <p class="sub">
+    Target: move all contextual action buttons (PASS, FAIL, SKIP, Next &rarr;) out of the
+    scroll area and into the pane-level action bar at the bottom. One row, always
+    reachable, state-dependent content. Fixes #110 (buttons scroll out of view on
+    tall rows) and #107 (two-row footer on checklist steps). Widths shown:
+    <b>430 px</b> (MIN_SIZE, current floor) and <b>360 px</b> (below wrap breakpoint)
+    to prove the layout holds across the pane's size range.
+  </p>
+
+  <div class="callout">
+    <div class="tag">Architectural change</div>
+    <p><b>Before:</b> In-row <code>_actions_host</code> (PASS/FAIL/SKIP on the active row, inside the scroll area) plus a separate <code>ChecklistStepView._footer</code> (summary + Next &rarr;) below the scroll area, plus the pane-level <code>button_row</code> (Cancel / Pause / &larr; Back) at the bottom. Three horizontal action surfaces, two of them inside the scroll region.</p>
+    <p><b>After:</b> One pane-level action bar hosts all buttons. <code>_actions_host</code> is removed from <code>_ChecklistRow</code> entirely. <code>ChecklistStepView._footer</code> dissolves &mdash; its Next button moves to the pane bar, and its summary text moves to a new thin summary strip above the action bar (always visible once any item is answered, per recommendation &mdash; see Option A vs B below).</p>
+  </div>
+
+  <div class="legend">
+    <span class="chip"><span class="swatch new"></span> New / moved button</span>
+    <span class="chip"><span class="swatch same"></span> Existing button, unchanged</span>
+    <span>Dashed border = simulated scroll viewport</span>
+  </div>
+
+  <h2>Option A &mdash; Live summary strip (RECOMMENDED)</h2>
+  <p class="sub">Summary strip is always visible on checklist steps once <b>any</b> item is answered, so the user sees live counts as they progress. Strip hides on single-expected steps.</p>
+
+  <div class="panes">
+
+    <div class="pane-wrap">
+      <div class="pane-label">A1 &middot; Single-expected, ready to answer<span class="width">430 px</span></div>
+      <div class="pane w430">
+        <div class="progress">Step 3 of 7 &middot; C3</div>
+        <div class="title">Verify that dragging an image to the filmstrip thumbnail area adds it to the patient's series.</div>
+        <div class="body">Drag the test image from the Freeform canvas onto the filmstrip's blue highlight zone. Release when the zone glows.</div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="txt">Image appears as the rightmost thumbnail. Series count increments.</div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="action-bar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">&larr; Back</button>
+          <button class="btn pass">PASS</button>
+          <button class="btn fail">FAIL</button>
+        </div>
+      </div>
+      <div class="arrow-note">Single-expected steps: no change from today. Baseline for comparison.</div>
+    </div>
+
+    <div class="pane-wrap">
+      <div class="pane-label">A2 &middot; Checklist, active row pending<span class="width">430 px</span></div>
+      <div class="pane w430">
+        <div class="progress">Step 4 of 7 &middot; C4</div>
+        <div class="title">Verify archive-on-load sweeps the previous run's artifacts.</div>
+        <div class="body">Open the pane a second time without closing between runs. Confirm each of the following:</div>
+        <div class="checklist-scroll">
+          <div class="row active">
+            <div class="dot active"></div>
+            <div class="label">
+              workflows/results_latest.json exists and its run_id starts with today's date (YYYY-MM-DD), matching the run_id shown in the pane's progress line.
+            </div>
+          </div>
+          <div class="row">
+            <div class="dot"></div>
+            <div class="label">workflows/results_archive/ contains a subfolder for the previous run.</div>
+          </div>
+          <div class="row">
+            <div class="dot"></div>
+            <div class="label">workflows/screenshots/&lt;new-run-id&gt;/ is empty at pane open.</div>
+          </div>
+        </div>
+        <div class="summary-strip">
+          <span class="count-pass">0 pass</span><span class="dotsep">&middot;</span>
+          <span class="count-fail">0 fail</span><span class="dotsep">&middot;</span>
+          <span class="count-skip">0 skip</span>
+        </div>
+        <div class="action-bar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">&larr; Back</button>
+          <button class="btn pass">PASS</button>
+          <button class="btn fail">FAIL</button>
+          <button class="btn skip">SKIP</button>
+        </div>
+      </div>
+      <div class="arrow-note">
+        Fixes #110: PASS/FAIL/SKIP sit in the action bar &mdash; cannot scroll out of view regardless of the active row's label length. Row-internal <code>_actions_host</code> is removed.
+      </div>
+    </div>
+
+    <div class="pane-wrap">
+      <div class="pane-label">A3 &middot; Checklist, 2 answered, 1 pending<span class="width">430 px</span></div>
+      <div class="pane w430">
+        <div class="progress">Step 4 of 7 &middot; C4</div>
+        <div class="title">Verify archive-on-load sweeps the previous run's artifacts.</div>
+        <div class="body">Open the pane a second time without closing between runs. Confirm each of the following:</div>
+        <div class="checklist-scroll">
+          <div class="row pass">
+            <div class="dot pass"></div>
+            <div class="label">workflows/results_latest.json exists and its run_id starts with today's date (YYYY-MM-DD), matching the run_id shown in the pane's progress line.</div>
+          </div>
+          <div class="row fail">
+            <div class="dot fail"></div>
+            <div class="label">
+              workflows/results_archive/ contains a subfolder for the previous run.
+              <div class="fail-note">
+                <div class="hdr">FAIL</div>
+                <div class="body">Archive folder is empty. Previous run's results_latest.json was not swept.</div>
+              </div>
+            </div>
+          </div>
+          <div class="row active">
+            <div class="dot active"></div>
+            <div class="label">workflows/screenshots/&lt;new-run-id&gt;/ is empty at pane open.</div>
+          </div>
+        </div>
+        <div class="summary-strip">
+          <span class="count-pass">1 pass</span><span class="dotsep">&middot;</span>
+          <span class="count-fail">1 fail</span><span class="dotsep">&middot;</span>
+          <span class="count-skip">0 skip</span>
+        </div>
+        <div class="action-bar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">&larr; Back</button>
+          <button class="btn pass">PASS</button>
+          <button class="btn fail">FAIL</button>
+          <button class="btn skip">SKIP</button>
+        </div>
+      </div>
+      <div class="arrow-note">Live summary strip updates as items are answered &mdash; not deferred to completion. Running feedback on the step.</div>
+    </div>
+
+    <div class="pane-wrap">
+      <div class="pane-label">A4 &middot; Checklist, all answered (re-answer state)<span class="width">430 px</span></div>
+      <div class="pane w430">
+        <div class="progress">Step 4 of 7 &middot; C4</div>
+        <div class="title">Verify archive-on-load sweeps the previous run's artifacts.</div>
+        <div class="body">Open the pane a second time without closing between runs. Confirm each of the following:</div>
+        <div class="checklist-scroll">
+          <div class="row pass">
+            <div class="dot pass"></div>
+            <div class="label">workflows/results_latest.json exists and its run_id starts with today's date&hellip;</div>
+          </div>
+          <div class="row fail">
+            <div class="dot fail"></div>
+            <div class="label">
+              workflows/results_archive/ contains a subfolder for the previous run.
+              <div class="fail-note">
+                <div class="hdr">FAIL</div>
+                <div class="body">Archive folder is empty. Previous run's results_latest.json was not swept.</div>
+              </div>
+            </div>
+          </div>
+          <div class="row pass">
+            <div class="dot pass"></div>
+            <div class="label">workflows/screenshots/&lt;new-run-id&gt;/ is empty at pane open.</div>
+          </div>
+        </div>
+        <div class="summary-strip">
+          <span class="count-pass">2 pass</span><span class="dotsep">&middot;</span>
+          <span class="count-fail">1 fail</span><span class="dotsep">&middot;</span>
+          <span class="count-skip">0 skip</span>
+        </div>
+        <div class="action-bar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">&larr; Back</button>
+          <button class="btn next">Next &rarr;</button>
+        </div>
+      </div>
+      <div class="arrow-note">
+        Fixes #107: Next &rarr; lives on the same row as Cancel/Pause/Back &mdash; no standalone footer. On FIRST completion, auto-advance still fires per today's behavior; Next button only appears after a re-answer.
+      </div>
+    </div>
+
+    <div class="pane-wrap">
+      <div class="pane-label">A5 &middot; Checklist, FAIL panel open<span class="width">430 px</span></div>
+      <div class="pane w430">
+        <div class="progress">Step 4 of 7 &middot; C4</div>
+        <div class="title">Verify archive-on-load sweeps the previous run's artifacts.</div>
+        <div class="body">Open the pane a second time without closing between runs. Confirm each of the following:</div>
+        <div class="checklist-scroll">
+          <div class="row pass">
+            <div class="dot pass"></div>
+            <div class="label">workflows/results_latest.json exists and its run_id starts with today's date&hellip;</div>
+          </div>
+          <div class="row active">
+            <div class="dot active"></div>
+            <div class="label">
+              workflows/results_archive/ contains a subfolder for the previous run.
+              <div class="row-fail-panel">
+                <div class="hdr">DESCRIBE WHAT FAILED</div>
+                <textarea placeholder="What happened? Steps to reproduce, observed vs expected&hellip;"></textarea>
+                <div class="panel-buttons">
+                  <button class="btn compact">CANCEL</button>
+                  <button class="btn compact" style="color: var(--accent); border-color: var(--accent);">SAVE FAIL</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="dot"></div>
+            <div class="label">workflows/screenshots/&lt;new-run-id&gt;/ is empty at pane open.</div>
+          </div>
+        </div>
+        <div class="summary-strip">
+          <span class="count-pass">1 pass</span><span class="dotsep">&middot;</span>
+          <span class="count-fail">0 fail</span><span class="dotsep">&middot;</span>
+          <span class="count-skip">0 skip</span>
+        </div>
+        <div class="action-bar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">&larr; Back</button>
+        </div>
+      </div>
+      <div class="arrow-note">
+        FAIL panel open: PASS/FAIL/SKIP hidden from action bar (same hide-contract as today's single-expected FAIL panel). CANCEL and SAVE FAIL live in the inline panel, as today. Textarea capped at 60 px to address #108's compound visual.
+      </div>
+    </div>
+
+    <div class="pane-wrap">
+      <div class="pane-label">A6 &middot; Checklist, narrow pane<span class="width">360 px</span></div>
+      <div class="pane w360">
+        <div class="progress">Step 4 of 7 &middot; C4</div>
+        <div class="title">Verify archive-on-load sweeps the previous run's artifacts.</div>
+        <div class="body">Open the pane a second time. Confirm each of the following:</div>
+        <div class="checklist-scroll">
+          <div class="row active">
+            <div class="dot active"></div>
+            <div class="label">workflows/results_latest.json exists and its run_id starts with today's date (YYYY-MM-DD).</div>
+          </div>
+          <div class="row">
+            <div class="dot"></div>
+            <div class="label">workflows/results_archive/ contains a subfolder for the previous run.</div>
+          </div>
+        </div>
+        <div class="summary-strip">
+          <span class="count-pass">0 pass</span><span class="dotsep">&middot;</span>
+          <span class="count-fail">0 fail</span><span class="dotsep">&middot;</span>
+          <span class="count-skip">0 skip</span>
+        </div>
+        <div class="action-bar">
+          <button class="btn compact">Cancel</button>
+          <button class="btn compact">Pause</button>
+          <button class="btn compact">&larr; Back</button>
+          <button class="btn compact pass">PASS</button>
+          <button class="btn compact fail">FAIL</button>
+          <button class="btn compact skip">SKIP</button>
+        </div>
+      </div>
+      <div class="arrow-note">
+        Width budget at 360 px: 6 compact buttons + gaps. Tight but fits. Below current MIN_SIZE 430 &mdash; this is a lower-bound validation only.
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Option B &mdash; Summary inline in progress line (simpler alternative)</h2>
+  <p class="sub">
+    Summary text lives in the progress line (e.g. <code>Step 4 of 7 &middot; C4 &middot; 2 pass &middot; 1 fail</code>), no standalone summary strip. One less widget, but counts are less prominent &mdash; tucked into the thin muted row at the top.
+  </p>
+
+  <div class="panes">
+    <div class="pane-wrap">
+      <div class="pane-label">B1 &middot; Checklist, partial<span class="width">430 px</span></div>
+      <div class="pane w430">
+        <div class="progress">Step 4 of 7 &middot; C4 &middot; <span style="color: var(--dot-pass); font-weight: 600;">1 pass</span> &middot; <span style="color: var(--dot-fail); font-weight: 600;">1 fail</span></div>
+        <div class="title">Verify archive-on-load sweeps the previous run's artifacts.</div>
+        <div class="body">Open the pane a second time. Confirm each of the following:</div>
+        <div class="checklist-scroll">
+          <div class="row pass">
+            <div class="dot pass"></div>
+            <div class="label">workflows/results_latest.json exists&hellip;</div>
+          </div>
+          <div class="row fail">
+            <div class="dot fail"></div>
+            <div class="label">
+              workflows/results_archive/ contains a subfolder&hellip;
+              <div class="fail-note">
+                <div class="hdr">FAIL</div>
+                <div class="body">Archive folder is empty.</div>
+              </div>
+            </div>
+          </div>
+          <div class="row active">
+            <div class="dot active"></div>
+            <div class="label">workflows/screenshots/&lt;new-run-id&gt;/ is empty.</div>
+          </div>
+        </div>
+        <div class="action-bar">
+          <button class="btn">Cancel</button>
+          <button class="btn">Pause</button>
+          <button class="btn">&larr; Back</button>
+          <button class="btn pass">PASS</button>
+          <button class="btn fail">FAIL</button>
+          <button class="btn skip">SKIP</button>
+        </div>
+      </div>
+      <div class="arrow-note">Saves one strip of vertical space vs Option A. Trade-off: summary is less visible in the muted progress line.</div>
+    </div>
+  </div>
+
+  <h2>Width budget</h2>
+  <p class="sub">MIN_SIZE is currently 430 px (pane floor). Adding SKIP means the worst-case button row has 6 buttons: Cancel / Pause / &larr; Back / PASS / FAIL / SKIP.</p>
+
+  <div class="callout">
+    <div class="tag">6-button budget check (checklist active-row case)</div>
+    <p>Current 5-button budget: <code>16 + 70 + 8 + 70 + 8 + 72 + 8 + 76 + 8 + 72 + 16 = 424 px</code> &rarr; rounded to 430.</p>
+    <p>Proposed 6-button budget (adding SKIP at 72 px + 8 px gap): <code>16 + 70 + 8 + 70 + 8 + 72 + 8 + 76 + 8 + 72 + 8 + 72 + 16 = 512 px</code>.</p>
+    <p><b>Recommendation:</b> bump <code>MIN_SIZE</code> width to 520 px (or tighten button minimums). Former is safer; latter is more compact but risks text clipping on PASS/FAIL/SKIP labels.</p>
+    <p><b>Decision point for Darrin:</b> (i) bump MIN_SIZE to 520 and keep current button widths; (ii) keep MIN_SIZE at 430 and tighten button widths to ~60&ndash;64 px each; (iii) wrap the 6-button row to two rows below a breakpoint.</p>
+  </div>
+
+  <h2>Contract summary (for the Claude Code prompt)</h2>
+
+  <div class="callout">
+    <div class="tag">State matrix</div>
+    <table style="width:100%; font-size: 12px; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align:left; color: var(--text-muted);">
+          <th style="padding: 6px 8px; border-bottom: 1px solid var(--border);">Context</th>
+          <th style="padding: 6px 8px; border-bottom: 1px solid var(--border);">Action-bar content (left &rarr; right)</th>
+          <th style="padding: 6px 8px; border-bottom: 1px solid var(--border);">Summary strip</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding: 6px 8px; border-bottom: 1px solid var(--border-soft);">Single-expected, idle</td><td style="padding: 6px 8px;">Cancel &middot; Pause &middot; &larr; Back &middot; PASS &middot; FAIL</td><td style="padding: 6px 8px;">&mdash; (hidden)</td></tr>
+        <tr><td style="padding: 6px 8px; border-bottom: 1px solid var(--border-soft);">Single-expected, FAIL panel open</td><td style="padding: 6px 8px;">Cancel &middot; Pause &middot; &larr; Back</td><td style="padding: 6px 8px;">&mdash; (hidden)</td></tr>
+        <tr><td style="padding: 6px 8px; border-bottom: 1px solid var(--border-soft);">Checklist, active row pending</td><td style="padding: 6px 8px;">Cancel &middot; Pause &middot; &larr; Back &middot; PASS &middot; FAIL &middot; SKIP</td><td style="padding: 6px 8px;">visible if any item answered</td></tr>
+        <tr><td style="padding: 6px 8px; border-bottom: 1px solid var(--border-soft);">Checklist, row FAIL panel open</td><td style="padding: 6px 8px;">Cancel &middot; Pause &middot; &larr; Back</td><td style="padding: 6px 8px;">unchanged</td></tr>
+        <tr><td style="padding: 6px 8px; border-bottom: 1px solid var(--border-soft);">Checklist, all answered (re-answer state)</td><td style="padding: 6px 8px;">Cancel &middot; Pause &middot; &larr; Back &middot; Next &rarr;</td><td style="padding: 6px 8px;">visible, final counts</td></tr>
+        <tr><td style="padding: 6px 8px;">Summary view (after last step)</td><td style="padding: 6px 8px;">Close</td><td style="padding: 6px 8px;">&mdash; (hidden)</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 10px;"><b>Pause behavior:</b> all action-bar buttons except Cancel disable when paused (matches today's contract). Keyboard shortcuts P / F / S / Enter / Shift+Enter / Esc remain wired to the same handlers &mdash; they now target the pane-level buttons rather than row-internal buttons, but handler routing through <code>ChecklistStepView.handle_pass</code> etc. is unchanged.</p>
+    <p><b>First-completion auto-advance:</b> unchanged. When the last pending item is answered and the step transitions to all-answered for the first time, the pane auto-advances (today's behavior). The Next &rarr; button is reachable only after a re-answer.</p>
+    <p><b>Removed entirely:</b> <code>_ChecklistRow._actions_host</code> widget + all its button setup, <code>ChecklistStepView._footer</code> widget + <code>_next_btn</code>, <code>ChecklistStepView._update_footer</code> method. Summary text still computes inside <code>ChecklistStepView</code> but is rendered by the pane via a new <code>summary_changed</code> signal (payload: {pass, fail, skip} dict).</p>
+  </div>
+
+</div>
+</body>
+</html>

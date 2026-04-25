@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Present mode</title>
+<style>
+  :root {
+    --canvas:       #14141f;
+    --chrome:       #161625;
+    --pane:         #1a1a2e;
+    --pane-raised:  #22223a;
+    --pane-selected:#2a2a4e;
+    --border:       #2a2a3e;
+    --border-soft:  #232336;
+    --border-hover: #3a3a4e;
+    --text:         #e0ddd5;
+    --text-muted:   #888;
+    --text-dim:     #555;
+    --accent:       #e8a87c;
+    --accent-hover: #d4945a;
+    --accent-soft:  rgba(232,168,124,0.12);
+    --accent-border:rgba(232,168,124,0.45);
+    --accent-ink:   #1a1a2e;
+    --mode-present: #7fb069;
+    --ok:           #7fb069;
+    --font-ui:      "Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:    "Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: #000; color: var(--text);
+    font-family: var(--font-ui); font-size: 13px;
+    overflow: hidden;
+  }
+
+  /* =========== SWITCHER =========== */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 34px; z-index: 999;
+    background: rgba(10,10,14,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 6px; padding: 0 14px;
+  }
+  .switcher-label {
+    color: var(--text-muted); font-size: 10px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-right: 8px; font-family: var(--font-mono);
+  }
+  .switch-btn {
+    padding: 4px 10px; background: var(--pane-raised); color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 11px; font-family: var(--font-ui); cursor: pointer;
+  }
+  .switch-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .switch-btn.active { background: var(--pane-selected); color: var(--accent); border-color: var(--accent); }
+
+  .view {
+    position: fixed; top: 34px; left: 0; right: 0; bottom: 0;
+    display: none; background: #000;
+    overflow: hidden;
+  }
+  .view.active { display: block; }
+
+  /* Shared components (reused from Edit vocabulary) */
+  .gbtn {
+    height: 28px; padding: 0 12px;
+    background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer; font-family: var(--font-ui);
+  }
+  .gbtn:hover { background: var(--pane-selected); border-color: var(--accent); color: var(--accent); }
+  .gbtn.primary {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--accent-ink); font-weight: 600;
+  }
+  .gbtn.primary:hover { background: var(--accent-hover); }
+
+  .section-head {
+    color: var(--accent); font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-head .hint {
+    color: var(--text-dim); font-weight: 400; letter-spacing: 0;
+    text-transform: none; font-family: var(--font-mono); font-size: 10px;
+  }
+
+  .info-row {
+    display: grid; grid-template-columns: 90px 1fr;
+    gap: 10px; align-items: baseline;
+    padding: 3px 0; font-size: 12px;
+  }
+  .info-row .k { color: var(--text-muted); text-align: right; }
+  .info-row .v { color: var(--text); font-family: var(--font-mono); font-size: 11px; }
+  .info-row .v.accent { color: var(--accent); }
+
+  /* =========== MODE BADGE (top center of patient screens) =========== */
+  .mode-badge {
+    position: absolute; top: 18px; left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 14px;
+    background: rgba(20,20,31,0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(127,176,105,0.4);
+    border-radius: 100px;
+    color: var(--mode-present);
+    font-size: 10px; letter-spacing: 1.8px;
+    font-family: var(--font-mono); font-weight: 700;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    z-index: 100;
+  }
+  .mode-badge::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--mode-present);
+    animation: live-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* =========== STATE A — single image fullscreen =========== */
+  .stage {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 40%, #14141f 0%, #05050a 70%, #000 100%);
+  }
+  .radiograph {
+    width: 68%; aspect-ratio: 4/3;
+    max-height: 72vh;
+    position: relative;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.7),
+      0 0 0 1px rgba(232,168,124,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    /* Same radial-gradient vocabulary as Edit mockup's stage .image */
+    background: radial-gradient(ellipse at 55% 50%, #6a6a7a 0%, #252538 40%, #0a0a14 100%);
+  }
+
+  /* Annotations — same style as Edit's .anno */
+  .anno {
+    position: absolute;
+    border: 2px solid var(--accent); border-radius: 2px;
+    pointer-events: none;
+  }
+  .anno::after {
+    content: attr(data-label);
+    position: absolute; top: -22px; left: 0;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 1px 6px; font-size: 10px; font-weight: 600; border-radius: 2px;
+    font-family: var(--font-mono); white-space: nowrap;
+  }
+  .anno.circle { border-radius: 50%; }
+  .annotations { transition: opacity 0.4s ease; }
+  .annotations.hidden { opacity: 0; }
+
+  /* Patient identity (top-left) — reuses section-head typography */
+  .patient-id {
+    position: absolute; top: 40px; left: 40px;
+    z-index: 5;
+  }
+  .patient-id-label {
+    color: var(--text-dim); font-size: 10px;
+    letter-spacing: 1.8px; font-family: var(--font-mono);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .patient-id-name {
+    color: var(--text); font-size: 22px;
+    font-weight: 300; letter-spacing: 0.3px;
+    margin-bottom: 3px;
+  }
+  .patient-id-meta {
+    color: var(--text-muted); font-size: 11px;
+    font-family: var(--font-mono); letter-spacing: 0.3px;
+  }
+
+  /* Annotation toggle (top-right) — gbtn style */
+  .anno-toggle {
+    position: absolute; top: 40px; right: 40px;
+    z-index: 5;
+  }
+
+  /* Image caption (bottom center) */
+  .image-caption {
+    position: absolute; bottom: 110px; left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+  .image-caption-title {
+    font-size: 22px; color: var(--text);
+    font-weight: 300; letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .image-caption-sub {
+    color: var(--text-dim); font-size: 10.5px;
+    letter-spacing: 1.5px; font-family: var(--font-mono);
+    text-transform: uppercase;
+  }
+
+  /* Control bar (bottom) — same chrome styling as app */
+  .present-controls {
+    position: absolute; bottom: 30px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px;
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .present-controls:hover { opacity: 1; }
+  .pc-btn {
+    width: 32px; height: 32px; background: transparent;
+    border: 1px solid transparent; border-radius: 50%;
+    color: var(--text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .pc-btn:hover { background: var(--pane-raised); color: var(--accent); }
+  .pc-btn.primary {
+    background: var(--accent); color: var(--accent-ink);
+    width: 36px; height: 36px;
+  }
+  .pc-btn.primary:hover { background: var(--accent-hover); }
+  .pc-divider {
+    width: 1px; height: 18px; background: var(--border);
+    margin: 0 4px;
+  }
+  .pc-count {
+    color: var(--text-muted); font-family: var(--font-mono);
+    font-size: 10.5px; padding: 0 10px;
+    letter-spacing: 0.3px;
+  }
+  .pc-count b { color: var(--accent); font-weight: 700; }
+
+  /* =========== STATE B — before/after =========== */
+  .ba-stage {
+    position: absolute; inset: 0;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: #000;
+  }
+  .ba-side {
+    position: relative;
+    background: radial-gradient(ellipse at 50% 40%, #14141f 0%, #05050a 80%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ba-label {
+    position: absolute; top: 40px; left: 40px;
+    z-index: 5;
+  }
+  .ba-label-tag {
+    color: var(--text-dim); font-size: 10px;
+    letter-spacing: 1.8px; font-family: var(--font-mono);
+    text-transform: uppercase; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ba-label-tag .pill {
+    padding: 1px 6px; background: var(--pane-raised);
+    border: 1px solid var(--border); border-radius: 3px;
+    color: var(--accent); font-weight: 700; font-size: 9px;
+  }
+  .ba-side.before .ba-label-tag .pill { color: var(--text-muted); }
+  .ba-label-date {
+    color: var(--text); font-size: 18px;
+    font-weight: 300; letter-spacing: 0.2px;
+    margin-bottom: 2px;
+  }
+  .ba-label-rel {
+    color: var(--text-dim); font-size: 10.5px;
+    font-family: var(--font-mono);
+  }
+
+  .ba-radio {
+    width: 78%; aspect-ratio: 4/3;
+    max-height: 70vh;
+    border-radius: 2px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    position: relative; overflow: hidden;
+  }
+  /* Both use the Edit-mockup radial-gradient vocabulary; "before" is dimmer */
+  .ba-radio.before {
+    background: radial-gradient(ellipse at 50% 50%, #4e4e5e 0%, #1f1f2e 45%, #0a0a14 100%);
+  }
+  .ba-radio.after {
+    background: radial-gradient(ellipse at 55% 50%, #6a6a7a 0%, #252538 40%, #0a0a14 100%);
+  }
+
+  .ba-divider {
+    position: absolute;
+    top: 20%; bottom: 20%; left: 50%;
+    width: 1px;
+    background: linear-gradient(180deg, transparent 0%, var(--accent-border) 50%, transparent 100%);
+    transform: translateX(-50%);
+    z-index: 3;
+  }
+  .ba-divider-label {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 4px 12px;
+    background: var(--chrome);
+    border: 1px solid var(--accent-border);
+    border-radius: 100px;
+    font-size: 10px; color: var(--accent);
+    font-family: var(--font-mono);
+    letter-spacing: 1.8px; font-weight: 700;
+    white-space: nowrap; z-index: 10;
+    text-transform: uppercase;
+  }
+
+  .ba-takeaway {
+    position: absolute; bottom: 100px; left: 50%;
+    transform: translateX(-50%);
+    padding: 16px 24px;
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-align: center; max-width: 58%;
+    z-index: 20;
+  }
+  .ba-takeaway-label {
+    color: var(--accent); font-size: 10px;
+    letter-spacing: 1.8px; text-transform: uppercase;
+    font-family: var(--font-mono); font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .ba-takeaway-text {
+    color: var(--text); font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* =========== STATE C — dentist's control screen =========== */
+  .enter-stage {
+    position: absolute; inset: 0;
+    background: var(--canvas);
+    padding: 40px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .enter-frame {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 32px; width: 100%; max-width: 1320px;
+    align-items: center;
+  }
+
+  /* Preview box — looks like a mini version of state A */
+  .enter-preview {
+    aspect-ratio: 16/10;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .enter-preview-inner {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, #14141f 0%, #05050a 70%);
+  }
+  .enter-mini-radio {
+    position: absolute; top: 15%; left: 18%;
+    width: 64%; height: 70%;
+    border-radius: 2px;
+    background: radial-gradient(ellipse at 55% 50%, #6a6a7a 0%, #252538 40%, #0a0a14 100%);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+  }
+  .enter-preview-badge {
+    position: absolute; top: 12px; right: 14px;
+    padding: 3px 8px;
+    background: rgba(127,176,105,0.15);
+    border: 1px solid rgba(127,176,105,0.45);
+    border-radius: 100px;
+    color: var(--mode-present);
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    font-weight: 700;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .enter-preview-badge::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--mode-present);
+    animation: live-pulse 1.8s ease-in-out infinite;
+  }
+
+  /* Right side — control panel */
+  .enter-control { padding: 24px 28px; }
+  .enter-eyebrow {
+    color: var(--accent); font-size: 11px;
+    font-family: var(--font-mono); font-weight: 700;
+    letter-spacing: 1.8px; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .enter-title {
+    color: var(--text); font-size: 26px;
+    font-weight: 300; letter-spacing: 0.2px;
+    margin-bottom: 6px;
+  }
+  .enter-title b {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700;
+  }
+  .enter-sub {
+    color: var(--text-muted); font-size: 13px;
+    line-height: 1.6; margin-bottom: 22px;
+  }
+
+  .enter-meta {
+    padding: 14px 16px; margin-bottom: 18px;
+    background: var(--pane-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .enter-hints {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px; margin-bottom: 18px;
+  }
+  .enter-hint {
+    padding: 8px 10px;
+    background: var(--pane);
+    border: 1px solid var(--border-soft);
+    border-radius: 3px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .enter-hint-kbd {
+    padding: 2px 6px; min-width: 26px; text-align: center;
+    background: var(--pane-raised);
+    border: 1px solid var(--border); border-radius: 2px;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--accent); font-weight: 600;
+  }
+  .enter-hint-desc { color: var(--text-muted); font-size: 11.5px; }
+
+  .enter-actions {
+    display: flex; gap: 6px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <span class="switcher-label">Present mode · views:</span>
+  <button class="switch-btn active" onclick="showView('single', event)">A · single image fullscreen</button>
+  <button class="switch-btn" onclick="showView('ba', event)">B · before / after</button>
+  <button class="switch-btn" onclick="showView('enter', event)">C · dentist's control screen</button>
+</div>
+
+<!-- ====== STATE A · SINGLE IMAGE ====== -->
+<div class="view active" id="view-single">
+  <div class="mode-badge">Live · External display</div>
+
+  <div class="stage">
+
+    <div class="patient-id">
+      <div class="patient-id-label">Patient</div>
+      <div class="patient-id-name">Adams, Deborah</div>
+      <div class="patient-id-meta">#00842 · F · 57 · visit 2026-03-14</div>
+    </div>
+
+    <button class="gbtn anno-toggle">
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent);"></span>
+      Annotations on
+    </button>
+
+    <div class="radiograph">
+      <div class="annotations">
+        <div class="anno" data-label="#15 apex" style="top: 24%; left: 44%; width: 14%; height: 18%;"></div>
+        <div class="anno circle" data-label="PDL" style="top: 46%; left: 28%; width: 10%; height: 14%;"></div>
+      </div>
+    </div>
+
+    <div class="image-caption">
+      <div class="image-caption-title">Periapical · Upper right quadrant</div>
+      <div class="image-caption-sub">Image 1 of 3 · captured 2026-03-14</div>
+    </div>
+
+    <div class="present-controls">
+      <button class="pc-btn" title="Previous image (←)">◀</button>
+      <span class="pc-count"><b>1</b> / 3</span>
+      <button class="pc-btn primary" title="Next image (→)">▶</button>
+      <div class="pc-divider"></div>
+      <button class="pc-btn" title="Toggle annotations (A)">✦</button>
+      <button class="pc-btn" title="Before / after (B)">⇄</button>
+      <button class="pc-btn" title="Zoom (Z)">⊕</button>
+      <div class="pc-divider"></div>
+      <button class="pc-btn" title="Exit Present (Esc)">✕</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ====== STATE B · BEFORE / AFTER ====== -->
+<div class="view" id="view-ba">
+  <div class="mode-badge">Live · External display</div>
+
+  <div class="ba-stage">
+
+    <div class="ba-side before">
+      <div class="ba-label">
+        <div class="ba-label-tag"><span class="pill">A</span>Before</div>
+        <div class="ba-label-date">January 22, 2026</div>
+        <div class="ba-label-rel">52 days ago · pre-treatment</div>
+      </div>
+      <div class="ba-radio before"></div>
+    </div>
+
+    <div class="ba-side after">
+      <div class="ba-label">
+        <div class="ba-label-tag"><span class="pill">B</span>After</div>
+        <div class="ba-label-date">March 14, 2026</div>
+        <div class="ba-label-rel">today · post-RCT healing</div>
+      </div>
+      <div class="ba-radio after"></div>
+    </div>
+
+    <div class="ba-divider">
+      <div class="ba-divider-label">52 days</div>
+    </div>
+
+    <div class="ba-takeaway">
+      <div class="ba-takeaway-label">What changed</div>
+      <div class="ba-takeaway-text">
+        Apical radiolucency at #15 has reduced noticeably following root canal treatment.
+        Bone fill is consistent with successful healing at this stage.
+      </div>
+    </div>
+
+    <div class="present-controls">
+      <button class="pc-btn" title="Previous pair">◀</button>
+      <span class="pc-count">pair <b>1</b> / 2</span>
+      <button class="pc-btn primary" title="Next pair">▶</button>
+      <div class="pc-divider"></div>
+      <button class="pc-btn" title="Single image (S)">◻</button>
+      <div class="pc-divider"></div>
+      <button class="pc-btn" title="Exit (Esc)">✕</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ====== STATE C · DENTIST CONTROL SCREEN ====== -->
+<div class="view" id="view-enter">
+  <div class="enter-stage">
+    <div class="enter-frame">
+
+      <div class="enter-preview">
+        <div class="enter-preview-inner">
+          <div class="enter-preview-badge">Broadcasting</div>
+          <div class="enter-mini-radio"></div>
+          <div style="position: absolute; top: 12px; left: 14px; font-size: 10px; color: var(--text); font-family: var(--font-mono);">Adams, Deborah</div>
+          <div style="position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%); text-align: center;">
+            <div style="font-size: 10px; color: var(--text);">Periapical · Upper right</div>
+            <div style="font-size: 8px; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 1px; margin-top: 2px;">1 OF 3 · 2026-03-14</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="enter-control">
+        <div class="enter-eyebrow">Present mode · active</div>
+        <h1 class="enter-title">Presenting on <b>external display</b></h1>
+        <p class="enter-sub">
+          The patient sees a clean fullscreen view on the external monitor.
+          You control everything from here — the floating toolbar on the patient's screen stays dim unless you hover.
+        </p>
+
+        <div class="enter-meta">
+          <div class="section-head" style="margin-bottom: 6px;"><span>Session</span><span class="hint">2 min 14 sec</span></div>
+          <div class="info-row"><span class="k">Patient</span><span class="v">Adams, Deborah</span></div>
+          <div class="info-row"><span class="k">Display</span><span class="v accent">DELL U2723QE · 2560×1440</span></div>
+          <div class="info-row"><span class="k">Images</span><span class="v">3 queued · 1 shown</span></div>
+          <div class="info-row"><span class="k">Started</span><span class="v">14:08</span></div>
+        </div>
+
+        <div class="enter-hints">
+          <div class="enter-hint">
+            <span class="enter-hint-kbd">← →</span>
+            <span class="enter-hint-desc">Navigate</span>
+          </div>
+          <div class="enter-hint">
+            <span class="enter-hint-kbd">A</span>
+            <span class="enter-hint-desc">Toggle annotations</span>
+          </div>
+          <div class="enter-hint">
+            <span class="enter-hint-kbd">B</span>
+            <span class="enter-hint-desc">Before / After</span>
+          </div>
+          <div class="enter-hint">
+            <span class="enter-hint-kbd">Esc</span>
+            <span class="enter-hint-desc">Exit Present</span>
+          </div>
+        </div>
+
+        <div class="enter-actions">
+          <button class="gbtn primary">End presentation</button>
+          <button class="gbtn">Add image</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function showView(name, evt) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+  evt.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

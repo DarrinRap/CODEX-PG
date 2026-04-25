@@ -1,0 +1,51 @@
+﻿{
+  "schema": "pg.testing_results.sample.v1",
+  "app_version": "4.23",
+  "session_id": "session_20260424_194422",
+  "run_id": "run_20260424_194435",
+  "title": "#130 Phase 3 sample audit package",
+  "started_at": "2026-04-24T19:44:22-07:00",
+  "completed_at": "2026-04-24T19:48:10-07:00",
+  "instructions_source": "workflows/instructions_latest.json",
+  "summary": {
+    "pass": 2,
+    "fail": 1,
+    "skip": 0,
+    "ack": 1
+  },
+  "steps": [
+    {
+      "step_n": 1,
+      "kind": "single",
+      "title": "Capture region screenshot",
+      "outcome": "FAIL",
+      "note": "Review dialog opened centered instead of anchored beside the instruction pane.",
+      "manual_screenshots": ["screenshots/region_1_1.png"],
+      "auto_screenshots": ["screenshots/step_1_auto_fail.png"]
+    },
+    {
+      "step_n": 2,
+      "kind": "checklist",
+      "title": "Verify action bar stays reachable",
+      "outcome": "PASS",
+      "note": "PASS/FAIL/SKIP row stayed visible at 440 px and 380 px.",
+      "manual_screenshots": []
+    },
+    {
+      "step_n": 3,
+      "kind": "action",
+      "title": "Open Testing Settings dialog",
+      "outcome": "ACK",
+      "note": "Action acknowledged after opening View > Testing > Settings.",
+      "manual_screenshots": []
+    },
+    {
+      "step_n": 4,
+      "kind": "single",
+      "title": "Confirm mic status indicator",
+      "outcome": "PASS",
+      "note": "Mic status row displayed active levels without changing pane height.",
+      "manual_screenshots": ["screenshots/region_4_1.png"]
+    }
+  ]
+}

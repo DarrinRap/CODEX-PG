@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PG v4.0 — UI Shell Mockup v1 — Library module</title>
+<style>
+  /* ============================================================
+     Panda Gallery v4.0 — UI Shell Mockup v1
+     Scope: Library module, patient-selected state, 1440x900 viewport
+     Design tokens extracted here; will migrate to styles.py in Week 2 build
+     ============================================================ */
+
+  :root {
+    /* Surface palette — darker than v3 to reduce eye strain on long sessions */
+    --canvas:          #1a1a1a;   /* library viewport background (mode-zone black) */
+    --pane:            #222228;   /* side panels */
+    --pane-raised:     #2a2a32;   /* cards, hover states */
+    --chrome:          #17171c;   /* title bar, status bar */
+    --border:          #2e2e38;
+    --border-soft:     #26262e;
+    --divider:         #1f1f25;
+
+    /* Text */
+    --text:            #e4e4e4;
+    --text-muted:      #9a9aa8;
+    --text-dim:        #6c6c78;
+    --text-heading:    #f4f4f4;
+
+    /* Accent — warm orange, carried forward from v3 vocabulary */
+    --accent:          #e8a87c;
+    --accent-hover:    #f0b490;
+    --accent-soft:     rgba(232, 168, 124, 0.12);
+    --accent-border:   rgba(232, 168, 124, 0.45);
+
+    /* Mode indicators — subtle panel accents per UX §2.2 */
+    --mode-library:    #6a8caf;   /* cool blue-gray */
+    --mode-arrange:    #e8a87c;   /* warm orange */
+    --mode-present:    #7fb069;   /* green */
+
+    /* Semantic */
+    --ok:              #7fb069;
+    --warn:            #e8c070;
+    --err:             #d46a6a;
+
+    /* Typography */
+    --font-ui:         "Segoe UI", -apple-system, "Helvetica Neue", sans-serif;
+    --font-mono:       "Cascadia Mono", "Consolas", monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #0a0a0a;
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow: auto;
+  }
+
+  /* ============================================================
+     APP WINDOW — fixed 1440x900 to represent target UI
+     ============================================================ */
+  .app {
+    width: 1440px;
+    height: 900px;
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 44px 1fr 120px 26px;
+    grid-template-columns: 240px 1fr 300px;
+    grid-template-areas:
+      "titlebar titlebar titlebar"
+      "leftpane viewport rightpane"
+      "leftpane filmstrip rightpane"
+      "statusbar statusbar statusbar";
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  /* ============================================================
+     TITLE BAR — module tabs + global actions
+     ============================================================ */
+  .titlebar {
+    grid-area: titlebar;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: stretch;
+    padding: 0 12px 0 16px;
+    gap: 4px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 18px;
+    border-right: 1px solid var(--border);
+    margin-right: 12px;
+    color: var(--text-heading);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .brand-mark {
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: #17171c; font-weight: 700; font-size: 12px;
+  }
+  .brand-version {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 400;
+  }
+
+  /* Nav buttons — Back / Forward (bug #116) */
+  .navgroup {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-right: 14px;
+  }
+  .navbtn {
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .navbtn:hover { background: var(--pane-raised); color: var(--text); border-color: var(--border); }
+  .navbtn[disabled] { color: var(--text-dim); cursor: default; }
+  .navbtn[disabled]:hover { background: transparent; border-color: transparent; color: var(--text-dim); }
+
+  /* Module tabs — the top-level v4.0 navigation */
+  .tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    flex: 0 0 auto;
+  }
+  .tab {
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;  /* overlap the titlebar bottom-border */
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--text-heading);
+    border-bottom-color: var(--mode-library);
+  }
+  .tab.active.arrange { border-bottom-color: var(--mode-arrange); }
+  .tab.active.present { border-bottom-color: var(--mode-present); }
+  .tab-icon { font-size: 14px; opacity: 0.9; }
+  .tab-kbd {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-left: 2px;
+  }
+
+  .titlebar-spacer { flex: 1 1 auto; }
+
+  /* Global action buttons on right side of titlebar */
+  .global-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .gbtn {
+    height: 28px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+  }
+  .gbtn:hover { background: var(--pane-raised); color: var(--text); border-color: var(--accent-border); }
+  .gbtn-icon { font-size: 13px; }
+  .gbtn.primary {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+  .gbtn.primary:hover { background: var(--accent); color: #17171c; }
+
+  /* ============================================================
+     LEFT PANE — Patient list
+     ============================================================ */
+  .leftpane {
+    grid-area: leftpane;
+    background: var(--pane);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pane-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .pane-title {
+    color: var(--text-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .pane-count {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  .patient-search {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .patient-search input {
+    width: 100%;
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--font-ui);
+    outline: none;
+  }
+  .patient-search input:focus { border-color: var(--accent-border); }
+  .patient-search input::placeholder { color: var(--text-dim); }
+
+  .patient-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .patient-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+  .patient-item:hover { background: var(--pane-raised); }
+  .patient-item.active {
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+  }
+  .patient-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--pane-raised);
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .patient-item.active .patient-avatar {
+    background: var(--accent);
+    color: #17171c;
+  }
+  .patient-meta { flex: 1 1 auto; min-width: 0; }
+  .patient-name {
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .patient-item.active .patient-name { color: var(--text-heading); }
+  .patient-sub {
+    color: var(--text-dim);
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    margin-top: 1px;
+  }
+  .patient-count {
+    color: var(--text-dim);
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--border-soft);
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .leftpane-footer {
+    padding: 8px 10px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    gap: 6px;
+  }
+  .leftpane-footer .gbtn { flex: 1 1 0; justify-content: center; }
+
+  /* ============================================================
+     VIEWPORT — thumbnail grid
+     ============================================================ */
+  .viewport {
+    grid-area: viewport;
+    background: var(--canvas);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Viewport top bar — breadcrumb + view controls (icon+label per #119) */
+  .vport-bar {
+    height: 40px;
+    padding: 0 16px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+  .breadcrumb-sep { color: var(--text-dim); font-size: 11px; }
+  .breadcrumb-current { color: var(--text-heading); font-weight: 500; }
+
+  .vport-spacer { flex: 1 1 auto; }
+
+  .view-controls { display: flex; gap: 4px; }
+  .vc-btn {
+    height: 28px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+  }
+  .vc-btn:hover { background: var(--pane-raised); color: var(--text); }
+  .vc-btn.active { background: var(--pane-raised); color: var(--text-heading); border-color: var(--border); }
+  .vc-ico { font-size: 13px; }
+
+  .thumb-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .thumb-size input[type=range] { width: 80px; accent-color: var(--accent); }
+
+  /* Thumbnail grid */
+  .grid-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  .thumb {
+    aspect-ratio: 4/3;
+    background: #111;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .thumb:hover { border-color: var(--border); }
+  .thumb.selected { border-color: var(--accent); }
+  .thumb.selected::after {
+    content: "";
+    position: absolute; inset: 0;
+    box-shadow: inset 0 0 0 2px var(--accent);
+    pointer-events: none;
+  }
+
+  .thumb-img {
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* Overlay pills on thumbnails */
+  .thumb-badges {
+    position: absolute;
+    top: 6px; left: 6px; right: 6px;
+    display: flex; gap: 4px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    padding: 2px 7px;
+    background: rgba(10,10,10,0.8);
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--text);
+    backdrop-filter: blur(4px);
+  }
+  .badge.xray { color: #9dd0ff; border: 1px solid rgba(157,208,255,0.3); }
+  .badge.photo { color: #ffd4a8; border: 1px solid rgba(255,212,168,0.3); }
+
+  .thumb-meta {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 6px 8px 5px;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 100%);
+    color: var(--text);
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .thumb-date { color: var(--text); }
+  .thumb-num { color: var(--text-dim); }
+
+  /* Fake-image backgrounds (SVG gradients to suggest radiographs vs photos) */
+  .radio-1 { background: radial-gradient(ellipse at 60% 45%, #3a3a3a 0%, #1a1a1a 55%, #080808 100%); }
+  .radio-2 { background: radial-gradient(ellipse at 40% 50%, #454545 0%, #222 50%, #0a0a0a 100%); }
+  .radio-3 { background: radial-gradient(ellipse at 50% 55%, #363636 0%, #1c1c1c 55%, #0b0b0b 100%); }
+  .radio-4 { background: radial-gradient(ellipse at 55% 45%, #424242 0%, #1f1f1f 55%, #0a0a0a 100%); }
+  .radio-5 { background: radial-gradient(ellipse at 45% 50%, #3d3d3d 0%, #1d1d1d 55%, #090909 100%); }
+  .radio-6 { background: radial-gradient(ellipse at 50% 50%, #404040 0%, #1e1e1e 55%, #0a0a0a 100%); }
+  .photo-1 { background: linear-gradient(145deg, #c39770 0%, #8b6240 40%, #4a3520 100%); }
+  .photo-2 { background: linear-gradient(145deg, #d4a885 0%, #9a7050 50%, #5a4028 100%); }
+  .photo-3 { background: linear-gradient(145deg, #b88a68 0%, #7e5838 50%, #40301c 100%); }
+  .photo-4 { background: linear-gradient(145deg, #caa079 0%, #946a48 50%, #503820 100%); }
+
+  /* ============================================================
+     FILMSTRIP — persistent bottom band
+     ============================================================ */
+  .filmstrip {
+    grid-area: filmstrip;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .fs-hdr {
+    height: 24px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--divider);
+  }
+  .fs-label {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .fs-controls {
+    display: flex; gap: 2px;
+  }
+  .fs-btn {
+    width: 22px; height: 22px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  .fs-btn:hover { background: var(--pane-raised); color: var(--text); }
+
+  .fs-scroll {
+    flex: 1 1 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 12px;
+  }
+  .fs-row {
+    display: flex;
+    gap: 6px;
+    height: 100%;
+  }
+  .fs-thumb {
+    aspect-ratio: 4/3;
+    height: 100%;
+    border: 1.5px solid transparent;
+    border-radius: 3px;
+    flex-shrink: 0;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .fs-thumb:hover { border-color: var(--border); }
+  .fs-thumb.active { border-color: var(--accent); }
+
+  /* ============================================================
+     RIGHT PANE — collapsible sub-sections (UX §1.6)
+     ============================================================ */
+  .rightpane {
+    grid-area: rightpane;
+    background: var(--pane);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .section {
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-hdr:hover { background: var(--pane-raised); }
+  .section-arrow {
+    width: 10px; height: 10px;
+    color: var(--text-muted);
+    font-size: 9px;
+    transition: transform 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .section.collapsed .section-arrow { transform: rotate(-90deg); }
+  .section-title {
+    flex: 1 1 auto;
+    color: var(--text-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .section-badge {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: var(--font-mono);
+  }
+  .section-body {
+    padding: 4px 14px 14px;
+  }
+  .section.collapsed .section-body { display: none; }
+
+  /* Patient info rows */
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+  .info-row + .info-row { border-top: 1px solid var(--border-soft); }
+  .info-k { color: var(--text-muted); }
+  .info-v { color: var(--text); font-family: var(--font-mono); font-size: 11.5px; }
+
+  /* Filter controls */
+  .filter-group {
+    margin-bottom: 10px;
+  }
+  .filter-label {
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    padding: 4px 9px;
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent-border); color: var(--text); }
+  .chip.on {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  .date-range {
+    display: flex; gap: 6px; align-items: center;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .date-range input {
+    flex: 1 1 0;
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 4px 6px;
+    color: var(--text);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  /* Sort controls */
+  .sort-select {
+    width: 100%;
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 12px;
+  }
+
+  /* Selection metadata card */
+  .meta-thumb {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  .meta-rows { display: flex; flex-direction: column; gap: 1px; }
+
+  /* ============================================================
+     STATUS BAR
+     ============================================================ */
+  .statusbar {
+    grid-area: statusbar;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .sb-mode {
+    color: var(--mode-library);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding-right: 14px;
+    border-right: 1px solid var(--border);
+  }
+  .sb-sep { color: var(--border); }
+  .sb-spacer { flex: 1 1 auto; }
+  .sb-item { font-family: var(--font-mono); }
+
+  /* ============================================================
+     ANNOTATION SIDEBAR — design notes for the reviewer
+     ============================================================ */
+  .annotations {
+    width: 1440px;
+    margin-top: 32px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .annotations h2 {
+    color: var(--text-heading);
+    font-size: 16px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  .annotations h3 {
+    color: var(--accent);
+    font-size: 13px;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .annotations p { margin-bottom: 8px; }
+  .annotations code {
+    background: var(--pane);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--accent);
+    border: 1px solid var(--border-soft);
+  }
+  .annotations .twocol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .annotations ul { margin-left: 18px; margin-bottom: 10px; }
+  .annotations li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========================================================
+       TITLE BAR
+       ======================================================== -->
+  <div class="titlebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        Panda Gallery
+        <span class="brand-version">v4.0</span>
+      </div>
+    </div>
+
+    <!-- Back / Forward navigation (bug #116, UX §1.3) -->
+    <div class="navgroup">
+      <button class="navbtn" title="Back (Alt+Left)">◀</button>
+      <button class="navbtn" disabled title="Forward (Alt+Right)">▶</button>
+    </div>
+
+    <!-- Module tabs -->
+    <div class="tabs">
+      <div class="tab active" title="Library (Ctrl+1)">
+        <span class="tab-icon">▦</span>
+        <span>Library</span>
+        <span class="tab-kbd">⌘1</span>
+      </div>
+      <div class="tab" title="Arrange (Ctrl+2)">
+        <span class="tab-icon">◩</span>
+        <span>Arrange</span>
+        <span class="tab-kbd">⌘2</span>
+      </div>
+      <div class="tab" title="Present (Ctrl+3)">
+        <span class="tab-icon">▶</span>
+        <span>Present</span>
+        <span class="tab-kbd">⌘3</span>
+      </div>
+    </div>
+
+    <div class="titlebar-spacer"></div>
+
+    <!-- Global actions -->
+    <div class="global-actions">
+      <button class="gbtn" title="Import images to current patient">
+        <span class="gbtn-icon">↓</span>
+        <span>Import</span>
+      </button>
+      <button class="gbtn" title="Export selected images">
+        <span class="gbtn-icon">↑</span>
+        <span>Export</span>
+      </button>
+      <button class="gbtn primary" title="Start presentation (Ctrl+Shift+P)">
+        <span class="gbtn-icon">▶</span>
+        <span>Present</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       LEFT PANE — Patient list
+       ======================================================== -->
+  <div class="leftpane">
+    <div class="pane-hdr">
+      <div class="pane-title">Patients</div>
+      <div class="pane-count">247</div>
+    </div>
+
+    <div class="patient-search">
+      <input type="text" placeholder="Search patients…">
+    </div>
+
+    <div class="patient-list">
+      <div class="patient-item active">
+        <div class="patient-avatar">DA</div>
+        <div class="patient-meta">
+          <div class="patient-name">Adams, Deborah</div>
+          <div class="patient-sub">#00842 · F · 1968</div>
+        </div>
+        <div class="patient-count">24</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">MB</div>
+        <div class="patient-meta">
+          <div class="patient-name">Bergstrom, Martin</div>
+          <div class="patient-sub">#00591 · M · 1975</div>
+        </div>
+        <div class="patient-count">12</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">CC</div>
+        <div class="patient-meta">
+          <div class="patient-name">Chen, Caroline</div>
+          <div class="patient-sub">#01203 · F · 1990</div>
+        </div>
+        <div class="patient-count">8</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">RD</div>
+        <div class="patient-meta">
+          <div class="patient-name">Davis, Roberto</div>
+          <div class="patient-sub">#00776 · M · 1982</div>
+        </div>
+        <div class="patient-count">31</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">LE</div>
+        <div class="patient-meta">
+          <div class="patient-name">Eng, Linda</div>
+          <div class="patient-sub">#01055 · F · 1971</div>
+        </div>
+        <div class="patient-count">18</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">JF</div>
+        <div class="patient-meta">
+          <div class="patient-name">Fischer, James</div>
+          <div class="patient-sub">#00428 · M · 1964</div>
+        </div>
+        <div class="patient-count">45</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">SG</div>
+        <div class="patient-meta">
+          <div class="patient-name">Gupta, Sanjay</div>
+          <div class="patient-sub">#01108 · M · 1988</div>
+        </div>
+        <div class="patient-count">6</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">KH</div>
+        <div class="patient-meta">
+          <div class="patient-name">Halvorsen, Karen</div>
+          <div class="patient-sub">#00912 · F · 1979</div>
+        </div>
+        <div class="patient-count">15</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">JI</div>
+        <div class="patient-meta">
+          <div class="patient-name">Ikeda, Jennifer</div>
+          <div class="patient-sub">#01267 · F · 1993</div>
+        </div>
+        <div class="patient-count">4</div>
+      </div>
+      <div class="patient-item">
+        <div class="patient-avatar">TJ</div>
+        <div class="patient-meta">
+          <div class="patient-name">Jansen, Thomas</div>
+          <div class="patient-sub">#00338 · M · 1958</div>
+        </div>
+        <div class="patient-count">62</div>
+      </div>
+    </div>
+
+    <div class="leftpane-footer">
+      <button class="gbtn"><span class="gbtn-icon">+</span><span>New</span></button>
+      <button class="gbtn"><span class="gbtn-icon">⋯</span><span>More</span></button>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       VIEWPORT — thumbnail grid
+       ======================================================== -->
+  <div class="viewport">
+    <div class="vport-bar">
+      <div class="breadcrumb">
+        <span>Library</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Adams, Deborah</span>
+        <span class="breadcrumb-sep">·</span>
+        <span>24 images</span>
+      </div>
+
+      <div class="vport-spacer"></div>
+
+      <div class="view-controls">
+        <button class="vc-btn active"><span class="vc-ico">▦</span><span>Grid</span></button>
+        <button class="vc-btn"><span class="vc-ico">☰</span><span>List</span></button>
+        <button class="vc-btn"><span class="vc-ico">◱</span><span>Compare</span></button>
+      </div>
+
+      <div class="thumb-size">
+        <span>Size</span>
+        <input type="range" min="120" max="280" value="180">
+      </div>
+    </div>
+
+    <div class="grid-scroll">
+      <div class="grid">
+        <div class="thumb selected">
+          <div class="thumb-img radio-1"></div>
+          <div class="thumb-badges"><span class="badge xray">PA</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-03-14</span><span class="thumb-num">01</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-2"></div>
+          <div class="thumb-badges"><span class="badge xray">PA</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-03-14</span><span class="thumb-num">02</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-3"></div>
+          <div class="thumb-badges"><span class="badge xray">BW</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-03-14</span><span class="thumb-num">03</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-4"></div>
+          <div class="thumb-badges"><span class="badge xray">BW</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-03-14</span><span class="thumb-num">04</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img photo-1"></div>
+          <div class="thumb-badges"><span class="badge photo">Photo</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-03-14</span><span class="thumb-num">05</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img photo-2"></div>
+          <div class="thumb-badges"><span class="badge photo">Photo</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-03-14</span><span class="thumb-num">06</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-5"></div>
+          <div class="thumb-badges"><span class="badge xray">PA</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-01-22</span><span class="thumb-num">07</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-6"></div>
+          <div class="thumb-badges"><span class="badge xray">PA</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-01-22</span><span class="thumb-num">08</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-1"></div>
+          <div class="thumb-badges"><span class="badge xray">BW</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-01-22</span><span class="thumb-num">09</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img photo-3"></div>
+          <div class="thumb-badges"><span class="badge photo">Photo</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-01-22</span><span class="thumb-num">10</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img photo-4"></div>
+          <div class="thumb-badges"><span class="badge photo">Photo</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2026-01-22</span><span class="thumb-num">11</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-3"></div>
+          <div class="thumb-badges"><span class="badge xray">PAN</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2025-11-08</span><span class="thumb-num">12</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-2"></div>
+          <div class="thumb-badges"><span class="badge xray">PA</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2025-11-08</span><span class="thumb-num">13</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-5"></div>
+          <div class="thumb-badges"><span class="badge xray">PA</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2025-11-08</span><span class="thumb-num">14</span></div>
+        </div>
+        <div class="thumb">
+          <div class="thumb-img radio-4"></div>
+          <div class="thumb-badges"><span class="badge xray">BW</span></div>
+          <div class="thumb-meta"><span class="thumb-date">2025-11-08</span><span class="thumb-num">15</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       FILMSTRIP
+       ======================================================== -->
+  <div class="filmstrip">
+    <div class="fs-hdr">
+      <div class="fs-label">Filmstrip · all visits</div>
+      <div class="fs-controls">
+        <button class="fs-btn" title="Previous visit">◀</button>
+        <button class="fs-btn" title="Next visit">▶</button>
+        <button class="fs-btn" title="Hide filmstrip">✕</button>
+      </div>
+    </div>
+    <div class="fs-scroll">
+      <div class="fs-row">
+        <div class="fs-thumb active"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-4"></div></div>
+        <div class="fs-thumb"><div class="thumb-img photo-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img photo-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img photo-3"></div></div>
+        <div class="fs-thumb"><div class="thumb-img photo-4"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-5"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-4"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img photo-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       RIGHT PANE — collapsible sections
+       ======================================================== -->
+  <div class="rightpane">
+
+    <!-- Patient Info section -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-arrow">▼</div>
+        <div class="section-title">Patient Info</div>
+      </div>
+      <div class="section-body">
+        <div class="info-row"><span class="info-k">Name</span><span class="info-v">Adams, Deborah</span></div>
+        <div class="info-row"><span class="info-k">ID</span><span class="info-v">#00842</span></div>
+        <div class="info-row"><span class="info-k">Sex</span><span class="info-v">Female</span></div>
+        <div class="info-row"><span class="info-k">DOB</span><span class="info-v">1968-04-22</span></div>
+        <div class="info-row"><span class="info-k">Age</span><span class="info-v">57</span></div>
+        <div class="info-row"><span class="info-k">First visit</span><span class="info-v">2021-06-14</span></div>
+        <div class="info-row"><span class="info-k">Last visit</span><span class="info-v">2026-03-14</span></div>
+      </div>
+    </div>
+
+    <!-- Filter section -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-arrow">▼</div>
+        <div class="section-title">Filter</div>
+        <div class="section-badge">3 active</div>
+      </div>
+      <div class="section-body">
+        <div class="filter-group">
+          <div class="filter-label">Image type</div>
+          <div class="chip-row">
+            <span class="chip on">Radiograph</span>
+            <span class="chip on">Photo</span>
+            <span class="chip">Scan</span>
+          </div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Radiograph kind</div>
+          <div class="chip-row">
+            <span class="chip on">PA</span>
+            <span class="chip on">BW</span>
+            <span class="chip">PAN</span>
+            <span class="chip">CBCT</span>
+          </div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Date range</div>
+          <div class="date-range">
+            <input type="text" value="2025-01-01">
+            <span>→</span>
+            <input type="text" value="2026-04-23">
+          </div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Flags</div>
+          <div class="chip-row">
+            <span class="chip">⚑ Flagged</span>
+            <span class="chip">★ Favorite</span>
+            <span class="chip">◷ Recent</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sort section -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-arrow">▼</div>
+        <div class="section-title">Sort</div>
+      </div>
+      <div class="section-body">
+        <select class="sort-select">
+          <option>Date captured (newest first)</option>
+          <option>Date captured (oldest first)</option>
+          <option>Image type, then date</option>
+          <option>Filename</option>
+          <option>Recently edited</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Selection metadata -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-arrow">▼</div>
+        <div class="section-title">Selected Image</div>
+      </div>
+      <div class="section-body">
+        <div class="meta-thumb radio-1"></div>
+        <div class="meta-rows">
+          <div class="info-row"><span class="info-k">Captured</span><span class="info-v">2026-03-14</span></div>
+          <div class="info-row"><span class="info-k">Type</span><span class="info-v">Periapical</span></div>
+          <div class="info-row"><span class="info-k">Region</span><span class="info-v">#14-16</span></div>
+          <div class="info-row"><span class="info-k">File</span><span class="info-v">PA_03_14_01</span></div>
+          <div class="info-row"><span class="info-k">Size</span><span class="info-v">1456×1112</span></div>
+          <div class="info-row"><span class="info-k">Edits</span><span class="info-v">2 applied</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collapsed section example -->
+    <div class="section collapsed">
+      <div class="section-hdr">
+        <div class="section-arrow">▼</div>
+        <div class="section-title">Notes &amp; Tags</div>
+        <div class="section-badge">3</div>
+      </div>
+      <div class="section-body">
+        <!-- hidden; collapsed state -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================
+       STATUS BAR
+       ======================================================== -->
+  <div class="statusbar">
+    <span class="sb-mode">LIBRARY</span>
+    <span class="sb-item">1 of 24 selected</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">Filter: Radiograph, Photo · PA, BW</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">Sort: Date captured ↓</span>
+    <span class="sb-spacer"></span>
+    <span class="sb-item">DB: panda_gallery.db</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">v4.0-dev</span>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     DESIGNER'S NOTES — review context for Darrin
+     ============================================================ -->
+<div class="annotations">
+  <h2>Shell mockup v1 — Library module — designer's notes</h2>
+  <p>This is iteration 1 of the v4.0 UI shell, scoped to the Library module in patient-selected state at 1440×900. Everything below is open for critique. Nothing is locked.</p>
+
+  <div class="twocol">
+    <div>
+      <h3>What's in this mockup</h3>
+      <ul>
+        <li><b>Module tabs</b> (Library / Arrange / Present) top-left with keyboard hints. Active tab underlined in the mode-color token.</li>
+        <li><b>Back / Forward</b> nav buttons (bug #116). Separate from edit undo.</li>
+        <li><b>Patient list</b> left pane with search, avatar, ID/sex/year, image count.</li>
+        <li><b>Thumbnail grid</b> center with type badges (PA/BW/Photo), date+sequence overlay.</li>
+        <li><b>Filmstrip</b> persistent below the grid — all patient images across visits.</li>
+        <li><b>Right pane</b> with 5 collapsible sections: Patient Info, Filter, Sort, Selected Image, Notes &amp; Tags (shown collapsed).</li>
+        <li><b>Status bar</b> with mode label in the mode-color, active filters, sort, DB context.</li>
+        <li><b>Import / Export</b> icons corrected: <code>↓</code> for import, <code>↑</code> for export (#115).</li>
+        <li><b>Labeled buttons</b> everywhere — no icon-only buttons in viewport controls (#119).</li>
+      </ul>
+
+      <h3>Mode zone-color (UX §2.2)</h3>
+      <p>The <code>LIBRARY</code> label in the status bar uses the mode-library token (blue-gray). The active module tab underline matches. Arrange will use orange, Present will use green. Canvas-surround color shift is subtle here; plan is Library stays near-black, Develop-equivalent (Image Editor within Arrange) shifts to <code>#2a2a2a</code>.</p>
+
+      <h3>Decisions I made without asking</h3>
+      <ul>
+        <li>Filmstrip is always visible in Library (not just during image edit). Gives persistent "where am I in this patient's history" context. Close button in the header lets it hide if that's wrong.</li>
+        <li>Import / Export / Present as the three global action buttons top-right. Present is accented because it's the differentiated feature. Open to demoting it if that's too loud.</li>
+        <li>Patient avatars are initials-based — no real photos. Simpler and more appropriate for a clinical app.</li>
+        <li>Sub-sections have disclosure arrows and persist state (per UX §1.6). Notes &amp; Tags shown collapsed to demonstrate.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>What I'm unsure about</h3>
+      <ul>
+        <li><b>Filmstrip vs. selection panel competition.</b> Both show image-sequence context. If the filmstrip is always visible, does the right-pane "Selected Image" section duplicate information? Lean: keep both — filmstrip for navigation, selection panel for metadata inspection.</li>
+        <li><b>Left-pane patient count.</b> "247 patients" feels small for a mature practice; might be too big for a new install. If there's a known ballpark for Darrin's DB, I can calibrate.</li>
+        <li><b>Module tab position.</b> Top-left (shown) vs. top-center (Lightroom convention). Top-left gives more room for global actions on the right. Top-center is more visually balanced.</li>
+        <li><b>Action bar density.</b> Import / Export / Present may deserve separate breathing room from the tabs. Currently they're both in the 44px title bar.</li>
+        <li><b>Dark shade.</b> Canvas is <code>#1a1a1a</code>, panes <code>#222228</code>, chrome <code>#17171c</code>. Slightly more contrast than v3. Push darker or lighter?</li>
+      </ul>
+
+      <h3>What's deliberately NOT in this mockup</h3>
+      <ul>
+        <li>Empty-state (no patient selected) — separate mockup, addresses bug #114</li>
+        <li>Arrange module canvas — Month 2 work, placeholder in Week 1 shell</li>
+        <li>Present module — Month 2 work</li>
+        <li>The right-panel collapsible persistence across sessions (UX §1.6) — behavior, not visual</li>
+        <li>Loupe / Develop sub-mode within Library — if Darrin wants it; UX §2.3 had it, plan consolidates to separate Arrange module</li>
+        <li>Comparison view (right button in view controls is present but unstated as a mode)</li>
+      </ul>
+
+      <h3>Questions for you</h3>
+      <ul>
+        <li>Is Library really the right first-module? UX doc said Library/Develop/Slideshow/Presentation; plan says Library/Arrange/Present. Is "Develop" absorbed by Arrange's image-editor sub-mode, or is it its own thing?</li>
+        <li>Does the thumbnail metadata show what you want? Currently: date + sequence-number. Could be: region, tooth number, edit count, file size.</li>
+        <li>Patient list ordering — should "most recent" pin to the top, or is alphabetical right?</li>
+        <li>Should Present be a module tab OR a button (as shown in the top-right) — not both? Currently both exist. Lean: tab=destination, button=action ("Start presentation now").</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

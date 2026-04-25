@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery — Pane-level FAIL panel mockup v1 (Phase B, bug #87)</title>
+<style>
+  :root {
+    --bg-deep:     #14141f;
+    --bg-pane:     #1a1a2e;
+    --bg-hover:    #22223a;
+    --border:      #2a2a3e;
+    --border-soft: #232336;
+    --text:        #e0ddd5;
+    --text-dim:    #6a6a78;
+    --text-muted:  #888;
+    --accent:      #e8a87c;
+    --accent-dim:  #d4945a;
+    --ok:          #5ab87a;
+    --ok-soft:     rgba(90, 184, 122, 0.10);
+    --ok-border:   rgba(90, 184, 122, 0.55);
+    --fail:        #d46a6a;
+    --fail-soft:   rgba(212, 106, 106, 0.05);
+    --fail-border: rgba(212, 106, 106, 0.25);
+    --fail-focus:  #e8a87c;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0d0d18; color: var(--text);
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    font-size: 13px; line-height: 1.4;
+  }
+  .page { padding: 32px 24px 80px; max-width: 1800px; margin: 0 auto; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: var(--text); }
+  .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  h2 {
+    font-size: 14px; font-weight: 600;
+    margin: 36px 0 12px; color: var(--text);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  .summary {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+  .summary .tag {
+    font-size: 10px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  .summary p { margin: 6px 0; color: var(--text); font-size: 13px; }
+  .summary b { color: var(--text); }
+  .summary code {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    background: #0d0d18; color: var(--accent);
+    padding: 1px 5px; border-radius: 2px; font-size: 12px;
+  }
+
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .col-head {
+    font-size: 12px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 10px; font-weight: 600;
+  }
+  .state-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--bg-hover);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 11px;
+    margin-right: 6px;
+  }
+  .state-tag.s2 { color: var(--fail); border-color: rgba(212, 106, 106, 0.4); }
+  .state-tag.s3 { color: var(--ok); border-color: var(--ok-border); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PANE — fixed height to demonstrate vertical rhythm.
+     ═══════════════════════════════════════════════════════════════ */
+  .pane {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex; flex-direction: column;
+    height: 560px;
+    width: 420px;
+  }
+
+  .pane-title {
+    padding: 10px 14px 4px;
+    display: flex; justify-content: flex-end; align-items: center;
+    flex-shrink: 0;
+  }
+  .pane-title .help {
+    width: 22px; height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    color: var(--text-muted);
+    font-size: 12px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+
+  .progress {
+    font-size: 11px; color: var(--text-muted);
+    letter-spacing: 0.5px;
+    padding: 0 16px;
+  }
+  .step-title {
+    font-size: 15px; font-weight: 600;
+    color: var(--accent);
+    padding: 4px 16px 10px;
+  }
+
+  /* Body — natural height */
+  .body {
+    flex: 0 0 auto;
+    padding: 0 16px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* Filler — absorbs void below the expected block */
+  .spacer {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .expected {
+    margin: 0 16px 14px;
+    padding: 10px 12px;
+    background-color: var(--bg-pane);
+    border-left: 3px solid var(--ok);
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .expected .hdr {
+    font-size: 10px; color: var(--text-muted);
+    font-weight: 700; letter-spacing: 1.2px;
+    margin-bottom: 4px;
+  }
+  .expected .body-text {
+    font-size: 13px; color: #c8c5bb;
+    line-height: 1.5;
+  }
+
+  /* Action button row (state 1 — default) */
+  .btn-row {
+    padding: 10px 16px 14px;
+    display: flex; gap: 8px; justify-content: flex-end;
+    flex-shrink: 0;
+  }
+  .btn {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 14px; border-radius: 3px;
+    background-color: transparent;
+    cursor: pointer; white-space: nowrap;
+    line-height: 1.2;
+  }
+  .btn-neutral {
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    min-width: 70px;
+  }
+  .btn-back { min-width: 72px; }
+  .btn-pass {
+    color: var(--ok);
+    border: 1px solid var(--ok-border);
+    padding: 6px 18px;
+    min-width: 76px;
+  }
+  .btn-fail {
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 6px 18px;
+    min-width: 72px;
+  }
+
+  /* Inline FAIL panel (replaces btn-row in state 2).
+     Matches existing CHECKLIST_VIEW_QSS #checklistFailPanel exactly —
+     background rgba(212,106,106,0.05), 1px border rgba(212,106,106,0.25),
+     4px radius. */
+  .fail-panel {
+    margin: 4px 16px 14px;
+    padding: 10px 12px;
+    background-color: var(--fail-soft);
+    border: 1px solid var(--fail-border);
+    border-radius: 4px;
+    display: flex; flex-direction: column; gap: 8px;
+    flex-shrink: 0;
+  }
+  .fail-panel .hdr {
+    font-size: 10px; color: var(--fail);
+    font-weight: 600; letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .fail-panel .edit {
+    background-color: var(--bg-deep);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 6px 8px;
+    font-size: 12px;
+    min-height: 54px;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  .fail-panel .edit:focus {
+    border-color: var(--fail-focus);
+    outline: none;
+  }
+  .fail-panel .edit.placeholder {
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .fail-panel .panel-btn-row {
+    display: flex; gap: 6px; justify-content: flex-end;
+  }
+  .btn-panel {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 3px;
+    background: transparent;
+    border: 1px solid var(--border);
+    height: 24px;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn-panel-cancel {
+    color: var(--text-muted);
+  }
+  .btn-panel-cancel:hover {
+    background-color: var(--bg-hover);
+  }
+  .btn-panel-save {
+    color: var(--fail);
+    border-color: rgba(212, 106, 106, 0.35);
+  }
+  .btn-panel-save:hover {
+    background-color: rgba(212, 106, 106, 0.08);
+  }
+  .btn-panel-save:disabled {
+    color: #555;
+    border-color: #2a2a4e;
+    cursor: not-allowed;
+  }
+
+  /* Persistent bottom row — Cancel/Pause stay put even while FAIL panel is open */
+  .bottom-row {
+    padding: 8px 16px 12px;
+    display: flex; gap: 8px; justify-content: flex-end;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-soft);
+    margin-top: 0;
+  }
+
+  .caption {
+    font-size: 11px;
+    margin-top: 10px;
+    line-height: 1.5;
+    color: #c8c5bb;
+    border-left: 2px solid var(--accent);
+    padding-left: 10px;
+  }
+  .caption.fail { border-left-color: var(--fail); }
+  .caption.ok { border-left-color: var(--ok); }
+  .caption b { color: var(--text); }
+  .caption code {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    background: var(--bg-pane); color: var(--accent);
+    padding: 1px 4px; border-radius: 2px; font-size: 10px;
+  }
+
+  .flows {
+    margin: 40px 0 0;
+    padding: 18px 22px;
+    border-left: 3px solid var(--ok);
+    background: rgba(90, 184, 122, 0.04);
+    border-radius: 4px;
+  }
+  .flows h3 {
+    font-size: 11px; color: var(--ok);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 700; margin: 0 0 10px;
+  }
+  .flows h4 {
+    font-size: 13px; color: var(--text);
+    margin: 18px 0 6px;
+  }
+  .flows h4:first-of-type { margin-top: 4px; }
+  .flows ol {
+    margin: 4px 0 0; padding-left: 22px;
+    font-size: 12px; color: var(--text);
+    line-height: 1.6;
+  }
+  .flows code {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    background: var(--bg-deep); color: var(--accent);
+    padding: 1px 5px; border-radius: 2px; font-size: 11px;
+  }
+
+  .invariants {
+    margin: 28px 0 0;
+    padding: 16px 20px;
+    border-left: 3px solid var(--text-muted);
+    background: #15151d;
+    border-radius: 4px;
+  }
+  .invariants h3 {
+    font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 700; margin: 0 0 8px;
+  }
+  .invariants ul {
+    margin: 4px 0 0; padding-left: 22px;
+    font-size: 12px; color: var(--text);
+    line-height: 1.6;
+  }
+  .invariants code {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    background: var(--bg-deep); color: var(--accent);
+    padding: 1px 5px; border-radius: 2px; font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Pane-level FAIL panel — mockup v1</h1>
+  <div class="sub">
+    Phase B of bug #87. Single-expected steps: replace the action row
+    (PASS / FAIL) with an inline FAIL panel when the user taps FAIL, so
+    the user can type a note and commit without leaving the pane.
+    Visual language reuses the checklist-row FAIL panel's QSS verbatim —
+    <code>#checklistFailPanel</code>, <code>#checklistFailPanelEdit</code>,
+    <code>#checklistBtnPanelCancel</code>, <code>#checklistBtnPanelSave</code>.
+  </div>
+
+  <div class="summary">
+    <div class="tag">Three states</div>
+    <p><b>State 1 — Default.</b> Body + EXPECTED + action row (PASS / FAIL). Unchanged from v3.75.6.</p>
+    <p><b>State 2 — FAIL panel open.</b> Action row replaced with an inline panel: red-tinted container, "DESCRIBE WHAT FAILED" header, multi-line textarea, CANCEL + SAVE FAIL button row. Bottom-of-pane Cancel / Pause / ← Back row stays visible (pane-level actions).</p>
+    <p><b>State 3 — Post-save.</b> Result written to <code>results_latest.json</code>, auto-advance to the next step (or to summary on last step). Identical to PASS advance.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       THREE STATES — side by side
+       ═══════════════════════════════════════════════════════════════ -->
+  <h2>Single step with body + EXPECTED + action row across three states</h2>
+
+  <div class="grid3">
+    <!-- STATE 1 -->
+    <div>
+      <div class="col-head"><span class="state-tag">1</span> Default — PASS / FAIL buttons</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 2 of 3 · B1</div>
+        <div class="step-title">B1 — Click FAIL to test the panel</div>
+        <div class="body">
+          <b>SETUP:</b> Look at this step.<br>
+          <b>ACTION:</b> Tap FAIL or press <code>F</code>.
+        </div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">PASS / FAIL button row is visible at the bottom of the pane.</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption">
+        Action row at bottom. Keyboard: <code>P</code> / <code>Enter</code> = PASS, <code>F</code> = FAIL, <code>Shift+Enter</code> = Back, <code>Esc</code> = Cancel. Same as v3.75.6 — no visual change in state 1.
+      </div>
+    </div>
+
+    <!-- STATE 2 -->
+    <div>
+      <div class="col-head"><span class="state-tag s2">2</span> FAIL panel open</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 2 of 3 · B1</div>
+        <div class="step-title">B1 — Click FAIL to test the panel</div>
+        <div class="body">
+          <b>SETUP:</b> Look at this step.<br>
+          <b>ACTION:</b> Tap FAIL or press <code>F</code>.
+        </div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">PASS / FAIL button row is visible at the bottom of the pane.</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="fail-panel">
+          <div class="hdr">DESCRIBE WHAT FAILED</div>
+          <textarea class="edit" autofocus placeholder="What happened? Steps to reproduce, observed vs expected…"></textarea>
+          <div class="panel-btn-row">
+            <button class="btn-panel btn-panel-cancel">CANCEL</button>
+            <button class="btn-panel btn-panel-save" disabled>SAVE FAIL</button>
+          </div>
+        </div>
+        <div class="bottom-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+        </div>
+      </div>
+      <div class="caption fail">
+        PASS / FAIL row replaced by the panel. Focus starts in the textarea. SAVE FAIL disabled until text is non-empty (matches spec §5.2 required-text validation). Keyboard in textarea: <code>Enter</code> = Save (if non-empty, else focus stays in textarea); <code>Shift+Enter</code> = newline; <code>Esc</code> = Cancel (returns to state 1). <b>Bottom-of-pane Cancel / Pause / ← Back row stays visible</b> — pane-level actions remain reachable so the user can abort the session even with the panel open.
+      </div>
+    </div>
+
+    <!-- STATE 3 -->
+    <div>
+      <div class="col-head"><span class="state-tag s3">3</span> After SAVE FAIL — advanced to next step</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 3 of 3 · C1</div>
+        <div class="step-title">C1 — Observe next step</div>
+        <div class="body">
+          <b>SETUP:</b> The previous step recorded a FAIL.<br>
+          <b>ACTION:</b> Observe the pane is on step 3.
+        </div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text"><code>workflows/results_latest.json</code> has a new entry for B1 with <code>outcome: "FAIL"</code> and your note.</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption ok">
+        After SAVE FAIL: pane auto-advances to step N+1 (or renders summary if that was the last step). Button row returns to default. Behavior matches <code>_on_pass</code> post-record logic verbatim — same <code>_render_step</code> / <code>_render_summary</code> branching.
+      </div>
+    </div>
+  </div>
+
+  <div class="flows">
+    <h3>State transitions</h3>
+
+    <h4>State 1 → State 2 — User opens the FAIL panel</h4>
+    <ol>
+      <li>User taps FAIL (or presses <code>F</code>).</li>
+      <li><code>_on_fail</code> detects single-expected step, sets <code>self._fail_panel_open = True</code>.</li>
+      <li>Action row (PASS + FAIL buttons) hidden.</li>
+      <li>FAIL panel mounted above the bottom row: header, textarea, CANCEL + SAVE FAIL buttons.</li>
+      <li>Textarea receives focus. SAVE FAIL starts disabled.</li>
+      <li>Body + EXPECTED remain visible above — <code>_body_filler</code> still absorbs leftover space.</li>
+      <li>Bottom row (Cancel / Pause / ← Back) stays visible. ← Back is enabled only if <code>step_index &gt; 0</code>.</li>
+    </ol>
+
+    <h4>State 2 → State 1 — User cancels the panel</h4>
+    <ol>
+      <li>User taps CANCEL or presses <code>Esc</code>.</li>
+      <li><code>_close_fail_panel</code> sets <code>self._fail_panel_open = False</code>.</li>
+      <li>Panel torn down (widgets <code>setParent(None)</code> + <code>deleteLater()</code>, matching <code>_ChecklistRow._clear_extra</code>).</li>
+      <li>Action row re-shown (PASS + FAIL).</li>
+      <li>No result written. No timestamp. Step state unchanged.</li>
+      <li>Focus returns to PASS button (matches <code>_render_step</code>'s default).</li>
+    </ol>
+
+    <h4>State 2 → State 3 — User submits the FAIL</h4>
+    <ol>
+      <li>Textarea non-empty (after <code>.strip()</code>). User taps SAVE FAIL or presses <code>Enter</code>.</li>
+      <li><code>_submit_fail_panel</code> reads the text, calls <code>self._results_writer.record_single(step_n, test_id, title, outcome="FAIL", note=text)</code>.</li>
+      <li>Panel torn down. <code>self._fail_panel_open = False</code>.</li>
+      <li>If last step: <code>_render_summary</code>. Else: <code>_render_step(self._step_index + 1)</code>.</li>
+      <li>Mirrors <code>_on_pass</code>'s post-record advance exactly — same branching, same <code>mark_completed</code> on summary.</li>
+    </ol>
+  </div>
+
+  <div class="invariants">
+    <h3>Invariants the implementation must preserve</h3>
+    <ul>
+      <li><b>Checklist path untouched.</b> <code>_on_fail</code>'s existing <code>if self._is_checklist_step():</code> branch that routes to <code>self._checklist_view.handle_fail()</code> stays first. Phase B only changes the single-expected branch below it — the old stub dialog goes away.</li>
+      <li><b>Schema v1 files work unchanged.</b> Phase A's verification plan is schema v1 — no <code>fail_chips</code> field. The "If <code>fail_chips</code> absent" spec §5.2 variant is the ONLY one Phase B ships. Chips are deferred.</li>
+      <li><b>Paused state propagates.</b> When <code>self._paused</code> becomes true while the panel is open: textarea and both buttons disable. When unpaused: re-enable. Mirrors <code>_ChecklistRow.set_paused</code>.</li>
+      <li><b>Back in state 2 cancels the panel.</b> If the FAIL panel is open, <code>_on_back</code> (Shift+Enter) closes it instead of navigating to the previous step. Mirrors <code>ChecklistStepView.handle_back</code>'s open-panel-first behavior.</li>
+      <li><b>Esc in state 2 cancels the panel.</b> If the FAIL panel is open, <code>_on_cancel</code> (Esc) closes it instead of triggering the cancel-session prompt. Mirrors <code>ChecklistStepView.handle_cancel</code>.</li>
+      <li><b>Results writer guarded.</b> <code>record_single(..., outcome="FAIL", note=text)</code> call wrapped in <code>try/except</code>; failure logs a warning via <code>log.warning</code> but does not block the advance. Same pattern as Phase A's <code>_on_pass</code>.</li>
+      <li><b>No screenshot write.</b> Spec §5.8 auto-screenshot is out of scope (v3.68). <code>screenshot</code> field stays <code>null</code> per results_writer's default. No capture call in Phase B.</li>
+      <li><b>No <code>fail_chips</code>, no <code>report</code> hint.</b> Spec §5.2 covers chips and the <code>report</code> field pre-fill. Phase B deliberately ships only the plain-textarea variant. Deferred to later phase.</li>
+      <li><b>QSS reused, not duplicated.</b> Reuse existing <code>#checklistFailPanel</code>, <code>#checklistFailPanelLabel</code>, <code>#checklistFailPanelEdit</code>, <code>#checklistBtnPanelCancel</code>, <code>#checklistBtnPanelSave</code> object names so <code>CHECKLIST_VIEW_QSS</code> styles this panel verbatim. No new styles.py edit.</li>
+      <li><b>Reuse <code>_FailNoteEdit</code> class.</b> Already exists at module level with Enter / Shift+Enter / Esc semantics correct. New code imports nothing new; constructs a <code>_FailNoteEdit(parent)</code>.</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

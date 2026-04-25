@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Library · empty states</title>
+<style>
+  :root {
+    --canvas:          #14141f;
+    --chrome:          #161625;
+    --pane:            #1a1a2e;
+    --pane-raised:     #22223a;
+    --pane-selected:   #2a2a4e;
+    --border:          #2a2a3e;
+    --border-hover:    #3a3a4e;
+    --border-soft:     #232336;
+    --text:            #e0ddd5;
+    --text-muted:      #888;
+    --text-dim:        #555;
+    --text-heading:    #e0ddd5;
+    --accent:          #e8a87c;
+    --accent-hover:    #d4945a;
+    --accent-soft:     rgba(232,168,124,0.12);
+    --accent-border:   rgba(232,168,124,0.45);
+    --accent-ink:      #1a1a2e;
+    --mode-library:    #9a9aa8;
+    --ok:              #7fb069;
+    --font-ui:         "Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:       "Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: #0a0a0a; color: var(--text);
+    font-family: var(--font-ui); font-size: 13px; line-height: 1.45;
+    overflow: hidden;
+  }
+
+  /* =========== SWITCHER =========== */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 34px; z-index: 999;
+    background: rgba(10,10,14,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 6px; padding: 0 14px;
+  }
+  .switcher-label {
+    color: var(--text-muted); font-size: 10px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-right: 8px; font-family: var(--font-mono);
+  }
+  .switch-btn {
+    padding: 4px 10px; background: var(--pane-raised); color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 11px; font-family: var(--font-ui); cursor: pointer;
+  }
+  .switch-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .switch-btn.active { background: var(--pane-selected); color: var(--accent); border-color: var(--accent); }
+
+  .view {
+    position: fixed; top: 34px; left: 0; right: 0; bottom: 0;
+    display: none;
+  }
+  .view.active { display: block; }
+
+  /* =========== APP SHELL — Library grid =========== */
+  .app {
+    width: 100%; height: 100%;
+    background: var(--canvas);
+    display: grid;
+    grid-template-rows: 44px 1fr 120px 26px;
+    grid-template-columns: 240px 1fr 300px;
+    grid-template-areas:
+      "titlebar titlebar titlebar"
+      "leftpane viewport rightpane"
+      "leftpane filmstrip rightpane"
+      "statusbar statusbar statusbar";
+  }
+
+  /* =========== TITLE BAR — copied from shell =========== */
+  .titlebar {
+    grid-area: titlebar; background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: stretch;
+    padding: 0 12px 0 16px; gap: 4px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding-right: 18px; border-right: 1px solid var(--border); margin-right: 12px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkoAAAJKCAYAAADTI2qZAAASKElEQVR4nO3dQVIjxxKAYTHhgxDBkvsfhSUR3AQvxmMDVknd6q6qzKzv277F03RLlT/ZAl8uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVPE0+wUAwKM+3t8+Z/7/P7+8mqPFucEAhDQ7go4QUHW4kQBMkzmGjhBSebhRAAy3aiD9JJjic4MA6EYQ7SeeYnEzADidQDpOMMXgJgBwmDAaQzyN54ID8DCBNIdgGseFBmAzYRSPaOrLxQXgLoEUn2Dq46/ZLwCAeIQR/CaUAPiXQILvhBLA4sQRtP2a/QIAmEckwW02SgALEUawj40SwCJEEuxnowRQmDiCY2yUAIoSSXCcjRJAIeIIzmWjBFCESILz2SgBJCeQoB8bJYDERBL0ZaMEkJBAgjFslACSEUkwjlACSEQkwVhCCSAJkQTjCSWABEQSzCGUAIITSTCPUAIITCTBXEIJICiRBPMJJYCARBLEIJQAghFJEIdQAghEJEEsQgkAoEEoAQRhmwTxCCWAAEQSxCSUACYTSRCXUAIAaBBKABPZJkFsQgkAoEEoAUximwTxCSWACUQS5CCUAAAahBIAQMNfs18AkFe2x0fPL69Ps1/D5ZLvusHKQhwaQDyrDvPeMbXqdaW/KD8IVOOiQmGG8nitYeVe0JtQ6sNFhcQMX+APodSH7yhBcGIIYB6hBAGIIYCYhBIMIoYA8hFK0IkwAshPKMEJRBFATUIJdhJFAOsQSnCHMAJYl1CCH4QRAH8IJZYnjABoEUosSRwBsIVQYhniCIC9hBJlCSMAjhJKlCKOADiTUCI1YQRAT0KJlAQSACMIJdIQRwCMJpQITyABMItQIiRxBEAEQolQBBIAkQglphNHAEQllJhCHAGQgVBiKIEEQCZCiWFEUh/PL69Ps1+DewtUNf2ApTYD9Lrnl9en1rWJED49eU9AH9XPjllcVLpYeRg6rPpa+b0Ftzh7+nBROV3VQeYQyqHq+w/ucUb14aJyikrDyWFTS6X3Jtzi7OrDReWwbIPIYcIf2d67cIuzrQ8XlYdFHzIODfaK/p6GW5x5fbio7BZ1mDgk6CHq+x1+cgb24aKyy8yh4RAgEgFFNM7IPlxUNhs9GHzoyUI0EYEzsw8XlU16DwIfcCoRTszgHO3DRWWzsw5/H2ZWIpoYxdnah4vKLo8e+j7AIJroyznbh/8oLqfzYQWgCgON3a79VCyOYBtbJXpxDvdho8RuPowArOLX7BcAsBI/aEAuQgkAoEEoAQA0CCWAwTx+gzyEEgBAg1ACAGgQSgAADUIJYALfU4IchBIAQINQApjEVgniE0oAAA1CCQCgQSgBTOTxG8QmlAAAGoQSwGS2ShCXUAIAaBBKAAANQgkgAI/fICahBADQIJQAgrBVgniEEgBAg1ACAGgQSgCBePwGsQglgGDEEsQhlAAAGoQSQEC2ShCDUAIISizBfEIJAKBBKAEANAglgMA8foO5hBJAcGIJ5hFKAAANQgkgAVslmEMoASQhlmA8oQQA0CCUABKxVYKxhBJAMmIJxhFKAAANQgkgIVslGEMoASQllqA/oQQA0CCUABKzVYK+hBJAcmIJ+hFKAAWIJehDKAEUIZbgfEIJAKBBKAEUYqsE5xJKAMWIJTiPUAIoSCzBOYQSQFFiCY4TSgCFiSU4RigBFCeW4HFCCWABYgkeI5QAFiGWYD+hBADQIJQAFmKrBPsIJYDFPL+8Pgkm2EYoASxKLMF9QglgYWIJbhNKAIsTS9AmlAAQS9AglAC4XC5iCa4RSgD8SyzBd0IJgG/EEvxHKAHwP/7WEvwmlABoEkusTigBcJNYYmVCCYC7xBKrEkoAbCKWWJFQAmAzscRqhBIAu/iNOFYilAB4iFhiBUIJgIeJJaoTSgAc4lEclQklAE4hlqhIKAFwGrFENUIJgFN5FEclQgmALsQSFQglALqxXSI7oQRAd2KJrIQSAEOIJTISSgAM41Ec2QglAIYTTGQhlACYRiwRnVACYCqxRGRCCYDpPIojKqEEQBiCiWiEEgDhiCWiEEoAhCSWiEAoARCWR3HMJpQACE8wMYtQAiANscRoQgmAVGyXGEkoAZCSWGIEoQRAWrZL9CaUAEhPMNGLUAKgDMHE2YQSAOWIJc4ilAAoyXaJMwglAEoTTBwhlABYgmDiEUIJgKUIJvYQSgAsSTCxhVACYGmCiVuEEgBc/EkBrvOmAIArPt7fPme/hj2EXh82SgBwhUdyXC42SgCwWeQtk6jrw0YJADayZVqPmw0AB0TZMgm4PmyUAOAAW6ba3FgA6GD0pkms9eGiAkBnI6JJKPXhogLAQL2iSSj14aICwGRnxJNQ6sNFBYDAtkaUUAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFjc0+wXAJzv4/3tc8T/z/PLqzMEKM0hB0mNiqFHiSigAgcZBBc9iPYSUEAmDiwIploYbSGegKgcTjDZimF0j3AConAYwSQCaTvhBMzi8IHBBNIxogkYyYEDgwikcwkmYAQHDXQmkPoSTEBPDhjoRCCNJ5qAszlU4GQCKQbRBJzh1+wXAJWIpDjcC+AMfuKCExjK8dkwAY+wUYKDRFIO7hPwCD9hwQGGb062S8BWDgt4gECqQTAB93j0BjuJpDrcS+AeP03BDgZrXbZLwDUOBthIJK1BMAFfefQGG4ikdbjXwFdCCe4wONfjngN/CCW4wcBcl3sPXC6+owRNBiV/+N4SrMtGCeAO0QzrEkpwhcHIT94TsCahBD8YiLR4b8B6hBLADmIJ1iKU4AtDkC28T2AdQgn+Yfixh/cLrEEoATxILEF9QgngALEEtQkluBh2HOP9A3UJJYATiCWoSSgBnEQsQT1CCQCgQSixPFsAzuT9BLUIJYCTiSWoQygBdCCWoAahBADQIJQAOrFVgvyEEkBHYglyE0oAAA1CieU9v7w+zX4N1GarBHkJJQCABqEEMICtEuQklODi8RtjiCXIRygBADQIJYCBbJUgF6EE//D4DYCfhBJ8IZYYwVYJ8hBKAAANQgl+sFViBFslyEEowRViCYDLRSgBTGOrBPEJJWiwVQJAKMENYglgbUIJ7hBL9OTxG8QmlGADsQSwJqEEG4klerFVgriEEuzw/PL6JJgA1iGU4AFiCWANQgkeJJYA6nPQwwl8x4QziG+Ix0YJTmDAcQbBDfEIJTiJL3oD1COU4GSCCaAOoQSdiCWA/BzkMIDvnrCHyIY4bJRgAI/jAHJycMMENkzcI6whBhslmMCGCSAHBzUEYcvEV0IaYrBRgiAMRoB4HMwQlA0T4hnms1GCoHyPCWA+hzAkYcO0JrEMc9koQRIGJsB4QgkS8TgOYCyhBAkJJoAxhBIkJpbq8900mEsoQXK2SwD9OFyhGBuImsQwzGGjBMUYqADnEUpQkFgCOIdQgqJ8dwngOIcoLMJ3l/ITvjCejRIswpAF2E8owULEUm62gjCeUILFiCWA7YQSLEgsAWwjlGBRfisO4D6hBIsTSwBtQgkQS4n4QjeMJZSAy+UilgCuEUrAv8QSwHdCCfhGLMXn8RuMI5SA/xFLAL8JJeAqsQQglAAAmoQS0OSPUgKrE0oACflCN4whlIC7bJWAVQklYBOxBKxIKAGbiaVYPH6D/oQSAECDUAJ2sVUCViKUgN3EErAKoQQ8RCwBKxBKAAANQgl4mK0SUJ1QAg4RS3P5EwHQl1ACDhNLQFVCCQCgQSgBp7BVAioSSsBpxBJQjVACTiWWxvOFbuhHKAEANAgl4HS2SkAVQgnoQiwBFQgloBuxBGQnlICuxBKQmVACuhNLQFZCCRhCLAEZCSVgGLEEZCOUAAAahBIwlK0SkIlQAoYTS0AWQgmYQiwBGQglYBqxBEQnlICpxNJxriH0I5SA6Qx6ICqhBIQgloCIhBIQhlgCohFKQChiaR/XC/oSSkA4hj8QhVACQhJLQARCCQhLLAGzOYSAFD7e3z5nv4ZohCT0Z6MEANDgpxEgFZul32yTYAwbJSAVgQCMJJSAdFaPpdX//TCSUAJSEgvACEIJSGvFWFrx3wwz+cABJazwJW+RBOP50AGlVA0mkQRzePQGlFIxKCr+myALoQSUUyksKv1bICMfQKC0zI/iRBLM50MILCFTMAkkiMOHEVhK9GASSRCLDySwrEjRJJAgJh9MYGmzY0kgQWw+oABfjAongQQ5+KACXNEjmMQRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4TzNfgHU8PH+9nnrf39+efVeAyAdw4v/uRc9IwgrACIwjLhcLjHiqEU0ATCLAbSQyDH0KBEFQE+GTHEV46hFNAFwNoOlkJWiaCvxBMARhkgBAmkb0QTAXgZHQsLoHMIJgHsMikQE0vnEEgC3GBKBCaPxhBMAX/2a/QK4TiTN4boD8JWfngMxpOOxYQJYm41SECIpJvcFYG1+Wp7IEM7HhglgLTZKk4iknNw3gLX46Xgwg7YO2yWA+myUBhJJtbifAPX5iXgAA7U+2yWAmmyUOhNJa3CfAWryU3BHhueabJcA6rBR6kQkAUB+QqkDkbQ29x+gDqEEHYglgBqEEgBAg1ACAGgQStCJx28A+QklAIAGoQQA0CCUoBN/eBIgP6EEANAglAAAGoRSBx65AEANQgk6EMsANQilTgxKAMhPKAEANAiljmyV1uS+A9QhlOBEIgmgFqHUmcEJAHkJJTiJKAaoRygNYIACQE5CaRCxVJv7C1CTUIKDRBJAXUJpIAMVAHIxuCf4eH/7nP0aOE74AtRnozSBAQsAOQilScRSbu4fwBqE0kSGbU7uG8A6hNJkhm4u7hfAWoRSAIZvDu4TwHqEUhCGcGzuD8CahFIghnFM7gvAuoRSMIZyLO4HwNqEUkCGcwzuAwBCKShDei7XH4DLRSiFZljP4boD8IdQCs7QHsv1BuAroZSA4T2G6wzAT0IpCUO8L9cXgGuEUiKGeR+uKwAtQikZQ/1cricAtwilhAz3c7iOANxjUCT28f72Ofs1ZCSQANjKwChAMG0nkgDYw6O3Agz/bVwnAPYSSkWIgNtcHwAeYXgU4zHcdwIJgCNslIoRBv9xLQA4yiApbsUNk0AC4Cw2SsWtFg2r/XsB6MtQWUT1zZJAAqAHG6VFVA6Jyv82AOYyYBZVYcMkkADozaBZWNZYEkgAjGLgcLlcckSTQAJgNN9R4nK5xI+Q6K8PgJoMH66avWESRgBEYBhx04xgEkkARGEgsUnvYBJHAETkO0pMJ5IAiEoosYmYAWBFQgkAoEEoAQA0CCU28/gNgNUIJQCABqEEANAglNilx+O32X8FHABahBIAQINQIgRbJQAi8ltMPKRH2PiturX9fE95PwAR2CgB09koAlH9NfsFAOsSSEB0Vts8zOM3jmi9f7wHgEg8eiMUG4b6Pt7fPt1nIAuP3oAh7sWRTRIQkY0SDzPY2EokAVk5nDik1yMUg7MGgQRkZ6NESL7DktuW7yGJJCADocQhhh1fbf2itvcNkIVQIixbpTz2/CabSAIycWBxip5RY7DGtee+u49ARv48ALDb3jAWSUBWDi9OY6tU2yP3130DsvMdJVLwfaV5Hv1L2iIJqMBBxql6B43hO8aR++geAZU40DidWMpLIAF852DjdCMekxnK5zl6v9wLoDIHHF2M+k6RIf2Ys+6P6w9U55CjG7EUx9n3wjUHVuGwo5vRv6lmeH/nP1gMcJwDj65m/Fr/ioPc37AC6MMBSHdiqQ+PNgH6cwAyxOw/GJl52HuECTCPA5FhZsfS5RI/AmZfo+jXB2A0hyJDzQ6Ba86Mg4j/vnvEEUCbA5LhMsZEVSIJ4DaHJFOIpTmEEcA+v2a/ANZkYI/nmgPs5+BkKpulPkQRwDlslJjKQD+fawpwHgcqYdguPUYYAfTjgCUcwbSNQALoz0FLWILpN0EEMI8DmPBWDiaRBDCXQ5hUKkaTGAKIywFNOlViSSABxOegpoxoASWEAPJzkFNW73ASQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQx98/3O6yP/615QAAAABJRU5ErkJggg==');
+    background-size: contain; background-position: center; background-repeat: no-repeat;
+    filter: drop-shadow(0 0 6px rgba(232,168,124,0.15));
+  }
+  .brand-text { font-size: 13px; color: var(--text); display: flex; align-items: center; }
+  .brand-text .name {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700; letter-spacing: 2px; margin-right: 4px;
+  }
+  .brand-text .ver {
+    color: var(--text-dim); font-family: var(--font-mono); font-size: 10px; margin-left: 4px;
+  }
+
+  .navgroup { display: flex; align-items: center; gap: 2px; margin-right: 14px; }
+  .navbtn {
+    width: 28px; height: 28px; background: transparent;
+    border: 1px solid transparent; border-radius: 4px;
+    color: var(--text); font-size: 15px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .navbtn:hover:not([disabled]) { background: var(--pane-raised); border-color: var(--border); }
+  .navbtn[disabled] { color: var(--text-dim); cursor: not-allowed; }
+
+  .tabs { display: flex; align-items: stretch; gap: 2px; }
+  .tab {
+    padding: 0 18px; display: flex; align-items: center; gap: 8px;
+    color: var(--text-muted); font-size: 13px; font-weight: 500;
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--mode-library); }
+  .tab[disabled] { color: var(--text-dim); cursor: not-allowed; opacity: 0.55; }
+  .tab-icon { font-size: 14px; }
+  .tab-kbd {
+    color: var(--text-dim); font-size: 10px; font-family: var(--font-mono);
+    padding: 1px 5px; border: 1px solid var(--border); border-radius: 3px;
+  }
+
+  .spacer { flex: 1; }
+
+  .global-actions { display: flex; align-items: center; gap: 6px; }
+  .gbtn {
+    height: 28px; padding: 0 10px;
+    background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; font-family: var(--font-ui);
+    justify-content: center;
+  }
+  .gbtn:hover:not([disabled]) { background: var(--pane-selected); border-color: var(--accent); color: var(--accent); }
+  .gbtn[disabled] { color: var(--text-dim); cursor: not-allowed; opacity: 0.55; }
+  .gbtn.primary {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--accent-ink); font-weight: 600;
+  }
+  .gbtn.primary:hover:not([disabled]) { background: var(--accent-hover); }
+  .gbtn.primary[disabled] {
+    background: transparent; color: var(--text-dim); border-color: var(--border);
+  }
+
+  /* =========== LEFT PANE =========== */
+  .leftpane {
+    grid-area: leftpane; background: var(--pane);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .pane-head {
+    height: 32px; padding: 0 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .pane-title {
+    color: var(--text-heading); font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .pane-count {
+    color: var(--text-dim); font-size: 11px; font-family: var(--font-mono);
+  }
+
+  .patient-search { padding: 8px 10px; border-bottom: 1px solid var(--border-soft); }
+  .patient-search input {
+    width: 100%; background: var(--chrome);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 10px; color: var(--text);
+    font-size: 12px; font-family: var(--font-ui); outline: none;
+  }
+  .patient-search input:focus { border-color: var(--accent-border); }
+  .patient-search input::placeholder { color: var(--text-dim); }
+  .patient-search input:disabled {
+    color: var(--text-dim); background: var(--pane);
+    cursor: not-allowed;
+  }
+
+  .patient-list { flex: 1 1 auto; overflow-y: auto; padding: 4px 0; }
+  .patient-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+  .patient-item:hover { background: var(--pane-raised); }
+  .patient-item.active {
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+  }
+  .patient-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--pane-raised); color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .patient-item.active .patient-avatar {
+    background: var(--accent); color: #17171c;
+  }
+  .patient-meta { flex: 1 1 auto; min-width: 0; }
+  .patient-name {
+    color: var(--text); font-size: 12.5px; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .patient-item.active .patient-name { color: var(--text-heading); }
+  .patient-sub {
+    color: var(--text-dim); font-size: 10.5px;
+    font-family: var(--font-mono); margin-top: 1px;
+  }
+  .patient-count {
+    color: var(--text-dim); font-size: 10px;
+    padding: 2px 6px; background: var(--border-soft);
+    border-radius: 8px; flex-shrink: 0;
+  }
+  .patient-item.active .patient-count {
+    color: var(--accent); background: rgba(232,168,124,0.18);
+  }
+
+  .leftpane-footer {
+    padding: 8px 10px; border-top: 1px solid var(--border-soft);
+    display: flex; gap: 6px;
+  }
+  .leftpane-footer .gbtn { flex: 1 1 0; }
+
+  /* Empty-list message (firstrun only) */
+  .empty-list {
+    padding: 24px 16px; text-align: center;
+    color: var(--text-dim); font-size: 11.5px;
+    line-height: 1.65;
+  }
+
+  /* =========== VIEWPORT =========== */
+  .viewport {
+    grid-area: viewport; background: var(--canvas);
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .vport-bar {
+    height: 40px; padding: 0 16px;
+    background: var(--chrome); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .breadcrumb {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-muted); font-size: 12.5px;
+  }
+  .breadcrumb-sep { color: var(--text-dim); font-size: 11px; }
+  .breadcrumb-current { color: var(--text-heading); font-weight: 500; }
+
+  .empty-stage {
+    flex: 1 1 auto;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 24px;
+    overflow-y: auto;
+  }
+
+  /* =========== STATE A — first run centerpiece =========== */
+  .firstrun {
+    max-width: 720px; width: 100%;
+    text-align: center;
+  }
+  .firstrun-mark {
+    width: 80px; height: 80px; margin: 0 auto 18px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain; background-position: center; background-repeat: no-repeat;
+    filter: drop-shadow(0 0 16px rgba(232,168,124,0.2));
+  }
+  .firstrun-eyebrow {
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--accent); font-weight: 700;
+    font-family: var(--font-mono);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .firstrun-title {
+    font-size: 24px; font-weight: 300;
+    color: var(--text); letter-spacing: 0.2px;
+    margin-bottom: 6px;
+  }
+  .firstrun-title .name {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700; letter-spacing: 2px;
+  }
+  .firstrun-sub {
+    font-size: 13px; color: var(--text-muted);
+    line-height: 1.55; max-width: 480px; margin: 0 auto 28px;
+  }
+
+  .start-cards {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; text-align: left; margin-bottom: 20px;
+  }
+  .scard {
+    padding: 16px 14px;
+    background: var(--pane); border: 1px solid var(--border);
+    border-radius: 4px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .scard:hover {
+    border-color: var(--accent);
+    background: var(--pane-raised);
+  }
+  .scard.primary { border-color: var(--accent-border); }
+  .scard.primary::before {
+    content: "RECOMMENDED";
+    position: absolute; top: 8px; right: 8px;
+    padding: 1px 5px;
+    background: var(--accent); color: var(--accent-ink);
+    font-family: var(--font-mono); font-size: 8px;
+    letter-spacing: 1px; font-weight: 700; border-radius: 2px;
+  }
+  .scard-title {
+    font-size: 13px; color: var(--text);
+    font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .scard-ico { color: var(--accent); font-size: 14px; }
+  .scard-desc {
+    font-size: 11.5px; color: var(--text-muted);
+    line-height: 1.5; margin-bottom: 10px;
+  }
+  .scard-kbd {
+    display: inline-block; padding: 1px 5px;
+    background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .firstrun-secondary {
+    color: var(--text-dim); font-size: 11.5px;
+    display: flex; justify-content: center; gap: 18px;
+    padding-top: 14px; margin-top: 8px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .firstrun-secondary a {
+    color: var(--text-muted); text-decoration: none;
+  }
+  .firstrun-secondary a:hover { color: var(--accent); }
+
+  /* =========== STATE B — no selection =========== */
+  .noselect {
+    max-width: 480px; text-align: center;
+  }
+  .noselect-mark {
+    width: 60px; height: 60px; margin: 0 auto 14px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain; background-position: center; background-repeat: no-repeat;
+    opacity: 0.35;
+  }
+  .noselect-title {
+    font-size: 18px; font-weight: 400;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .noselect-sub {
+    color: var(--text-muted); font-size: 12.5px;
+    line-height: 1.6; margin-bottom: 20px;
+  }
+
+  .recent-block {
+    background: var(--pane); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px 14px;
+    text-align: left;
+  }
+  .recent-label {
+    font-size: 10px; letter-spacing: 1.5px;
+    color: var(--accent); font-family: var(--font-mono);
+    font-weight: 700; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .recent-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 5px 0; cursor: pointer;
+    font-size: 12px;
+  }
+  .recent-row + .recent-row { border-top: 1px solid var(--border-soft); }
+  .recent-row:hover .recent-name { color: var(--accent); }
+  .recent-name { color: var(--text); }
+  .recent-when {
+    color: var(--text-dim); font-family: var(--font-mono);
+    font-size: 10.5px;
+  }
+
+  .hint-row {
+    display: flex; justify-content: center; gap: 24px;
+    margin-top: 18px; padding-top: 14px;
+  }
+  .hint {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .hint-kbd {
+    padding: 1px 5px;
+    background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--accent); font-weight: 600;
+  }
+
+  /* =========== STATE C — no images =========== */
+  .noimages {
+    max-width: 460px; text-align: center;
+  }
+  .noimages-patient-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px;
+    background: var(--pane); border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 11px; color: var(--text);
+    margin-bottom: 16px;
+  }
+  .noimages-patient-pill::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .noimages-icon {
+    width: 58px; height: 58px; margin: 0 auto 16px;
+    border: 1.5px dashed var(--border-hover); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 22px;
+  }
+  .noimages-title {
+    font-size: 17px; color: var(--text);
+    font-weight: 400; margin-bottom: 6px;
+  }
+  .noimages-sub {
+    color: var(--text-muted); font-size: 12.5px;
+    line-height: 1.6; margin-bottom: 20px;
+  }
+  .noimages-actions {
+    display: flex; gap: 8px; justify-content: center;
+    margin-bottom: 14px;
+  }
+  .noimages-actions .gbtn { min-width: 130px; }
+  .noimages-dragdrop {
+    color: var(--text-dim); font-size: 11px;
+    font-family: var(--font-mono); letter-spacing: 0.3px;
+  }
+
+  /* =========== FILMSTRIP (empty variant) =========== */
+  .filmstrip {
+    grid-area: filmstrip; background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .fs-hdr {
+    height: 24px; padding: 0 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .fs-label {
+    color: var(--text-dim); font-size: 10px; font-weight: 600;
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .fs-body {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 11px; font-style: italic;
+  }
+
+  /* =========== RIGHT PANE =========== */
+  .rightpane {
+    grid-area: rightpane; background: var(--pane);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+    overflow-y: auto;
+  }
+  .rp-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .rp-section-title {
+    color: var(--accent); font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .rp-section-title .hint {
+    color: var(--text-dim); font-weight: 400; letter-spacing: 0;
+    text-transform: none; font-family: var(--font-mono); font-size: 10px;
+  }
+  .info-row {
+    display: grid; grid-template-columns: 84px 1fr;
+    gap: 10px; align-items: baseline;
+    padding: 4px 0; font-size: 12px;
+  }
+  .info-row .k { color: var(--text-muted); text-align: right; }
+  .info-row .v { color: var(--text); font-family: var(--font-mono); font-size: 11px; text-align: right; }
+  .info-row .v.accent { color: var(--accent); }
+
+  /* Empty right-pane placeholder */
+  .rp-empty {
+    flex: 1; padding: 40px 24px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .rp-empty-icon {
+    color: var(--text-dim); font-size: 26px;
+    margin-bottom: 12px; opacity: 0.55;
+  }
+  .rp-empty-title {
+    color: var(--text-muted); font-size: 12px;
+    font-weight: 600; margin-bottom: 4px;
+    letter-spacing: 0.2px;
+  }
+  .rp-empty-sub {
+    color: var(--text-dim); font-size: 11px;
+    line-height: 1.55; max-width: 220px;
+  }
+
+  /* Practice overview grid (no-selection state) */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  }
+  .stat {
+    padding: 10px 10px;
+    background: var(--pane-raised);
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    text-align: center;
+  }
+  .stat-val {
+    color: var(--accent); font-family: var(--font-mono);
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .stat-label {
+    color: var(--text-dim); font-size: 9.5px;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* =========== STATUS BAR =========== */
+  .statusbar {
+    grid-area: statusbar; background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 14px; gap: 16px; font-size: 11px;
+    color: var(--text-muted);
+  }
+  .sb-mode {
+    color: var(--mode-library); font-weight: 700; letter-spacing: 1.5px;
+    padding-right: 14px; border-right: 1px solid var(--border);
+  }
+  .sb-sep { color: var(--border); }
+  .sb-item { font-family: var(--font-mono); }
+
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <span class="switcher-label">Library · empty states:</span>
+  <button class="switch-btn active" onclick="showView('firstrun', event)">A · first launch</button>
+  <button class="switch-btn" onclick="showView('noselect', event)">B · patient list, no selection</button>
+  <button class="switch-btn" onclick="showView('noimages', event)">C · patient with no images</button>
+</div>
+
+<!-- ====== STATE A · FIRST RUN ====== -->
+<div class="view active" id="view-firstrun">
+  <div class="app">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-text"><span class="name">PANDA</span>Gallery <span class="ver">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn" disabled>◀</button>
+        <button class="navbtn" disabled>▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab" disabled><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab" disabled><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn"><span>↓</span><span>Import</span></button>
+        <button class="gbtn" disabled><span>↑</span><span>Export</span></button>
+        <button class="gbtn primary" disabled><span>▶</span><span>Present</span></button>
+      </div>
+    </div>
+
+    <div class="leftpane">
+      <div class="pane-head">
+        <span class="pane-title">Patients</span>
+        <span class="pane-count">0</span>
+      </div>
+      <div class="patient-search">
+        <input placeholder="No patients yet" disabled />
+      </div>
+      <div class="patient-list">
+        <div class="empty-list">
+          Your patient list<br>
+          will appear here.
+        </div>
+      </div>
+      <div class="leftpane-footer">
+        <button class="gbtn primary">+ New</button>
+        <button class="gbtn">⋯ More</button>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vport-bar">
+        <div class="breadcrumb">
+          <span class="breadcrumb-current">Welcome</span>
+        </div>
+      </div>
+      <div class="empty-stage">
+        <div class="firstrun">
+          <div class="firstrun-mark"></div>
+          <div class="firstrun-eyebrow">Welcome to v4.0</div>
+          <h1 class="firstrun-title">Your <span class="name">PANDA</span> Gallery is empty.</h1>
+          <p class="firstrun-sub">
+            Add a patient, import DICOM files from your sensor, or load demo data to explore the app.
+          </p>
+
+          <div class="start-cards">
+            <div class="scard primary">
+              <div class="scard-title"><span class="scard-ico">↓</span>Import DICOM</div>
+              <div class="scard-desc">Choose a folder of .dcm files. Panda auto-classifies images and creates patients.</div>
+              <span class="scard-kbd">⌘I</span>
+            </div>
+            <div class="scard">
+              <div class="scard-title"><span class="scard-ico">+</span>Add patient</div>
+              <div class="scard-desc">Create a patient record manually — name, DOB, chart number. Add images later.</div>
+              <span class="scard-kbd">⌘N</span>
+            </div>
+            <div class="scard">
+              <div class="scard-title"><span class="scard-ico">⚑</span>Demo data</div>
+              <div class="scard-desc">Try Panda with 8 sample patients and 240 images. Remove anytime.</div>
+              <span class="scard-kbd">⌘D</span>
+            </div>
+          </div>
+
+          <div class="firstrun-secondary">
+            <a>Keyboard shortcuts</a>
+            <a>Connect practice management</a>
+            <a>Documentation</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightpane">
+      <div class="rp-empty">
+        <div class="rp-empty-icon">◎</div>
+        <div class="rp-empty-title">Nothing to show yet</div>
+        <div class="rp-empty-sub">Patient details and filters will appear here once you add or import.</div>
+      </div>
+    </div>
+
+    <div class="filmstrip">
+      <div class="fs-hdr">
+        <span class="fs-label">Filmstrip</span>
+      </div>
+      <div class="fs-body">No images yet.</div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode">LIBRARY</span>
+      <span class="sb-item">0 patients · 0 images</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">Ready</span>
+      <span class="spacer" style="flex: 1;"></span>
+      <span class="sb-item">DB: panda_gallery.db</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STATE B · NO SELECTION ====== -->
+<div class="view" id="view-noselect">
+  <div class="app">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-text"><span class="name">PANDA</span>Gallery <span class="ver">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn">◀</button>
+        <button class="navbtn" disabled>▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab" disabled><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab" disabled><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn"><span>↓</span><span>Import</span></button>
+        <button class="gbtn" disabled><span>↑</span><span>Export</span></button>
+        <button class="gbtn primary" disabled><span>▶</span><span>Present</span></button>
+      </div>
+    </div>
+
+    <div class="leftpane">
+      <div class="pane-head">
+        <span class="pane-title">Patients</span>
+        <span class="pane-count">247</span>
+      </div>
+      <div class="patient-search"><input placeholder="Search patients…" /></div>
+      <div class="patient-list">
+        <div class="patient-item"><div class="patient-avatar">DA</div><div class="patient-meta"><div class="patient-name">Adams, Deborah</div><div class="patient-sub">#00842 · F · 1968</div></div><span class="patient-count">24</span></div>
+        <div class="patient-item"><div class="patient-avatar">MB</div><div class="patient-meta"><div class="patient-name">Bergstrom, Martin</div><div class="patient-sub">#00591 · M · 1975</div></div><span class="patient-count">12</span></div>
+        <div class="patient-item"><div class="patient-avatar">CC</div><div class="patient-meta"><div class="patient-name">Chen, Caroline</div><div class="patient-sub">#01203 · F · 1990</div></div><span class="patient-count">8</span></div>
+        <div class="patient-item"><div class="patient-avatar">RD</div><div class="patient-meta"><div class="patient-name">Davis, Roberto</div><div class="patient-sub">#00776 · M · 1982</div></div><span class="patient-count">31</span></div>
+        <div class="patient-item"><div class="patient-avatar">LE</div><div class="patient-meta"><div class="patient-name">Eng, Linda</div><div class="patient-sub">#01055 · F · 1971</div></div><span class="patient-count">18</span></div>
+        <div class="patient-item"><div class="patient-avatar">JF</div><div class="patient-meta"><div class="patient-name">Fischer, James</div><div class="patient-sub">#00428 · M · 1964</div></div><span class="patient-count">45</span></div>
+        <div class="patient-item"><div class="patient-avatar">SG</div><div class="patient-meta"><div class="patient-name">Gupta, Sanjay</div><div class="patient-sub">#01108 · M · 1988</div></div><span class="patient-count">6</span></div>
+        <div class="patient-item"><div class="patient-avatar">KH</div><div class="patient-meta"><div class="patient-name">Halvorsen, Karen</div><div class="patient-sub">#00912 · F · 1979</div></div><span class="patient-count">15</span></div>
+        <div class="patient-item"><div class="patient-avatar">JI</div><div class="patient-meta"><div class="patient-name">Ikeda, Jennifer</div><div class="patient-sub">#01267 · F · 1993</div></div><span class="patient-count">4</span></div>
+        <div class="patient-item"><div class="patient-avatar">TJ</div><div class="patient-meta"><div class="patient-name">Jansen, Thomas</div><div class="patient-sub">#00338 · M · 1958</div></div><span class="patient-count">62</span></div>
+      </div>
+      <div class="leftpane-footer">
+        <button class="gbtn">+ New</button>
+        <button class="gbtn">⋯ More</button>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vport-bar">
+        <div class="breadcrumb">
+          <span class="breadcrumb-current">No patient selected</span>
+        </div>
+      </div>
+      <div class="empty-stage">
+        <div class="noselect">
+          <div class="noselect-mark"></div>
+          <h2 class="noselect-title">Pick a patient to begin.</h2>
+          <p class="noselect-sub">
+            Select a patient from the list on the left to view their images.
+          </p>
+
+          <div class="recent-block">
+            <div class="recent-label">Recent</div>
+            <div class="recent-row"><span class="recent-name">Adams, Deborah</span><span class="recent-when">8 min ago</span></div>
+            <div class="recent-row"><span class="recent-name">Fischer, James</span><span class="recent-when">42 min ago</span></div>
+            <div class="recent-row"><span class="recent-name">Jansen, Thomas</span><span class="recent-when">yesterday · 16:23</span></div>
+            <div class="recent-row"><span class="recent-name">Davis, Roberto</span><span class="recent-when">yesterday · 11:08</span></div>
+          </div>
+
+          <div class="hint-row">
+            <div class="hint"><span class="hint-kbd">↑ ↓</span>Navigate</div>
+            <div class="hint"><span class="hint-kbd">/</span>Search</div>
+            <div class="hint"><span class="hint-kbd">⌘N</span>New patient</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightpane">
+      <div class="rp-section">
+        <div class="rp-section-title"><span>Practice overview</span></div>
+        <div class="stats-grid">
+          <div class="stat"><div class="stat-val">247</div><div class="stat-label">Patients</div></div>
+          <div class="stat"><div class="stat-val">8,412</div><div class="stat-label">Images</div></div>
+          <div class="stat"><div class="stat-val">34</div><div class="stat-label">This week</div></div>
+          <div class="stat"><div class="stat-val">18</div><div class="stat-label">Last visit</div></div>
+        </div>
+      </div>
+      <div class="rp-section">
+        <div class="rp-section-title"><span>Activity</span><span class="hint">7 days</span></div>
+        <div style="display: flex; align-items: flex-end; gap: 4px; height: 46px;">
+          <div style="flex: 1; background: var(--pane-raised); height: 40%; border-radius: 1px;"></div>
+          <div style="flex: 1; background: var(--pane-raised); height: 60%; border-radius: 1px;"></div>
+          <div style="flex: 1; background: var(--pane-raised); height: 35%; border-radius: 1px;"></div>
+          <div style="flex: 1; background: var(--accent-soft); height: 80%; border-radius: 1px;"></div>
+          <div style="flex: 1; background: var(--accent-soft); height: 55%; border-radius: 1px;"></div>
+          <div style="flex: 1; background: var(--accent-soft); height: 70%; border-radius: 1px;"></div>
+          <div style="flex: 1; background: var(--accent); height: 92%; border-radius: 1px;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--font-mono); font-size: 9px; color: var(--text-dim);">
+          <span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span><span>Mon</span><span>Tue</span><span>today</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="filmstrip">
+      <div class="fs-hdr">
+        <span class="fs-label">Filmstrip</span>
+      </div>
+      <div class="fs-body">Select a patient to see their images.</div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode">LIBRARY</span>
+      <span class="sb-item">247 patients · 8,412 images</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">No selection</span>
+      <span class="spacer" style="flex: 1;"></span>
+      <span class="sb-item">DB: panda_gallery.db</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STATE C · PATIENT SELECTED, NO IMAGES ====== -->
+<div class="view" id="view-noimages">
+  <div class="app">
+    <div class="titlebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-text"><span class="name">PANDA</span>Gallery <span class="ver">v4.0</span></div>
+      </div>
+      <div class="navgroup">
+        <button class="navbtn">◀</button>
+        <button class="navbtn" disabled>▶</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+        <div class="tab" disabled><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+        <div class="tab" disabled><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="global-actions">
+        <button class="gbtn"><span>↓</span><span>Import</span></button>
+        <button class="gbtn" disabled><span>↑</span><span>Export</span></button>
+        <button class="gbtn primary" disabled><span>▶</span><span>Present</span></button>
+      </div>
+    </div>
+
+    <div class="leftpane">
+      <div class="pane-head">
+        <span class="pane-title">Patients</span>
+        <span class="pane-count">247</span>
+      </div>
+      <div class="patient-search"><input placeholder="Search patients…" /></div>
+      <div class="patient-list">
+        <div class="patient-item"><div class="patient-avatar">DA</div><div class="patient-meta"><div class="patient-name">Adams, Deborah</div><div class="patient-sub">#00842 · F · 1968</div></div><span class="patient-count">24</span></div>
+        <div class="patient-item"><div class="patient-avatar">MB</div><div class="patient-meta"><div class="patient-name">Bergstrom, Martin</div><div class="patient-sub">#00591 · M · 1975</div></div><span class="patient-count">12</span></div>
+        <div class="patient-item active"><div class="patient-avatar">NW</div><div class="patient-meta"><div class="patient-name">Williams, Nina</div><div class="patient-sub">#01289 · F · 1995 · new</div></div><span class="patient-count">0</span></div>
+        <div class="patient-item"><div class="patient-avatar">RD</div><div class="patient-meta"><div class="patient-name">Davis, Roberto</div><div class="patient-sub">#00776 · M · 1982</div></div><span class="patient-count">31</span></div>
+        <div class="patient-item"><div class="patient-avatar">LE</div><div class="patient-meta"><div class="patient-name">Eng, Linda</div><div class="patient-sub">#01055 · F · 1971</div></div><span class="patient-count">18</span></div>
+        <div class="patient-item"><div class="patient-avatar">JF</div><div class="patient-meta"><div class="patient-name">Fischer, James</div><div class="patient-sub">#00428 · M · 1964</div></div><span class="patient-count">45</span></div>
+        <div class="patient-item"><div class="patient-avatar">SG</div><div class="patient-meta"><div class="patient-name">Gupta, Sanjay</div><div class="patient-sub">#01108 · M · 1988</div></div><span class="patient-count">6</span></div>
+      </div>
+      <div class="leftpane-footer">
+        <button class="gbtn">+ New</button>
+        <button class="gbtn">⋯ More</button>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="vport-bar">
+        <div class="breadcrumb">
+          <span>Library</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Williams, Nina</span>
+          <span class="breadcrumb-sep">›</span>
+          <span style="color: var(--text-dim);">no images</span>
+        </div>
+      </div>
+      <div class="empty-stage">
+        <div class="noimages">
+          <div class="noimages-patient-pill">Williams, Nina · added 4 min ago</div>
+          <div class="noimages-icon">◎</div>
+          <h2 class="noimages-title">No images for this patient yet.</h2>
+          <p class="noimages-sub">
+            Capture from your sensor, import DICOM files, or drag a folder onto this window.
+          </p>
+          <div class="noimages-actions">
+            <button class="gbtn primary">↓ Import images</button>
+            <button class="gbtn">⊕ Capture</button>
+          </div>
+          <div class="noimages-dragdrop">
+            Tip: drag &amp; drop files anywhere on this window
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightpane">
+      <div class="rp-section">
+        <div class="rp-section-title"><span>Patient info</span></div>
+        <div class="info-row"><span class="k">Name</span><span class="v">Williams, Nina</span></div>
+        <div class="info-row"><span class="k">ID</span><span class="v">#01289</span></div>
+        <div class="info-row"><span class="k">Sex</span><span class="v">Female</span></div>
+        <div class="info-row"><span class="k">DOB</span><span class="v">1995-06-12</span></div>
+        <div class="info-row"><span class="k">Age</span><span class="v">30</span></div>
+        <div class="info-row"><span class="k">First visit</span><span class="v accent">not yet</span></div>
+        <div class="info-row"><span class="k">Last visit</span><span class="v" style="color: var(--text-dim);">—</span></div>
+        <div class="info-row"><span class="k">Provider</span><span class="v">Dr. Ward</span></div>
+      </div>
+      <div class="rp-section">
+        <button class="gbtn" style="width: 100%;">Edit patient details…</button>
+      </div>
+    </div>
+
+    <div class="filmstrip">
+      <div class="fs-hdr">
+        <span class="fs-label">Filmstrip · Williams, Nina</span>
+      </div>
+      <div class="fs-body">Add images to see them here.</div>
+    </div>
+
+    <div class="statusbar">
+      <span class="sb-mode">LIBRARY</span>
+      <span class="sb-item">Williams, Nina · 0 images</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">Add images to continue</span>
+      <span class="spacer" style="flex: 1;"></span>
+      <span class="sb-item">DB: panda_gallery.db</span>
+      <span class="sb-sep">│</span>
+      <span class="sb-item">v4.0-dev</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function showView(name, evt) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+  evt.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

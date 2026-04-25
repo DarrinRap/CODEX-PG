@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CODEX PG Testing Audit Dashboard v1</title>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --panel: #14141f;
+    --panel-2: #1a1a2e;
+    --line: #2a2a3e;
+    --line-soft: #232336;
+    --text: #e0ddd5;
+    --muted: #8a8a9a;
+    --dim: #60606d;
+    --accent: #e8a87c;
+    --accent-2: #d4945a;
+    --pass: #7fb069;
+    --fail: #d46a6a;
+    --info: #7aa7d9;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.45 "Segoe UI", "SF Pro Text", Arial, sans-serif;
+  }
+  .app { min-height: 100%; display: grid; grid-template-columns: 260px 1fr 340px; grid-template-rows: 48px 1fr; }
+  .topbar { grid-column: 1 / 4; background: #11111b; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; padding: 0 16px; }
+  .brand { color: #fff; font-weight: 650; font-size: 15px; }
+  .pill { border: 1px solid var(--line); color: var(--muted); border-radius: 4px; padding: 4px 8px; font-size: 12px; }
+  .topbar .spacer { flex: 1; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pass); box-shadow: 0 0 0 3px rgba(127,176,105,.12); }
+  .sidebar { background: var(--panel); border-right: 1px solid var(--line); padding: 14px; }
+  .section-label { color: var(--dim); text-transform: uppercase; letter-spacing: .08em; font-size: 10px; font-weight: 700; margin: 10px 0 8px; }
+  .nav { display: grid; gap: 4px; }
+  .nav button { height: 34px; background: transparent; color: var(--muted); border: 1px solid transparent; border-radius: 4px; text-align: left; padding: 0 10px; font: inherit; }
+  .nav button.active { color: var(--accent); background: rgba(232,168,124,.06); border-color: rgba(232,168,124,.38); }
+  .nav button:hover { background: #1d1d2d; color: var(--text); }
+  .main { padding: 16px 18px; overflow: auto; }
+  .header-row { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 21px; color: #fff; font-weight: 650; }
+  .sub { color: var(--muted); margin-top: 3px; }
+  .toolbar { display: flex; gap: 8px; }
+  .btn { min-height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; }
+  .btn.primary { color: var(--accent); border-color: var(--accent); }
+  .btn:hover { background: #202034; color: var(--text); }
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .metric { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+  .metric .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .metric .value { color: #fff; font-size: 24px; font-weight: 650; margin-top: 6px; }
+  .metric .trend { color: var(--dim); font-size: 12px; margin-top: 2px; }
+  .queue { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .queue-head, .issue { display: grid; grid-template-columns: 86px 1.2fr 110px 96px 120px; align-items: center; gap: 12px; padding: 10px 12px; }
+  .queue-head { color: var(--dim); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; background: #11111b; border-bottom: 1px solid var(--line); }
+  .issue { min-height: 64px; border-bottom: 1px solid var(--line-soft); }
+  .issue:last-child { border-bottom: 0; }
+  .issue.active { background: rgba(232,168,124,.045); border-left: 2px solid var(--accent); padding-left: 10px; }
+  .tag { display: inline-flex; align-items: center; justify-content: center; height: 22px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-size: 11px; width: max-content; padding: 0 7px; }
+  .tag.high { color: var(--fail); border-color: rgba(212,106,106,.55); }
+  .tag.med { color: var(--accent); border-color: rgba(232,168,124,.55); }
+  .tag.low { color: var(--info); border-color: rgba(122,167,217,.55); }
+  .title { color: var(--text); font-weight: 550; }
+  .meta { color: var(--dim); font-size: 12px; margin-top: 3px; }
+  .review { background: var(--panel); border-left: 1px solid var(--line); padding: 16px; overflow: auto; }
+  .review-card { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); overflow: hidden; }
+  .review-title { padding: 12px 14px; border-bottom: 1px solid var(--line); color: #fff; font-weight: 650; }
+  .shot { height: 180px; background: linear-gradient(135deg, #25253a, #101019); border-bottom: 1px solid var(--line); display: grid; place-items: center; color: var(--dim); }
+  .review-body { padding: 14px; display: grid; gap: 12px; }
+  .field { display: grid; gap: 5px; }
+  .field label { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+  .box { min-height: 76px; border: 1px solid var(--line); background: #11111b; border-radius: 4px; color: var(--text); padding: 9px 10px; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--line); padding: 12px 14px; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">PG Testing + Audit</div>
+      <div class="pill">Session intake</div>
+      <div class="pill">AI triage enabled</div>
+      <div class="spacer"></div>
+      <div class="status-dot"></div>
+      <div class="pill">Dropbox connected</div>
+    </div>
+    <aside class="sidebar">
+      <div class="section-label">Audit Work</div>
+      <div class="nav">
+        <button class="active">Priority queue</button>
+        <button>Awaiting approval</button>
+        <button>Responses sent</button>
+        <button>Archive search</button>
+      </div>
+      <div class="section-label">Filters</div>
+      <div class="nav">
+        <button>High priority</button>
+        <button>Needs screenshot</button>
+        <button>Transcription linked</button>
+        <button>Unassigned</button>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="header-row">
+        <div><h1>Priority Queue</h1><div class="sub">Issues extracted from tester sessions, grouped for PG review.</div></div>
+        <div class="toolbar"><button class="btn">Refresh</button><button class="btn primary">Approve response</button></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="label">New issues</div><div class="value">18</div><div class="trend">from 4 sessions</div></div>
+        <div class="metric"><div class="label">High priority</div><div class="value">5</div><div class="trend">2 blocking flows</div></div>
+        <div class="metric"><div class="label">Awaiting PG</div><div class="value">9</div><div class="trend">approval needed</div></div>
+        <div class="metric"><div class="label">Archived</div><div class="value">143</div><div class="trend">searchable records</div></div>
+      </div>
+      <section class="queue">
+        <div class="queue-head"><span>Priority</span><span>Issue</span><span>Area</span><span>Evidence</span><span>Status</span></div>
+        <div class="issue active"><span class="tag high">High</span><div><div class="title">Region capture review dialog does not open after toast click</div><div class="meta">Transcript 08:14 - screenshot region_3_2.png</div></div><span>Capture</span><span>2 shots</span><span class="tag med">Draft response</span></div>
+        <div class="issue"><span class="tag med">Medium</span><div><div class="title">Checklist action bar wraps too early on narrow pane</div><div class="meta">Transcript 12:02 - tester says buttons feel cramped</div></div><span>Pane UI</span><span>1 shot</span><span class="tag">Needs review</span></div>
+        <div class="issue"><span class="tag low">Low</span><div><div class="title">Help icon lacks a visible hover affordance</div><div class="meta">Transcript 15:40 - no screenshot attached</div></div><span>Guidance</span><span>None</span><span class="tag">Queued</span></div>
+      </section>
+    </main>
+    <aside class="review">
+      <div class="review-card">
+        <div class="review-title">Selected Issue</div>
+        <div class="shot">screenshot preview</div>
+        <div class="review-body">
+          <div class="field"><label>AI Summary</label><div class="box">Tester clicked the success toast after capturing a region, but the review dialog did not appear. The capture file was saved correctly.</div></div>
+          <div class="field"><label>Proposed Response</label><div class="box">Thanks, confirmed. We are treating this as a capture review workflow defect and will verify toast click handling in the next desktop build.</div></div>
+        </div>
+        <div class="actions"><button class="btn">Edit</button><button class="btn primary">Approve</button></div>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

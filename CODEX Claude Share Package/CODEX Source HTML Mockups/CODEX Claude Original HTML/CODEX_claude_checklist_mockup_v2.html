@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery — Checklist View Mockup v2</title>
+<style>
+  :root {
+    --bg-deep:     #14141f;
+    --bg-pane:     #1a1a2e;
+    --bg-hover:    #22223a;
+    --border:      #2a2a3e;
+    --border-soft: #232336;
+    --text:        #e0ddd5;
+    --text-muted:  #888;
+    --text-dim:    #6a6a78;
+    --accent:      #e8a87c;
+    --accent-dim:  #d4945a;
+    --ok:          #7fb069;
+    --fail:        #d46a6a;
+    --skip:        #8a8a9a;
+
+    /* Layout constants — these are the numbers Claude Code will lift. */
+    --pane-min-width:    280px;  /* setMinimumWidth(280) on PG pane */
+    --pane-wrap-below:   360px;  /* at <= this, buttons drop under label */
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0d0d18; color: var(--text);
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    font-size: 13px; line-height: 1.4;
+  }
+
+  .page { padding: 32px 24px 80px; max-width: 1800px; margin: 0 auto; }
+
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: var(--text); }
+  .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+
+  h2 {
+    font-size: 14px; font-weight: 600;
+    margin: 40px 0 10px; color: var(--text);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  /* ─── Constraint callout ─── */
+  .constraints {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 32px;
+  }
+  .constraints .tag {
+    font-size: 10px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  .constraints code {
+    background: var(--bg-deep); padding: 1px 6px; border-radius: 3px;
+    font-family: "Consolas", "Menlo", monospace; font-size: 12px;
+    color: var(--accent);
+  }
+  .constraints ul { margin: 6px 0 0; padding-left: 22px; }
+  .constraints li { margin: 4px 0; color: var(--text-muted); }
+  .constraints li b { color: var(--text); }
+
+  /* ─── Resizable demo pane ─── */
+  .resize-wrap {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 10px,
+      rgba(255,255,255,0.015) 10px 20px
+    );
+    padding: 20px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+  .resize-pane {
+    /* This is the one that's actually resizable */
+    resize: horizontal;
+    overflow: auto;
+    min-width: var(--pane-min-width);
+    max-width: 800px;
+    width: 420px;
+    /* The "pane" styles are applied via .pane class */
+  }
+  .resize-hint {
+    font-size: 11px; color: var(--text-dim);
+    margin-top: 6px; display: flex; justify-content: space-between;
+  }
+  .resize-hint .min {
+    color: var(--fail); font-weight: 600;
+  }
+  .resize-hint .wrap {
+    color: var(--accent); font-weight: 600;
+  }
+
+  /* ─── Grid for the three fixed columns ─── */
+  .grid {
+    display: grid;
+    grid-template-columns: 320px 420px 600px;
+    gap: 32px; align-items: start;
+  }
+  .col-head {
+    font-size: 12px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 10px; font-weight: 600;
+  }
+
+  .state-label {
+    font-size: 11px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600; margin: 28px 0 8px;
+  }
+  .state-label:first-child { margin-top: 0; }
+
+  /* ─── PANE — single dark surface, no internal card walls. ─── */
+  .pane {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 6px; overflow: hidden;
+    display: flex; flex-direction: column;
+    min-width: var(--pane-min-width);   /* HARD floor */
+  }
+
+  .pane-title {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-deep);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px;
+  }
+  .pane-title .step-name {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    min-width: 0;
+  }
+  .pane-title .step-count {
+    font-size: 11px; color: var(--text-muted); flex-shrink: 0;
+  }
+
+  .context {
+    padding: 10px 14px;
+    background: var(--bg-deep);
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 12px; color: var(--text-muted); line-height: 1.45;
+  }
+
+  /* ─── CHECKLIST SURFACE ─── */
+  .checklist { display: flex; flex-direction: column; }
+
+  .item {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    align-items: start; gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    position: relative;
+  }
+  .item:last-child { border-bottom: none; }
+
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    margin-top: 3px; flex-shrink: 0;
+    border: 1.5px solid var(--text-dim); background: transparent;
+  }
+  .item.pending .dot { border-color: var(--text-dim); }
+  .item.active  .dot { border-color: var(--accent); }
+  .item.pass    .dot { border-color: var(--ok);   background: var(--ok);   }
+  .item.fail    .dot { border-color: var(--fail); background: var(--fail); }
+  .item.skip    .dot { border-color: var(--skip); background: transparent; position: relative; }
+  .item.skip    .dot::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    width: 7px; height: 1.5px; background: var(--skip);
+    transform: translate(-50%, -50%);
+  }
+
+  .item .label { font-size: 13px; color: var(--text); padding-top: 1px; min-width: 0; }
+  .item.pass .label, .item.skip .label { color: var(--text-muted); }
+  .item.fail .label { color: var(--text); }
+
+  .item.active::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px; background: var(--accent);
+  }
+  .item.active { background: rgba(232, 168, 124, 0.04); }
+  .item.active .label { color: var(--text); font-weight: 500; }
+
+  .actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+  .btn {
+    font-family: inherit; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 3px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text); cursor: pointer; line-height: 1; height: 24px;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg-hover); }
+  .btn.pass { color: var(--ok);   border-color: rgba(127,176,105,0.35); }
+  .btn.pass:hover { background: rgba(127,176,105,0.08); }
+  .btn.fail { color: var(--fail); border-color: rgba(212,106,106,0.35); }
+  .btn.fail:hover { background: rgba(212,106,106,0.08); }
+  .btn.skip { color: var(--skip); border-color: rgba(138,138,154,0.35); }
+  .btn.skip:hover { background: rgba(138,138,154,0.08); }
+
+  .fail-note {
+    grid-column: 2 / 4; margin-top: 6px;
+    padding: 8px 10px;
+    background: rgba(212,106,106,0.06);
+    border-left: 2px solid var(--fail);
+    border-radius: 0 3px 3px 0;
+    font-size: 12px; color: var(--text); line-height: 1.45;
+  }
+  .fail-note .note-label {
+    font-size: 10px; color: var(--fail);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600; margin-bottom: 3px;
+  }
+
+  .fail-panel {
+    grid-column: 2 / 4; margin-top: 8px; padding: 10px;
+    background: rgba(212,106,106,0.05);
+    border: 1px solid rgba(212,106,106,0.25);
+    border-radius: 4px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .fail-panel textarea {
+    background: var(--bg-deep); border: 1px solid var(--border);
+    border-radius: 3px; color: var(--text);
+    font-family: inherit; font-size: 12px;
+    padding: 6px 8px; resize: vertical;
+    min-height: 54px; outline: none;
+  }
+  .fail-panel textarea:focus { border-color: var(--accent); }
+  .fail-panel .panel-actions { display: flex; justify-content: flex-end; gap: 6px; }
+  .fail-panel .panel-label {
+    font-size: 10px; color: var(--fail);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+
+  .pane-footer {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-deep);
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .summary { font-size: 12px; color: var(--text-muted); }
+  .summary .count-pass { color: var(--ok); font-weight: 600; }
+  .summary .count-fail { color: var(--fail); font-weight: 600; }
+  .summary .count-skip { color: var(--skip); font-weight: 600; }
+  .btn-primary {
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    padding: 6px 14px; border-radius: 3px;
+    border: 1px solid var(--accent); background: var(--accent);
+    color: var(--bg-deep); cursor: pointer; letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
+
+  /* ─── BUTTON-WRAP BREAKPOINT ───
+     Below 360 px, the active row's buttons drop below the label.
+     Applied via container-query-like trick using a pane modifier class
+     in the fixed-column demos, and via actual @container query for
+     the resizable demo pane. */
+  .pane.w-narrow .item { grid-template-columns: 20px 1fr; }
+  .pane.w-narrow .actions { grid-column: 2 / 3; margin-top: 6px; }
+
+  /* Resizable pane uses container queries for real responsiveness */
+  .resize-pane {
+    container-type: inline-size;
+    container-name: pane;
+  }
+  @container pane (max-width: 360px) {
+    .item { grid-template-columns: 20px 1fr; }
+    .actions { grid-column: 2 / 3; margin-top: 6px; }
+  }
+
+  .ruler {
+    height: 18px; margin-bottom: 6px;
+    background: linear-gradient(to right, var(--border) 0, var(--border) 1px, transparent 1px, transparent 100%);
+    position: relative; font-size: 10px; color: var(--text-dim);
+  }
+  .ruler::after {
+    content: attr(data-w); position: absolute; right: 0; top: 2px; color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Checklist view — mockup v2</h1>
+  <div class="sub">Three pane widths + a live resizable demo. Unified list, no walled cards, width-clamped.</div>
+
+  <!-- ═══ Constraint callout ═══ -->
+  <div class="constraints">
+    <div class="tag">Width constraints — Claude Code must enforce these in code</div>
+    <ul>
+      <li><b>Hard minimum:</b> pane width ≥ <code>280 px</code>. Apply via <code>setMinimumWidth(280)</code> on the instruction-pane dock widget. Below this, Pass/Fail/Skip collide with the label regardless of wrapping.</li>
+      <li><b>Wrap breakpoint:</b> at pane width ≤ <code>360 px</code>, the active row drops its button row below the label (separate line, right-aligned). Implemented via a layout switch keyed off the pane's current width in <code>resizeEvent</code>.</li>
+      <li><b>Above 360 px:</b> buttons sit inline on the right of the active row.</li>
+      <li><b>Title bar:</b> step name truncates with ellipsis; step count (<code>2 / 4</code>) never truncates.</li>
+    </ul>
+  </div>
+
+  <!-- ═══ Resizable demo ═══ -->
+  <h2>Live resizable demo — grab the bottom-right corner and drag</h2>
+  <div class="resize-wrap">
+    <div class="resize-pane pane">
+      <div class="pane-title">
+        <div class="step-name">Toolbar gating check — active patient</div>
+        <div class="step-count">2 / 4</div>
+      </div>
+      <div class="checklist">
+        <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name in the title area</div></div>
+        <div class="item fail">
+          <div class="dot"></div>
+          <div class="label">Zoom-in and zoom-out icons are enabled</div>
+          <div class="fail-note">
+            <div class="note-label">Fail</div>
+            Zoom-in icon stays gray after patient select until window refocuses.
+          </div>
+        </div>
+        <div class="item active">
+          <div class="dot"></div>
+          <div class="label">Mount icon is enabled</div>
+          <div class="actions">
+            <button class="btn pass">Pass</button>
+            <button class="btn fail">Fail</button>
+            <button class="btn skip">Skip</button>
+          </div>
+        </div>
+        <div class="item pending"><div class="dot"></div><div class="label">Archive icon is disabled</div></div>
+      </div>
+    </div>
+    <div class="resize-hint">
+      <span>↔ drag bottom-right corner of the pane</span>
+      <span>
+        <span class="wrap">wrap @ 360 px</span>
+        &nbsp;·&nbsp;
+        <span class="min">min = 280 px</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ═══ Three fixed columns ═══ -->
+  <h2>Fixed-width reference — 320 / 420 / 600 px</h2>
+
+  <div class="grid">
+
+    <!-- COLUMN 1: 320 px (narrow, below wrap breakpoint) -->
+    <div>
+      <div class="col-head">320 px — narrow (below wrap breakpoint)</div>
+      <div class="ruler" data-w="320 px"></div>
+
+      <div class="state-label">1 · All pending</div>
+      <div class="pane w-narrow">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">0 / 4</div></div>
+        <div class="context">Open a patient with at least 3 photos before starting.</div>
+        <div class="checklist">
+          <div class="item pending"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Zoom icons enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Archive icon disabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-label">2 · First answered, active on #2</div>
+      <div class="pane w-narrow">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">1 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+      </div>
+
+      <div class="state-label">3 · Middle FAIL with note</div>
+      <div class="pane w-narrow">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">2 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item fail">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="fail-note">
+              <div class="note-label">Fail</div>
+              Zoom-in icon stays gray after patient select until window refocuses.
+            </div>
+          </div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Mount icon enabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+      </div>
+
+      <div class="state-label">4 · All answered, Next button</div>
+      <div class="pane w-narrow">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">4 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item fail">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="fail-note">
+              <div class="note-label">Fail</div>
+              Zoom-in icon stays gray after patient select until window refocuses.
+            </div>
+          </div>
+          <div class="item pass"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item skip"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+        <div class="pane-footer">
+          <div class="summary">
+            <span class="count-pass">2 pass</span> ·
+            <span class="count-fail">1 fail</span> ·
+            <span class="count-skip">1 skip</span>
+          </div>
+          <button class="btn-primary">Next →</button>
+        </div>
+      </div>
+
+      <div class="state-label">5 · FAIL input panel open</div>
+      <div class="pane w-narrow">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">1 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="fail-panel">
+              <div class="panel-label">Describe what failed</div>
+              <textarea placeholder="What happened? Steps to reproduce…"></textarea>
+              <div class="panel-actions">
+                <button class="btn">Cancel</button>
+                <button class="btn fail">Save fail</button>
+              </div>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 2: 420 px (default, above wrap breakpoint) -->
+    <div>
+      <div class="col-head">420 px — default (above wrap breakpoint)</div>
+      <div class="ruler" data-w="420 px"></div>
+
+      <div class="state-label">1 · All pending</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">0 / 4</div></div>
+        <div class="context">Open a patient with at least 3 photos before starting.</div>
+        <div class="checklist">
+          <div class="item pending"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Zoom icons enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Archive icon disabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-label">2 · First answered, active on #2</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">1 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+      </div>
+
+      <div class="state-label">3 · Middle FAIL with note</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">2 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item fail">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="fail-note">
+              <div class="note-label">Fail</div>
+              Zoom-in icon stays gray after patient select until window refocuses.
+            </div>
+          </div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Mount icon enabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+      </div>
+
+      <div class="state-label">4 · All answered, Next button</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">4 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item fail">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="fail-note">
+              <div class="note-label">Fail</div>
+              Zoom-in icon stays gray after patient select until window refocuses.
+            </div>
+          </div>
+          <div class="item pass"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item skip"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+        <div class="pane-footer">
+          <div class="summary">
+            <span class="count-pass">2 pass</span> ·
+            <span class="count-fail">1 fail</span> ·
+            <span class="count-skip">1 skip</span>
+          </div>
+          <button class="btn-primary">Next →</button>
+        </div>
+      </div>
+
+      <div class="state-label">5 · FAIL input panel open</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">1 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Zoom icons enabled</div>
+            <div class="fail-panel">
+              <div class="panel-label">Describe what failed</div>
+              <textarea placeholder="What happened? Steps to reproduce…"></textarea>
+              <div class="panel-actions">
+                <button class="btn">Cancel</button>
+                <button class="btn fail">Save fail</button>
+              </div>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon disabled</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 3: 600 px (wide) -->
+    <div>
+      <div class="col-head">600 px — wide</div>
+      <div class="ruler" data-w="600 px"></div>
+
+      <div class="state-label">1 · All pending</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">0 / 4</div></div>
+        <div class="context">Open a patient with at least 3 photos before starting. The toolbar at the top of the main window should be visible.</div>
+        <div class="checklist">
+          <div class="item pending"><div class="dot"></div><div class="label">Toolbar shows patient name in the title area</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Zoom-in and zoom-out icons are enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon is enabled</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Archive icon is disabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-label">2 · First answered, active on #2</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">1 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name in the title area</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Zoom-in and zoom-out icons are enabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon is enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon is disabled</div></div>
+        </div>
+      </div>
+
+      <div class="state-label">3 · Middle FAIL with note</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">2 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name in the title area</div></div>
+          <div class="item fail">
+            <div class="dot"></div>
+            <div class="label">Zoom-in and zoom-out icons are enabled</div>
+            <div class="fail-note">
+              <div class="note-label">Fail</div>
+              Zoom-in icon stays gray after patient select until the main window regains focus. Zoom-out is fine.
+            </div>
+          </div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Mount icon is enabled</div>
+            <div class="actions">
+              <button class="btn pass">Pass</button>
+              <button class="btn fail">Fail</button>
+              <button class="btn skip">Skip</button>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon is disabled</div></div>
+        </div>
+      </div>
+
+      <div class="state-label">4 · All answered, Next button</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">4 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name in the title area</div></div>
+          <div class="item fail">
+            <div class="dot"></div>
+            <div class="label">Zoom-in and zoom-out icons are enabled</div>
+            <div class="fail-note">
+              <div class="note-label">Fail</div>
+              Zoom-in icon stays gray after patient select until the main window regains focus. Zoom-out is fine.
+            </div>
+          </div>
+          <div class="item pass"><div class="dot"></div><div class="label">Mount icon is enabled</div></div>
+          <div class="item skip"><div class="dot"></div><div class="label">Archive icon is disabled</div></div>
+        </div>
+        <div class="pane-footer">
+          <div class="summary">
+            <span class="count-pass">2 pass</span> ·
+            <span class="count-fail">1 fail</span> ·
+            <span class="count-skip">1 skip</span>
+          </div>
+          <button class="btn-primary">Next step →</button>
+        </div>
+      </div>
+
+      <div class="state-label">5 · FAIL input panel open</div>
+      <div class="pane">
+        <div class="pane-title"><div class="step-name">Toolbar gating check</div><div class="step-count">1 / 4</div></div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="label">Toolbar shows patient name in the title area</div></div>
+          <div class="item active">
+            <div class="dot"></div>
+            <div class="label">Zoom-in and zoom-out icons are enabled</div>
+            <div class="fail-panel">
+              <div class="panel-label">Describe what failed</div>
+              <textarea placeholder="What happened? Steps to reproduce, observed vs expected…"></textarea>
+              <div class="panel-actions">
+                <button class="btn">Cancel</button>
+                <button class="btn fail">Save fail</button>
+              </div>
+            </div>
+          </div>
+          <div class="item pending"><div class="dot"></div><div class="label">Mount icon is enabled</div></div>
+          <div class="item pending"><div class="dot"></div><div class="label">Archive icon is disabled</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+﻿{
+  "schema": "pg.workflow_capture.metadata.sample.v1",
+  "session_id": "session_20260424_194422",
+  "run_id": "run_20260424_194435",
+  "app_name": "Panda Gallery",
+  "app_version": "4.23",
+  "machine_label": "synthetic-local-sample",
+  "capture_started_at": "2026-04-24T19:44:22-07:00",
+  "capture_completed_at": "2026-04-24T19:48:10-07:00",
+  "audio": {
+    "state": "active",
+    "transcript_path": "transcripts/transcript.md",
+    "transcript_status": "complete"
+  },
+  "privacy": {
+    "contains_phi": false,
+    "deidentified": true,
+    "notes": "Synthetic starter-pack data only."
+  }
+}

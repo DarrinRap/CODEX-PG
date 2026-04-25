@@ -223,16 +223,3 @@ Created: 2026-04-24 20:43:16 -07:00
 - Validation report: C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX validation output\CODEX_validation_report.json
 
 Verification completed: Python scripts compile, builder generated the expected package, and validator returned ok: true with zero errors and zero warnings. C:\panda-gallery was not edited.
-
-## Claude Share Package Created
-
-Created: 2026-04-24 20:52:21 -07:00
-
-- Share folder: C:\CODEX PG\CODEX Claude Share Package
-- Read-first file: C:\CODEX PG\CODEX Claude Share Package\CODEX_READ_ME_FIRST.md
-- Manifest: C:\CODEX PG\CODEX Claude Share Package\CODEX_SHARE_MANIFEST.md
-- Portable ZIP: C:\CODEX PG\CODEX Claude Share Package.zip local-only and ignored by git.
-
-Contents summary: 120 files total, including 42 full-size PNG images, 37 HTML mockups, 19 Markdown docs, 2 Python sample scripts, 16 JSON files, the complete synthetic sample source session, and the generated Audit MVP sample package. Contact sheets are intentionally not included in the full-size mockup images folder.
-
-Purpose: one folder Darrin can point Claude to for Codex docs, canonical specs, Audit MVP starter pack, full-size mockup renders, source HTML mockups, sample code, sample JSON, and Claude-ready prompts.

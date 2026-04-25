@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>#132 Review dialog sizing + position</title>
+<style>
+  :root {
+    --pg-bg: #14141f;
+    --pg-panel: #1a1a2e;
+    --pg-border: #2a2a3e;
+    --pg-muted: #6a6a78;
+    --pg-text: #e0ddd5;
+    --pg-peach: #e8a87c;
+    --pg-peach-hover: #d4945a;
+    --pg-red: #d46a6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: #0d0d14;
+    color: var(--pg-text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    padding: 32px;
+  }
+  h1 { color: var(--pg-peach); font-size: 18px; margin: 0 0 8px; }
+  h2 { color: var(--pg-peach); font-size: 14px; margin: 32px 0 12px; }
+  .intro {
+    color: #888;
+    font-size: 13px;
+    max-width: 900px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+  .section {
+    margin-bottom: 48px;
+  }
+  .state-label {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .spec-label {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 12px;
+    font-family: Consolas, "Courier New", monospace;
+  }
+
+  /* ==== Review Dialog (common) ==== */
+  .dialog {
+    background: var(--pg-panel);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    color: var(--pg-text);
+  }
+  .dialog-titlebar {
+    background: #161625;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pg-peach);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dialog-body {
+    padding: 16px;
+  }
+  .preview {
+    background: #0b0b14;
+    border: 1px solid var(--pg-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    border-radius: 3px;
+  }
+  .meta {
+    color: #888;
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    padding: 8px 0;
+  }
+  .buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 8px;
+  }
+  .btn {
+    padding: 6px 14px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: none;
+    font-weight: 600;
+  }
+  .btn-discard { background: var(--pg-red); color: white; }
+  .btn-recap   { background: var(--pg-panel); color: var(--pg-text); border: 1px solid var(--pg-border); }
+  .btn-save    { background: var(--pg-peach); color: #14141f; }
+
+  /* ==== Part 1: size comparison side-by-side ==== */
+  .size-compare {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .size-compare .dialog {
+    flex-shrink: 0;
+  }
+  .current .preview { width: 800px; height: 600px; }
+  .current .dialog  { width: 832px; }
+  .proposed .preview { width: 560px; height: 420px; }
+  .proposed .dialog  { width: 592px; }
+
+  .tradeoff {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: rgba(232, 168, 124, 0.06);
+    border-left: 2px solid var(--pg-peach);
+    font-size: 12px;
+    color: var(--pg-text);
+    max-width: 860px;
+    line-height: 1.5;
+  }
+
+  /* ==== Part 2: positioning diagram (top-down monitor view) ==== */
+  .monitor {
+    width: 1280px;
+    height: 720px;
+    background: #161625;
+    border: 2px solid var(--pg-border);
+    border-radius: 8px;
+    position: relative;
+    margin: 12px 0 24px;
+  }
+  .monitor::before {
+    content: "1920×1080 monitor (scaled)";
+    position: absolute;
+    top: -22px;
+    left: 4px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  /* main window fills most of monitor */
+  .mainwin {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    background: #0e0e18;
+    border: 1px solid #202030;
+    border-radius: 4px;
+  }
+  .mainwin::after {
+    content: "PG MainWindow";
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    font-size: 11px;
+    color: #333;
+    letter-spacing: 0.5px;
+  }
+
+  /* pane anchored top-right */
+  .mini-pane {
+    position: absolute;
+    top: 60px;
+    right: 60px;
+    width: 280px;
+    height: 420px;
+    background: var(--pg-bg);
+    border: 2px solid var(--pg-peach);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 10px;
+    color: var(--pg-text);
+    line-height: 1.5;
+  }
+  .mini-pane-label {
+    color: var(--pg-peach);
+    font-weight: 600;
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .mini-pane-hint {
+    color: #555;
+    font-size: 9px;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* dialog positioned LEFT of pane with 12px gap */
+  .mini-dialog-left {
+    position: absolute;
+    top: 60px;
+    right: 60px; /* anchor to right */
+    margin-right: calc(280px + 12px); /* push left of pane by pane width + gap */
+    width: 400px;
+    height: 320px;
+    background: var(--pg-panel);
+    border: 2px solid #e8a87c;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 10px;
+    color: var(--pg-text);
+    line-height: 1.4;
+  }
+  .mini-dialog-label {
+    color: var(--pg-peach);
+    font-weight: 600;
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .arrow {
+    position: absolute;
+    top: 220px;
+    right: calc(60px + 280px + 2px); /* just left of pane */
+    width: 10px;
+    height: 10px;
+    border-top: 2px solid var(--pg-peach);
+    border-right: 2px solid var(--pg-peach);
+    transform: rotate(45deg);
+  }
+  .gap-label {
+    position: absolute;
+    top: 215px;
+    right: calc(60px + 280px + 14px);
+    font-size: 9px;
+    color: var(--pg-peach);
+    font-family: Consolas, monospace;
+  }
+
+  /* === Fallback case: centered over main when pane closed === */
+  .fallback-dialog {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 320px;
+    background: var(--pg-panel);
+    border: 2px solid #e8a87c;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 10px;
+    color: var(--pg-text);
+    line-height: 1.4;
+  }
+
+  .algo {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid var(--pg-muted);
+    font-size: 12px;
+    color: var(--pg-text);
+    line-height: 1.7;
+    max-width: 860px;
+    font-family: Consolas, monospace;
+  }
+  .algo strong { color: var(--pg-peach); font-family: inherit; }
+</style>
+</head>
+<body>
+
+<h1>#132 — Review dialog: 30% size reduction + anchored to pane</h1>
+<p class="intro">
+  Two changes: (1) shrink the preview image cap from 800×600 to 560×420 (exactly 30% each dimension),
+  and (2) position the dialog flush against the Instruction Pane instead of centered on the main window.
+  Fallback to center-on-main when no pane is visible.
+</p>
+
+<!-- ========== PART 1: SIZE COMPARISON ========== -->
+
+<h2>Part 1 — preview size: current vs proposed</h2>
+
+<div class="section">
+  <div class="size-compare">
+    <div class="current">
+      <div class="state-label">Current (v4.23)</div>
+      <div class="spec-label">MAX = 800 × 600 px · dialog ≈ 832 × 720 px (with chrome)</div>
+      <div class="dialog">
+        <div class="dialog-titlebar">
+          <span>Region capture — Review</span>
+          <span>— ✕</span>
+        </div>
+        <div class="dialog-body">
+          <div class="preview">800 × 600 preview area</div>
+          <div class="meta">1.8 KB · 2026-04-25 19:42:03 · 412 × 287 px</div>
+          <div class="buttons">
+            <button class="btn btn-discard">Discard</button>
+            <button class="btn btn-recap">Re-capture</button>
+            <button class="btn btn-save">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="proposed">
+      <div class="state-label">Proposed</div>
+      <div class="spec-label">MAX = 560 × 420 px · dialog ≈ 592 × 540 px (with chrome) · 30% smaller each dim, 51% less screen area</div>
+      <div class="dialog">
+        <div class="dialog-titlebar">
+          <span>Region capture — Review</span>
+          <span>— ✕</span>
+        </div>
+        <div class="dialog-body">
+          <div class="preview">560 × 420 preview area</div>
+          <div class="meta">1.8 KB · 2026-04-25 19:42:03 · 412 × 287 px</div>
+          <div class="buttons">
+            <button class="btn btn-discard">Discard</button>
+            <button class="btn btn-recap">Re-capture</button>
+            <button class="btn btn-save">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tradeoff">
+    <strong>Note:</strong> the image is still scaled with <code>KeepAspectRatio</code>, so captures smaller than 560×420 still render at their native size — the cap only kicks in for larger captures. 30% reduction is the cap; a 200×150 capture still shows at 200×150.
+  </div>
+</div>
+
+<!-- ========== PART 2: POSITIONING ========== -->
+
+<h2>Part 2 — dialog position: anchored to pane</h2>
+
+<p class="intro" style="margin-bottom:8px">
+  <strong style="color:#e0ddd5">Primary case:</strong> pane is open and visible.
+  Dialog opens flush against the pane's free side with a 12px gap.
+  No overlap — tester sees both at once.
+</p>
+
+<div class="monitor">
+  <div class="mainwin"></div>
+
+  <!-- dialog on the left of pane -->
+  <div class="mini-dialog-left">
+    <div class="mini-dialog-label">Region capture — Review</div>
+    <div style="color:#888; font-family:Consolas,monospace; font-size:9px">[ preview ]</div>
+    <div style="position:absolute; bottom:12px; left:14px; right:14px; display:flex; gap:8px; justify-content:flex-end">
+      <span style="background:#d46a6a; color:white; padding:3px 8px; border-radius:3px; font-size:9px">Discard</span>
+      <span style="background:#22223a; color:#e0ddd5; padding:3px 8px; border-radius:3px; font-size:9px; border:1px solid #2a2a3e">Re-capture</span>
+      <span style="background:#e8a87c; color:#14141f; padding:3px 8px; border-radius:3px; font-size:9px">Save</span>
+    </div>
+  </div>
+
+  <!-- gap indicator -->
+  <div class="gap-label">12px</div>
+
+  <!-- pane on the right -->
+  <div class="mini-pane">
+    <div class="mini-pane-label">Instruction Pane</div>
+    <div style="color:#888; font-size:9px; margin-bottom:4px">Step 3 of 5 · P3</div>
+    <div style="color:var(--pg-peach); font-size:10px; font-weight:600; margin-bottom:4px">First capture</div>
+    <div>Press Shift+F12. Drag a box. Release.</div>
+    <div class="mini-pane-hint">(WDA-excluded — won't appear in captures)</div>
+  </div>
+</div>
+
+<p class="intro" style="margin-bottom:8px">
+  <strong style="color:#e0ddd5">Fallback case:</strong> pane is closed or not visible (manual-mode capture).
+  Dialog centers on the MainWindow as today.
+</p>
+
+<div class="monitor">
+  <div class="mainwin"></div>
+  <div class="fallback-dialog">
+    <div class="mini-dialog-label">Region capture — Review</div>
+    <div style="color:#888; font-family:Consolas,monospace; font-size:9px">[ preview ]</div>
+    <div style="position:absolute; bottom:12px; left:14px; right:14px; display:flex; gap:8px; justify-content:flex-end">
+      <span style="background:#d46a6a; color:white; padding:3px 8px; border-radius:3px; font-size:9px">Discard</span>
+      <span style="background:#22223a; color:#e0ddd5; padding:3px 8px; border-radius:3px; font-size:9px; border:1px solid #2a2a3e">Re-capture</span>
+      <span style="background:#e8a87c; color:#14141f; padding:3px 8px; border-radius:3px; font-size:9px">Save</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PART 3: ALGORITHM ========== -->
+
+<h2>Part 3 — side-selection algorithm</h2>
+
+<div class="algo">
+<strong># Runs in RegionReviewDialog.showEvent, after adjustSize()</strong><br><br>
+
+pane = parent._instruction_pane<br>
+if pane is None or not pane.isVisible():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;center_on(MainWindow)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return<br><br>
+
+pane_geo = pane.frameGeometry()<br>
+screen_geo = QGuiApplication.screenAt(pane_geo.center()).availableGeometry()<br>
+gap = 12<br><br>
+
+<strong># Which side has more room?</strong><br>
+space_left  = pane_geo.left()  - screen_geo.left()<br>
+space_right = screen_geo.right() - pane_geo.right()<br>
+need = self.width() + gap<br><br>
+
+<strong>if</strong> space_left &gt;= need:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;move to (pane_geo.left() - self.width() - gap, pane_geo.top())<br>
+<strong>elif</strong> space_right &gt;= need:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;move to (pane_geo.right() + gap, pane_geo.top())<br>
+<strong>else</strong>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;center_on(MainWindow) <span style="color:#666"># neither side fits — fall back</span>
+</div>
+
+<div class="tradeoff">
+  <strong>Why vertical-align to the pane's top rather than center?</strong> The pane is tall+narrow, the dialog is wider+shorter. Aligning tops (not centers) keeps the dialog from peeking above the screen when the pane is near the top edge. If the pane bottom is close to the screen bottom, we can additionally clamp the dialog so it doesn't extend below <code>screen_geo.bottom()</code> — one extra line in the positioning code.
+</div>
+
+</body>
+</html>

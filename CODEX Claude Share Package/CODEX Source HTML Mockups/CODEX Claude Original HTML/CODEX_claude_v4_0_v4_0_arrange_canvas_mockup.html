@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Arrange · canvas</title>
+<style>
+  :root {
+    --canvas:       #14141f;
+    --chrome:       #161625;
+    --pane:         #1a1a2e;
+    --pane-raised:  #22223a;
+    --pane-selected:#2a2a4e;
+    --border:       #2a2a3e;
+    --border-soft:  #232336;
+    --border-hover: #3a3a4e;
+    --text:         #e0ddd5;
+    --text-muted:   #888;
+    --text-dim:     #555;
+    --accent:       #e8a87c;
+    --accent-hover: #d4945a;
+    --accent-soft:  rgba(232,168,124,0.12);
+    --accent-border:rgba(232,168,124,0.45);
+    --accent-ink:   #1a1a2e;
+    --ok:           #7fb069;
+    --warn:         #f39c12;
+    --err:          #e74c3c;
+    --font-ui:      "Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:    "Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: var(--canvas); color: var(--text);
+    font-family: var(--font-ui); font-size: 13px; overflow: hidden;
+  }
+
+  /* APP SHELL — matches Edit mockup grid exactly */
+  .app {
+    width: 100vw; height: 100vh; background: var(--canvas);
+    display: grid;
+    grid-template-rows: 44px 1fr 120px 26px;
+    grid-template-columns: 72px 1fr 320px;
+    grid-template-areas:
+      "titlebar titlebar titlebar"
+      "toolstrip viewport rightpane"
+      "toolstrip filmstrip rightpane"
+      "statusbar statusbar statusbar";
+  }
+
+  /* TITLE BAR — copied from Edit */
+  .titlebar {
+    grid-area: titlebar; background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: stretch; padding: 0 12px 0 16px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding-right: 18px; border-right: 1px solid var(--border); margin-right: 12px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain; background-position: center; background-repeat: no-repeat;
+    filter: drop-shadow(0 0 6px rgba(232, 168, 124, 0.15));
+  }
+  .brand-text { font-size: 13px; color: var(--text); display: flex; align-items: center; }
+  .brand-text .name {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700; letter-spacing: 2px; margin-right: 4px;
+  }
+  .brand-text .ver {
+    color: var(--text-dim); font-family: var(--font-mono); font-size: 10px; margin-left: 4px;
+  }
+
+  .navgroup { display: flex; align-items: center; gap: 2px; margin-right: 14px; }
+  .navbtn {
+    width: 28px; height: 28px; background: transparent;
+    border: 1px solid transparent; border-radius: 4px;
+    color: var(--text); font-size: 15px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .navbtn:hover { background: var(--pane-raised); border-color: var(--border); }
+
+  .tabs { display: flex; align-items: stretch; gap: 2px; }
+  .tab {
+    padding: 0 18px; display: flex; align-items: center; gap: 8px;
+    color: var(--text-muted); font-size: 13px; font-weight: 500;
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-icon { font-size: 14px; }
+  .tab-kbd {
+    color: var(--text-dim); font-size: 10px; font-family: var(--font-mono);
+    padding: 1px 5px; border: 1px solid var(--border); border-radius: 3px;
+  }
+
+  .spacer { flex: 1; }
+
+  .global-actions { display: flex; align-items: center; gap: 6px; }
+  .gbtn {
+    height: 28px; padding: 0 10px;
+    background: var(--pane-raised); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; font-family: var(--font-ui);
+  }
+  .gbtn:hover { background: var(--pane-selected); border-color: var(--accent); color: var(--accent); }
+  .gbtn.primary {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--accent-ink); font-weight: 600;
+  }
+  .gbtn.primary:hover { background: var(--accent-hover); }
+
+  /* TOOL STRIP — same shell as Edit, Arrange-specific tools */
+  .toolstrip {
+    grid-area: toolstrip; background: var(--pane);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 8px 4px; gap: 2px;
+  }
+  .ts-btn {
+    height: 52px; background: transparent;
+    border: 1px solid transparent; border-radius: 4px;
+    color: var(--text); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; padding: 4px;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .ts-btn:hover { background: var(--pane-raised); border-color: var(--border); }
+  .ts-btn.active {
+    background: var(--pane-selected); color: var(--accent); border-color: var(--accent);
+  }
+  .ts-ico { font-size: 18px; line-height: 1; }
+  .ts-label {
+    font-size: 9px; letter-spacing: 0.5px; font-weight: 600;
+    color: var(--text-muted);
+  }
+  .ts-btn.active .ts-label { color: var(--accent); }
+  .ts-sep { height: 1px; background: var(--border); margin: 6px 4px; }
+  .ts-spacer { flex: 1; }
+
+  /* VIEWPORT — same shell as Edit */
+  .viewport {
+    grid-area: viewport; background: var(--canvas);
+    overflow: hidden; display: flex; flex-direction: column; min-height: 0;
+  }
+  .vport-bar {
+    height: 40px; padding: 0 16px;
+    background: var(--chrome); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+  }
+  .breadcrumb {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-muted); font-size: 12.5px;
+  }
+  .breadcrumb-sep { color: var(--text-dim); font-size: 11px; }
+  .breadcrumb-current { color: var(--text); font-weight: 500; }
+
+  .view-controls { display: flex; gap: 4px; }
+  .vc-btn {
+    height: 28px; padding: 0 10px;
+    background: transparent; border: 1px solid transparent; border-radius: 4px;
+    color: var(--text-muted); font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; font-family: var(--font-ui);
+  }
+  .vc-btn:hover { background: var(--pane-raised); color: var(--text); }
+  .vc-btn.active { background: var(--pane-selected); color: var(--accent); border-color: var(--accent-border); }
+
+  .zoom-readout {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-muted); font-size: 11px; font-family: var(--font-mono);
+  }
+  .zoom-btn {
+    width: 22px; height: 22px; background: transparent;
+    border: 1px solid var(--border); border-radius: 3px;
+    color: var(--text); cursor: pointer; font-family: var(--font-mono); font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .zoom-btn:hover { background: var(--pane-raised); border-color: var(--accent); }
+
+  .stage {
+    flex: 1; background: #0a0a14;
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px; position: relative; min-height: 0; overflow: auto;
+  }
+
+  /* The mount sheet */
+  .sheet {
+    width: min(900px, 100%); aspect-ratio: 16/10;
+    background: #f5f2ec;
+    border-radius: 2px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .sheet-header {
+    position: absolute; top: 8px; left: 20px; right: 20px;
+    display: flex; justify-content: space-between;
+    font-family: var(--font-mono); font-size: 10px;
+    color: #888; letter-spacing: 0.5px;
+  }
+  .sheet-header b { color: var(--accent-hover); font-weight: 600; }
+
+  /* Slot styles */
+  .slot {
+    position: absolute; border-radius: 1px; overflow: hidden;
+    cursor: pointer; background: #000;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
+  }
+  .slot:hover {
+    box-shadow: 0 0 0 2px var(--accent), 0 4px 12px rgba(232,168,124,0.3);
+    z-index: 4;
+  }
+  .slot.active {
+    box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px rgba(232,168,124,0.2);
+    z-index: 5;
+  }
+  .slot-img { position: absolute; inset: 0; }
+  .slot-img.r1 { background: radial-gradient(ellipse at 50% 50%, #8a8a9a 0%, #3a3a4a 50%, #0a0a14 100%); }
+  .slot-img.r2 { background: radial-gradient(ellipse at 45% 55%, #909080 0%, #404038 45%, #0a0a14 100%); }
+  .slot-img.r3 { background: radial-gradient(ellipse at 55% 50%, #a0a090 0%, #3a3a2e 50%, #0a0a14 100%); }
+  .slot-img.r4 { background: radial-gradient(ellipse at 50% 45%, #8a9090 0%, #353a3a 50%, #0a0a14 100%); }
+  .slot-img.bw { background: radial-gradient(ellipse at 50% 50%, #a0a090 0%, #454038 48%, #0a0a14 100%); }
+  .slot-img::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 14% 32% at 30% 52%, rgba(240,235,220,0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 13% 30% at 48% 50%, rgba(240,235,220,0.4) 0%, transparent 70%),
+      radial-gradient(ellipse 13% 30% at 66% 52%, rgba(240,235,220,0.35) 0%, transparent 70%);
+    mix-blend-mode: screen;
+  }
+  .slot-num {
+    position: absolute; top: 2px; left: 3px;
+    font-family: var(--font-mono); font-size: 9px;
+    color: rgba(255,255,255,0.5);
+    text-shadow: 0 0 4px rgba(0,0,0,0.9);
+  }
+  .slot.empty {
+    border: 1.5px dashed #b8b2a6;
+    background: rgba(0,0,0,0.03); box-shadow: none;
+  }
+  .slot.empty:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .slot.empty .slot-img { display: none; }
+  .slot-empty-label {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #a09890; font-family: var(--font-mono); font-size: 9.5px;
+    text-align: center; letter-spacing: 0.3px; line-height: 1.4;
+  }
+  .slot.target {
+    border: 2px solid var(--accent); background: var(--accent-soft);
+    animation: pulse-target 1.6s ease-in-out infinite;
+  }
+  .slot.target .slot-empty-label { color: var(--accent-hover); }
+  @keyframes pulse-target {
+    0%, 100% { box-shadow: 0 0 0 1px var(--accent-border); }
+    50% { box-shadow: 0 0 0 6px rgba(232,168,124,0.15); }
+  }
+
+  /* FILMSTRIP — exact copy from Edit */
+  .filmstrip {
+    grid-area: filmstrip; background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .fs-hdr {
+    height: 24px; padding: 0 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .fs-label {
+    color: var(--text-dim); font-size: 10px; font-weight: 600;
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .fs-actions { display: flex; gap: 4px; }
+  .fs-hdr-btn {
+    width: 22px; height: 18px; background: transparent;
+    border: 1px solid transparent; border-radius: 3px;
+    color: var(--text-muted); font-size: 11px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fs-hdr-btn:hover { background: var(--pane-raised); color: var(--text); }
+  .fs-scroll {
+    flex: 1; overflow-x: auto; overflow-y: hidden; padding: 8px 12px;
+  }
+  .fs-row { display: flex; gap: 6px; height: 100%; }
+  .fs-thumb {
+    aspect-ratio: 4/3; height: 100%;
+    border: 1.5px solid transparent; border-radius: 3px;
+    flex-shrink: 0; cursor: pointer; overflow: hidden;
+    position: relative;
+  }
+  .fs-thumb:hover { border-color: var(--border-hover); }
+  .fs-thumb.active { border-color: var(--accent); }
+  .fs-thumb.used::after {
+    content: ""; position: absolute;
+    width: 6px; height: 6px; background: var(--ok);
+    border-radius: 50%; top: 3px; right: 3px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+  }
+  .thumb-img { width: 100%; height: 100%; background-size: cover; }
+  .radio-1 { background: radial-gradient(ellipse at 60% 45%, #4a4a5a, #1f1f2e 55%, #0a0a14); }
+  .radio-2 { background: radial-gradient(ellipse at 40% 50%, #555566, #252538 50%, #0f0f18); }
+  .radio-3 { background: radial-gradient(ellipse at 50% 55%, #4e4e5e, #21212f 55%, #0d0d16); }
+  .radio-4 { background: radial-gradient(ellipse at 55% 45%, #525262, #23233a 55%, #0a0a14); }
+  .radio-5 { background: radial-gradient(ellipse at 45% 50%, #4d4d5d, #202030 55%, #090912); }
+  .radio-6 { background: radial-gradient(ellipse at 50% 50%, #505060, #202030 55%, #0a0a14); }
+  .photo-1 { background: linear-gradient(145deg, #c39770, #8b6240 40%, #4a3520); }
+  .photo-2 { background: linear-gradient(145deg, #d4a885, #9a7050 50%, #5a4028); }
+
+  /* RIGHT PANE — mirrors Edit's panel exactly */
+  .rightpane {
+    grid-area: rightpane; background: var(--pane);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .panel-tabs {
+    display: flex; background: var(--chrome);
+    border-bottom: 1px solid var(--border); padding: 4px; gap: 2px;
+  }
+  .pt-btn {
+    flex: 1; height: 30px; padding: 0 8px;
+    background: var(--pane-raised); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 11px; font-family: var(--font-ui); cursor: pointer;
+  }
+  .pt-btn:hover { border-color: var(--accent); }
+  .pt-btn.active { background: var(--pane-selected); color: var(--accent); border-color: var(--accent); }
+
+  .panel-scroll { flex: 1; overflow-y: auto; padding: 10px 12px; }
+
+  .section-sep { height: 1px; background: var(--border); margin: 8px 0 0; }
+  .section-head {
+    color: var(--accent); font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    margin: 8px 0; display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-head .hint {
+    color: var(--text-dim); font-weight: 400; letter-spacing: 0;
+    text-transform: none; font-family: var(--font-mono); font-size: 10px;
+  }
+
+  .slot-preview {
+    width: 100%; aspect-ratio: 4/3;
+    background: radial-gradient(ellipse at 50% 50%, #8a9090 0%, #353a3a 50%, #0a0a14 100%);
+    border-radius: 4px; border: 1px solid var(--border-soft);
+    position: relative; overflow: hidden; margin-bottom: 8px;
+  }
+  .slot-preview::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 14% 32% at 30% 52%, rgba(240,235,220,0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 13% 30% at 48% 50%, rgba(240,235,220,0.4) 0%, transparent 70%),
+      radial-gradient(ellipse 13% 30% at 66% 52%, rgba(240,235,220,0.35) 0%, transparent 70%);
+    mix-blend-mode: screen;
+  }
+
+  .info-row {
+    display: grid; grid-template-columns: 80px 1fr;
+    gap: 8px; align-items: baseline; padding: 3px 0; font-size: 12px;
+  }
+  .info-row .k { color: var(--text-muted); text-align: right; }
+  .info-row .v { color: var(--text); font-family: var(--font-mono); font-size: 11px; }
+  .info-row .v.accent { color: var(--accent); }
+
+  /* Adjust rows — exact copy */
+  .adj-row {
+    display: grid; grid-template-columns: 80px 1fr 40px;
+    gap: 8px; align-items: center; padding: 4px 0;
+  }
+  .adj-row .k { color: var(--text-muted); font-size: 12px; text-align: right; }
+  .adj-row .k:hover { color: var(--accent); cursor: pointer; }
+  .adj-row input[type=range] {
+    width: 100%; accent-color: var(--accent); background: transparent;
+  }
+  .adj-row .v {
+    color: var(--text); font-family: var(--font-mono);
+    font-size: 11px; text-align: right;
+  }
+
+  .xform-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .xform-label { color: var(--text-muted); font-size: 11px; width: 48px; }
+  .xform-btn {
+    height: 28px; padding: 0 10px;
+    background: var(--pane-raised); color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 11px; cursor: pointer; font-family: var(--font-ui);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .xform-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .reset-row { display: flex; gap: 6px; margin-top: 12px; }
+  .reset-btn {
+    flex: 1; height: 30px;
+    background: var(--pane-raised); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 12px; cursor: pointer; font-family: var(--font-ui);
+  }
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .reset-btn.destructive { color: #e67c7c; }
+  .reset-btn.destructive:hover { color: var(--err); border-color: var(--err); }
+
+  .completion {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px; margin-top: 6px;
+    background: var(--pane-raised);
+    border: 1px solid var(--border-soft); border-radius: 4px;
+  }
+  .completion-val {
+    font-family: var(--font-mono); font-size: 14px;
+    color: var(--accent); font-weight: 700;
+  }
+  .completion-label { color: var(--text-muted); font-size: 11px; }
+
+  /* STATUS BAR — exact copy, with Arrange mode color */
+  .statusbar {
+    grid-area: statusbar; background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 14px; gap: 16px; font-size: 11px;
+    color: var(--text-muted);
+  }
+  .sb-mode {
+    color: var(--accent); font-weight: 700; letter-spacing: 1.5px;
+    padding-right: 14px; border-right: 1px solid var(--border);
+  }
+  .sb-sep { color: var(--border); }
+  .sb-item { font-family: var(--font-mono); }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="titlebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text"><span class="name">PANDA</span>Gallery <span class="ver">v4.0</span></div>
+    </div>
+    <div class="navgroup">
+      <button class="navbtn">◀</button>
+      <button class="navbtn">▶</button>
+    </div>
+    <div class="tabs">
+      <div class="tab"><span class="tab-icon">▦</span><span>Library</span><span class="tab-kbd">⌘1</span></div>
+      <div class="tab active"><span class="tab-icon">◩</span><span>Arrange</span><span class="tab-kbd">⌘2</span></div>
+      <div class="tab"><span class="tab-icon">▶</span><span>Present</span><span class="tab-kbd">⌘3</span></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="global-actions">
+      <button class="gbtn"><span>↓</span><span>Import</span></button>
+      <button class="gbtn"><span>↑</span><span>Export</span></button>
+      <button class="gbtn primary"><span>▶</span><span>Present</span></button>
+    </div>
+  </div>
+
+  <div class="toolstrip">
+    <button class="ts-btn active"><span class="ts-ico">⌖</span><span class="ts-label">V Select</span></button>
+    <button class="ts-btn"><span class="ts-ico">⊕</span><span class="ts-label">P Place</span></button>
+    <button class="ts-btn"><span class="ts-ico">↻</span><span class="ts-label">R Rotate</span></button>
+    <button class="ts-btn"><span class="ts-ico">⇄</span><span class="ts-label">S Swap</span></button>
+    <div class="ts-sep"></div>
+    <button class="ts-btn"><span class="ts-ico">✦</span><span class="ts-label">A Auto</span></button>
+    <button class="ts-btn"><span class="ts-ico">▦</span><span class="ts-label">G Grid</span></button>
+    <div class="ts-sep"></div>
+    <button class="ts-btn"><span class="ts-ico">✎</span><span class="ts-label">N Note</span></button>
+    <div class="ts-spacer"></div>
+  </div>
+
+  <div class="viewport">
+    <div class="vport-bar">
+      <div class="breadcrumb">
+        <span>Library</span>
+        <span class="breadcrumb-sep">›</span>
+        <span>Adams, Deborah</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Full Mouth Series · 2026-03-14</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="view-controls">
+        <button class="vc-btn active">◩ Mount</button>
+        <button class="vc-btn">▢ Freeform</button>
+        <button class="vc-btn">⊞ Grid</button>
+      </div>
+      <div class="zoom-readout">
+        <button class="zoom-btn">−</button>
+        <span>80%</span>
+        <button class="zoom-btn">+</button>
+        <button class="vc-btn">Fit</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="sheet">
+        <div class="sheet-header">
+          <span><b>ADAMS, DEBORAH</b> · #00842 · FMX · 2026-03-14</span>
+          <span>Standard FMX 18</span>
+        </div>
+
+        <!-- Row 1: Maxillary PAs -->
+        <div class="slot" style="top: 7%; left: 3%; width: 11%; height: 32%;">
+          <div class="slot-img r1"></div><span class="slot-num">1</span>
+        </div>
+        <div class="slot" style="top: 7%; left: 15%; width: 11%; height: 32%;">
+          <div class="slot-img r2"></div><span class="slot-num">2</span>
+        </div>
+        <div class="slot" style="top: 7%; left: 27%; width: 10%; height: 32%;">
+          <div class="slot-img r3"></div><span class="slot-num">3</span>
+        </div>
+        <div class="slot active" style="top: 7%; left: 38%; width: 10%; height: 32%;">
+          <div class="slot-img r4"></div><span class="slot-num">4</span>
+        </div>
+        <div class="slot" style="top: 7%; left: 49%; width: 10%; height: 32%;">
+          <div class="slot-img r1"></div><span class="slot-num">5</span>
+        </div>
+        <div class="slot" style="top: 7%; left: 60%; width: 11%; height: 32%;">
+          <div class="slot-img r2"></div><span class="slot-num">6</span>
+        </div>
+        <div class="slot empty" style="top: 7%; left: 72%; width: 11%; height: 32%;">
+          <span class="slot-empty-label">Drop<br>PA<br>15-17</span>
+        </div>
+
+        <!-- Row 2: Bitewings -->
+        <div class="slot" style="top: 40%; left: 7%; width: 19%; height: 22%;">
+          <div class="slot-img bw"></div><span class="slot-num">8 · BW</span>
+        </div>
+        <div class="slot" style="top: 40%; left: 27%; width: 19%; height: 22%;">
+          <div class="slot-img bw"></div><span class="slot-num">9 · BW</span>
+        </div>
+        <div class="slot" style="top: 40%; left: 47%; width: 19%; height: 22%;">
+          <div class="slot-img bw"></div><span class="slot-num">10 · BW</span>
+        </div>
+        <div class="slot" style="top: 40%; left: 67%; width: 19%; height: 22%;">
+          <div class="slot-img bw"></div><span class="slot-num">11 · BW</span>
+        </div>
+
+        <!-- Row 3: Mandibular PAs -->
+        <div class="slot" style="top: 63%; left: 3%; width: 11%; height: 32%;">
+          <div class="slot-img r3"></div><span class="slot-num">12</span>
+        </div>
+        <div class="slot" style="top: 63%; left: 15%; width: 11%; height: 32%;">
+          <div class="slot-img r1"></div><span class="slot-num">13</span>
+        </div>
+        <div class="slot" style="top: 63%; left: 27%; width: 10%; height: 32%;">
+          <div class="slot-img r4"></div><span class="slot-num">14</span>
+        </div>
+        <div class="slot" style="top: 63%; left: 38%; width: 10%; height: 32%;">
+          <div class="slot-img r2"></div><span class="slot-num">15</span>
+        </div>
+        <div class="slot" style="top: 63%; left: 49%; width: 10%; height: 32%;">
+          <div class="slot-img r3"></div><span class="slot-num">16</span>
+        </div>
+        <div class="slot" style="top: 63%; left: 60%; width: 11%; height: 32%;">
+          <div class="slot-img r1"></div><span class="slot-num">17</span>
+        </div>
+        <div class="slot target" style="top: 63%; left: 72%; width: 11%; height: 32%;">
+          <span class="slot-empty-label">Drop<br>PA<br>19-17</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filmstrip">
+    <div class="fs-hdr">
+      <span class="fs-label">Filmstrip · Adams, Deborah · today's visit · 16 used · 8 available</span>
+      <div class="fs-actions">
+        <button class="fs-hdr-btn">◀</button>
+        <button class="fs-hdr-btn">▶</button>
+        <button class="fs-hdr-btn">✕</button>
+      </div>
+    </div>
+    <div class="fs-scroll">
+      <div class="fs-row">
+        <div class="fs-thumb used"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-2"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-3"></div></div>
+        <div class="fs-thumb active used"><div class="thumb-img radio-4"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-5"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-6"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-2"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-3"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-4"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-5"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-6"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-3"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-4"></div></div>
+        <div class="fs-thumb used"><div class="thumb-img radio-5"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-6"></div></div>
+        <div class="fs-thumb"><div class="thumb-img photo-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img photo-2"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-1"></div></div>
+        <div class="fs-thumb"><div class="thumb-img radio-2"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rightpane">
+    <div class="panel-tabs">
+      <button class="pt-btn active">Slot</button>
+      <button class="pt-btn">Series</button>
+      <button class="pt-btn">Template</button>
+      <button class="pt-btn">Export</button>
+    </div>
+
+    <div class="panel-scroll">
+
+      <div class="section-sep"></div>
+      <div class="section-head"><span>Slot 4 · #9</span><span class="hint">selected</span></div>
+      <div class="slot-preview"></div>
+
+      <div class="info-row"><span class="k">Image</span><span class="v">PA_03_14_04</span></div>
+      <div class="info-row"><span class="k">Captured</span><span class="v">2026-03-14</span></div>
+      <div class="info-row"><span class="k">Sensor</span><span class="v">Size 1 · Anterior</span></div>
+      <div class="info-row"><span class="k">Region</span><span class="v accent">#9 central</span></div>
+
+      <div class="section-sep"></div>
+      <div class="section-head"><span>Quick adjust</span><span class="hint">slot-only</span></div>
+
+      <div class="adj-row">
+        <span class="k">Brightness</span>
+        <input type="range" min="-100" max="100" value="12">
+        <span class="v">+12</span>
+      </div>
+      <div class="adj-row">
+        <span class="k">Contrast</span>
+        <input type="range" min="-100" max="100" value="20">
+        <span class="v">+20</span>
+      </div>
+      <div class="adj-row">
+        <span class="k">Sharpness</span>
+        <input type="range" min="-100" max="100" value="0">
+        <span class="v">0</span>
+      </div>
+
+      <div class="section-sep"></div>
+      <div class="section-head"><span>Transform</span></div>
+
+      <div class="xform-row">
+        <span class="xform-label">Rotate</span>
+        <button class="xform-btn">↶ 90°</button>
+        <button class="xform-btn">↷ 90°</button>
+      </div>
+      <div class="xform-row">
+        <span class="xform-label">Flip</span>
+        <button class="xform-btn">↔ H</button>
+        <button class="xform-btn">↕ V</button>
+      </div>
+
+      <div class="section-sep"></div>
+      <div class="section-head"><span>Series</span><span class="hint">auto-saved 12s ago</span></div>
+
+      <div class="completion">
+        <span class="completion-label">Slots filled</span>
+        <span class="completion-val">16 / 18</span>
+      </div>
+      <div style="color: var(--text-muted); font-size: 11px; font-style: italic; padding: 8px 0 4px;">
+        2 slots remaining · positions 7 &amp; 18.
+      </div>
+
+      <div class="reset-row">
+        <button class="reset-btn">Open in Edit</button>
+        <button class="reset-btn destructive">Remove</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span class="sb-mode">ARRANGE</span>
+    <span class="sb-item">Adams, Deborah · FMX</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">Slot 4 · PA_03_14_04</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">Select (V)</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">16 / 18 mounted</span>
+    <span class="spacer" style="flex: 1;"></span>
+    <span class="sb-item">auto-saved 12s ago</span>
+    <span class="sb-sep">│</span>
+    <span class="sb-item">v4.0-dev</span>
+  </div>
+
+</div>
+
+</body>
+</html>

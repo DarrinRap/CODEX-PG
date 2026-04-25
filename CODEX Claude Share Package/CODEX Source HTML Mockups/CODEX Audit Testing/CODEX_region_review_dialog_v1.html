@@ -1,0 +1,17 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CODEX Region Review Dialog v1</title>
+<style>
+:root{--bg:#0a0a12;--panel:#14141f;--panel2:#1a1a2e;--line:#2a2a3e;--text:#e0ddd5;--muted:#888;--accent:#e8a87c;--pass:#7fb069;--fail:#d46a6a}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 45%,#202034 0,#0a0a12 62%);color:var(--text);font:13px/1.45 "Segoe UI",Arial,sans-serif;display:grid;place-items:center}.dialog{width:min(860px,calc(100vw - 48px));background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 24px 80px rgba(0,0,0,.55);overflow:hidden}.head{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--line);background:#11111b}.title{font-weight:650;color:#fff}.path{color:var(--muted);font-size:12px}.preview{padding:16px;background:var(--panel2);border-bottom:1px solid var(--line)}.image{height:460px;border:1px solid var(--line);border-radius:4px;background:linear-gradient(135deg,#2b2b3e,#12121c);position:relative;overflow:hidden}.fake-window{position:absolute;left:72px;top:54px;right:72px;bottom:70px;background:#101018;border:1px solid #34344a;border-radius:5px}.fake-bar{height:38px;border-bottom:1px solid #34344a;display:flex;align-items:center;padding:0 12px;color:#8a8a9a}.fake-content{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}.tile{height:112px;background:#181827;border:1px solid #2a2a3e;border-radius:4px}.selection{position:absolute;left:188px;top:132px;width:356px;height:196px;border:2px solid var(--accent);box-shadow:0 0 0 999px rgba(0,0,0,.48)}.badge{position:absolute;right:12px;bottom:12px;background:#11111b;border:1px solid var(--line);border-radius:4px;color:var(--muted);padding:5px 8px}.foot{display:flex;align-items:center;gap:10px;padding:12px 14px}.hint{color:var(--muted);font-size:12px}.spacer{flex:1}.btn{min-height:34px;padding:0 14px;border-radius:4px;border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit}.btn.save{color:var(--pass);border-color:rgba(127,176,105,.65)}.btn.discard{color:var(--fail);border-color:rgba(212,106,106,.65)}.btn.recap{color:var(--accent);border-color:var(--accent)}.btn:hover{background:#202034;color:var(--text)}</style>
+</head>
+<body>
+  <section class="dialog">
+    <div class="head"><div class="title">Review Region Capture</div><div class="path">workflows/screenshots/run_0424/region_3_2.png</div></div>
+    <div class="preview"><div class="image"><div class="fake-window"><div class="fake-bar">Panda Gallery - live test surface</div><div class="fake-content"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div></div><div class="selection"></div><div class="badge">356 × 196 px</div></div></div>
+    <div class="foot"><div class="hint">Enter saves. Esc discards. Re-capture immediately starts Shift+F12 selection again.</div><div class="spacer"></div><button class="btn discard">Discard</button><button class="btn recap">Re-capture</button><button class="btn save">Save</button></div>
+  </section>
+</body>
+</html>

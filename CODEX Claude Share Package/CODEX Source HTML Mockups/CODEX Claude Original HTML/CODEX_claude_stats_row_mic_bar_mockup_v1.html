@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PG 3c — stats-row MicLevelBar swap mockup v1</title>
+<style>
+  /* All colors pulled from styles.py, mic_device.py, instruction_pane.py. */
+  :root {
+    --pane-bg: #14141f;          /* #InstructionPane background */
+    --stats-bg: #1a1a2e;         /* #instructionPaneStats background */
+    --stats-text: #888;          /* #instructionPaneStats color */
+    --bar-bg: #3a3a3a;           /* MicLevelBar _BG_COLOR */
+    --bar-text: #d8d8d8;         /* MicLevelBar _TEXT_COLOR */
+    --seg-green: #2ecc71;        /* MicLevelBar _SEG_GREEN */
+    --seg-amber: #f39c12;        /* MicLevelBar _SEG_AMBER */
+    --seg-red:   #e74c3c;        /* MicLevelBar _SEG_RED */
+    --dot-red:   #e74c3c;        /* ACTIVE/NO_AUDIO dot */
+    --dot-amber: #f39c12;        /* SILENT/FAILED/DISCONNECTED dot */
+    --title-orange: #e8a87c;     /* #instructionPaneTitle */
+    --muted: #888;
+    --page-bg: #0e0e17;          /* slightly darker than pane for separation */
+    --decision-bg: #1e1e2e;
+    --decision-border: #3a3a5a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px;
+    background: var(--page-bg);
+    color: #e0ddd5;
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  h1 { color: var(--title-orange); margin: 0 0 4px 0; font-size: 20px; }
+  h2 { color: var(--title-orange); margin: 32px 0 12px 0; font-size: 16px;
+       border-bottom: 1px solid #2a2a3e; padding-bottom: 6px; }
+  h3 { color: #c8c5bb; margin: 20px 0 8px 0; font-size: 13px;
+       font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  p.lead { color: #c8c5bb; margin: 0 0 20px 0; max-width: 780px; }
+  .decision {
+    background: var(--decision-bg);
+    border: 1px solid var(--decision-border);
+    border-left: 3px solid var(--title-orange);
+    padding: 10px 14px;
+    margin: 12px 0 20px 0;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #c8c5bb;
+    max-width: 780px;
+  }
+  .decision strong { color: var(--title-orange); }
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
+    gap: 24px 20px;
+    align-items: start;
+  }
+  .col-head {
+    color: #c8c5bb;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .col-sub {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 2px;
+    margin-bottom: 8px;
+  }
+
+  /* Instruction-pane frame mimicry */
+  .pane {
+    background: var(--pane-bg);
+    border: 1px solid #2a2a3e;
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .pane-w-430 { width: 430px; }
+  .pane-w-520 { width: 520px; }
+  .pane-w-700 { width: 700px; }
+
+  .pane-fragment-header {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .pane-fragment-title {
+    color: var(--title-orange);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .pane-fragment-body {
+    color: #c8c5bb;
+    font-size: 12px;
+    padding: 6px 0;
+    margin-bottom: 10px;
+    border-top: 1px dashed #2a2a3e;
+    border-bottom: 1px dashed #2a2a3e;
+    padding: 8px 0;
+  }
+
+  /* Stats row */
+  .stats-row {
+    background: var(--stats-bg);
+    border-radius: 3px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--stats-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Fixed height to prevent row jumping across state changes. */
+    min-height: 30px;
+  }
+  .stats-row .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-red   { background: var(--dot-red); }
+  .dot-amber { background: var(--dot-amber); }
+  .stats-row .text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stats-row .spacer { flex: 1; }
+
+  /* MicLevelBar — pure-CSS imitation of the Qt widget */
+  .level-bar {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    background: var(--bar-bg);
+    border-radius: 2px;
+    padding: 2px 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .level-bar.grow { flex: 1; min-width: 140px; }
+  .level-bar.fixed-200 { width: 200px; }
+  .level-bar .seg {
+    flex: 1;
+    height: 14px;
+    min-width: 3px;
+    border-radius: 1px;
+  }
+  .seg.green { background: var(--seg-green); }
+  .seg.amber { background: var(--seg-amber); }
+  .seg.red   { background: var(--seg-red); }
+  .seg.dim   { opacity: 0.25; }
+  .level-bar .db {
+    color: var(--bar-text);
+    font-family: "Consolas", "Menlo", monospace;
+    font-size: 10px;
+    padding: 0 6px 0 4px;
+    min-width: 50px;
+    text-align: right;
+  }
+
+  /* Annotations */
+  .annotation {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 6px;
+    max-width: 780px;
+    font-style: italic;
+  }
+  .pix-rule {
+    color: #6e6e8a;
+    font-size: 10px;
+    margin-top: 4px;
+    font-family: "Consolas", "Menlo", monospace;
+  }
+  .legend {
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-item .dot { display: inline-block; width: 10px; height: 10px;
+                      border-radius: 50%; }
+  .footnote {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #2a2a3e;
+    max-width: 780px;
+  }
+  code {
+    background: #1a1a2e;
+    color: #e8a87c;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-family: "Consolas", "Menlo", monospace;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Phase 3c — stats-row MicLevelBar swap</h1>
+<p class="lead">
+  Mockup v1. Target: replace the single-QLabel <code>_stats_lbl</code> in
+  <code>InstructionPane</code> with a fixed-height row that renders a
+  <code>MicLevelBar</code> during <code>AudioState.ACTIVE</code> and a text
+  dot in <code>SILENT</code> / <code>DISCONNECTED</code> / <code>FAILED</code>.
+  Row height pinned at 30 px across all states.
+</p>
+
+<div class="decision">
+  <strong>Stats-row text decision for ACTIVE state (Option A, recommended).</strong>
+  During ACTIVE, drop the word &ldquo;Capturing&rdquo; from the stats
+  text. The animating bar communicates &ldquo;capturing&rdquo; more directly
+  than the word. Non-ACTIVE states retain the full phrase because the dot
+  colour carries less information than the bar does.
+  <br>
+  &nbsp;&nbsp;&nbsp;ACTIVE text:     <code>Frames: NNNN &middot; MM:SS</code>
+  <br>
+  &nbsp;&nbsp;&nbsp;Non-ACTIVE text: <code>Capturing &middot; Frames: NNNN &middot; MM:SS</code>
+  (DISCONNECTED overrides with its own copy.)
+</div>
+
+<h2>Width: 430 px (pane MIN_SIZE floor)</h2>
+<p class="annotation">
+  Hardest layout case. Pane inner width = 430 &minus; 32 = 398 px. Bar must
+  hold its 200 px minimum; text column absorbs the rest via
+  <code>flex:&nbsp;1</code> with ellipsis on overflow.
+</p>
+
+<div class="states-grid">
+
+  <div>
+    <div class="col-head">ACTIVE</div>
+    <div class="col-sub">Mic healthy, speech detected</div>
+    <div class="pane pane-w-430">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <div class="level-bar grow">
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <span class="db">-14 dB</span>
+        </div>
+        <span class="text">Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+    <div class="pix-rule">bar grows ~184 px &middot; text ~120 px &middot; margins 32 px &middot; 398 total</div>
+  </div>
+
+  <div>
+    <div class="col-head">SILENT</div>
+    <div class="col-sub">Mic healthy, no speech for &ge;1 s</div>
+    <div class="pane pane-w-430">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Capturing &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+    <div class="pix-rule">dot 10 px &middot; text fits &middot; row height held at 30 px (no jump)</div>
+  </div>
+
+  <div>
+    <div class="col-head">DISCONNECTED</div>
+    <div class="col-sub">Mic unplugged mid-session</div>
+    <div class="pane pane-w-430">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Mic lost &middot; Screenshots only &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+    <div class="pix-rule">text 258 px &middot; fits at 430 px floor &middot; overflow clamped by ellipsis</div>
+  </div>
+
+  <div>
+    <div class="col-head">FAILED</div>
+    <div class="col-sub">Device init error; no stream ever opened</div>
+    <div class="pane pane-w-430">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Capturing &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+    <div class="pix-rule">identical to SILENT (dot colour same, text same)</div>
+  </div>
+
+</div>
+
+<p class="annotation">
+  Same stats-row copy for SILENT and FAILED is intentional &mdash;
+  the user-visible difference is surfaced by the REC label and status-bar
+  transient in workflow_capture.py, not the pane stats row. Consider
+  adding a FAILED-specific suffix in a future iteration if testers can&rsquo;t
+  distinguish the two in practice.
+</p>
+
+
+<h2>Width: 520 px (pane DEFAULT_SIZE)</h2>
+<p class="annotation">
+  Typical usage. Bar grows naturally; text has ~90 px of additional
+  breathing room.
+</p>
+
+<div class="states-grid">
+
+  <div>
+    <div class="col-head">ACTIVE</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-520">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <div class="level-bar grow">
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg amber"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <span class="db">-6 dB</span>
+        </div>
+        <span class="text">Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">SILENT</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-520">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Capturing &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">DISCONNECTED</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-520">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Mic lost &middot; Screenshots only &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">FAILED</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-520">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Capturing &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<h2>Width: 700 px (wide use)</h2>
+<p class="annotation">
+  Bar continues to grow via <code>flex:&nbsp;1</code>. Text block and bar
+  both occupy their natural proportions; no layout change required.
+</p>
+
+<div class="states-grid">
+
+  <div>
+    <div class="col-head">ACTIVE</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-700">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <div class="level-bar grow">
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <span class="db">-18 dB</span>
+        </div>
+        <span class="text">Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">SILENT</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-700">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Capturing &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">DISCONNECTED</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-700">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Mic lost &middot; Screenshots only &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">FAILED</div>
+    <div class="col-sub">&nbsp;</div>
+    <div class="pane pane-w-700">
+      <div class="pane-fragment-header">STEP 3 OF 7</div>
+      <div class="pane-fragment-title">Walk through the save flow</div>
+      <div class="pane-fragment-body">Click File &rarr; Save and verify the dialog&hellip;</div>
+      <div class="stats-row">
+        <span class="dot dot-amber"></span>
+        <span class="text">Capturing &middot; Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<h2>Level transitions (ACTIVE only) &mdash; same 520 px width</h2>
+<p class="annotation">
+  Four snapshots of the bar at different peak levels at 10 Hz update rate.
+  Each bar is 16 segments: segs 0&ndash;9 green, 10&ndash;12 amber,
+  13&ndash;15 red (mic_device.py <code>_segment_color</code>). Dimmed
+  segments use alpha 64/255 on the same colour.
+</p>
+
+<div style="display: grid; grid-template-columns: repeat(4, max-content); gap: 20px;">
+
+  <div>
+    <div class="col-head">-40 dB (quiet)</div>
+    <div class="pane pane-w-520" style="padding: 14px 16px;">
+      <div class="stats-row">
+        <div class="level-bar grow">
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <span class="db">-40 dB</span>
+        </div>
+        <span class="text">Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">-18 dB (speaking)</div>
+    <div class="pane pane-w-520" style="padding: 14px 16px;">
+      <div class="stats-row">
+        <div class="level-bar grow">
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green dim"></div>
+          <div class="seg green dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <span class="db">-18 dB</span>
+        </div>
+        <span class="text">Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">-6 dB (loud)</div>
+    <div class="pane pane-w-520" style="padding: 14px 16px;">
+      <div class="stats-row">
+        <div class="level-bar grow">
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg amber"></div>
+          <div class="seg amber"></div>
+          <div class="seg amber dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <div class="seg red dim"></div>
+          <span class="db">-6 dB</span>
+        </div>
+        <span class="text">Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-head">0 dB (clipping)</div>
+    <div class="pane pane-w-520" style="padding: 14px 16px;">
+      <div class="stats-row">
+        <div class="level-bar grow">
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg green"></div>
+          <div class="seg amber"></div>
+          <div class="seg amber"></div>
+          <div class="seg amber"></div>
+          <div class="seg red"></div>
+          <div class="seg red"></div>
+          <div class="seg red"></div>
+          <span class="db">0 dB</span>
+        </div>
+        <span class="text">Frames: 28 &middot; 2:47</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="dot dot-red"></span> ACTIVE / NO_AUDIO dot (unused in new design)</div>
+  <div class="legend-item"><span class="dot dot-amber"></span> SILENT / DISCONNECTED / FAILED dot</div>
+</div>
+
+<p class="footnote">
+  <strong>Implementation notes baked into this mockup</strong><br>
+  &bull; Row height pinned at 30 px via <code>min-height</code> on
+  <code>.stats-row</code>. In Qt, use a fixed-height container or set
+  <code>setFixedHeight(30)</code> on a QFrame that holds the HBoxLayout.<br>
+  &bull; MicLevelBar uses <code>flex: 1</code> with <code>min-width: 140 px</code>
+  below its Qt-side 200 px minimumSizeHint, because the stats-row layout
+  also has a text column that must coexist. In Qt, set the bar's
+  stretch factor to 1 in the HBoxLayout and leave its minimumSizeHint
+  at 200 px &mdash; the layout will honor minimumSizeHint.<br>
+  &bull; Text column uses <code>flex: 1; min-width: 0; text-overflow: ellipsis</code>
+  so long DISCONNECTED copy truncates gracefully if the user drags the
+  pane to below MIN_SIZE.<br>
+  &bull; ACTIVE state hides the dot widget (<code>setVisible(False)</code>)
+  and shows the bar; non-ACTIVE hides the bar and shows the dot. The
+  text label updates copy in both branches.<br>
+  &bull; Non-ACTIVE states share the amber dot intentionally. In a future
+  iteration we might differentiate FAILED (solid red dot?) &mdash; defer.
+</p>
+
+</body>
+</html>

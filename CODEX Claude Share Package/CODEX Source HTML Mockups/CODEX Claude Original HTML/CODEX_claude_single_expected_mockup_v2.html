@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery — Single-Expected Step Mockup v2 (filler placement)</title>
+<style>
+  :root {
+    --bg-deep:     #14141f;
+    --bg-pane:     #1a1a2e;
+    --bg-hover:    #22223a;
+    --border:      #2a2a3e;
+    --border-soft: #232336;
+    --text:        #e0ddd5;
+    --text-dim:    #6a6a78;
+    --text-muted:  #888;
+    --accent:      #e8a87c;
+    --accent-dim:  #d4945a;
+    --ok:          #5ab87a;
+    --ok-soft:     rgba(90, 184, 122, 0.10);
+    --ok-border:   rgba(90, 184, 122, 0.55);
+    --fail:        #d46a6a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0d0d18; color: var(--text);
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    font-size: 13px; line-height: 1.4;
+  }
+  .page { padding: 32px 24px 80px; max-width: 1800px; margin: 0 auto; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: var(--text); }
+  .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  h2 {
+    font-size: 14px; font-weight: 600;
+    margin: 36px 0 12px; color: var(--text);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  .problem {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--fail);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 28px;
+  }
+  .problem .tag {
+    font-size: 10px; color: var(--fail);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  .problem p { margin: 6px 0; color: var(--text); font-size: 13px; }
+  .problem b { color: var(--text); }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .col-head {
+    font-size: 12px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 10px; font-weight: 600;
+  }
+  .layout-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--accent);
+    color: #14141f;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 11px;
+    margin-right: 6px;
+  }
+  .layout-tag.b { background: var(--ok); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PANE — fixed height to demonstrate vertical rhythm.
+     ═══════════════════════════════════════════════════════════════ */
+  .pane {
+    background: #14141f;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex; flex-direction: column;
+    height: 620px;
+    width: 420px;
+  }
+
+  .pane-title {
+    padding: 10px 14px 8px;
+    display: flex; justify-content: flex-end; align-items: center;
+    flex-shrink: 0;
+  }
+  .pane-title .help {
+    width: 22px; height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    color: var(--text-muted);
+    font-size: 12px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+
+  .progress {
+    font-size: 11px; color: var(--text-muted);
+    letter-spacing: 0.5px;
+    padding: 0 16px;
+  }
+  .step-title {
+    font-size: 15px; font-weight: 600;
+    color: var(--accent);
+    padding: 4px 16px 10px;
+  }
+
+  .context {
+    margin: 0 16px 14px;
+    padding: 8px 10px;
+    background-color: var(--bg-pane);
+    border-left: 3px solid #2a2a4e;
+    font-size: 12px; color: var(--text-muted);
+    line-height: 1.45;
+    flex-shrink: 0;
+  }
+
+  /* Body — natural height, scroll if overflow */
+  .body {
+    flex: 0 0 auto;
+    padding: 0 16px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* Spacer — THE variable: placement differs between A and B */
+  .spacer {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* Visual spacer-region marker so the reader can see where the void is */
+  .spacer-marked {
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(232, 168, 124, 0.06),
+      rgba(232, 168, 124, 0.06) 6px,
+      transparent 6px,
+      transparent 14px);
+    border-top: 1px dashed rgba(232, 168, 124, 0.18);
+    border-bottom: 1px dashed rgba(232, 168, 124, 0.18);
+    position: relative;
+  }
+  .spacer-marked::after {
+    content: "flex: 1 spacer";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    color: rgba(232, 168, 124, 0.5);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .expected {
+    margin: 0 16px 14px;
+    padding: 10px 12px;
+    background-color: var(--bg-pane);
+    border-left: 3px solid var(--ok);
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .expected .hdr {
+    font-size: 10px; color: var(--text-muted);
+    font-weight: 700; letter-spacing: 1.2px;
+    margin-bottom: 4px;
+  }
+  .expected .body-text {
+    font-size: 13px; color: #c8c5bb;
+    line-height: 1.5;
+  }
+
+  .btn-row {
+    padding: 10px 16px 14px;
+    display: flex; gap: 8px; justify-content: flex-end;
+    flex-shrink: 0;
+  }
+  .btn {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 14px; border-radius: 3px;
+    background-color: transparent;
+    cursor: pointer; white-space: nowrap;
+    line-height: 1.2;
+  }
+  .btn-neutral {
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    min-width: 70px;
+  }
+  .btn-back { min-width: 72px; }
+  .btn-pass {
+    color: var(--ok);
+    border: 1px solid var(--ok-border);
+    padding: 6px 18px;
+    min-width: 76px;
+  }
+  .btn-fail {
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 6px 18px;
+    min-width: 72px;
+  }
+
+  .caption {
+    font-size: 11px;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .caption b { color: var(--text); }
+  .caption.a { color: #c8c5bb; border-left: 2px solid var(--accent); padding-left: 10px; }
+  .caption.b { color: #c8c5bb; border-left: 2px solid var(--ok); padding-left: 10px; }
+
+  .row-break { margin: 40px 0 8px; }
+
+  .decision {
+    margin: 36px 0 0;
+    padding: 16px 20px;
+    border-left: 3px solid var(--accent);
+    background: rgba(232, 168, 124, 0.05);
+    border-radius: 4px;
+  }
+  .decision-hdr {
+    font-size: 11px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 700; margin-bottom: 8px;
+  }
+  .decision p { margin: 6px 0; font-size: 13px; color: var(--text); }
+  .decision ul { margin: 8px 0 0; padding-left: 22px; }
+  .decision li { margin: 4px 0; font-size: 13px; color: var(--text); }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Single-expected step — filler placement v2</h1>
+  <div class="sub">Choosing where the <code>flex: 1</code> spacer goes when body content is short vs. medium. Informed by live-testing screenshots showing the v1 mockup only drew the short-body case.</div>
+
+  <div class="problem">
+    <div class="tag">The conflict that surfaced</div>
+    <p><b>v1 mockup (shipped in v3.66):</b> spacer between body and EXPECTED. EXPECTED pinned to bottom of pane, just above button row. Works great for short body text.</p>
+    <p><b>Live testing with B1 / B2 (medium-length body):</b> the spacer creates a <b>visible gap between body and EXPECTED</b>. The user reads this as "wasted space" identical to the original G1/G4 bug — we just relocated the void.</p>
+    <p><b>Root question:</b> where should the absorbed void go — above EXPECTED, or below EXPECTED?</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SHORT BODY — Layout A and B side-by-side
+       ═══════════════════════════════════════════════════════════════ -->
+  <h2>Short body (A1 — "Look at the pane")</h2>
+
+  <div class="grid2">
+    <!-- A: spacer BEFORE expected (current v3.66) -->
+    <div>
+      <div class="col-head"><span class="layout-tag">A</span> Current v3.66 — spacer above EXPECTED</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · A1</div>
+        <div class="step-title">A1 — Single-expected regression</div>
+        <div class="body">
+          <b>SETUP:</b> Look at the pane.<br>
+          <b>ACTION:</b> Verify the layout.
+        </div>
+        <div class="spacer spacer-marked"></div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">You see a progress line, a body paragraph, and a green-left-border EXPECTED block.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption a">
+        Body hugs the top. Void absorbs between body and EXPECTED. <b>EXPECTED sits just above button row</b> — reader's eye drops from title to body to (visual void) to EXPECTED to PASS/FAIL.
+      </div>
+    </div>
+
+    <!-- B: spacer AFTER expected (proposed) -->
+    <div>
+      <div class="col-head"><span class="layout-tag b">B</span> Proposed — spacer below EXPECTED</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · A1</div>
+        <div class="step-title">A1 — Single-expected regression</div>
+        <div class="body">
+          <b>SETUP:</b> Look at the pane.<br>
+          <b>ACTION:</b> Verify the layout.
+        </div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">You see a progress line, a body paragraph, and a green-left-border EXPECTED block.</div>
+        </div>
+        <div class="spacer spacer-marked"></div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption b">
+        Body and EXPECTED clump at the top. Void absorbs between EXPECTED and button row. <b>EXPECTED hugs body</b> — reader's eye gets all content grouped, then a void, then the action buttons.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MEDIUM BODY — the real-world case
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="row-break"></div>
+  <h2>Medium body (B1 — "Toggle OFF hides pane from captures")</h2>
+
+  <div class="grid2">
+    <!-- A: spacer BEFORE expected (current v3.66) -->
+    <div>
+      <div class="col-head"><span class="layout-tag">A</span> Current v3.66 — spacer above EXPECTED</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · B1</div>
+        <div class="step-title">B1 — Toggle OFF hides pane from captures (default preserved)</div>
+        <div class="context">
+          v3.65.2 unblocks checklist glitch screenshotting ONLY when toggled on. This test verifies: default-off preserves pre-#95 always-hidden behavior, persistence works on Close, and Esc reverts. Step 1 (toggle-on + screenshot) already verified manually.
+        </div>
+        <div class="body">
+          <b>SETUP:</b> Open Testing Settings (menu) → Pane tab. Untick 'Show pane in screenshots and recordings' if it is currently ticked. Click Close.<br>
+          <b>ACTION:</b> Press Win+Shift+S and drag a rectangle that includes this Instruction Pane. Paste the capture into any viewer (clipboard thumbnail is fine).
+        </div>
+        <div class="spacer spacer-marked"></div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">The captured image shows the PG window and desktop behind the pane, but the pane itself is ABSENT from the capture — a pane-shaped rectangle shows whatever was behind it. Default-off behavior is preserved.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption a">
+        <b>The user's complaint.</b> SETUP + ACTION fills the body naturally. Spacer then pushes EXPECTED away from the body — there's a <b>visible gap between body content and EXPECTED</b>. Reader sees two disconnected content blobs separated by empty space. "Wasted space" reading.
+      </div>
+    </div>
+
+    <!-- B: spacer AFTER expected (proposed) -->
+    <div>
+      <div class="col-head"><span class="layout-tag b">B</span> Proposed — spacer below EXPECTED</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · B1</div>
+        <div class="step-title">B1 — Toggle OFF hides pane from captures (default preserved)</div>
+        <div class="context">
+          v3.65.2 unblocks checklist glitch screenshotting ONLY when toggled on. This test verifies: default-off preserves pre-#95 always-hidden behavior, persistence works on Close, and Esc reverts. Step 1 (toggle-on + screenshot) already verified manually.
+        </div>
+        <div class="body">
+          <b>SETUP:</b> Open Testing Settings (menu) → Pane tab. Untick 'Show pane in screenshots and recordings' if it is currently ticked. Click Close.<br>
+          <b>ACTION:</b> Press Win+Shift+S and drag a rectangle that includes this Instruction Pane. Paste the capture into any viewer (clipboard thumbnail is fine).
+        </div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">The captured image shows the PG window and desktop behind the pane, but the pane itself is ABSENT from the capture — a pane-shaped rectangle shows whatever was behind it. Default-off behavior is preserved.</div>
+        </div>
+        <div class="spacer spacer-marked"></div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption b">
+        Body and EXPECTED stay <b>tight together as one content group</b>. Reader's eye flows naturally: setup → action → expected result. Void appears once, below EXPECTED, above the button row. No gap inside the content.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       LONG BODY — overflow sanity check
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="row-break"></div>
+  <h2>Long body (hypothetical — body fills most of pane)</h2>
+
+  <div class="grid2">
+    <div>
+      <div class="col-head"><span class="layout-tag">A</span> Current v3.66 — spacer above EXPECTED</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 4 of 5 · D1</div>
+        <div class="step-title">D1 — Multi-step verification with expanded context</div>
+        <div class="body">
+          <b>SETUP:</b> Open Testing Settings → Session tab. Confirm the Microphone dropdown lists your attached input device. Select it. Confirm the level meter reacts when you speak. Click the Test clip button to play the reference tone. Confirm you hear audio on your system output. If the meter does not react, check Windows sound settings for Privacy &gt; Microphone access.<br>
+          <b>ACTION:</b> Close Testing Settings. Start a workflow recording via Ctrl+Alt+R. Speak for 5 seconds. Stop recording via Ctrl+Alt+S. Navigate to the session folder shown in the status bar and verify both the video file and the audio file are present with nonzero size. Check that the audio file matches your narration.
+        </div>
+        <div class="spacer spacer-marked"></div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">Session folder contains workflow.mp4 and workflow.wav, both nonzero. Audio playback matches your spoken narration.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption a">
+        When body is very long, spacer collapses toward zero — both layouts converge. A and B look identical here. The tradeoff only matters for short-to-medium bodies.
+      </div>
+    </div>
+
+    <div>
+      <div class="col-head"><span class="layout-tag b">B</span> Proposed — spacer below EXPECTED</div>
+      <div class="pane">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 4 of 5 · D1</div>
+        <div class="step-title">D1 — Multi-step verification with expanded context</div>
+        <div class="body">
+          <b>SETUP:</b> Open Testing Settings → Session tab. Confirm the Microphone dropdown lists your attached input device. Select it. Confirm the level meter reacts when you speak. Click the Test clip button to play the reference tone. Confirm you hear audio on your system output. If the meter does not react, check Windows sound settings for Privacy &gt; Microphone access.<br>
+          <b>ACTION:</b> Close Testing Settings. Start a workflow recording via Ctrl+Alt+R. Speak for 5 seconds. Stop recording via Ctrl+Alt+S. Navigate to the session folder shown in the status bar and verify both the video file and the audio file are present with nonzero size. Check that the audio file matches your narration.
+        </div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">Session folder contains workflow.mp4 and workflow.wav, both nonzero. Audio playback matches your spoken narration.</div>
+        </div>
+        <div class="spacer spacer-marked"></div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption b">
+        Long-body convergence applies identically.
+      </div>
+    </div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-hdr">Decision needed</div>
+    <p><b>Layout A</b> — keep current v3.66 behavior. EXPECTED pinned to bottom. Medium-body steps show a visible gap between body and EXPECTED (the "wasted space" complaint).</p>
+    <p><b>Layout B</b> — change to spacer-below. EXPECTED hugs body. Void goes below EXPECTED above buttons. Content stays grouped regardless of body length.</p>
+    <ul>
+      <li>If we pick <b>A</b>: no code change. Ship G5 (button parity) alone. Tell the user the medium-body gap is intentional per the mockup.</li>
+      <li>If we pick <b>B</b>: one-line code change (move <code>_body_filler</code> from between body and expected to after expected). Update v1 mockup to match. Ship with G5.</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

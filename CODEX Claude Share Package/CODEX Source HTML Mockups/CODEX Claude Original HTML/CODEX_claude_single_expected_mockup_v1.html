@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery — Single-Expected Step Mockup v1</title>
+<style>
+  :root {
+    --bg-deep:     #14141f;
+    --bg-pane:     #1a1a2e;
+    --bg-hover:    #22223a;
+    --border:      #2a2a3e;
+    --border-soft: #232336;
+    --text:        #e0ddd5;
+    --text-dim:    #6a6a78;
+    --text-muted:  #888;
+    --accent:      #e8a87c;
+    --accent-dim:  #d4945a;
+    --ok:          #5ab87a;
+    --ok-soft:     rgba(90, 184, 122, 0.10);
+    --ok-border:   rgba(90, 184, 122, 0.55);
+    --fail:        #d46a6a;
+    --pause-on:    #f39c12;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0d0d18; color: var(--text);
+    font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    font-size: 13px; line-height: 1.4;
+  }
+  .page { padding: 32px 24px 80px; max-width: 1800px; margin: 0 auto; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: var(--text); }
+  .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  h2 {
+    font-size: 14px; font-weight: 600;
+    margin: 36px 0 12px; color: var(--text);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  .constraints {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 28px;
+  }
+  .constraints .tag {
+    font-size: 10px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  .constraints code {
+    background: var(--bg-deep); padding: 1px 6px; border-radius: 3px;
+    font-family: "Consolas", "Menlo", monospace; font-size: 12px;
+    color: var(--accent);
+  }
+  .constraints ul { margin: 6px 0 0; padding-left: 22px; }
+  .constraints li { margin: 4px 0; color: var(--text-muted); }
+  .constraints li b { color: var(--text); }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .grid3 {
+    display: grid;
+    grid-template-columns: 320px 420px 600px;
+    gap: 32px; align-items: start;
+  }
+  .col-head {
+    font-size: 12px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 10px; font-weight: 600;
+  }
+  .state-label {
+    font-size: 11px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600; margin: 28px 0 8px;
+  }
+  .state-label:first-child { margin-top: 0; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PANE — fixed height to demonstrate vertical rhythm.
+     ═══════════════════════════════════════════════════════════════ */
+  .pane {
+    background: #14141f;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex; flex-direction: column;
+    height: 560px;
+    min-width: 380px;
+  }
+  .pane.narrow { min-width: 320px; width: 320px; }
+  .pane.default { width: 420px; }
+  .pane.wide { width: 600px; }
+
+  /* Title bar */
+  .pane-title {
+    padding: 10px 14px 8px;
+    display: flex; justify-content: flex-end; align-items: center;
+    flex-shrink: 0;
+  }
+  .pane-title .help {
+    width: 22px; height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    color: var(--text-muted);
+    font-size: 12px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+
+  /* Progress + title */
+  .progress {
+    font-size: 11px; color: var(--text-muted);
+    letter-spacing: 0.5px;
+    padding: 0 16px;
+  }
+  .step-title {
+    font-size: 15px; font-weight: 600;
+    color: var(--accent);
+    padding: 4px 16px 10px;
+  }
+
+  /* Context block */
+  .context {
+    margin: 0 16px 14px;
+    padding: 8px 10px;
+    background-color: var(--bg-pane);
+    border-left: 3px solid #2a2a4e;
+    font-size: 12px; color: var(--text-muted);
+    line-height: 1.45;
+  }
+
+  /* Body area — scroll if overflow, natural height otherwise */
+  .body {
+    flex: 0 0 auto;            /* KEY CHANGE vs current: no stretch */
+    padding: 0 16px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    max-height: 40%;           /* scroll if it grows huge */
+    overflow-y: auto;
+  }
+  .body.long { max-height: 200px; }  /* demo long state */
+
+  /* Stretch absorber — the fix for G1/G4 wasted space */
+  .spacer {
+    flex: 1 1 auto;
+    min-height: 8px;
+  }
+
+  /* EXPECTED block */
+  .expected {
+    margin: 0 16px 14px;
+    padding: 10px 12px;
+    background-color: var(--bg-pane);
+    border-left: 3px solid var(--ok);
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .expected .hdr {
+    font-size: 10px; color: var(--text-muted);
+    font-weight: 700; letter-spacing: 1.2px;
+    margin-bottom: 4px;
+  }
+  .expected .body-text {
+    font-size: 13px; color: #c8c5bb;
+    line-height: 1.5;
+  }
+
+  /* Bottom button bar — ALL OUTLINED, no solid fills */
+  .btn-row {
+    padding: 10px 16px 14px;
+    display: flex; gap: 8px; justify-content: flex-end;
+    flex-shrink: 0;
+    border-top: 1px solid transparent;
+  }
+  .btn {
+    font-family: inherit;
+    font-size: 12px; font-weight: 600;
+    padding: 6px 14px; border-radius: 3px;
+    background-color: transparent;
+    cursor: pointer; white-space: nowrap;
+    line-height: 1.2;
+  }
+  .btn-neutral {
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    min-width: 70px;
+  }
+  .btn-neutral:hover {
+    background-color: var(--bg-hover);
+    color: var(--text);
+    border-color: var(--text-dim);
+  }
+  .btn-back { min-width: 72px; }
+  .btn-pass {
+    color: var(--ok);
+    border: 1px solid var(--ok-border);
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 76px;
+  }
+  .btn-pass:hover {
+    background-color: var(--ok-soft);
+    border-color: var(--ok);
+  }
+  .btn-fail {
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 6px 18px;
+    min-width: 72px;
+  }
+  .btn-fail:hover {
+    background-color: rgba(232, 168, 124, 0.1);
+  }
+  .btn-paused {
+    color: var(--pause-on) !important;
+    border-color: var(--pause-on) !important;
+  }
+
+  /* "Current live" panel shown for diff — has the bug visible */
+  .pane.buggy .body { flex: 1 1 auto; max-height: none; }
+  .pane.buggy .spacer { display: none; }
+  .pane.buggy .btn-pass-solid {
+    background-color: var(--ok);
+    color: white;
+    border: 1px solid var(--ok);
+  }
+
+  .caption {
+    font-size: 11px; color: var(--text-dim);
+    margin-top: 8px; text-align: center;
+    font-style: italic;
+  }
+  .caption.bad { color: var(--fail); }
+  .caption.good { color: var(--ok); }
+
+  .callout {
+    margin: 24px 0;
+    padding: 12px 16px;
+    border-left: 3px solid var(--ok);
+    background: rgba(90, 184, 122, 0.06);
+    border-radius: 4px;
+  }
+  .callout-hdr {
+    font-size: 11px; color: var(--ok);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 700; margin-bottom: 4px;
+  }
+  .callout p { margin: 4px 0; font-size: 13px; color: var(--text); }
+  .callout code {
+    background: var(--bg-deep); padding: 1px 6px; border-radius: 3px;
+    font-family: Consolas, Menlo, monospace; font-size: 12px;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Single-expected step layout — mockup v1</h1>
+  <div class="sub">Fix for G1/G4 (wasted vertical space) + G2 (button style) + G3 (narrow-resize button truncation).</div>
+
+  <!-- Constraints callout -->
+  <div class="constraints">
+    <div class="tag">What this mockup locks in</div>
+    <ul>
+      <li><b>Body gets NO vertical stretch.</b> Uses <code>flex: 0 0 auto</code> + <code>max-height: 40%</code>. Only scrolls if content actually overflows.</li>
+      <li><b>Spacer absorbs empty space.</b> A <code>flex: 1 1 auto</code> element between body and EXPECTED pushes EXPECTED + button row to the bottom of the pane. Content top, void middle, buttons bottom. Predictable.</li>
+      <li><b>All bottom-bar buttons are outlined — no solid fills.</b> PASS becomes green-outline (was solid green). FAIL stays amber-outline. Cancel/Pause/Back stay neutral-outline. Entire pane speaks one visual vocabulary.</li>
+      <li><b>PASS and FAIL get <code>setMinimumWidth(76)</code> and <code>setMinimumWidth(72)</code>.</b> Prevents the G3 narrow-resize truncation.</li>
+      <li><b>Pane <code>MIN_SIZE</code> width bumps from 320 → 380.</b> Five outlined buttons at their floor widths + margins need 380 to fit without overlap.</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION 1: Before vs After (G1/G4 - wasted space)
+       ═══════════════════════════════════════════════════════════════ -->
+  <h2>1. Wasted vertical space — before vs after</h2>
+
+  <div class="grid2">
+    <!-- BEFORE -->
+    <div>
+      <div class="col-head">Before (current v3.66) — G1 / G4</div>
+      <div class="pane buggy default">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · A1</div>
+        <div class="step-title">A1 — Single-expected regression</div>
+        <div class="context">Verifying v3.65.2 checklist step kind: schema validation passed, single-expected renders unchanged.</div>
+        <div class="body">
+          <b>SETUP:</b> Look at the pane.<br>
+          <b>ACTION:</b> Verify this step still renders the v3.65 single-expected layout — no checklist view visible.
+        </div>
+        <!-- No spacer in buggy variant: body eats all stretch, EXPECTED ends up far from top -->
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">
+            You see a progress line 'Step 1 of 3 · A1', a body paragraph, a green-left-border EXPECTED block.
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass-solid" style="padding: 7px 18px; font-size: 13px; font-weight: 600; border-radius: 3px;">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption bad">Body QScrollArea has stretch=1. EXPECTED floats halfway down because the scroll area eats vertical space even when body text is short. PASS is solid green — inconsistent with FAIL's outlined style.</div>
+    </div>
+
+    <!-- AFTER -->
+    <div>
+      <div class="col-head">After — fix target</div>
+      <div class="pane default">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · A1</div>
+        <div class="step-title">A1 — Single-expected regression</div>
+        <div class="context">Verifying v3.65.2 checklist step kind: schema validation passed, single-expected renders unchanged.</div>
+        <div class="body">
+          <b>SETUP:</b> Look at the pane.<br>
+          <b>ACTION:</b> Verify this step still renders the v3.65 single-expected layout — no checklist view visible.
+        </div>
+        <div class="spacer"></div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">
+            You see a progress line 'Step 1 of 3 · A1', a body paragraph, a green-left-border EXPECTED block.
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption good">Body natural height only. Spacer absorbs empty space between body and EXPECTED. EXPECTED sits just above the button row. PASS is outlined green — matches FAIL's visual vocabulary. Entire pane is one consistent language.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION 2: Button-style zoom - G2 clarification
+       ═══════════════════════════════════════════════════════════════ -->
+  <h2>2. Button style — G2 outlined-only vocabulary</h2>
+
+  <div class="grid2">
+    <div>
+      <div class="col-head">Before — mixed vocabulary</div>
+      <div style="padding: 24px; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 6px;">
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass-solid" style="padding: 7px 18px; font-size: 13px; font-weight: 600; border-radius: 3px;">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption bad">PASS solid green, others outlined — visually inconsistent.</div>
+    </div>
+    <div>
+      <div class="col-head">After — all outlined</div>
+      <div style="padding: 24px; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 6px;">
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption good">One visual vocabulary. PASS hover fills with faint green tint instead of solid.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION 3: Width states — G3 narrow-resize fix
+       ═══════════════════════════════════════════════════════════════ -->
+  <h2>3. Width states — button row does not truncate</h2>
+
+  <div class="grid3">
+    <div>
+      <div class="col-head">320 px — MIN_SIZE floor, fits all buttons</div>
+      <div class="pane narrow" style="height: 400px;">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · A1</div>
+        <div class="step-title">A1 — Regression</div>
+        <div class="body">
+          <b>SETUP:</b> Look at the pane.<br>
+          <b>ACTION:</b> Verify layout.
+        </div>
+        <div class="spacer"></div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">Progress, title, body, EXPECTED, buttons.</div>
+        </div>
+        <div class="btn-row" style="padding: 10px 10px 12px;">
+          <button class="btn btn-neutral" style="min-width: 60px;">Cancel</button>
+          <button class="btn btn-neutral" style="min-width: 60px;">Pause</button>
+          <button class="btn btn-neutral btn-back" style="min-width: 60px;">← Back</button>
+          <button class="btn btn-pass" style="min-width: 60px; padding: 7px 12px;">PASS</button>
+          <button class="btn btn-fail" style="min-width: 60px; padding: 6px 12px;">FAIL</button>
+        </div>
+      </div>
+      <div class="caption">NOTE: 320 px was the old MIN_SIZE — this mockup shows buttons can JUST fit at this width with reduced padding. Recommendation: raise MIN_SIZE to 380 so default padding works.</div>
+    </div>
+
+    <div>
+      <div class="col-head">380 px — new MIN_SIZE, comfortable fit</div>
+      <div class="pane" style="width: 380px; height: 400px;">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · A1</div>
+        <div class="step-title">A1 — Regression</div>
+        <div class="body">
+          <b>SETUP:</b> Look at the pane.<br>
+          <b>ACTION:</b> Verify layout.
+        </div>
+        <div class="spacer"></div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">Progress, title, body, EXPECTED, buttons.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption good">Default padding. No truncation. Pane min width = 380 px.</div>
+    </div>
+
+    <div>
+      <div class="col-head">600 px — wide, same layout</div>
+      <div class="pane wide" style="height: 400px;">
+        <div class="pane-title"><div class="help">?</div></div>
+        <div class="progress">Step 1 of 3 · A1</div>
+        <div class="step-title">A1 — Single-expected regression</div>
+        <div class="body">
+          <b>SETUP:</b> Look at the pane.<br>
+          <b>ACTION:</b> Verify layout.
+        </div>
+        <div class="spacer"></div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="body-text">Progress, title, body, green-border EXPECTED block, outlined button row.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-neutral">Cancel</button>
+          <button class="btn btn-neutral">Pause</button>
+          <button class="btn btn-neutral btn-back">← Back</button>
+          <button class="btn btn-pass">PASS</button>
+          <button class="btn btn-fail">FAIL</button>
+        </div>
+      </div>
+      <div class="caption good">Extra horizontal room. Same vertical layout scheme.</div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="callout">
+    <div class="callout-hdr">Code changes this locks in</div>
+    <p>1. <code>MIN_SIZE = (380, 320)</code> — up from 320 width.</p>
+    <p>2. <code>button_row</code>: add <code>self._pass_btn.setMinimumWidth(76)</code>, <code>self._fail_btn.setMinimumWidth(72)</code>.</p>
+    <p>3. QSS <code>#instructionPanePass</code>: swap solid-fill rule for outlined rule — <code>background-color: transparent; color: #5ab87a; border: 1px solid rgba(90,184,122,0.55);</code>. Hover: <code>background-color: rgba(90,184,122,0.10); border-color: #5ab87a;</code>. Pressed: deeper tint.</p>
+    <p>4. <code>root.addWidget(self._body_scroll, 1)</code> → <code>root.addWidget(self._body_scroll, 0)</code> (stretch removed) AND <code>self._body_scroll.setMaximumHeight(...)</code> or equivalent <code>SizePolicy</code> tweak so body doesn't expand indefinitely. Add <code>root.addStretch(1)</code> between body-scroll and EXPECTED so extra space absorbs there.</p>
+  </div>
+
+</div>
+</body>
+</html>

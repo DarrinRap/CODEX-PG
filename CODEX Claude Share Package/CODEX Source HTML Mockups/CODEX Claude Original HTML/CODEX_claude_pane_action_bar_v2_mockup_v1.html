@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pane action bar v2 — #124 + #125 bundle — mockup v1</title>
+<style>
+:root {
+  --bg:         #14141f;
+  --bg-2:       #1a1a2e;
+  --bg-3:       #22223a;
+  --border:     #2a2a3e;
+  --border-2:   #2a2a4e;
+  --text:       #e0ddd5;
+  --text-dim:   #888;
+  --text-dimmer:#555;
+  --peach:      #e8a87c;
+  --peach-dark: #d4945a;
+  --green:      #5ab87a;
+  --amber:      #e8a87c;
+  --red:        #d46a6a;
+  --gray:       #8a8a9a;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0b0b12;
+  color: var(--text);
+  font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.page {
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 32px 24px 120px;
+}
+h1 {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.subtitle {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0 0 32px;
+  max-width: 900px;
+}
+.subtitle code {
+  background: #1a1a2e;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #c8c5bb;
+  font-size: 12px;
+}
+h2 {
+  color: var(--peach);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 48px 0 4px;
+  letter-spacing: 0.3px;
+}
+h2 .ticket {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 8px;
+  letter-spacing: 0;
+}
+.section-note {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin: 0 0 20px;
+  max-width: 880px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.col-note {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+.col-note .width {
+  color: var(--peach);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12px;
+}
+.frame {
+  background: #0f0f19;
+  border: 1px dashed #2a2a3e;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+/* ---------- Pane ---------- */
+.pane {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+}
+.pane.w600 { width: 600px; }
+.pane.w440 { width: 440px; }
+.pane.w380 { width: 380px; }
+
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.progress {
+  flex: 1;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+.about {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  border: 1px solid var(--border-2);
+  color: var(--text-dim);
+  background: transparent;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+.title {
+  color: var(--peach);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+}
+.context {
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border-left: 3px solid var(--border-2);
+}
+.body {
+  color: var(--text);
+  font-size: 13px;
+  padding: 4px 0;
+}
+.expected {
+  background: var(--bg-2);
+  border-left: 3px solid var(--green);
+  border-radius: 3px;
+  padding: 6px 10px 8px;
+}
+.expected .hdr {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+.expected .ebody {
+  color: #c8c5bb;
+  font-size: 13px;
+  margin-top: 2px;
+}
+.action-marker {
+  background: var(--bg-2);
+  border-left: 3px solid var(--amber);
+  border-radius: 3px;
+  padding: 6px 10px 8px;
+}
+.action-marker .hdr {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+.action-marker .ebody {
+  color: #c8c5bb;
+  font-size: 13px;
+  margin-top: 2px;
+  font-style: italic;
+}
+.summary {
+  color: var(--text-dim);
+  font-size: 12px;
+  background: var(--bg-2);
+  padding: 6px 12px;
+  border-radius: 4px;
+  align-self: flex-end;
+  display: inline-block;
+}
+.summary .sep { color: var(--border-2); margin: 0 6px; }
+.summary .sp   { color: var(--green); }
+.summary .sf   { color: var(--peach); }
+.summary .ss   { color: var(--gray); }
+
+/* ---------- Action bar ---------- */
+.abar {
+  display: flex;
+  gap: 10px;
+}
+.abar.two-row {
+  flex-direction: column;
+  gap: 8px;
+}
+.abar .nav {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+.abar .act {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.abar.one-row {
+  flex-direction: row;
+  align-items: center;
+}
+.abar.one-row .nav { flex: 1; }
+.abar.one-row .act { flex: 0 0 auto; }
+
+.btn {
+  padding: 8px 16px;
+  min-height: 32px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-2);
+  color: var(--text-dim);
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.btn.cancel, .btn.pause, .btn.back {
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+.btn.pass {
+  color: var(--green);
+  border: 1px solid rgba(90, 184, 122, 0.55);
+  min-width: 84px;
+}
+.btn.fail {
+  color: var(--peach);
+  border: 1px solid var(--peach);
+  min-width: 80px;
+}
+.btn.skip {
+  color: var(--gray);
+  border: 1px solid rgba(138, 138, 154, 0.55);
+  min-width: 78px;
+}
+.btn.next {
+  color: var(--bg);
+  background: var(--peach);
+  border: 1px solid var(--peach);
+  font-weight: 600;
+  min-width: 80px;
+}
+.btn.ack-neutral {
+  color: var(--text);
+  border: 1px solid var(--border-2);
+  min-width: 140px;
+}
+.btn.ack-primary {
+  color: var(--bg);
+  background: var(--peach);
+  border: 1px solid var(--peach);
+  font-weight: 600;
+  min-width: 140px;
+}
+.btn.ack-continue {
+  color: var(--bg);
+  background: var(--peach);
+  border: 1px solid var(--peach);
+  font-weight: 600;
+  min-width: 110px;
+}
+.btn.disabled {
+  color: var(--text-dimmer);
+  border-color: var(--border-2);
+}
+.btn .kbd {
+  opacity: 0.55;
+  font-size: 10px;
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+/* Fail panel */
+.fail-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: 4px;
+  padding: 10px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fail-panel .hdr {
+  color: var(--peach);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+.fail-panel textarea {
+  background: #0f0f19;
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px;
+  border-radius: 3px;
+  min-height: 60px;
+  max-height: 84px;
+  resize: none;
+  width: 100%;
+}
+.fail-panel .controls {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Checklist rows */
+.checklist {
+  display: flex;
+  flex-direction: column;
+}
+.item {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: start;
+  padding: 10px 14px;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid var(--border);
+}
+.item.active { border-left-color: var(--amber); }
+.item:last-child { border-bottom: none; }
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-dim);
+  margin-top: 3px;
+  box-sizing: border-box;
+}
+.item.pending .dot   { border-color: #6a6a78; }
+.item.active  .dot   { border-color: var(--amber); }
+.item.pass    .dot   { border-color: var(--green); background: var(--green); }
+.item.fail    .dot   { border-color: var(--red);   background: var(--red); }
+.item.skip    .dot   { border-color: var(--gray); position: relative; }
+.item.skip    .dot::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px; height: 1.5px;
+  background: var(--gray);
+}
+.item .lbl {
+  color: var(--text);
+  font-size: 13px;
+}
+.item.pending .lbl { color: var(--text); }
+.item.pass    .lbl { color: #9dc8a9; }
+.item.fail    .lbl { color: #d8a890; }
+.item.skip    .lbl { color: var(--gray); }
+
+/* Callouts */
+.callout {
+  margin-top: 8px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  max-width: 600px;
+}
+.callout .k {
+  color: var(--peach);
+}
+
+/* Divider between design areas */
+.hr {
+  border: none;
+  border-top: 1px solid #1a1a2e;
+  margin: 48px 0 0;
+}
+
+/* Variant comparison row */
+.variants {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.variant-card {
+  border: 1px dashed #2a2a3e;
+  border-radius: 6px;
+  padding: 16px;
+  background: #0f0f19;
+}
+.variant-card h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+.variant-card .tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: var(--peach);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.variant-card .pros {
+  margin-top: 12px;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.variant-card .pros b { color: var(--text); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Instruction Pane action bar v2 — #124 + #125 bundle</h1>
+<p class="subtitle">
+One redesign wave, two bugs closed. <b>#124</b>: two-row action bar so the pane can shrink below 560 px.
+<b>#125</b>: new <code>kind: "action"</code> step renders an <b>Acknowledge</b> button instead of PASS/FAIL for
+navigation-only steps. Three variants of the Acknowledge button are shown side-by-side (§6) — pick one
+before we draft the Claude Code prompt.
+Colors from <code>styles.py</code>: peach <code>#e8a87c</code>, green <code>#5ab87a</code>, bg <code>#14141f</code> / <code>#1a1a2e</code>, border <code>#2a2a3e</code>.
+</p>
+
+<!-- ===========================================================
+     §1  Observation step (current `expected` kind) — three widths
+     =========================================================== -->
+<h2>§1 Observation step — <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">kind: "observation"</code> / legacy <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">expected</code><span class="ticket">baseline — what most steps look like today</span></h2>
+<p class="section-note">
+Single-row layout is fine above the <b>420 px breakpoint</b>. Below that, the action bar wraps
+to two rows. Navigation cluster (Cancel / Pause / Back) goes left; outcome cluster (PASS / FAIL) goes right.
+</p>
+
+<div class="row">
+
+  <div>
+    <p class="col-note"><span class="width">600 px — single row</span></p>
+    <div class="frame">
+      <div class="pane w600">
+        <div class="top-row">
+          <div class="progress">Step 5 of 10 · T5_cursor_absent</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Verify F12 capture excludes cursor</div>
+        <div class="body">Open the most recent capture PNG in your image viewer.</div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="ebody">The capture PNG does not show the mouse cursor overlay.</div>
+        </div>
+        <div class="abar one-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="col-note"><span class="width">440 px — two rows (wrap point)</span></p>
+    <div class="frame">
+      <div class="pane w440">
+        <div class="top-row">
+          <div class="progress">Step 5 of 10 · T5_cursor_absent</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Verify F12 capture excludes cursor</div>
+        <div class="body">Open the most recent capture PNG in your image viewer.</div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="ebody">The capture PNG does not show the mouse cursor overlay.</div>
+        </div>
+        <div class="abar two-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="col-note"><span class="width">380 px — two rows (min)</span></p>
+    <div class="frame">
+      <div class="pane w380">
+        <div class="top-row">
+          <div class="progress">Step 5 of 10</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Verify F12 capture excludes cursor</div>
+        <div class="body">Open the most recent capture PNG in your image viewer.</div>
+        <div class="expected">
+          <div class="hdr">EXPECTED</div>
+          <div class="ebody">The capture PNG does not show the mouse cursor overlay.</div>
+        </div>
+        <div class="abar two-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="callout">
+  <span class="k">// #124</span> breakpoint: <b>width &lt;= 420 px → wrap to two rows</b>. Python side: <code>MIN_SIZE = (380, 480)</code>, resizeEvent flips a <code>_narrow</code> flag on pane and re-mounts the QHBoxLayouts into a QVBoxLayout. Same pattern as <code>ChecklistStepView.WRAP_BREAKPOINT_PX</code>.
+</div>
+
+<!-- ===========================================================
+     §2  Checklist step — in progress
+     =========================================================== -->
+<h2>§2 Checklist step — in progress<span class="ticket">adds SKIP button; Next→ still hidden</span></h2>
+<p class="section-note">
+Same two-cluster split. Outcome cluster grows from 2 buttons (PASS / FAIL) to 3 (PASS / FAIL / SKIP).
+The summary strip sits above the action bar.
+</p>
+
+<div class="row">
+
+  <div>
+    <p class="col-note"><span class="width">600 px — single row</span></p>
+    <div class="frame">
+      <div class="pane w600">
+        <div class="top-row">
+          <div class="progress">Step 3 of 10 · T3_pane_visuals</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Check pane visual defaults</div>
+        <div class="body">Open the pane. Look at its default state.</div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="lbl">Title "Instruction Pane" shown at top-left</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">Body text uses peach color (#e8a87c)</div></div>
+          <div class="item active"><div class="dot"></div><div class="lbl">EXPECTED block has tight spacing (no gap before it)</div></div>
+          <div class="item pending"><div class="dot"></div><div class="lbl">Action bar buttons are aligned right-edge</div></div>
+        </div>
+        <div class="summary">PASS <span class="sp">2</span> <span class="sep">·</span> FAIL <span class="sf">0</span> <span class="sep">·</span> SKIP <span class="ss">0</span> <span class="sep">·</span> 2 / 4</div>
+        <div class="abar one-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+            <button class="btn skip">SKIP</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="col-note"><span class="width">440 px — two rows</span></p>
+    <div class="frame">
+      <div class="pane w440">
+        <div class="top-row">
+          <div class="progress">Step 3 of 10 · T3_pane_visuals</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Check pane visual defaults</div>
+        <div class="body">Open the pane. Look at its default state.</div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="lbl">Title "Instruction Pane" shown at top-left</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">Body text uses peach color</div></div>
+          <div class="item active"><div class="dot"></div><div class="lbl">EXPECTED block has tight spacing</div></div>
+          <div class="item pending"><div class="dot"></div><div class="lbl">Action bar buttons right-aligned</div></div>
+        </div>
+        <div class="summary">PASS <span class="sp">2</span> <span class="sep">·</span> FAIL <span class="sf">0</span> <span class="sep">·</span> SKIP <span class="ss">0</span> <span class="sep">·</span> 2 / 4</div>
+        <div class="abar two-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+            <button class="btn skip">SKIP</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===========================================================
+     §3  Checklist step — re-answer state (Next → visible)
+     =========================================================== -->
+<h2>§3 Checklist step — re-answer state<span class="ticket">all items answered, Next → shown</span></h2>
+<p class="section-note">
+After the first completion (step auto-advanced once), the user can return and re-answer individual rows.
+The exit now requires an explicit <b>Next →</b>. This is the case #124 calls out as the tightest fit
+(4 outcome buttons).
+</p>
+
+<div class="row">
+
+  <div>
+    <p class="col-note"><span class="width">600 px — single row (tight!)</span></p>
+    <div class="frame">
+      <div class="pane w600">
+        <div class="top-row">
+          <div class="progress">Step 3 of 10 · T3_pane_visuals (re-answer)</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Check pane visual defaults</div>
+        <div class="body">Open the pane. Look at its default state.</div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="lbl">Title "Instruction Pane" shown at top-left</div></div>
+          <div class="item active"><div class="dot"></div><div class="lbl">Body text uses peach color (#e8a87c)</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">EXPECTED block has tight spacing</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">Action bar buttons are right-aligned</div></div>
+        </div>
+        <div class="summary">PASS <span class="sp">3</span> <span class="sep">·</span> FAIL <span class="sf">0</span> <span class="sep">·</span> SKIP <span class="ss">0</span> <span class="sep">·</span> 4 / 4</div>
+        <div class="abar one-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+            <button class="btn skip">SKIP</button>
+            <button class="btn next">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="col-note"><span class="width">440 px — two rows</span></p>
+    <div class="frame">
+      <div class="pane w440">
+        <div class="top-row">
+          <div class="progress">Step 3 of 10 · (re-answer)</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Check pane visual defaults</div>
+        <div class="body">Open the pane. Look at its default state.</div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="lbl">Title "Instruction Pane"</div></div>
+          <div class="item active"><div class="dot"></div><div class="lbl">Body text uses peach color</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">EXPECTED block tight spacing</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">Buttons right-aligned</div></div>
+        </div>
+        <div class="summary">PASS <span class="sp">3</span> <span class="sep">·</span> FAIL <span class="sf">0</span> <span class="sep">·</span> SKIP <span class="ss">0</span> <span class="sep">·</span> 4 / 4</div>
+        <div class="abar two-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+            <button class="btn skip">SKIP</button>
+            <button class="btn next">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="col-note"><span class="width">380 px — two rows (min, 4 outcomes)</span></p>
+    <div class="frame">
+      <div class="pane w380">
+        <div class="top-row">
+          <div class="progress">Step 3 of 10</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Check pane visual defaults</div>
+        <div class="body">Open the pane. Look at its default state.</div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="lbl">Title shown</div></div>
+          <div class="item active"><div class="dot"></div><div class="lbl">Peach color body</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">EXPECTED tight</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">Right-aligned</div></div>
+        </div>
+        <div class="summary">P <span class="sp">3</span> <span class="sep">·</span> F <span class="sf">0</span> <span class="sep">·</span> S <span class="ss">0</span> <span class="sep">·</span> 4 / 4</div>
+        <div class="abar two-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass">PASS</button>
+            <button class="btn fail">FAIL</button>
+            <button class="btn skip">SKIP</button>
+            <button class="btn next">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="callout">
+  <span class="k">// #124 tightest-case check.</span> At 380 px with 4 outcome buttons, the outcome row is
+  <b>~356 px wide</b> (4 × 80 min-width + 3 × 10 gap + 22 × 2 pane padding = fits).
+  At 360 px it would start to overflow — hence <b>380 px MIN_SIZE floor</b>, not 360.
+</div>
+
+<!-- ===========================================================
+     §4  FAIL panel open
+     =========================================================== -->
+<h2>§4 FAIL panel open<span class="ticket">action bar dims; save/cancel local to panel</span></h2>
+<p class="section-note">
+Opening the FAIL panel (pressing F or clicking FAIL on an active checklist row) dims the pane-level
+action bar and gives the user a contextual Cancel / SAVE-FAIL inside the panel. Identical today;
+the two-row layout keeps this behavior unchanged.
+</p>
+
+<div class="row">
+
+  <div>
+    <p class="col-note"><span class="width">440 px — FAIL panel open</span></p>
+    <div class="frame">
+      <div class="pane w440">
+        <div class="top-row">
+          <div class="progress">Step 3 of 10 · T3_pane_visuals</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Check pane visual defaults</div>
+        <div class="body">Open the pane. Look at its default state.</div>
+        <div class="checklist">
+          <div class="item pass"><div class="dot"></div><div class="lbl">Title "Instruction Pane"</div></div>
+          <div class="item pass"><div class="dot"></div><div class="lbl">Body text uses peach color</div></div>
+          <div class="item active"><div class="dot"></div><div class="lbl">EXPECTED block has tight spacing</div></div>
+          <div class="item pending"><div class="dot"></div><div class="lbl">Buttons right-aligned</div></div>
+        </div>
+        <div class="fail-panel">
+          <div class="hdr">FAIL — what went wrong?</div>
+          <textarea placeholder="Describe what you observed…">There is a 14 px gap above the EXPECTED block.</textarea>
+          <div class="controls">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn fail" style="color:var(--bg);background:var(--peach);border-color:var(--peach);font-weight:600;">SAVE-FAIL</button>
+          </div>
+        </div>
+        <div class="abar two-row" style="opacity:0.35;pointer-events:none;">
+          <div class="nav">
+            <button class="btn cancel disabled">Cancel</button>
+            <button class="btn pause disabled">Pause</button>
+            <button class="btn back disabled">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn pass disabled">PASS</button>
+            <button class="btn fail disabled">FAIL</button>
+            <button class="btn skip disabled">SKIP</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===========================================================
+     §5  Action step NEW — three variants side-by-side
+     =========================================================== -->
+<h2>§5 Action step (NEW) — pick an Acknowledge variant<span class="ticket">#125 — the design decision</span></h2>
+<p class="section-note">
+An action step has a body ("Open File → Preferences.") but no observation to report — the tester just
+<b>does the thing and advances</b>. PASS/FAIL would be a nonsense claim ("this navigation passed"). Three
+button treatments below; <b>pick one</b>. All three drop the EXPECTED block entirely since there's nothing
+to observe — a small amber <code>ACTION</code> marker replaces it for visual consistency.
+</p>
+
+<div class="variants">
+
+  <div class="variant-card">
+    <h3>Variant A — Acknowledge (neutral)</h3>
+    <div class="tag">Minimal, consistent with Cancel/Pause</div>
+    <div class="pane w380">
+      <div class="top-row">
+        <div class="progress">Step 2 of 10 · T2_open_settings</div>
+        <div class="about">?</div>
+      </div>
+      <div class="title">Open Testing Settings dialog</div>
+      <div class="body">Open <b>View → Testing → Settings</b>. Select the <b>Pane</b> tab.</div>
+      <div class="action-marker">
+        <div class="hdr">ACTION</div>
+        <div class="ebody">Nothing to check — just do it.</div>
+      </div>
+      <div class="abar two-row">
+        <div class="nav">
+          <button class="btn cancel">Cancel</button>
+          <button class="btn pause">Pause</button>
+          <button class="btn back">← Back</button>
+        </div>
+        <div class="act">
+          <button class="btn ack-neutral">Acknowledge <span class="kbd">↵</span></button>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <b>Reads:</b> this is just an action, no big deal. <br>
+      <b>Pros:</b> low visual noise; doesn't look like an outcome declaration. <br>
+      <b>Cons:</b> button fades into the navigation cluster; easy to miss as the primary action.
+    </div>
+  </div>
+
+  <div class="variant-card">
+    <h3>Variant B — Acknowledge (primary)</h3>
+    <div class="tag">Strongest signal, peach fill</div>
+    <div class="pane w380">
+      <div class="top-row">
+        <div class="progress">Step 2 of 10 · T2_open_settings</div>
+        <div class="about">?</div>
+      </div>
+      <div class="title">Open Testing Settings dialog</div>
+      <div class="body">Open <b>View → Testing → Settings</b>. Select the <b>Pane</b> tab.</div>
+      <div class="action-marker">
+        <div class="hdr">ACTION</div>
+        <div class="ebody">Nothing to check — just do it.</div>
+      </div>
+      <div class="abar two-row">
+        <div class="nav">
+          <button class="btn cancel">Cancel</button>
+          <button class="btn pause">Pause</button>
+          <button class="btn back">← Back</button>
+        </div>
+        <div class="act">
+          <button class="btn ack-primary">Acknowledge <span class="kbd" style="color:var(--bg);opacity:0.7;">↵</span></button>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <b>Reads:</b> <i>this</i> is the primary action, hit it. <br>
+      <b>Pros:</b> unmistakable primary target; matches Next → styling so the "advance" gesture stays visually consistent across all step kinds. <br>
+      <b>Cons:</b> semantically overloaded with Next → if both ever appear together (they shouldn't — action steps never show Next).
+    </div>
+  </div>
+
+  <div class="variant-card">
+    <h3>Variant C — Continue →</h3>
+    <div class="tag">Re-use existing Next → button</div>
+    <div class="pane w380">
+      <div class="top-row">
+        <div class="progress">Step 2 of 10 · T2_open_settings</div>
+        <div class="about">?</div>
+      </div>
+      <div class="title">Open Testing Settings dialog</div>
+      <div class="body">Open <b>View → Testing → Settings</b>. Select the <b>Pane</b> tab.</div>
+      <div class="action-marker">
+        <div class="hdr">ACTION</div>
+        <div class="ebody">Nothing to check — just do it.</div>
+      </div>
+      <div class="abar two-row">
+        <div class="nav">
+          <button class="btn cancel">Cancel</button>
+          <button class="btn pause">Pause</button>
+          <button class="btn back">← Back</button>
+        </div>
+        <div class="act">
+          <button class="btn ack-continue">Continue →</button>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <b>Reads:</b> same as the Next → you already know. <br>
+      <b>Pros:</b> zero new button style or label to learn; maximum visual reuse. <br>
+      <b>Cons:</b> "Continue" is looser than "Acknowledge" — doesn't quite capture "I did the thing" vs "I'm moving on." And uses the same arrow-right visual as the checklist Next →, which could blur the two concepts.
+    </div>
+  </div>
+
+</div>
+
+<div class="callout" style="margin-top:24px;">
+  <span class="k">// Schema for #125:</span> <code>{"kind": "action", "title": "...", "body": "...", "n": 2}</code>.
+  No <code>expected</code>, no <code>checklist</code>. Loader enforces XOR. Results file records
+  <code>outcome: "ACK"</code> (new), distinct from PASS/FAIL/SKIP.
+  Keyboard: <b>Enter advances</b> (Acknowledge). P/F/S are no-ops on action steps (silent — like S is today on single-expected).
+</div>
+
+<!-- ===========================================================
+     §6  Action step — FULL variant B at 3 widths
+     =========================================================== -->
+<h2>§6 Reference: Variant B at all three widths<span class="ticket">if you pick B, this is the shipped layout</span></h2>
+<p class="section-note">
+If Variant B wins (primary peach), here's how it scales. Notice the action row is trivially short —
+1 button — so the two-row split is visually lighter on action steps than on observation or checklist steps.
+</p>
+
+<div class="row">
+
+  <div>
+    <p class="col-note"><span class="width">600 px — single row</span></p>
+    <div class="frame">
+      <div class="pane w600">
+        <div class="top-row">
+          <div class="progress">Step 2 of 10 · T2_open_settings</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Open Testing Settings dialog</div>
+        <div class="body">Open <b>View → Testing → Settings</b>. Select the <b>Pane</b> tab.</div>
+        <div class="action-marker">
+          <div class="hdr">ACTION</div>
+          <div class="ebody">Nothing to check — just do it.</div>
+        </div>
+        <div class="abar one-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn ack-primary">Acknowledge</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="col-note"><span class="width">440 px — two rows</span></p>
+    <div class="frame">
+      <div class="pane w440">
+        <div class="top-row">
+          <div class="progress">Step 2 of 10 · T2_open_settings</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Open Testing Settings dialog</div>
+        <div class="body">Open <b>View → Testing → Settings</b>. Select the <b>Pane</b> tab.</div>
+        <div class="action-marker">
+          <div class="hdr">ACTION</div>
+          <div class="ebody">Nothing to check — just do it.</div>
+        </div>
+        <div class="abar two-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn ack-primary">Acknowledge</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="col-note"><span class="width">380 px — two rows (min)</span></p>
+    <div class="frame">
+      <div class="pane w380">
+        <div class="top-row">
+          <div class="progress">Step 2 of 10</div>
+          <div class="about">?</div>
+        </div>
+        <div class="title">Open Testing Settings dialog</div>
+        <div class="body">Open <b>View → Testing → Settings</b>.</div>
+        <div class="action-marker">
+          <div class="hdr">ACTION</div>
+          <div class="ebody">Nothing to check — just do it.</div>
+        </div>
+        <div class="abar two-row">
+          <div class="nav">
+            <button class="btn cancel">Cancel</button>
+            <button class="btn pause">Pause</button>
+            <button class="btn back">← Back</button>
+          </div>
+          <div class="act">
+            <button class="btn ack-primary">Acknowledge</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<hr class="hr">
+
+<h2>Design summary &amp; decisions pending</h2>
+<p class="section-note" style="max-width:900px;">
+<b>Locked in this mockup:</b>
+<br>· Two-row action bar at width ≤ 420 px; single row above. Floor <b>MIN_SIZE = (380, 480)</b>.
+<br>· Navigation cluster (Cancel / Pause / Back) always left; outcome cluster (PASS / FAIL / SKIP / Next → / Acknowledge) always right.
+<br>· New <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">kind: "action"</code> schema discriminator (§4.5 extension to TESTING_SECTION_SPEC.md). Loader XOR now three-way: <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">expected</code> ⊕ <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">checklist</code> ⊕ <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">kind:"action"</code>.
+<br>· Action steps record <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">outcome: "ACK"</code> in <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;color:#c8c5bb;font-size:12px;">results_latest.json</code>. Not PASS, not SKIP — a distinct fourth outcome.
+<br><br>
+<b>Pending — pick one before the Claude Code prompt:</b>
+<br>§5 — Variant A (neutral), B (primary peach), or C (Continue → reuse).
+</p>
+
+</div>
+</body>
+</html>

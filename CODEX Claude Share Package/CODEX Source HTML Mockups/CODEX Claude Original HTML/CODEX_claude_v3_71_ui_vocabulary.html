@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Where each part of the pane lives</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0a0a12; color: #e0ddd5; font-family: "Segoe UI", sans-serif; font-size: 14px; line-height: 1.5; }
+  .page { padding: 24px; max-width: 1400px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; color: #fff; font-size: 22px; }
+  .sub { color: #888; margin-bottom: 20px; }
+
+  .frame { position: relative; background: #14141f; border: 1px solid #2a2a3e; border-radius: 6px; overflow: hidden; width: 560px; margin: 20px 0; padding: 16px 22px; display: flex; flex-direction: column; gap: 12px; }
+
+  .top-row { display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .progress { color: #888; font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; }
+  .help { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #2a2a3e; color: #888; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+  .title { color: #e8a87c; font-size: 17px; font-weight: 600; position: relative; }
+  .body { color: #e0ddd5; font-size: 13px; max-height: 60px; overflow-y: auto; position: relative; }
+
+  .checklist { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 6px; overflow: hidden; min-height: 200px; position: relative; }
+  .c-row { display: grid; grid-template-columns: 20px 1fr; gap: 10px; padding: 12px 16px 12px 14px; border-bottom: 1px solid #232336; border-left: 2px solid transparent; align-items: start; }
+  .c-row:last-child { border-bottom: none; }
+  .c-row[data-s="active"] { background: rgba(232,168,124,0.04); border-left-color: #e8a87c; }
+  .c-row[data-s="pass"] .c-dot { background: #7fb069; border-color: #7fb069; }
+  .c-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #6a6a78; margin-top: 3px; }
+  .c-row[data-s="active"] .c-dot { border-color: #e8a87c; }
+  .c-label { color: #888; font-size: 13px; }
+  .c-row[data-s="active"] .c-label { color: #e0ddd5; font-weight: 500; }
+
+  .strip { display: flex; justify-content: flex-end; padding: 6px 12px; background: #1a1a2e; border-radius: 4px; font-size: 12px; color: #888; gap: 10px; position: relative; }
+  .strip .c { font-weight: 600; }
+  .strip .c.ok { color: #7fb069; }
+  .strip .c.fail { color: #d46a6a; }
+  .strip .c.skip { color: #8a8a9a; }
+  .strip .sep { color: #6a6a78; }
+
+  .actionbar { display: flex; gap: 10px; position: relative; }
+  .actionbar .spacer { flex: 1 1 auto; }
+  .btn { padding: 8px 16px; font-size: 12px; font-weight: 500; background: transparent; color: #888; border: 1px solid #2a2a3e; border-radius: 4px; min-height: 32px; }
+  .btn.pass { color: #5ab87a; border-color: rgba(90,184,122,0.55); }
+  .btn.fail { color: #e8a87c; border-color: #e8a87c; }
+  .btn.skip { color: #8a8a9a; border-color: rgba(138,138,154,0.55); }
+
+  .fail-panel { background: rgba(212,106,106,0.06); border: 1px solid rgba(212,106,106,0.35); border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .fail-panel-hdr { font-size: 10px; font-weight: 700; color: #d46a6a; letter-spacing: 1px; text-transform: uppercase; }
+  .fail-panel-edit { background: #14141f; border: 1px solid #2a2a3e; border-radius: 3px; padding: 8px 10px; color: #e0ddd5; font-size: 13px; min-height: 60px; }
+  .fail-panel-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn.save { color: #d46a6a; border-color: #d46a6a; }
+
+  /* Yellow call-out labels and arrows */
+  .tag {
+    position: absolute;
+    background: #ffd166;
+    color: #0a0a12;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .tag.right { left: 100%; margin-left: 16px; top: 50%; transform: translateY(-50%); }
+  .tag.right::before {
+    content: ""; position: absolute; right: 100%; top: 50%;
+    border: 6px solid transparent; border-right-color: #ffd166;
+    transform: translateY(-50%);
+  }
+  .tag.above { bottom: 100%; margin-bottom: 10px; left: 50%; transform: translateX(-50%); }
+  .tag.above::after {
+    content: ""; position: absolute; top: 100%; left: 50%;
+    border: 6px solid transparent; border-top-color: #ffd166;
+    transform: translateX(-50%);
+  }
+
+  .legend { background: #1a1a2e; border-left: 3px solid #ffd166; padding: 14px 18px; border-radius: 0 4px 4px 0; margin: 16px 0 28px; font-size: 13px; }
+  .legend h3 { margin: 0 0 8px; color: #ffd166; font-size: 13px; letter-spacing: 0.5px; }
+  .legend dl { margin: 0; }
+  .legend dt { color: #fff; font-weight: 600; margin-top: 6px; display: inline-block; background: #ffd166; color: #0a0a12; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+  .legend dd { color: #e0ddd5; margin: 4px 0 0 0; font-size: 13px; }
+
+  .state-caption { color: #ffd166; font-weight: 600; margin-top: 36px; margin-bottom: 4px; font-size: 14px; letter-spacing: 0.3px; }
+
+  .pane-wrap { display: flex; gap: 200px; align-items: flex-start; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Where each part of the pane lives</h1>
+<p class="sub">Yellow labels point at the real regions. Three states side by side.</p>
+
+<div class="legend">
+  <h3>Quick reference</h3>
+  <dl>
+    <dt>HELP</dt><dd>The <b>?</b> circle, top right. Opens a key reference.</dd>
+    <dt>PROGRESS</dt><dd>"Step X of Y" text, top left.</dd>
+    <dt>TITLE</dt><dd>The orange heading of the step.</dd>
+    <dt>INSTRUCTIONS</dt><dd>The plain text block that tells you what to do. Scrolls if long.</dd>
+    <dt>QUESTION LIST</dt><dd>The rows with colored dots. The active one has an orange left stripe.</dd>
+    <dt>SUMMARY STRIP</dt><dd>The thin "X pass · X fail · X skip" line that shows up after you answer one question.</dd>
+    <dt>ACTION BAR</dt><dd>The 6 buttons at the very bottom: Cancel, Pause, Back, PASS, FAIL, SKIP.</dd>
+    <dt>FAIL PANEL</dt><dd>The red-bordered textbox that opens when you press FAIL.</dd>
+  </dl>
+</div>
+
+<div class="state-caption">▼ State 1: checklist just loaded, nothing answered yet</div>
+<div class="frame">
+  <div class="top-row">
+    <div class="progress">Step 1 of 3</div>
+    <span class="tag right">PROGRESS</span>
+    <div class="help">?</div>
+  </div>
+  <div class="title">Before answering anything<span class="tag right">TITLE</span></div>
+  <div class="body">Look at the pane. Answer each question.<span class="tag right">INSTRUCTIONS</span></div>
+  <div class="checklist">
+    <div class="c-row" data-s="active"><div class="c-dot"></div><div class="c-label">The 6 buttons at the bottom look nice and evenly spaced</div></div>
+    <div class="c-row" data-s="pending"><div class="c-dot"></div><div class="c-label">The question list takes up most of the pane</div></div>
+    <div class="c-row" data-s="pending"><div class="c-dot"></div><div class="c-label">Nothing looks squished or cut off</div></div>
+    <span class="tag right">QUESTION LIST</span>
+  </div>
+  <div class="actionbar">
+    <button class="btn">Cancel</button>
+    <button class="btn">Pause</button>
+    <button class="btn">← Back</button>
+    <span class="spacer"></span>
+    <button class="btn pass">PASS</button>
+    <button class="btn fail">FAIL</button>
+    <button class="btn skip">SKIP</button>
+    <span class="tag right">ACTION BAR</span>
+  </div>
+</div>
+
+<div class="state-caption">▼ State 2: pressed PASS once on the first question</div>
+<div class="frame">
+  <div class="top-row">
+    <div class="progress">Step 1 of 3</div>
+    <div class="help">?</div>
+  </div>
+  <div class="title">Before answering anything</div>
+  <div class="body">Look at the pane. Answer each question.</div>
+  <div class="checklist">
+    <div class="c-row" data-s="pass"><div class="c-dot"></div><div class="c-label">The 6 buttons at the bottom look nice and evenly spaced</div></div>
+    <div class="c-row" data-s="active"><div class="c-dot"></div><div class="c-label">The question list takes up most of the pane</div></div>
+    <div class="c-row" data-s="pending"><div class="c-dot"></div><div class="c-label">Nothing looks squished or cut off</div></div>
+  </div>
+  <div class="strip">
+    <span class="c ok">1 pass</span><span class="sep">·</span>
+    <span class="c fail">0 fail</span><span class="sep">·</span>
+    <span class="c skip">0 skip</span>
+    <span class="tag right">SUMMARY STRIP</span>
+  </div>
+  <div class="actionbar">
+    <button class="btn">Cancel</button>
+    <button class="btn">Pause</button>
+    <button class="btn">← Back</button>
+    <span class="spacer"></span>
+    <button class="btn pass">PASS</button>
+    <button class="btn fail">FAIL</button>
+    <button class="btn skip">SKIP</button>
+  </div>
+</div>
+
+<div class="state-caption">▼ State 3: pressed FAIL (red text box opens at bottom)</div>
+<div class="frame">
+  <div class="top-row">
+    <div class="progress">Step 1 of 3</div>
+    <div class="help">?</div>
+  </div>
+  <div class="title">Before answering anything</div>
+  <div class="body">Look at the pane. Answer each question.</div>
+  <div class="checklist">
+    <div class="c-row" data-s="pass"><div class="c-dot"></div><div class="c-label">The 6 buttons at the bottom look nice and evenly spaced</div></div>
+    <div class="c-row" data-s="active"><div class="c-dot"></div><div class="c-label">The question list takes up most of the pane</div></div>
+    <div class="c-row" data-s="pending"><div class="c-dot"></div><div class="c-label">Nothing looks squished or cut off</div></div>
+  </div>
+  <div class="fail-panel">
+    <div class="fail-panel-hdr">Describe what failed — item 'q2'</div>
+    <div class="fail-panel-edit">Questions cramped against the buttons; no breathing room.</div>
+    <div class="fail-panel-btns">
+      <button class="btn">CANCEL</button>
+      <button class="btn save">SAVE FAIL</button>
+    </div>
+    <span class="tag right">FAIL PANEL</span>
+  </div>
+  <div class="actionbar">
+    <button class="btn">Cancel</button>
+    <button class="btn">Pause</button>
+    <button class="btn">← Back</button>
+    <span class="spacer"></span>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

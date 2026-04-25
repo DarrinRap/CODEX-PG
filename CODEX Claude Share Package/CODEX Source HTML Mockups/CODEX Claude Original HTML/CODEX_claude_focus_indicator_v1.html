@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>#131 Focus Indicator — 3 options</title>
+<style>
+  /* Panda Gallery color tokens (from styles.py) */
+  :root {
+    --pg-bg: #14141f;
+    --pg-panel: #1a1a2e;
+    --pg-border: #2a2a3e;
+    --pg-muted: #6a6a78;
+    --pg-text: #e0ddd5;
+    --pg-peach: #e8a87c;
+    --pg-peach-hover: #d4945a;
+    --pg-charcoal: #22223a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: #0d0d14;
+    color: var(--pg-text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    padding: 32px;
+  }
+  h1 { color: var(--pg-peach); font-size: 18px; margin: 0 0 8px; }
+  .intro {
+    color: #888;
+    font-size: 13px;
+    max-width: 900px;
+    line-height: 1.5;
+    margin-bottom: 32px;
+  }
+  .option-group {
+    margin-bottom: 48px;
+  }
+  .option-label {
+    color: var(--pg-peach);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  .option-tagline {
+    color: #888;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  .pair {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .state-label {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* Generic pane frame ---------------------------------- */
+  .pane {
+    width: 420px;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    background: var(--pg-bg);
+  }
+  .pane-body {
+    padding: 16px 22px;
+    border: 1px solid var(--pg-border);
+    border-top: none;
+    font-size: 12px;
+    color: var(--pg-text);
+    background: var(--pg-bg);
+  }
+  .pane-progress {
+    color: #888;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .pane-title {
+    color: var(--pg-peach);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .pane-content {
+    color: var(--pg-text);
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .pane-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px solid #1d1d30;
+  }
+  .btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid var(--pg-border);
+    background: transparent;
+    color: #888;
+  }
+  .btn-pass {
+    color: #5ab87a;
+    border-color: rgba(90, 184, 122, 0.55);
+  }
+  .btn-fail {
+    color: var(--pg-peach);
+    border-color: var(--pg-peach);
+  }
+
+  /* ============ OPTION A: full solid peach bar ============ */
+  .a-titlebar {
+    height: 28px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .a-focused .a-titlebar {
+    background: var(--pg-peach);
+    color: #14141f;
+  }
+  .a-unfocused .a-titlebar {
+    background: #32323e;
+    color: #888;
+  }
+  .a-unfocused .pane-title { color: #888; }
+  .win-ctrls {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+    opacity: 0.7;
+  }
+
+  /* ============ OPTION B: peach 2px top stripe + tint ============ */
+  .b-titlebar {
+    height: 28px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 2px solid transparent;
+    background: #1d1d30;
+    color: #888;
+  }
+  .b-focused .b-titlebar {
+    border-top-color: var(--pg-peach);
+    background: #24243a;
+    color: var(--pg-text);
+  }
+
+  /* ============ OPTION C: peach 3px left border + title color ============ */
+  .c-frame {
+    display: flex;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    background: var(--pg-bg);
+  }
+  .c-accent {
+    width: 3px;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .c-focused .c-accent {
+    background: var(--pg-peach);
+  }
+  .c-body {
+    flex-grow: 1;
+  }
+  .c-titlebar {
+    height: 28px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1d1d30;
+    color: #888;
+  }
+  .c-focused .c-titlebar {
+    color: var(--pg-peach);
+  }
+
+  .tradeoff {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.02);
+    border-left: 2px solid var(--pg-muted);
+    font-size: 11px;
+    color: #888;
+    max-width: 860px;
+    line-height: 1.5;
+  }
+
+  .verdict {
+    margin-top: 48px;
+    padding: 14px 18px;
+    background: rgba(232, 168, 124, 0.08);
+    border-left: 3px solid var(--pg-peach);
+    max-width: 860px;
+    font-size: 13px;
+    color: var(--pg-text);
+    line-height: 1.6;
+  }
+  .verdict strong { color: var(--pg-peach); }
+</style>
+</head>
+<body>
+
+<h1>#131 — Active-window focus indicator</h1>
+<p class="intro">
+  Three options, each showing FOCUSED and UNFOCUSED states side-by-side. Pick one and I'll draft the CC prompt.
+  Same pane content in all three for a clean visual comparison.
+</p>
+
+<!-- ========== OPTION A ========== -->
+<div class="option-group">
+  <div class="option-label">Option A — Solid peach title bar (your suggestion)</div>
+  <div class="option-tagline">Maximum contrast. No ambiguity. Title bar turns a full peach fill when focused, charcoal when not.</div>
+  <div class="pair">
+    <div>
+      <div class="state-label">Focused</div>
+      <div class="pane a-focused">
+        <div class="a-titlebar">
+          <span>Instruction Pane</span>
+          <span class="win-ctrls">— □ ✕</span>
+        </div>
+        <div class="pane-body">
+          <div class="pane-progress">Step 3 of 5 · P3</div>
+          <div class="pane-title">First capture</div>
+          <div class="pane-content">Press Shift+F12. Drag a box. Release.</div>
+          <div class="pane-buttons">
+            <button class="btn">Cancel</button>
+            <button class="btn">Pause</button>
+            <button class="btn">← Back</button>
+            <button class="btn btn-pass">PASS</button>
+            <button class="btn btn-fail">FAIL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="state-label">Unfocused</div>
+      <div class="pane a-unfocused">
+        <div class="a-titlebar">
+          <span>Instruction Pane</span>
+          <span class="win-ctrls">— □ ✕</span>
+        </div>
+        <div class="pane-body">
+          <div class="pane-progress">Step 3 of 5 · P3</div>
+          <div class="pane-title">First capture</div>
+          <div class="pane-content">Press Shift+F12. Drag a box. Release.</div>
+          <div class="pane-buttons">
+            <button class="btn">Cancel</button>
+            <button class="btn">Pause</button>
+            <button class="btn">← Back</button>
+            <button class="btn btn-pass">PASS</button>
+            <button class="btn btn-fail">FAIL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tradeoff">
+    <strong style="color:#e8a87c">+</strong> Impossible to miss which window is active.
+    <strong style="color:#d46a6a">−</strong> Loud. Changes the window's whole top personality. Can feel "alert-level" for a passive indicator.
+  </div>
+</div>
+
+<!-- ========== OPTION B ========== -->
+<div class="option-group">
+  <div class="option-label">Option B — Peach 2px top stripe + subtle tint</div>
+  <div class="option-tagline">On-brand, low visual noise. Thin peach stripe at top + slightly brighter title bar fill.</div>
+  <div class="pair">
+    <div>
+      <div class="state-label">Focused</div>
+      <div class="pane b-focused">
+        <div class="b-titlebar">
+          <span>Instruction Pane</span>
+          <span class="win-ctrls">— □ ✕</span>
+        </div>
+        <div class="pane-body">
+          <div class="pane-progress">Step 3 of 5 · P3</div>
+          <div class="pane-title">First capture</div>
+          <div class="pane-content">Press Shift+F12. Drag a box. Release.</div>
+          <div class="pane-buttons">
+            <button class="btn">Cancel</button>
+            <button class="btn">Pause</button>
+            <button class="btn">← Back</button>
+            <button class="btn btn-pass">PASS</button>
+            <button class="btn btn-fail">FAIL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="state-label">Unfocused</div>
+      <div class="pane">
+        <div class="b-titlebar">
+          <span>Instruction Pane</span>
+          <span class="win-ctrls">— □ ✕</span>
+        </div>
+        <div class="pane-body">
+          <div class="pane-progress">Step 3 of 5 · P3</div>
+          <div class="pane-title" style="color:#888">First capture</div>
+          <div class="pane-content">Press Shift+F12. Drag a box. Release.</div>
+          <div class="pane-buttons">
+            <button class="btn">Cancel</button>
+            <button class="btn">Pause</button>
+            <button class="btn">← Back</button>
+            <button class="btn btn-pass">PASS</button>
+            <button class="btn btn-fail">FAIL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tradeoff">
+    <strong style="color:#e8a87c">+</strong> Subtle, on-brand, doesn't hijack the title bar.
+    <strong style="color:#d46a6a">−</strong> A 2px stripe is small. At arm's length a user might still miss the change on a first glance.
+  </div>
+</div>
+
+<!-- ========== OPTION C ========== -->
+<div class="option-group">
+  <div class="option-label">Option C — Peach 3px left border + peach title text</div>
+  <div class="option-tagline">Hybrid. Accent stripe runs full height on the left edge + the title text itself flips from gray to peach.</div>
+  <div class="pair">
+    <div>
+      <div class="state-label">Focused</div>
+      <div class="c-frame c-focused">
+        <div class="c-accent"></div>
+        <div class="c-body">
+          <div class="c-titlebar">
+            <span>Instruction Pane</span>
+            <span class="win-ctrls">— □ ✕</span>
+          </div>
+          <div class="pane-body">
+            <div class="pane-progress">Step 3 of 5 · P3</div>
+            <div class="pane-title">First capture</div>
+            <div class="pane-content">Press Shift+F12. Drag a box. Release.</div>
+            <div class="pane-buttons">
+              <button class="btn">Cancel</button>
+              <button class="btn">Pause</button>
+              <button class="btn">← Back</button>
+              <button class="btn btn-pass">PASS</button>
+              <button class="btn btn-fail">FAIL</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="state-label">Unfocused</div>
+      <div class="c-frame">
+        <div class="c-accent"></div>
+        <div class="c-body">
+          <div class="c-titlebar">
+            <span>Instruction Pane</span>
+            <span class="win-ctrls">— □ ✕</span>
+          </div>
+          <div class="pane-body">
+            <div class="pane-progress">Step 3 of 5 · P3</div>
+            <div class="pane-title" style="color:#888">First capture</div>
+            <div class="pane-content">Press Shift+F12. Drag a box. Release.</div>
+            <div class="pane-buttons">
+              <button class="btn">Cancel</button>
+              <button class="btn">Pause</button>
+              <button class="btn">← Back</button>
+              <button class="btn btn-pass">PASS</button>
+              <button class="btn btn-fail">FAIL</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tradeoff">
+    <strong style="color:#e8a87c">+</strong> Two redundant cues (stripe + title color). Harder to miss than B but quieter than A.
+    <strong style="color:#d46a6a">−</strong> Stripe is vertical, runs full height — can look like a "selected item" indicator instead of a focus indicator if you have multiple similar windows.
+  </div>
+</div>
+
+<div class="verdict">
+  My recommendation: <strong>Option A</strong> if the primary goal is "never miss which window has focus." It's loud, but the misread in #131 is exactly the kind of thing loud fixes. If you want quieter, <strong>Option C</strong> gives you two cues without dominating. <strong>Option B</strong> is the weakest — it reads well in the mockup but a 2px stripe doesn't survive peripheral vision.
+</div>
+
+</body>
+</html>

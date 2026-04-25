@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Where to look for the toast</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #0d0d14;
+    color: #e0ddd5;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    padding: 32px;
+  }
+  h1 { color: #e8a87c; font-size: 18px; margin: 0 0 8px; }
+  h2 { color: #e8a87c; font-size: 14px; margin: 32px 0 12px; }
+  .intro {
+    color: #888;
+    font-size: 13px;
+    max-width: 1100px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  /* ============ PART 1: where on screen ============ */
+  .monitor {
+    width: 1280px;
+    height: 720px;
+    background: #161625;
+    border: 2px solid #2a2a3e;
+    border-radius: 8px;
+    position: relative;
+    margin: 12px 0 24px;
+  }
+  .monitor::before {
+    content: "Your monitor (PG MainWindow shown maximized)";
+    position: absolute;
+    top: -22px;
+    left: 4px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .mainwin {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    background: #0e0e18;
+    border: 1px solid #202030;
+    border-radius: 4px;
+  }
+  .mainwin-label {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    font-size: 11px;
+    color: #555;
+    letter-spacing: 0.5px;
+  }
+  .pg-text {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #e8a87c;
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  /* arrow + caption pointing at toast */
+  .arrow-wrap {
+    position: absolute;
+    bottom: 60px;
+    right: 80px;
+    width: 380px;
+    height: 200px;
+    pointer-events: none;
+  }
+  .toast-pos {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 280px;
+    height: 60px;
+    border: 3px dashed #e8a87c;
+    border-radius: 6px;
+    background: rgba(232, 168, 124, 0.08);
+  }
+  .arrow-line {
+    position: absolute;
+    bottom: 80px;
+    right: 140px;
+    color: #e8a87c;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    background: #0d0d14;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #e8a87c;
+    white-space: nowrap;
+  }
+  .arrow-line::after {
+    content: "↘";
+    position: absolute;
+    bottom: -22px;
+    right: 30px;
+    color: #e8a87c;
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  /* ============ PART 2: the toast at actual size ============ */
+  .toast-zoom-wrap {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 24px;
+    background: #0a0a12;
+    border: 1px solid #2a2a3e;
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+  .zoom-label {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .toast {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-left: 3px solid #e8a87c;
+    border-radius: 4px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+
+  .toast-1x {
+    width: 240px;
+  }
+  .toast-1x .toast-title {
+    color: #e8a87c;
+    font-weight: 600;
+    font-size: 10pt;
+    line-height: 1.3;
+    margin-bottom: 2px;
+  }
+  .toast-1x .toast-subtitle {
+    color: #888;
+    font-size: 9pt;
+    line-height: 1.3;
+  }
+
+  .toast-2x {
+    width: 480px;
+    padding: 24px 32px;
+    border-left-width: 6px;
+    border-radius: 6px;
+  }
+  .toast-2x .toast-title {
+    color: #e8a87c;
+    font-weight: 600;
+    font-size: 20pt;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .toast-2x .toast-subtitle {
+    color: #888;
+    font-size: 18pt;
+    line-height: 1.3;
+  }
+
+  .annotation {
+    position: relative;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #888;
+    line-height: 1.5;
+    max-width: 480px;
+  }
+  .annotation strong { color: #e8a87c; }
+
+  .callout {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: rgba(232, 168, 124, 0.08);
+    border-left: 3px solid #e8a87c;
+    max-width: 1100px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .callout strong { color: #e8a87c; }
+
+  ul { line-height: 1.7; max-width: 1100px; }
+</style>
+</head>
+<body>
+
+<h1>Where the "Click to review" subtitle lives on the toast</h1>
+<p class="intro">
+  The toast appears at the <strong style="color:#e8a87c">bottom-right</strong> corner of the PG MainWindow.
+  It's small and only on screen for 3 seconds. The subtitle is a thin gray line directly below the peach
+  "Region captured" title.
+</p>
+
+<h2>Part 1 — Where to look on your monitor</h2>
+
+<div class="monitor">
+  <div class="mainwin">
+    <div class="mainwin-label">PG MainWindow</div>
+    <div class="pg-text">Panda Gallery</div>
+  </div>
+  <div class="arrow-wrap">
+    <div class="arrow-line">Look here ↓ (bottom-right corner)</div>
+    <div class="toast-pos"></div>
+  </div>
+</div>
+
+<h2>Part 2 — The toast at actual size (1×) and zoomed (2×)</h2>
+
+<div class="toast-zoom-wrap">
+  <div>
+    <div class="zoom-label">Actual size (~240 px wide)</div>
+    <div class="toast toast-1x">
+      <div class="toast-title">Region captured</div>
+      <div class="toast-subtitle">Click to review</div>
+    </div>
+    <div class="annotation">
+      <strong>The subtitle is here</strong> — the gray "Click to review" line directly below the peach title.
+      It's 9pt Segoe UI in <code>#888</code> gray.
+    </div>
+  </div>
+
+  <div>
+    <div class="zoom-label">2× zoom (so you can see the subtitle clearly)</div>
+    <div class="toast toast-2x">
+      <div class="toast-title">Region captured</div>
+      <div class="toast-subtitle">Click to review</div>
+    </div>
+    <div class="annotation">
+      Same toast, just zoomed. <strong>That gray line under the title</strong> is what you're looking for on the
+      real one.
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>What to do next:</strong>
+  <ul>
+    <li>Trigger a fresh capture: <code>Shift+F12</code>, drag a region, release.</li>
+    <li>Immediately look at the <strong>bottom-right corner of MainWindow</strong>.</li>
+    <li>Stare at the toast for the full 3 seconds. Specifically look for a thin gray text line directly under the peach "Region captured".</li>
+    <li>If you see it (even faintly): the FAIL was visibility, not a missing widget. We'll bump the contrast + size.</li>
+    <li>If you genuinely see <em>nothing</em> below the title: the subtitle widget isn't rendering and we have a real bug to fix.</li>
+  </ul>
+</div>
+
+</body>
+</html>

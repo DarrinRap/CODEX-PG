@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panda Gallery v4.0 — Design Mockup Index</title>
+<style>
+  :root {
+    --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+    --pane-selected:#2a2a4e; --border:#2a2a3e; --border-hover:#3a3a4e;
+    --border-soft:#232336; --text:#e0ddd5; --text-muted:#888; --text-dim:#555;
+    --accent:#e8a87c; --accent-hover:#d4945a;
+    --accent-soft:rgba(232,168,124,0.12); --accent-border:rgba(232,168,124,0.45);
+    --accent-ink:#1a1a2e;
+    --font-ui:"Segoe UI","SF Pro","Noto Sans",sans-serif;
+    --font-mono:"Cascadia Mono","Consolas",monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body {
+    min-height:100%;
+    background: radial-gradient(ellipse at 50% 0%, #1a1a2e 0%, #14141f 60%, #0a0a14 100%);
+    color:var(--text); font-family:var(--font-ui); font-size:14px; line-height:1.5;
+  }
+  body { padding: 40px 32px 80px; }
+  .page-max { max-width: 1200px; margin: 0 auto; }
+
+  /* Header */
+  .page-hdr { display:flex; align-items:center; gap: 24px; margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .hdr-mark {
+    width: 64px; height: 64px;
+    background-image: url('data:image/png;base64,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');
+    background-size: contain; background-repeat: no-repeat; background-position: center;
+    filter: drop-shadow(0 0 12px rgba(232,168,124,0.2));
+    flex-shrink: 0;
+  }
+  .hdr-title {
+    font-size: 28px; font-weight: 300; color: var(--text); letter-spacing: 0.5px;
+  }
+  .hdr-title b {
+    background: linear-gradient(180deg, #f0b98c 0%, #e8a87c 50%, #d4945a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700; letter-spacing: 2px; margin-right: 8px;
+  }
+  .hdr-sub {
+    font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; margin-top: 4px; letter-spacing: 1px;
+  }
+
+  /* Section */
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 18px; display: flex; align-items: center; gap: 12px;
+  }
+  .section-title::after {
+    content: ""; flex: 1; height: 1px; background: var(--border);
+  }
+  .section-intro {
+    color: var(--text-muted); margin-bottom: 24px; max-width: 720px;
+  }
+
+  /* Card grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--pane); border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .card:hover {
+    border-color: var(--accent); transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 40px rgba(232,168,124,0.08);
+  }
+  .card-preview {
+    height: 180px; background: var(--canvas); position: relative; overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-body { padding: 14px 16px 16px; }
+  .card-name {
+    font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 12px; color: var(--text-muted); line-height: 1.5;
+  }
+  .card-tag {
+    display: inline-block; margin-top: 10px;
+    padding: 2px 8px; font-size: 10px; letter-spacing: 0.6px;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border);
+    border-radius: 3px; font-family: var(--font-mono);
+  }
+  .card-tag.ref { background: rgba(127,176,105,0.1); color: #9dc384; border-color: rgba(127,176,105,0.4); }
+  .card-tag.wip { background: rgba(243,156,18,0.1); color: var(--warn, #f39c12); border-color: rgba(243,156,18,0.4); }
+
+  /* Preview art for each card (CSS-only mini diagrams) */
+  .prev-splash { background: radial-gradient(ellipse at 50% 40%, rgba(232,168,124,0.12) 0%, transparent 60%), var(--canvas); display:flex; align-items:center; justify-content:center; }
+  .prev-splash-mark { width: 50px; height: 50px; background-image: url('data:image/png;base64,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'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+  .prev-splash-pill { margin-left: 16px; padding: 8px 20px; background: var(--pane); border-radius: 30px; border: 1px solid var(--border); font-weight: 700; letter-spacing: 3px; color: var(--accent); font-size: 14px; }
+
+  .prev-app { padding: 6px; }
+  .prev-app-inner {
+    width: 100%; height: 100%;
+    display: grid; grid-template-rows: 12px 1fr 18px 8px; grid-template-columns: 20% 1fr 22%;
+    grid-template-areas: "tb tb tb" "lp vp rp" "lp fs rp" "sb sb sb";
+    gap: 2px; background: var(--border-soft); border-radius: 3px; overflow: hidden;
+  }
+  .prev-app-inner > div { background: var(--pane); }
+  .pa-tb { grid-area: tb; background: var(--chrome); position: relative; }
+  .pa-tb::before { content: ""; position: absolute; left: 4px; top: 3px; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+  .pa-tb::after { content: ""; position: absolute; left: 14px; top: 4px; width: 40px; height: 4px; background: var(--accent-border); border-radius: 1px; }
+  .pa-lp { grid-area: lp; background: var(--pane); padding: 3px; display: flex; flex-direction: column; gap: 2px; }
+  .pa-lp-item { height: 10px; background: var(--pane-raised); border-radius: 2px; }
+  .pa-lp-item.active { background: var(--accent-soft); border-left: 2px solid var(--accent); }
+  .pa-vp { grid-area: vp; background: var(--canvas); padding: 4px; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 2px; }
+  .pa-thumb { background: radial-gradient(ellipse, #404050 0%, #1a1a22 70%); border-radius: 2px; }
+  .pa-thumb.sel { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .pa-thumb.photo { background: linear-gradient(135deg, #b88a68, #7e5838); }
+  .pa-fs { grid-area: fs; background: var(--chrome); padding: 2px; display: flex; gap: 2px; }
+  .pa-fs-thumb { height: 100%; aspect-ratio: 4/3; background: radial-gradient(ellipse, #404050, #1a1a22); border-radius: 1px; }
+  .pa-rp { grid-area: rp; background: var(--pane); padding: 3px; display: flex; flex-direction: column; gap: 2px; }
+  .pa-rp-hdr { height: 6px; background: var(--accent); opacity: 0.5; border-radius: 1px; }
+  .pa-rp-row { height: 4px; background: var(--pane-raised); border-radius: 1px; }
+  .pa-sb { grid-area: sb; background: var(--chrome); }
+  .pa-sb::before { content: ""; display: inline-block; width: 50px; height: 4px; background: var(--accent-border); margin: 2px 0 0 4px; border-radius: 1px; }
+
+  .prev-empty .pa-lp-item.active { background: var(--pane-raised); border-left: 2px solid transparent; }
+  .prev-empty .pa-vp { display: flex; align-items: center; justify-content: center; }
+  .prev-empty .pa-vp::after { content: "▦"; color: var(--accent); font-size: 28px; opacity: 0.4; }
+
+  .prev-loupe .pa-vp { display: flex; align-items: center; justify-content: center; padding: 10px; }
+  .prev-loupe .pa-vp::after { content: ""; width: 80%; height: 80%; background: radial-gradient(ellipse at 55% 50%, #6a6a7a 0%, #252538 40%, #0a0a14 100%); border-radius: 2px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+
+  .prev-arrange .pa-vp { padding: 8px; background: var(--canvas); }
+  .prev-arrange .pa-vp::after {
+    content: ""; width: 100%; height: 100%;
+    background: var(--pane-raised);
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 8px 8px;
+    border-radius: 2px; border: 1px solid var(--border);
+  }
+
+  .prev-present { background: #000; display: flex; gap: 3px; padding: 6px; }
+  .prev-present > div { flex: 1; background: var(--pane); border: 1px solid var(--border); border-radius: 3px; position: relative; padding: 3px; display: flex; flex-direction: column; gap: 2px; }
+  .prev-present > div::before { content: attr(data-label); font-size: 7px; color: var(--text-muted); letter-spacing: 1px; }
+  .prev-present .mon-img { flex: 1; background: radial-gradient(ellipse at 55% 50%, #6a6a7a 0%, #252538 40%, #0a0a14 100%); border-radius: 1px; }
+  .prev-present > div:nth-child(2)::after {
+    content: "LIVE"; position: absolute; top: 3px; right: 3px; font-size: 6px;
+    color: #0a0a14; background: #7fb069; padding: 1px 3px; border-radius: 1px;
+    font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.5px;
+  }
+
+  /* Reference-card styles */
+  .prev-ref { padding: 16px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .prev-ref b { color: var(--accent); letter-spacing: 0.5px; }
+  .prev-ref i { font-style: normal; color: var(--text-dim); }
+
+  /* Footer */
+  .page-footer {
+    margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--text-dim); font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.5px;
+    display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="page-max">
+
+  <div class="page-hdr">
+    <div class="hdr-mark"></div>
+    <div>
+      <div class="hdr-title"><b>PANDA</b>Gallery Design Mockups</div>
+      <div class="hdr-sub">v4.0 · Week 1 shell mockup · iteration 1</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Screens</div>
+    <div class="section-intro">The main shell in context — all three modules, empty-state, loupe. Click to open full-window.</div>
+    <div class="grid">
+
+      <a class="card" href="v4_0_splash_mockup.html" target="_blank">
+        <div class="card-preview prev-splash">
+          <div class="prev-splash-mark"></div>
+          <div class="prev-splash-pill">PANDA</div>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Splash / startup</div>
+          <div class="card-desc">First-impression screen shown while the app boots. Atmospheric glow, loading bar, version footer.</div>
+          <span class="card-tag">SHELL</span>
+        </div>
+      </a>
+
+      <a class="card" href="v4_0_shell_mockup_v1_multiview.html#library" target="_blank">
+        <div class="card-preview prev-app">
+          <div class="prev-app-inner">
+            <div class="pa-tb"></div>
+            <div class="pa-lp">
+              <div class="pa-lp-item active"></div>
+              <div class="pa-lp-item"></div>
+              <div class="pa-lp-item"></div>
+              <div class="pa-lp-item"></div>
+              <div class="pa-lp-item"></div>
+            </div>
+            <div class="pa-vp">
+              <div class="pa-thumb sel"></div><div class="pa-thumb"></div><div class="pa-thumb"></div><div class="pa-thumb"></div>
+              <div class="pa-thumb photo"></div><div class="pa-thumb photo"></div><div class="pa-thumb"></div><div class="pa-thumb"></div>
+            </div>
+            <div class="pa-fs">
+              <div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div>
+            </div>
+            <div class="pa-rp">
+              <div class="pa-rp-hdr"></div><div class="pa-rp-row"></div><div class="pa-rp-row"></div><div class="pa-rp-row"></div>
+              <div class="pa-rp-hdr"></div><div class="pa-rp-row"></div><div class="pa-rp-row"></div>
+            </div>
+            <div class="pa-sb"></div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Library · patient selected</div>
+          <div class="card-desc">Main workspace. Patient list left, thumbnail grid center, properties right, filmstrip bottom. The default screen after launch.</div>
+          <span class="card-tag">SHELL</span>
+        </div>
+      </a>
+
+      <a class="card" href="v4_0_shell_mockup_v1_multiview.html#empty" target="_blank">
+        <div class="card-preview prev-app prev-empty">
+          <div class="prev-app-inner">
+            <div class="pa-tb"></div>
+            <div class="pa-lp">
+              <div class="pa-lp-item active"></div>
+              <div class="pa-lp-item"></div>
+              <div class="pa-lp-item"></div>
+              <div class="pa-lp-item"></div>
+              <div class="pa-lp-item"></div>
+            </div>
+            <div class="pa-vp"></div>
+            <div class="pa-fs"></div>
+            <div class="pa-rp">
+              <div class="pa-rp-hdr"></div><div class="pa-rp-row"></div>
+            </div>
+            <div class="pa-sb"></div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Library · empty state</div>
+          <div class="card-desc">No patient selected. Three-step onboarding: select patient → import images → arrange &amp; present. Addresses bug #114.</div>
+          <span class="card-tag">SHELL</span>
+        </div>
+      </a>
+
+      <a class="card" href="v4_0_shell_mockup_v1_multiview.html#loupe" target="_blank">
+        <div class="card-preview prev-app prev-loupe">
+          <div class="prev-app-inner">
+            <div class="pa-tb"></div>
+            <div class="pa-lp"><div class="pa-lp-item active"></div><div class="pa-lp-item"></div></div>
+            <div class="pa-vp"></div>
+            <div class="pa-fs"><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div></div>
+            <div class="pa-rp"><div class="pa-rp-hdr"></div><div class="pa-rp-row"></div><div class="pa-rp-row"></div><div class="pa-rp-row"></div><div class="pa-rp-row"></div></div>
+            <div class="pa-sb"></div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Library · loupe (image zoomed)</div>
+          <div class="card-desc">Single image editing. Tool strip appears, right panel shifts to Adjust / History / Annotations. Canvas darkens to pure black.</div>
+          <span class="card-tag">SHELL</span>
+        </div>
+      </a>
+
+      <a class="card" href="v4_0_shell_mockup_v1_multiview.html#arrange" target="_blank">
+        <div class="card-preview prev-app prev-arrange">
+          <div class="prev-app-inner">
+            <div class="pa-tb"></div>
+            <div class="pa-lp"><div class="pa-lp-item"></div><div class="pa-lp-item"></div><div class="pa-lp-item"></div></div>
+            <div class="pa-vp"></div>
+            <div class="pa-fs"><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div><div class="pa-fs-thumb"></div></div>
+            <div class="pa-rp"><div class="pa-rp-hdr"></div><div class="pa-rp-row"></div><div class="pa-rp-row"></div></div>
+            <div class="pa-sb"></div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Arrange · unified canvas</div>
+          <div class="card-desc">Template + freeform consolidated. Drag from image library on left onto the arrangement sheet. Saved arrangements reusable.</div>
+          <span class="card-tag">SHELL</span>
+        </div>
+      </a>
+
+      <a class="card" href="v4_0_shell_mockup_v1_multiview.html#present" target="_blank">
+        <div class="card-preview prev-present">
+          <div data-label="CONTROL"><div class="mon-img"></div></div>
+          <div data-label="PATIENT"><div class="mon-img"></div></div>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Present · dual-monitor</div>
+          <div class="card-desc">First-class patient-facing view. Control monitor has chrome, patient monitor is zero-chrome mirror. The differentiated feature.</div>
+          <span class="card-tag">SHELL</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Reference</div>
+    <div class="section-intro">Deep-dive documentation: every menu, every toolbar, every keyboard shortcut, in one place.</div>
+    <div class="grid">
+
+      <a class="card" href="v4_0_menu_reference.html" target="_blank">
+        <div class="card-preview prev-ref">
+          <b>FILE</b> &nbsp; <i>Ctrl+O Open</i>
+          <i style="padding-left: 10px;">Ctrl+I Import</i>
+          <i style="padding-left: 10px;">Ctrl+E Export</i>
+          <b>EDIT</b> &nbsp; <i>Ctrl+Z Undo</i>
+          <i style="padding-left: 10px;">Ctrl+Shift+C Copy Adj</i>
+          <b>VIEW</b> &nbsp; <i>Home Fit</i>
+          <i style="padding-left: 10px;">F11 Fullscreen</i>
+          <b>TEMPLATES</b>
+          <b>COMPARE</b>
+          <b>HELP</b>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Menu &amp; submenu reference</div>
+          <div class="card-desc">Every menu, every submenu, every shortcut — pulled from panda_gallery.py. Complete keyboard / menu map.</div>
+          <span class="card-tag ref">REFERENCE</span>
+        </div>
+      </a>
+
+      <a class="card" href="v4_0_toolbar_reference.html" target="_blank">
+        <div class="card-preview prev-ref">
+          <b>TOP TOOLBAR</b>
+          <i>Open · Undo · Redo · Zoom+ · Zoom- · Fit · Export · Print</i>
+          <br>
+          <b>TOOL STRIP (left of canvas)</b>
+          <i>V Select · B Brush · R Rect · E Ellipse</i>
+          <i>A Arrow · T Text · C Crop · I Invert</i>
+          <br>
+          <b>RIGHT PANEL TABS</b>
+          <i>Info · Adjust · Drawing · Layers</i>
+          <i>History · Series</i>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Toolbars &amp; tool strip</div>
+          <div class="card-desc">All the clickable controls in one view: top toolbar, canvas-left tool strip, right-panel tabs. Every icon labeled.</div>
+          <span class="card-tag ref">REFERENCE</span>
+        </div>
+      </a>
+
+      <a class="card" href="v4_0_palette_typography.html" target="_blank">
+        <div class="card-preview prev-ref">
+          <b>COLOR TOKENS</b>
+          <i>canvas · pane · accent · text</i>
+          <br>
+          <b>TYPOGRAPHY</b>
+          <i>Segoe UI — body / UI</i>
+          <i>Cascadia Mono — numbers</i>
+          <br>
+          <b>SPACING · RADIUS · MOTION</b>
+        </div>
+        <div class="card-body">
+          <div class="card-name">Palette &amp; typography</div>
+          <div class="card-desc">Design tokens: colors (from styles.py), type pairings, spacing scale. The atomic layer every screen is built from.</div>
+          <span class="card-tag ref">REFERENCE</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>Panda Gallery v4.0 · Darrin Adrian, product authority</div>
+    <div>Generated 2026-04-23 · shell mockup v1</div>
+  </div>
+
+</div>
+</body>
+</html>
