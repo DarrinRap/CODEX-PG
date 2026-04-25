@@ -132,3 +132,14 @@ Completed: 2026-04-24 19:13:05 -07:00
 - External MVP DOCX extract: `CODEX_PG_TESTING_AUDIT_MVP_SPEC_EXTRACT.txt`
 
 Key conclusion: the spec corpus is rich but fragmented. Next best step is to create a master spec index and canonical Testing + Audit data contracts before implementation.
+
+## Codebase Orientation Completed
+
+Completed: 2026-04-24 19:21:32 -07:00
+
+- Orientation folder: C:\CODEX PG\CODEX Codebase Orientation
+- Main summary: C:\CODEX PG\CODEX Codebase Orientation\CODEX_PG_CODEBASE_ORIENTATION_SUMMARY.md
+- Live source inspected: C:\panda-gallery version 4.23.
+- Key understanding: PG already has guided local testing, workflow screenshot/audio capture, local faster-whisper transcription, results JSON, and Shift+F12 session-aware region capture. Testing + Audit MVP still needs canonical package/evidence/issue/approval/archive contracts before broad implementation.
+
+Recommended next task: create CODEX_MASTER_SPEC_INDEX.md and CODEX_SESSION_PACKAGE_SCHEMA_v1.md before building the audit app/backend slice.
