@@ -94,7 +94,7 @@ Important: do not write into `C:\panda-gallery`; all Codex-derived files belong 
 <!-- CODEX_AUTOMATED_HANDOFF_START -->
 ## Automated Handoff Snapshot
 
-Generated: 2026-04-24 23:49:25 -07:00
+Generated: 2026-04-24 23:50:29 -07:00
 Mode: `Handoff`
 
 - Last automated handoff: `C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md`
@@ -236,6 +236,37 @@ Created: 2026-04-24 20:52:21 -07:00
 Contents summary: 120 files total, including 42 full-size PNG images, 37 HTML mockups, 19 Markdown docs, 2 Python sample scripts, 16 JSON files, the complete synthetic sample source session, and the generated Audit MVP sample package. Contact sheets are intentionally not included in the full-size mockup images folder.
 
 Purpose: one folder Darrin can point Claude to for Codex docs, canonical specs, Audit MVP starter pack, full-size mockup renders, source HTML mockups, sample code, sample JSON, and Claude-ready prompts.
+
+## Claude Codex Mailbox Protocol
+
+Created: 2026-04-24 23:00:00 -07:00
+
+Codex and Claude now coordinate through a shared mailbox under `C:\CODEX PG`:
+
+- Mailbox root: `C:\CODEX PG\CODEX Claude Codex Mailbox`
+- Protocol: `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_PROTOCOL.md`
+- Claude-to-Codex messages: `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX Inbox`
+- Codex-to-Claude messages: `C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox`
+- Sent copies:
+  - `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX Sent`
+  - `C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Sent`
+
+Rules:
+
+- Check `CODEX Inbox` early in every resumed session.
+- Use timestamped Markdown files for messages.
+- Do not edit another agent's sent message; reply with a new file.
+- Mailbox is for coordination only and does not authorize implementation.
+- No PHI, patient data, secrets, credentials, tokens, or approval-sensitive material.
+- Darrin remains the approval gate for edits to `C:\panda-gallery`.
+
+Recent mailbox topics:
+
+- Stage 1 audit integration contract decisions and implementation report.
+- Claude's correction that live manifest `warnings[]` contains two expected `optional_source_missing` entries.
+- Claude guidance for main PG UX mapping.
+- Claude/Codex agreement that Template and Freeform should unify inside the Arrange module, using per-slot constraints and an Edit Layout affordance rather than a separate Template Studio module.
+
 
 
 
