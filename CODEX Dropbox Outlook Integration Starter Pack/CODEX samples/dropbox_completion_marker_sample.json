@@ -1,0 +1,8 @@
+{
+  "schema": "pg.dropbox_completion_marker.v1",
+  "package_id": "pkg_sample_20260424_201255",
+  "created_at": "2026-04-24T20:14:10-07:00",
+  "file_count": 7,
+  "manifest_path": "session_package_manifest.json",
+  "manifest_sha256": "sample_hex_sha256"
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "pg.sender_response_draft.v1",
+  "package_id": "pkg_sample_20260424_201255",
+  "to": ["tester@example.invalid"],
+  "subject": "Panda Gallery testing report reviewed",
+  "body_markdown": "Thanks. We reviewed your testing package. We will fix the instruction pane clipping issue, amend the region review placement behavior, and add clearer capture status to the feature list. One mount-related note needs another screenshot before we can act on it.",
+  "state": "draft_pending_human_review",
+  "requires_human_send_approval": true
+}

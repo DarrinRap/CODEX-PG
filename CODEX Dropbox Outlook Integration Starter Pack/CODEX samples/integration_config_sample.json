@@ -1,0 +1,16 @@
+{
+  "dropbox": {
+    "incoming_folder": "/Panda Gallery Audit/Incoming",
+    "completion_marker": "_PACKAGE_READY.json",
+    "local_staging_root": "C:/CODEX PG/CODEX Audit Intake Staging"
+  },
+  "outlook": {
+    "mode": "draft_only",
+    "default_sender": "configured_by_user@example.invalid",
+    "require_human_send_approval": true
+  },
+  "analysis": {
+    "auto_analyze_after_intake": false,
+    "use_synthetic_samples_only": true
+  }
+}

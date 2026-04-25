@@ -96,7 +96,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-24 20:20:52 -07:00
+Last generated: 2026-04-24 21:57:24 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -246,3 +246,4 @@ Created: 2026-04-24 20:52:21 -07:00
 Contents summary: 120 files total, including 42 full-size PNG images, 37 HTML mockups, 19 Markdown docs, 2 Python sample scripts, 16 JSON files, the complete synthetic sample source session, and the generated Audit MVP sample package. Contact sheets are intentionally not included in the full-size mockup images folder.
 
 Purpose: one folder Darrin can point Claude to for Codex docs, canonical specs, Audit MVP starter pack, full-size mockup renders, source HTML mockups, sample code, sample JSON, and Claude-ready prompts.
+

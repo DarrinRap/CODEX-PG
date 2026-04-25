@@ -1,0 +1,11 @@
+{
+  "schema": "pg.sender_response_draft.v1",
+  "package_id": "pkg_local_sample",
+  "to": [
+    "tester@example.invalid"
+  ],
+  "subject": "Panda Gallery testing report reviewed",
+  "body_markdown": "Thanks. We reviewed your Panda Gallery testing package.\n\nWe will fix now:\n- Instruction pane action row is clipped\n\nWe will amend:\n- Region review dialog placement should be anchored\n\nWe will add to the feature list:\n- Clearer capture status after region save\n\nWe need clarification:\n- Wrong mount comment needs another screenshot",
+  "state": "draft_pending_human_review",
+  "requires_human_send_approval": true
+}

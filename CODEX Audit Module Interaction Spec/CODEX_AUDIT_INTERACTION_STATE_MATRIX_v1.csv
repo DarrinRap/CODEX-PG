@@ -1,0 +1,34 @@
+﻿screen,state,user_action,system_response,data_written,error_handling,next_state
+Testing Audit Panel,audit_idle,Open Testing Audit Panel,Scan configured testing outputs and show sessions,audit_session_state panel_opened event,If output missing show setup hint and retry,audit_idle or audit_session_selected
+Testing Audit Panel,audit_idle,Select session,Load results metadata transcript and screenshot pointers,audit_session_state selected_session_id and scan_result,If JSON unreadable show parse warning,audit_session_selected or audit_error_recoverable
+Testing Audit Panel,audit_session_selected,RUN STEP,Open first incomplete or selected test step,step_opened event,If no steps show no test steps found,audit_step_ready
+Testing Audit Panel,audit_session_selected,VALIDATE,Run preflight validation without building package,preflight_validation event,If required files missing list missing source kinds,audit_session_selected
+Testing Audit Panel,audit_session_selected,Open issue row,Load issue details and evidence preview,issue_opened event,If evidence missing show broken placeholder,audit_issue_draft
+Workflow Capture,audit_step_ready,CAPTURE,Capture full PG window or active monitor,ev_step_auto evidence object and evidence_added event,If capture fails offer retry and manual mark,audit_decision_pending or audit_error_recoverable
+Workflow Capture,audit_step_ready,MARK REGION,Arm region capture overlay,region_capture_armed event,If region tool unavailable allow full screenshot fallback,audit_capture_armed
+Workflow Capture,audit_capture_armed,Complete region selection,Save region and open review dialog,ev_region evidence object and region_captured event,If save fails keep preview and show path error,audit_region_review or audit_error_recoverable
+Workflow Capture,audit_capture_armed,Cancel region selection,Dismiss overlay without evidence change,region_capture_cancelled event,If tool errors show nonblocking toast,audit_step_ready
+Workflow Capture,audit_decision_pending,PASS,Mark step pass and advance,step outcome PASS and evidence links,If write fails restore previous state,audit_step_ready or audit_session_selected
+Workflow Capture,audit_decision_pending,FAIL,Open FAIL panel with evidence prelinked,issue draft shell,If no evidence block unless test_authoring exception,audit_fail_detail_editing
+Workflow Capture,audit_decision_pending,SKIP,Prompt for reason and advance,step outcome SKIP and note,If reason empty keep prompt open,audit_step_ready or audit_session_selected
+Region capture Review,audit_region_review,SAVE EVIDENCE,Accept region and attach to step,evidence discarded false and evidence_accepted event,If write fails keep dialog open,audit_decision_pending
+Region capture Review,audit_region_review,RE-CAPTURE,Mark current evidence discarded and re-arm capture,evidence discarded true and recapture event,If state update fails warn and continue,audit_capture_armed
+Region capture Review,audit_region_review,DISCARD,Mark current evidence discarded and close,evidence discarded true and evidence_discarded event,If discard cannot be recorded show retry,audit_step_ready or audit_decision_pending
+Region capture Review,audit_region_review,Edit metadata,Update evidence metadata preview,evidence field_edited event,Invalid severity or empty label blocks save,audit_region_review
+Region capture Review,audit_region_review,CREATE ISSUE,Save/link evidence then open FAIL detail panel,issue draft shell and evidence link,If evidence discarded require save first,audit_fail_detail_editing
+FAIL Detail Panel,audit_fail_detail_editing,Enter observed behavior,Save draft field,issue observed_behavior and field_edited event,Warn if too long do not truncate,audit_fail_detail_editing
+FAIL Detail Panel,audit_fail_detail_editing,Enter expected behavior,Save draft field,issue expected_behavior and field_edited event,Empty expected blocks approval,audit_fail_detail_editing
+FAIL Detail Panel,audit_fail_detail_editing,Select category,Validate against canonical list,issue category,Invalid category reverts with warning,audit_fail_detail_editing
+FAIL Detail Panel,audit_fail_detail_editing,Select priority,Validate P0-P3 and show hint,issue priority,P0 requires explicit impact note,audit_fail_detail_editing
+FAIL Detail Panel,audit_fail_detail_editing,Add or remove evidence link,Update evidence chip list and preview,issue evidence_ids and event,Removing final evidence blocks approval except test_authoring,audit_fail_detail_editing
+FAIL Detail Panel,audit_fail_detail_editing,APPROVE ISSUE,Validate and freeze draft into issue extraction,audit_issue_extraction issue object,Show field-level errors and focus first invalid field,audit_issue_draft
+Session Package,audit_issue_draft,BUILD PACKAGE,Create package folder copy sources evidence and derive manifest,manifest ai_extraction_input evidence files logs,If folder exists create new package ID or dev overwrite,audit_package_draft
+Session Package,audit_package_draft,Automatic validation,Validate schema links hashes paths and privacy,validation_report and manifest warnings,Errors keep package draft warnings may allow local_ready,audit_package_local_ready or audit_error_recoverable
+Session Package,audit_package_draft,VALIDATE,Re-run validation without copying files,updated validation_report and log,Show errors grouped by type,audit_package_local_ready or audit_package_draft
+Session Package,audit_package_local_ready,OPEN FOLDER,Open package folder,package_folder_opened event,If folder missing mark stale and offer rebuild,audit_package_local_ready
+Claude Handoff,audit_package_local_ready,Open Handoff screen,Generate prompt preview from validated package,handoff markdown and preview event,If no approved issues show no implementation issue selected,audit_handoff_ready or audit_package_local_ready
+Claude Handoff,audit_handoff_ready,COPY PROMPT,Copy prompt text to clipboard,prompt_copied event,If clipboard unavailable select text and offer export,audit_handoff_ready
+Claude Handoff,audit_handoff_ready,EXPORT .MD,Write markdown prompt into handoff folder,handoff claude_implementation_prompt.md,If write fails show path and keep preview,audit_handoff_ready
+Claude Handoff,audit_handoff_ready,OPEN EVIDENCE,Open package evidence folder,evidence_folder_opened event,If evidence missing return to validation,audit_handoff_ready or audit_package_draft
+Claude Handoff,audit_handoff_ready,Mark handoff complete,Close local MVP package or archive,handoff_completed event and optional archive record,If archive write fails keep handoff ready,audit_archived or audit_handoff_ready
+Flow Map,any non-capture state,Open flow map help,Show read-only workflow map,help_opened event,If asset missing show text fallback,prior state
