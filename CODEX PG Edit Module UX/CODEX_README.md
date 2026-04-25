@@ -2,12 +2,12 @@
 
 Created: 2026-04-25
 
-This folder contains Codex-authored UX planning for the Panda Gallery Edit/Review surface, with emphasis on radiograph enhancement tools.
+This folder contains Codex-authored UX planning for the Panda Gallery Review surface, with emphasis on radiograph enhancement tools.
 
 ## Files
 
 - `CODEX_EDIT_MODULE_RADIOGRAPH_UX_SPEC_v1.md`
-  Detailed UX map for the Edit module, radiograph enhancement toolset, interaction flow, panel organization, and staged implementation.
+  Detailed UX map for the Review module, radiograph enhancement toolset, interaction flow, panel organization, newer algorithm candidates, and staged implementation. Historical filename retained from the earlier Edit vocabulary.
 
 ## Source References
 
@@ -22,4 +22,3 @@ This folder contains Codex-authored UX planning for the Panda Gallery Edit/Revie
 ## Boundary
 
 These are planning artifacts only. Codex does not edit `C:\panda-gallery`.
-
