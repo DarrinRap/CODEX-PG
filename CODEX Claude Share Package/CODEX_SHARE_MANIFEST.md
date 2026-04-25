@@ -1,23 +1,32 @@
 # CODEX Claude Share Package Manifest
 
-Generated: 2026-04-24 22:07:37 -07:00
+Generated: 2026-04-24 22:21:15 -07:00
 
 ## Summary
 
-- File count: 120
-- Total bytes: 12484772
+- File count: 129
+- Total bytes: 12539916
 
 ## File Inventory
 
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\__init__.py` (270 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\cli.py` (933 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\package_builder.py` (14719 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\validation.py` (6117 bytes)
+- `CODEX Desktop App Scaffold\CODEX_README.md` (1375 bytes)
+- `CODEX Desktop App Scaffold\CODEX_tests\test_package_builder.py` (1735 bytes)
+- `CODEX Desktop App Scaffold\pyproject.toml` (261 bytes)
+- `CODEX Documents\CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md` (15905 bytes)
 - `CODEX Documents\CODEX_AUDIT_ISSUE_SCHEMA_v1.md` (10045 bytes)
 - `CODEX Documents\CODEX_AUDIT_MVP_STARTER_PACK_README.md` (4252 bytes)
 - `CODEX Documents\CODEX_CLAUDE_CODE_QUALITY_RECOMMENDATIONS.md` (42527 bytes)
 - `CODEX Documents\CODEX_CLAUDE_SCREENSHOT_UX_MOCKUP_REVIEW.md` (30467 bytes)
+- `CODEX Documents\CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md` (12668 bytes)
 - `CODEX Documents\CODEX_CURRENT_HANDOFF.md` (11543 bytes)
 - `CODEX Documents\CODEX_interface_storyboard_notes_v1.md` (4377 bytes)
 - `CODEX Documents\CODEX_LAST_AUTOMATED_HANDOFF.md` (1574 bytes)
-- `CODEX Documents\CODEX_MASTER_SPEC_INDEX.md` (8654 bytes)
-- `CODEX Documents\CODEX_MOCKUP_AND_SPEC_REFERENCES.md` (2753 bytes)
+- `CODEX Documents\CODEX_MASTER_SPEC_INDEX.md` (9286 bytes)
+- `CODEX Documents\CODEX_MOCKUP_AND_SPEC_REFERENCES.md` (2988 bytes)
 - `CODEX Documents\CODEX_PG_CODEBASE_ORIENTATION_SUMMARY.md` (19554 bytes)
 - `CODEX Documents\CODEX_SESSION_PACKAGE_SCHEMA_v1.md` (8654 bytes)
 - `CODEX Documents\CODEX_SPECIFICATION_REVIEW_REPORT.md` (16328 bytes)
@@ -60,7 +69,7 @@ Generated: 2026-04-24 22:07:37 -07:00
 - `CODEX Full Size Mockup Images\CODEX Claude UX Review\CODEX rendered screenshots\31_v4_0_v4_0_toolbar_reference.png` (155446 bytes)
 - `CODEX Full Size Mockup Images\CODEX Claude UX Review\CODEX rendered screenshots\32_v4_0_v4_1_preferences_mockup.png` (122283 bytes)
 - `CODEX Full Size Mockup Images\CODEX Claude UX Review\CODEX rendered screenshots\CODEX_render_manifest.json` (50063 bytes)
-- `CODEX Prompts\CODEX_CLAUDE_INTEGRATION_PROMPT.md` (5405 bytes)
+- `CODEX Prompts\CODEX_CLAUDE_INTEGRATION_PROMPT.md` (5561 bytes)
 - `CODEX Sample Code\audit_mvp_reference_builder.py` (16837 bytes)
 - `CODEX Sample Code\validate_audit_mvp_contracts.py` (11942 bytes)
 - `CODEX Sample JSON\ai_extraction_input_v1.json` (6058 bytes)
@@ -127,5 +136,5 @@ Generated: 2026-04-24 22:07:37 -07:00
 - `CODEX Source HTML Mockups\CODEX Claude Original HTML\CODEX_claude_v4_0_v4_0_toolbar_reference.html` (14035 bytes)
 - `CODEX Source HTML Mockups\CODEX Claude Original HTML\CODEX_claude_v4_0_v4_1_preferences_mockup.html` (23587 bytes)
 - `CODEX Source HTML Mockups\CODEX Storyboards\CODEX_step_by_step_ui_storyboard_v1.html` (34727 bytes)
-- `CODEX_READ_ME_FIRST.md` (3615 bytes)
+- `CODEX_READ_ME_FIRST.md` (3753 bytes)
 - `CODEX_render_share_mockups.js` (1884 bytes)

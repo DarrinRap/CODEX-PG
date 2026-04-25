@@ -41,12 +41,13 @@ Rules:
 | `CODEX_MASTER_SPEC_INDEX.md` | Codex canonical | Testing + Audit, PG Core boundary | Source-of-truth map and supersession guide. |
 | `CODEX_SESSION_PACKAGE_SCHEMA_v1.md` | Codex canonical | Testing + Audit | Session package, manifest, evidence ID, upload readiness, and integrity contract. |
 | `CODEX_AUDIT_ISSUE_SCHEMA_v1.md` | Codex canonical | Testing + Audit | AI issue extraction, reviewer state, approval, email, and archive data contract. |
+| `CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md` | Codex canonical | Testing + Audit | Pipeline architecture, component boundaries, local prototype sequence, adapter seams, and dashboard/storage responsibilities. |
+| `CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md` | Codex canonical | Testing + Audit | Dashboard views, visual alignment, evidence review workflow, approval/email/archive UX, and local prototype acceptance criteria. |
+| `CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md` | Codex canonical | Testing + Audit | Privacy, PHI, Dropbox, AI, email, archive, logging, and stop-condition guardrails for MVP development. |
 
 Recommended next Codex canonical docs:
 
-- `CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md`
-- `CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md`
-- `CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md`
+- None. The next best step is implementation scaffolding for the local-only package builder and validator.
 
 ## Reviewed Source Corpus
 
@@ -78,7 +79,7 @@ Recommended next Codex canonical docs:
 
 ## Implementation Priority
 
-1. Freeze package, evidence, and issue contracts.
+1. Freeze package, evidence, issue, architecture, dashboard UX, and compliance contracts.
 2. Build a local-only session package generator against existing `results_latest.json`, screenshots, transcript, and metadata.
 3. Add deterministic AI-extraction input JSON.
 4. Add Dropbox transfer only after package readiness and integrity markers exist.
@@ -94,4 +95,3 @@ Recommended next Codex canonical docs:
 | Email provider and shared inbox source | Approval/email workflow | Draft email records only; no send. |
 | Durable backend/search store | Searchable archive | Local JSONL/SQLite archive prototype under Codex folder. |
 | Approval roles and identities | Dashboard workflow | Single reviewer identity string in schema. |
-

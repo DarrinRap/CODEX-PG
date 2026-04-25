@@ -1,0 +1,10 @@
+[project]
+name = "codex-pg-audit-local"
+version = "0.1.0"
+description = "Local-only Panda Gallery Testing + Audit package builder prototype."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["CODEX_tests"]
+pythonpath = ["."]

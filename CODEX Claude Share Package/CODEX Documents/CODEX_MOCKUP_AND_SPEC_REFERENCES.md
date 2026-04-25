@@ -1,4 +1,4 @@
-﻿# CODEX Audit MVP Mockup And Spec References
+# CODEX Audit MVP Mockup And Spec References
 
 Use these references when Claude begins integration or UI planning.
 
@@ -7,6 +7,9 @@ Use these references when Claude begins integration or UI planning.
 - `C:\CODEX PG\CODEX Canonical Specs\CODEX_MASTER_SPEC_INDEX.md`
 - `C:\CODEX PG\CODEX Canonical Specs\CODEX_SESSION_PACKAGE_SCHEMA_v1.md`
 - `C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_ISSUE_SCHEMA_v1.md`
+- `C:\CODEX PG\CODEX Canonical Specs\CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md`
+- `C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md`
+- `C:\CODEX PG\CODEX Canonical Specs\CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md`
 
 ## Starter Pack
 

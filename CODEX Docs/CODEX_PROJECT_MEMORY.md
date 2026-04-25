@@ -1,6 +1,6 @@
 ﻿# CODEX Project Memory
 
-Last updated: 2026-04-24 18:40:54 -07:00
+Last updated: 2026-04-24 22:14:00 -07:00
 
 This file is the durable memory for Codex work on the PG Testing + Audit desktop project. Future Codex chats should read this file first before making plans or edits.
 
@@ -96,7 +96,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-24 21:57:24 -07:00
+Last generated: 2026-04-24 22:21:35 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -139,6 +139,9 @@ Created: 2026-04-24 20:20:52 -07:00
 - Master spec index: `C:\CODEX PG\CODEX Canonical Specs\CODEX_MASTER_SPEC_INDEX.md`
 - Session package schema: `C:\CODEX PG\CODEX Canonical Specs\CODEX_SESSION_PACKAGE_SCHEMA_v1.md`
 - Audit issue schema: `C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_ISSUE_SCHEMA_v1.md`
+- Testing + Audit architecture: `C:\CODEX PG\CODEX Canonical Specs\CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md`
+- Audit dashboard UX spec: `C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md`
+- Testing + Audit compliance addendum: `C:\CODEX PG\CODEX Canonical Specs\CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md`
 
 Purpose: convert the fragmented spec corpus into buildable Testing + Audit contracts before PySide6/backend implementation.
 
@@ -150,7 +153,7 @@ Key decisions captured:
 - Dropbox/backend processing must wait for a package-ready marker, not just file upload.
 - AI issues must reference valid evidence IDs and preserve AI suggestions separately from reviewer edits.
 
-Recommended next task: create `CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md`, then implement the smallest local-only package generator under `C:\CODEX PG`.
+Recommended next task: harden the local package builder against live PG output variations, then expand tests for missing optional transcript/metadata and missing screenshot evidence.
 
 ## Codebase Orientation Completed
 
@@ -161,7 +164,7 @@ Completed: 2026-04-24 19:21:32 -07:00
 - Live source inspected: C:\panda-gallery version 4.23.
 - Key understanding: PG already has guided local testing, workflow screenshot/audio capture, local faster-whisper transcription, results JSON, and Shift+F12 session-aware region capture. Testing + Audit MVP still needs canonical package/evidence/issue/approval/archive contracts before broad implementation.
 
-Recommended next task: create CODEX_MASTER_SPEC_INDEX.md and CODEX_SESSION_PACKAGE_SCHEMA_v1.md before building the audit app/backend slice.
+Recommended next task: continue hardening the local package builder and validator before adding Dropbox, AI, email, archive, or dashboard implementation.
 
 ## Claude Code Quality Recommendations Document
 
@@ -246,4 +249,23 @@ Created: 2026-04-24 20:52:21 -07:00
 Contents summary: 120 files total, including 42 full-size PNG images, 37 HTML mockups, 19 Markdown docs, 2 Python sample scripts, 16 JSON files, the complete synthetic sample source session, and the generated Audit MVP sample package. Contact sheets are intentionally not included in the full-size mockup images folder.
 
 Purpose: one folder Darrin can point Claude to for Codex docs, canonical specs, Audit MVP starter pack, full-size mockup renders, source HTML mockups, sample code, sample JSON, and Claude-ready prompts.
+## Local Audit Package Builder Scaffold Created
+
+Created: 2026-04-24 22:18:00 -07:00
+
+- Scaffold folder: `C:\CODEX PG\CODEX Desktop App`
+- Python package: `C:\CODEX PG\CODEX Desktop App\CODEX_pg_audit`
+- Tests: `C:\CODEX PG\CODEX Desktop App\CODEX_tests`
+- README: `C:\CODEX PG\CODEX Desktop App\CODEX_README.md`
+- Claude share copy: `C:\CODEX PG\CODEX Claude Share Package\CODEX Desktop App Scaffold`
+- Generated smoke package: `C:\CODEX PG\CODEX Audit Prototype\CODEX Session Packages\session_package_session_20260424_194422` local-only and ignored by git.
+
+Verification completed with bundled Codex Python:
+
+- `python -m unittest discover -s CODEX_tests`: 2 tests passed.
+- `python -m CODEX_pg_audit.cli ...`: generated sample package and validator returned `ok: true` with zero errors and zero warnings.
+
+Important boundary: this is a local-only package builder and validator scaffold. It does not build v4, does not build the final audit dashboard, does not upload to Dropbox, does not call AI, does not send email, and does not mutate `C:\panda-gallery`.
+
+Recommended next task: harden the package builder against live PG output variations by reading current `results_latest.json` shapes from `C:\panda-gallery` read-only, then add tests for missing optional transcript/metadata and missing screenshot evidence.
 

@@ -1,4 +1,4 @@
-﻿# CODEX docs
+# CODEX docs
 *.tmp
 *.bak
 *.log
@@ -14,3 +14,4 @@ CODEX Playwright Browsers/
 CODEX Claude Share Package.zip
 CODEX Audit Module UX Revision v3.zip
 CODEX Dropbox Outlook Integration Starter Pack.zip
+CODEX Audit Prototype/
