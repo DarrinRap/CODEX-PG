@@ -93,8 +93,15 @@ if ([string]::IsNullOrWhiteSpace($currentBranch)) {
 }
 
 if (-not [string]::IsNullOrWhiteSpace($RemoteUrl)) {
-    $existingRemote = (& git remote get-url origin) 2>$null
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($existingRemote)) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $existingRemote = (& git remote get-url origin) 2>$null
+        $existingRemoteCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($existingRemoteCode -eq 0 -and -not [string]::IsNullOrWhiteSpace($existingRemote)) {
         Write-Log "Updating origin remote to supplied URL."
         Invoke-LoggedGit remote set-url origin $RemoteUrl
     } else {
@@ -118,8 +125,15 @@ if ($SkipPush) {
     exit 0
 }
 
-$origin = (& git remote get-url origin) 2>$null
-if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($origin)) {
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+    $origin = (& git remote get-url origin) 2>$null
+    $originCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+if ($originCode -eq 0 -and -not [string]::IsNullOrWhiteSpace($origin)) {
     Write-Log "Pushing branch '$Branch' to origin: $origin"
     Invoke-LoggedGit push -u origin $Branch
     Write-Log "GitHub push complete."
@@ -129,4 +143,5 @@ if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($origin)) {
 }
 
 Write-Log "Backup complete."
+
 
