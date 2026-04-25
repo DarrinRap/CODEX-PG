@@ -106,3 +106,15 @@ Mode: `Handoff`
 Use trigger word `CODEX RESUME PG` in a fresh chat and paste the contents of `CODEX_RESUME_PROMPT.txt` if needed.
 <!-- CODEX_AUTOMATED_HANDOFF_END -->
 
+
+## Local Claude PG Data Copy
+
+Created: 2026-04-24 19:06:20 -07:00
+
+- Source: `C:\panda-gallery`
+- Destination: `C:\CODEX PG\CODEX CLAUDE PG DATA`
+- Files copied: 6,249
+- Size copied: approximately 2.34 GB
+- Copy method: `robocopy` with hidden files and empty directories included, junctions excluded.
+- GitHub backup status: destination is intentionally ignored by `.gitignore` and is local-only.
+- Copy log: `C:\CODEX PG\CODEX Backup Logs\CODEX_copy_claude_pg_data_20260424_190538.log`
