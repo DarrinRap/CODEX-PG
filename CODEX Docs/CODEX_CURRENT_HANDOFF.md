@@ -94,8 +94,8 @@ Important: do not write into `C:\panda-gallery`; all Codex-derived files belong 
 <!-- CODEX_AUTOMATED_HANDOFF_START -->
 ## Automated Handoff Snapshot
 
-Generated: 2026-04-24 20:12:55 -07:00
-Mode: `Handoff`
+Generated: 2026-04-24 20:20:52 -07:00
+Mode: `Checkpoint`
 
 - Last automated handoff: `C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md`
 - Fresh chat resume prompt: `C:\CODEX PG\CODEX Docs\CODEX_RESUME_PROMPT.txt`
@@ -128,6 +128,20 @@ Completed: 2026-04-24 19:13:05 -07:00
 - External MVP DOCX extract: `CODEX_PG_TESTING_AUDIT_MVP_SPEC_EXTRACT.txt`
 
 Key conclusion: the spec corpus is rich but fragmented. Next best step is to create a master spec index and canonical Testing + Audit data contracts before implementation.
+
+## Canonical Testing + Audit Specs Started
+
+Created: 2026-04-24 20:20:52 -07:00
+
+- Folder: `C:\CODEX PG\CODEX Canonical Specs`
+- `CODEX_MASTER_SPEC_INDEX.md`: maps current, historical, superseded, implementation, and process specs; separates PG Core v4 from Testing + Audit MVP v1.
+- `CODEX_SESSION_PACKAGE_SCHEMA_v1.md`: defines package manifest, package states, source records, evidence IDs, transcript refs, upload marker, integrity, and local vertical slice.
+- `CODEX_AUDIT_ISSUE_SCHEMA_v1.md`: defines AI issue extraction output, category/priority taxonomy, review lifecycle, approval records, email draft records, and archive search records.
+
+Immediate next best step:
+
+1. Draft `CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md`.
+2. Then build the smallest local-only package generator under `C:\CODEX PG`, using `C:\panda-gallery` only as read-only input.
 
 ## Codebase Orientation Completed
 
@@ -190,4 +204,5 @@ Installed: 2026-04-24 20:09:42 -07:00
 - GitHub backup policy: CODEX Playwright Browsers/ is intentionally ignored in .gitignore because it contains large downloaded browser binaries.
 
 Use Playwright for local HTML mockup screenshots, contact sheets, responsive checks, and future browser-style dashboard/spec testing. It is not the primary test tool for the live Python/PySide desktop app.
+
 

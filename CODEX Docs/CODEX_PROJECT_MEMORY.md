@@ -96,7 +96,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-24 20:12:55 -07:00
+Last generated: 2026-04-24 20:20:52 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -130,6 +130,27 @@ Completed: 2026-04-24 19:13:05 -07:00
 - External MVP DOCX extract: `CODEX_PG_TESTING_AUDIT_MVP_SPEC_EXTRACT.txt`
 
 Key conclusion: the spec corpus is rich but fragmented. Next best step is to create a master spec index and canonical Testing + Audit data contracts before implementation.
+
+## Canonical Testing + Audit Specs Started
+
+Created: 2026-04-24 20:20:52 -07:00
+
+- Folder: `C:\CODEX PG\CODEX Canonical Specs`
+- Master spec index: `C:\CODEX PG\CODEX Canonical Specs\CODEX_MASTER_SPEC_INDEX.md`
+- Session package schema: `C:\CODEX PG\CODEX Canonical Specs\CODEX_SESSION_PACKAGE_SCHEMA_v1.md`
+- Audit issue schema: `C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_ISSUE_SCHEMA_v1.md`
+
+Purpose: convert the fragmented spec corpus into buildable Testing + Audit contracts before PySide6/backend implementation.
+
+Key decisions captured:
+
+- PG Core v4 and PG Testing + Audit MVP v1 are separate product tracks.
+- Audio capture and timestamped transcription remain upstream inputs.
+- Session packages use durable evidence IDs instead of bare screenshot paths.
+- Dropbox/backend processing must wait for a package-ready marker, not just file upload.
+- AI issues must reference valid evidence IDs and preserve AI suggestions separately from reviewer edits.
+
+Recommended next task: create `CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md`, then implement the smallest local-only package generator under `C:\CODEX PG`.
 
 ## Codebase Orientation Completed
 
@@ -193,4 +214,5 @@ Installed: 2026-04-24 20:09:42 -07:00
 - GitHub backup policy: CODEX Playwright Browsers/ is intentionally ignored in .gitignore because it contains large downloaded browser binaries.
 
 Use Playwright for local HTML mockup screenshots, contact sheets, responsive checks, and future browser-style dashboard/spec testing. It is not the primary test tool for the live Python/PySide desktop app.
+
 
