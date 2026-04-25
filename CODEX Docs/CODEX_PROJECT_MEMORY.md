@@ -1,6 +1,6 @@
 ﻿# CODEX Project Memory
 
-Last updated: 2026-04-24 22:58:00 -07:00
+Last updated: 2026-04-24 23:00:00 -07:00
 
 This file is the durable memory for Codex work on the PG Testing + Audit desktop project. Future Codex chats should read this file first before making plans or edits.
 
@@ -96,7 +96,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-24 22:55:13 -07:00
+Last generated: 2026-04-24 23:09:52 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -288,5 +288,21 @@ Prompt files:
 
 - `C:\CODEX PG\CODEX Claude Share Package\CODEX Prompts\CODEX_CODEX_RESPONSE_TO_CLAUDE_STAGE1_ALIGNMENT.md`
 - `C:\CODEX PG\CODEX Claude Share Package\CODEX Prompts\CODEX_CLAUDE_STAGE1_APPROVAL_PROMPT.md`
+## Claude Codex Mailbox Created
 
+Created: 2026-04-24 23:00:00 -07:00
+
+- Mailbox root: `C:\CODEX PG\CODEX Claude Codex Mailbox`
+- Protocol: `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_PROTOCOL.md`
+- Claude-to-Codex messages: `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX Inbox`
+- Codex-to-Claude messages: `C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox`
+- First message to Claude: `20260424_230000_CODEX_to_CLAUDE_mailbox_protocol_and_q1_decision.md`
+
+Rules: mailbox is for coordination only, cannot authorize implementation by itself, and must not contain PHI, secrets, credentials, or patient data. Darrin remains the approval gate for Stage 1 implementation.
+
+Latest schema decisions sent to Claude through mailbox:
+
+- Q1 = Option B: structured `warnings[]` is canonical; no `missing_sources[]` in new Stage 1 output.
+- Q2 = Option A: shortened package/folder IDs with 8-character SHA256 suffix; full session_id/run_id remain in manifest.
+- Q3 = Option A: absolute local paths acceptable for Stage 1 local-only output, deferred redaction/relativization before external transfer.
 
