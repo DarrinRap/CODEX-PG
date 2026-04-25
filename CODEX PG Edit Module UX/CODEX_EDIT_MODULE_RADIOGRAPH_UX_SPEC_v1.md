@@ -330,11 +330,16 @@ PG should keep the UX simple while leaving room to improve the engine.
 
 Recent dental literature is exploring deep-learning super-resolution for panoramic radiographs. A 2024 Dentomaxillofacial Radiology study evaluated SRCNN, ESPCN, SRGAN, and Autoencoder models on panoramic radiographs, reporting strong SSIM/PSNR performance at lower scale factors and noting that performance drops at larger magnification factors.
 
+A 2025 Dentomaxillofacial Radiology study further tested whether super-resolution can improve downstream dental radiograph classification. It found improvement in many model/scale combinations, which is useful, but that is still not the same as proving safer chairside human diagnosis.
+
+A 2026 Oral Radiology abstract is especially relevant for PG because it is bitewing-specific. It compared Real-ESRGAN with SwinIR on degraded bitewing radiographs and reported that SwinIR had better PSNR/SSIM and was preferred by clinicians for preserving tooth margins and trabecular patterns. Real-ESRGAN was perceived as smoother/more realistic, which is exactly why it should be treated carefully: perceptual realism can be seductive while diagnostic fidelity is what matters.
+
 Potential PG translation:
 
 | Clinical need | UX control | Engine candidate |
 |---|---|---|
 | Zoom into radiograph without blocky interpolation | Super Resolution Preview | SRCNN / ESPCN-style model |
+| Restore degraded bitewing image detail | Diagnostic Restoration Preview | SwinIR / transformer restoration |
 | Export enlarged presentation image | Super Resolution Export | conservative model, original preserved |
 | Remote consultation image readability | High-detail view | local-only or approved-compliance model |
 
@@ -343,7 +348,8 @@ Recommendation:
 - Treat as **P2/P3 research**, not v4.0 core.
 - Never replace the original image.
 - Label as enhanced view, not original evidence.
-- Prefer conservative CNN/SRCNN-like models over GAN output for clinical review because GANs can hallucinate plausible texture.
+- Prefer conservative CNN/SRCNN/transformer restoration models over GAN output for clinical review because GANs can hallucinate plausible texture.
+- If comparing SwinIR-style transformer restoration to GAN restoration, prioritize preservation of tooth margins, trabeculae, enamel-dentin boundaries, periodontal ligament space, and lamina dura over smoothness or pleasing texture.
 - Require side-by-side original/enhanced compare before any clinical use.
 
 ### 2. Adaptive Gradient Domain Guided Filtering
@@ -436,6 +442,79 @@ Recommendation:
 - Keep optimization bounded; do not let it invent aggressive contrast or detail.
 - Use as preset tuning, not as a black-box "Enhance" button.
 
+### 7. Panoramic Artifact Correction / De-Shadowing
+
+Panoramic radiographs have modality-specific artifacts that intraoral images do not: ghost image of the opposite jaw, spinal overlay, and pharyngeal air-gap. A 2025 ICCV Workshop paper treated these as shadow-like artifacts, segmenting artifacts with U-Net++ models and then using a transformer de-shadowing network to selectively suppress them. The paper reported improved anatomic clarity and stronger Weber contrast in regions such as the mandibular canal.
+
+Potential PG translation:
+
+| Clinical need | UX control | Engine candidate |
+|---|---|---|
+| Reduce panoramic ghost/spine/air-gap interference | Panoramic Artifact Preview | segmentation + selective de-shadowing |
+| Improve mandibular canal visibility | Canal Clarity Preview | artifact mask + transformer de-shadowing |
+| Document original vs corrected interpretation | Original / artifact-corrected compare | Review > Compare submode |
+
+Recommendation:
+
+- Treat as **panoramic-only research**, not a general radiograph enhancement.
+- Never run automatically on intraoral periapicals or bitewings.
+- Must expose artifact masks or at least a visible "corrected artifact regions" overlay.
+- Keep original image one click away, because artifact correction can suppress real anatomy if masks are wrong.
+
+### 8. Transformer / Attention Restoration Beyond Super Resolution
+
+Transformer-based medical restoration models are becoming more common for denoising, super-resolution, and image restoration because attention can model broader context than local filters. For dental use, this matters most where local edge enhancement is not enough: compressed bitewings, low-quality sensor images, and subtle repeated textures like trabecular bone.
+
+Potential PG translation:
+
+| Clinical need | UX control | Engine candidate |
+|---|---|---|
+| Restore compressed/degraded bitewings | Restoration Preview | SwinIR / transformer restoration |
+| Preserve global structure while recovering detail | Fine Detail | transformer or hybrid CNN-transformer |
+| Avoid GAN texture hallucination | Fidelity-first restoration | transformer over Real-ESRGAN |
+
+Recommendation:
+
+- More promising than GAN for clinical structure preservation, based on current bitewing evidence.
+- Requires local model packaging, GPU/CPU performance testing, and compliance review before production.
+- Start as an offline comparison harness, not a live chairside default.
+
+### 9. Diffusion / Generative Medical Enhancement
+
+Conditional latent diffusion and related generative models are being explored for medical image enhancement and data augmentation. These may improve downstream classifiers and synthetic training data, but they are risky for diagnostic image viewing because they generate plausible image content.
+
+Potential PG translation:
+
+| Clinical need | UX control | Engine candidate |
+|---|---|---|
+| Synthetic training data for future AI | Not user-facing | diffusion augmentation |
+| Rare case education | Teaching mode only | generated/synthetic image labeled clearly |
+| Diagnostic radiograph enhancement | Avoid for now | none |
+
+Recommendation:
+
+- Do **not** use diffusion enhancement in the primary Review module for clinical evidence.
+- Consider only for synthetic data generation, testing, or education after compliance review.
+- Generated images must be labeled as generated/synthetic and separated from patient evidence.
+
+### 10. Diagnostic AI Is Not Image Enhancement
+
+Transformer caries detection, canal segmentation, restoration detection, periodontal disease classification, and similar models may eventually assist diagnosis. They are not radiograph enhancement tools.
+
+Potential PG translation:
+
+| Clinical need | UX control | Engine candidate |
+|---|---|---|
+| Find possible caries | Future AI assist overlay | detection model, not enhancement |
+| Segment mandibular canal | Future anatomy overlay | segmentation model, not enhancement |
+| Classify tooth/restoration regions | Future metadata assist | classifier, not enhancement |
+
+Recommendation:
+
+- Keep diagnostic AI out of the v4.0 radiograph enhancement scope.
+- Do not merge "make image clearer" with "tell me what pathology is present."
+- If future AI overlays exist, they belong behind separate compliance, validation, and clinical-risk decisions.
+
 ### Algorithm Priority Update
 
 | Priority | Algorithm family | PG use |
@@ -443,13 +522,60 @@ Recommendation:
 | P0 | Window/Level + black/white point mapping | Core grayscale control |
 | P1 | Adaptive guided filtering | Clarity / Fine Detail engine candidate |
 | P1 | Retinex / homomorphic / exposure normalization | Preset foundation for uneven exposure |
+| P1 | Multi-scale top-hat / geodesic reconstruction morphology | Dental-specific detail/edge candidate, especially panoramic |
 | P1 | Edge-preserving denoise | Noise Reduction candidate |
+| P2 | SwinIR / transformer restoration | Restoration Preview candidate for degraded bitewings |
 | P2 | Wavelet/shearlet detail enhancement | Fine Detail / denoise research |
 | P2 | Multi-scale morphology | Perio / structure visibility research |
 | P2 | Multi-grayscale fusion | Adaptive View research |
+| P2 | Panoramic de-shadowing / artifact correction | Panoramic-only artifact preview, not general enhancement |
 | P3 | Deep-learning super-resolution | Zoom/export/research, not default diagnostic view |
 | P3 | Optimization-tuned pipelines | Preset tuning after clinical test set exists |
+| P3 | CNN-transformer hybrid super-resolution | Promising but heavier deployment and validation burden |
+| Research / non-diagnostic only | Diffusion generation | Synthetic data or education only |
 | Avoid for diagnostic review | GAN texture generation | Hallucination risk unless heavily constrained and clearly labeled |
+
+### Clinical Validation Matrix
+
+PG should not choose algorithms by image-quality metrics alone. PSNR and SSIM are useful, but a dental product needs clinician-visible structure preservation.
+
+| Validation dimension | What to score | Why |
+|---|---|---|
+| Tooth margins | enamel outline, proximal contours, CEJ visibility | caries and restoration margins depend on edge fidelity |
+| Enamel-dentin boundary | contrast and continuity | over-enhancement can invent or erase subtle transitions |
+| PDL / lamina dura | continuity and sharpness | periodontal/endodontic interpretation depends on thin structures |
+| Trabecular pattern | texture preservation without fake texture | GAN/perceptual models can look good while altering texture |
+| Root canal space | visibility without artificial narrowing | endodontic review needs faithful anatomy |
+| Mandibular canal | clarity in panoramic images | useful for third molar and implant planning |
+| Noise / artifacts | noise amplification, halos, tile artifacts | false edges can mimic findings |
+| Clipping | black/white saturation | clipped detail cannot be recovered clinically |
+| Reversibility | original accessible in one click | trust and evidence preservation |
+
+### Harness Recommendation
+
+Before picking a production algorithm, build a local comparison harness under Codex/PG planning using non-PHI or explicitly approved de-identified images:
+
+```text
+Input image
+  -> baseline current PG CLAHE
+  -> Window/Level only
+  -> adaptive guided filtering
+  -> Retinex/homomorphic normalization
+  -> multi-scale morphology MSTHGR-like candidate
+  -> wavelet/shearlet candidate
+  -> SwinIR/transformer restoration candidate, if runtime allows
+  -> super-resolution candidate
+  -> side-by-side export sheet + clinician scoring form
+```
+
+The harness should record:
+
+- algorithm name and parameters
+- runtime on Darrin's machine
+- original/enhanced image hashes
+- histogram/clipping metrics
+- dentist scoring for the clinical structures above
+- notes on artifacts or false detail
 
 ### Research Sources
 
