@@ -72,3 +72,12 @@ At the beginning of a new Codex chat, say:
 Read C:\CODEX PG\CODEX Docs\CODEX_PROJECT_MEMORY.md and C:\CODEX PG\CODEX Docs\CODEX_CURRENT_HANDOFF.md first.
 
 Then ask Codex to continue from the latest handoff.
+
+## GitHub Backup
+
+Configured: 2026-04-24 18:51:53 -07:00
+
+- GitHub repository: `https://github.com/DarrinRap/CODEX-PG.git`
+- Local repo: `C:\CODEX PG`
+- Branch: `main` tracks `origin/main`.
+- Use `C:\CODEX PG\CODEX Automation\CODEX_backup_to_github.ps1` after meaningful changes.
