@@ -80,6 +80,7 @@ def build_mock_issue_extraction(manifest_path: Path, output_path: Path | None = 
     else:
         step, evidence_ids = candidate
         step_n = step.get("step_n")
+        test_id = step.get("test_id")
         title = str(step.get("title") or f"Step {step_n}")
         issue_stamp = compact_timestamp()
         issues.append({
@@ -94,6 +95,7 @@ def build_mock_issue_extraction(manifest_path: Path, output_path: Path | None = 
             "confidence": 0.5,
             "status": "needs_review",
             "source_steps": [step_n],
+            "source_test_ids": [test_id] if isinstance(test_id, str) and test_id else [],
             "evidence_ids": evidence_ids,
             "transcript_refs": [],
             "observed_behavior": step.get("note") or "Evidence is available for reviewer inspection.",

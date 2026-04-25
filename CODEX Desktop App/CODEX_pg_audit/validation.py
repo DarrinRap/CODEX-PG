@@ -16,6 +16,8 @@ ALLOWED_OUTCOMES = {"PASS", "FAIL", "SKIP", "ACK", "PARTIAL", None}
 ALLOWED_CATEGORIES = {"functional_bug", "ui_ux", "workflow_break", "evidence_integrity", "performance", "stability", "accessibility", "documentation", "compliance_privacy", "test_authoring", "unknown"}
 ALLOWED_PRIORITIES = {"P0", "P1", "P2", "P3"}
 ALLOWED_STATUSES = {"needs_review", "in_review", "approved", "changes_requested", "rejected", "deferred", "email_queued", "email_sent", "email_failed", "closed", "archived"}
+ALLOWED_WARNING_CODES = {"optional_source_missing", "required_source_missing"}
+ALLOWED_WARNING_SEVERITIES = {"info", "warning", "blocking"}
 
 
 @dataclass
@@ -87,13 +89,18 @@ def validate_manifest(manifest_path: Path) -> ValidationReport:
         report.error("manifest must be an object")
         return report
     package_dir = manifest_path.parent
-    require_fields(report, manifest, ["schema", "schema_version", "package_id", "session_id", "run_id", "package_state", "created_at", "sources", "evidence", "steps", "integrity", "missing_sources", "warnings"], "manifest")
+    require_fields(report, manifest, ["schema", "schema_version", "package_id", "session_id", "run_id", "package_state", "created_at", "sources", "evidence", "steps", "integrity", "warnings"], "manifest")
     if manifest.get("schema") != MANIFEST_SCHEMA:
         report.error(f"manifest.schema must be {MANIFEST_SCHEMA}")
     if manifest.get("schema_version") != 1:
         report.error("manifest.schema_version must be 1")
     if manifest.get("package_state") not in ALLOWED_PACKAGE_STATES:
         report.error(f"manifest.package_state is not allowed: {manifest.get('package_state')}")
+    if "missing_sources" in manifest:
+        report.warn("manifest.missing_sources is deprecated; use structured manifest.warnings[]")
+    package_source = manifest.get("package_source")
+    if package_source is not None and not isinstance(package_source, dict):
+        report.error("manifest.package_source must be an object when present")
 
     evidence_ids: set[str] = set()
     for index, source in enumerate(manifest.get("sources") or []):
@@ -125,6 +132,29 @@ def validate_manifest(manifest_path: Path) -> ValidationReport:
         for evidence_id in step.get("evidence_ids") or []:
             if evidence_id not in evidence_ids:
                 report.error(f"manifest.steps[{index}] references unknown evidence_id: {evidence_id}")
+
+    warnings = manifest.get("warnings")
+    if not isinstance(warnings, list):
+        report.error("manifest.warnings must be a list")
+    else:
+        has_blocking_warning = False
+        for index, warning in enumerate(warnings):
+            path = f"manifest.warnings[{index}]"
+            if not isinstance(warning, dict):
+                report.error(f"{path} must be an object")
+                continue
+            require_fields(report, warning, ["code", "severity", "message", "path", "action", "context"], path)
+            if warning.get("code") not in ALLOWED_WARNING_CODES:
+                report.error(f"{path}.code is not allowed: {warning.get('code')}")
+            severity = warning.get("severity")
+            if severity not in ALLOWED_WARNING_SEVERITIES:
+                report.error(f"{path}.severity is not allowed: {severity}")
+            if severity == "blocking":
+                has_blocking_warning = True
+            if not isinstance(warning.get("context"), dict):
+                report.error(f"{path}.context must be an object")
+        if has_blocking_warning and manifest.get("package_state") == "local_ready":
+            report.error("manifest.package_state cannot be local_ready when warnings include severity=blocking")
 
     integrity = manifest.get("integrity") or {}
     if not isinstance(integrity, dict):
@@ -195,4 +225,7 @@ def validate_issue_extraction(issue_path: Path, manifest_path: Path) -> Validati
         for evidence_id in evidence_ids:
             if evidence_id not in manifest_evidence_ids:
                 report.error(f"{path} references unknown evidence_id: {evidence_id}")
+        source_test_ids = issue.get("source_test_ids")
+        if source_test_ids is not None and not isinstance(source_test_ids, list):
+            report.error(f"{path}.source_test_ids must be a list when present")
     return report

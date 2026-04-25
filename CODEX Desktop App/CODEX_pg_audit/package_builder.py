@@ -12,6 +12,10 @@ from typing import Any
 PACKAGE_SCHEMA = "pg.session_package.v1"
 PACKAGE_SCHEMA_VERSION = 1
 GENERATED_BY_VERSION = "codex-pg-audit-local-v0.1"
+WARNING_CODES = {
+    "optional_source_missing",
+    "required_source_missing",
+}
 
 
 def now_iso() -> str:
@@ -80,6 +84,13 @@ def safe_id(value: str, fallback: str) -> str:
     return cleaned or fallback
 
 
+def short_safe_id(value: str, fallback: str = "session_unknown", max_prefix: int = 30, hash_len: int = 8) -> str:
+    cleaned = safe_id(value, fallback)
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:hash_len]
+    prefix = cleaned[:max_prefix].strip("._-") or fallback
+    return f"{prefix}_{digest}"
+
+
 def resolve_source_path(source_dir: Path, path_text: str) -> Path:
     """Resolve PG result paths that may be source-relative, repo-relative, or absolute."""
     raw = Path(path_text)
@@ -111,13 +122,28 @@ class BuildContext:
     output_root: Path
     overwrite: bool = False
     created_at: str = field(default_factory=now_iso)
-    missing_sources: list[dict[str, Any]] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+    warnings: list[dict[str, Any]] = field(default_factory=list)
     evidence_counts: dict[str, int] = field(default_factory=dict)
 
     def next_evidence_id(self, kind: str) -> str:
         self.evidence_counts[kind] = self.evidence_counts.get(kind, 0) + 1
         return f"ev_{kind}_{self.evidence_counts[kind]:04d}"
+
+    def add_source_warning(self, *, kind: str, required: bool, path: str, action: str, context: dict[str, Any] | None = None) -> None:
+        code = "required_source_missing" if required else "optional_source_missing"
+        if code not in WARNING_CODES:
+            raise ValueError(f"Unsupported warning code: {code}")
+        self.warnings.append({
+            "code": code,
+            "severity": "blocking" if required else "warning",
+            "message": f"{'Required' if required else 'Optional'} source '{kind}' was not found.",
+            "path": path,
+            "action": action,
+            "context": {"kind": kind, "required": required, **(context or {})},
+        })
+
+    def has_blocking_warnings(self) -> bool:
+        return any(warning.get("severity") == "blocking" for warning in self.warnings)
 
 
 def find_optional(source_dir: Path, candidates: list[str]) -> Path | None:
@@ -156,8 +182,13 @@ def build_sources(ctx: BuildContext, package_dir: Path) -> tuple[list[dict[str, 
     for key, candidates, package_path, source_id, kind, required in specs:
         src = find_optional(ctx.source_dir, candidates)
         if src is None:
-            if required:
-                ctx.missing_sources.append({"kind": kind, "required": True, "candidates": candidates})
+            ctx.add_source_warning(
+                kind=kind,
+                required=required,
+                path="manifest.sources",
+                action="review_before_external_transfer" if not required else "repair_source_before_packaging",
+                context={"candidates": candidates},
+            )
             continue
         found[key] = src
         records.append(copy_source_record(src, package_dir, package_path, source_id, kind, required))
@@ -211,7 +242,12 @@ def build_steps_and_evidence(ctx: BuildContext, package_dir: Path, results: dict
     transcript_refs: list[dict[str, Any]] = []
 
     for index, step in enumerate(step_list(results)):
-        step_n = int(step.get("step_n") or step.get("n") or index + 1)
+        if "step_n" in step:
+            step_n = int(step["step_n"])
+        elif "n" in step:
+            step_n = int(step["n"])
+        else:
+            step_n = index + 1
         evidence_ids: list[str] = []
         screenshot_refs: list[tuple[str, str, str]] = []
         for rel_text in step.get("manual_screenshots", []) or []:
@@ -225,17 +261,25 @@ def build_steps_and_evidence(ctx: BuildContext, package_dir: Path, results: dict
             src = resolve_source_path(ctx.source_dir, rel_text)
             if not src.exists():
                 missing_kind = "region_screenshot" if kind == "region" else "step_auto_screenshot"
-                ctx.missing_sources.append({"kind": missing_kind, "required": False, "path": str(src), "source_ref": rel_text, "step_n": step_n})
+                ctx.add_source_warning(
+                    kind=missing_kind,
+                    required=False,
+                    path=f"manifest.steps[{index}].evidence_ids",
+                    action="review_before_external_transfer",
+                    context={"resolved_path": str(src), "source_ref": rel_text, "step_n": step_n},
+                )
                 continue
             evidence = copy_evidence_file(ctx, package_dir, src, step_n, kind, label)
             evidence_out.append(evidence)
             evidence_ids.append(evidence["evidence_id"])
         steps_out.append({
             "step_n": step_n,
+            "test_id": step.get("test_id"),
             "kind": step.get("kind", "single"),
             "title": step.get("title", f"Step {step_n}"),
             "outcome": step.get("outcome"),
             "note": step.get("note"),
+            "checklist_results": step.get("checklist_results") or [],
             "evidence_ids": evidence_ids,
             "source_result_index": index,
         })
@@ -305,6 +349,30 @@ def write_log(package_dir: Path, event: dict[str, Any]) -> None:
         handle.write(json.dumps(event, sort_keys=True) + "\n")
 
 
+def derived_source_records(package_dir: Path) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    specs = [
+        ("src_derived_ai_extraction_input", "derived_ai_extraction_input", "derived/ai_extraction_input_v1.json"),
+        ("src_derived_package_summary", "derived_package_summary", "derived/package_summary.md"),
+        ("src_packaging_log", "packaging_log", "logs/packaging_log.jsonl"),
+    ]
+    for source_id, kind, package_path in specs:
+        path = package_dir / package_path
+        if not path.exists():
+            continue
+        records.append({
+            "source_id": source_id,
+            "kind": kind,
+            "original_path": None,
+            "package_path": package_path,
+            "required": False,
+            "sha256": sha256_file(path),
+            "bytes": path.stat().st_size,
+            "captured_at": file_time_iso(path),
+        })
+    return records
+
+
 def package_file_stats(package_dir: Path) -> tuple[int, int]:
     files = [p for p in package_dir.rglob("*") if p.is_file() and p.name != "session_package_manifest.json"]
     return len(files), sum(p.stat().st_size for p in files)
@@ -317,8 +385,9 @@ def build_package(ctx: BuildContext) -> Path:
     results = read_json(results_path)
     run_id = str(results.get("run_id") or "run_unknown")
     session_id = str(results.get("session_id") or safe_id(run_id, "session_unknown"))
-    package_id = f"pkg_local_{session_id}"
-    package_dir = ctx.output_root / f"session_package_{session_id}"
+    safe_session_id = short_safe_id(session_id)
+    package_id = f"pkg_local_{safe_session_id}"
+    package_dir = ctx.output_root / f"session_package_{safe_session_id}"
     if package_dir.exists():
         if not ctx.overwrite:
             raise FileExistsError(f"Package already exists: {package_dir}. Pass overwrite=True to replace it.")
@@ -333,7 +402,7 @@ def build_package(ctx: BuildContext) -> Path:
         "package_id": package_id,
         "session_id": session_id,
         "run_id": run_id,
-        "package_state": "local_ready" if not any(item.get("required") for item in ctx.missing_sources) else "draft",
+        "package_state": "local_ready",
         "created_at": ctx.created_at,
         "created_by": "codex-pg-audit-local",
         "source_system": {
@@ -341,6 +410,14 @@ def build_package(ctx: BuildContext) -> Path:
             "app_version": str(results.get("app_version") or "unknown"),
             "source_root": str(ctx.source_dir),
             "source_root_policy": "synthetic_sample_or_read_only_reference",
+        },
+        "package_source": {
+            "source_kind": "panda_gallery_workflows",
+            "source_root": str(ctx.source_dir),
+            "results_path": str(results_path),
+            "latest_pointer_path": str((found.get("latest") or ctx.source_dir / "LATEST.txt")) if (found.get("latest") or (ctx.source_dir / "LATEST.txt").exists()) else None,
+            "packaged_from_live_pg": ctx.source_dir.name.lower() == "workflows",
+            "source_mutation_policy": "read_only_reference",
         },
         "tester_session": {
             "title": results.get("title"),
@@ -353,14 +430,18 @@ def build_package(ctx: BuildContext) -> Path:
         "steps": steps,
         "upload": None,
         "integrity": {},
-        "missing_sources": ctx.missing_sources,
         "warnings": ctx.warnings,
     }
+    if ctx.has_blocking_warnings():
+        manifest["package_state"] = "draft"
     write_derived_files(package_dir, manifest, transcript_refs)
     write_log(package_dir, {"event_type": "package_built", "created_at": ctx.created_at, "package_id": package_id, "session_id": session_id})
+    manifest["sources"].extend(derived_source_records(package_dir))
     manifest_without_integrity = dict(manifest)
     manifest_without_integrity["integrity"] = {}
     file_count, total_bytes = package_file_stats(package_dir)
+    # Integrity is stamped after hashing manifest_without_integrity so the
+    # manifest can contain its own checksum without becoming self-referential.
     manifest["integrity"] = {
         "hash_algorithm": "sha256",
         "manifest_without_integrity_sha256": sha256_json(manifest_without_integrity),

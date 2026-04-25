@@ -68,7 +68,10 @@ class PackageBuilderTests(unittest.TestCase):
         self.assertTrue(report.ok, report.as_dict())
         manifest = json.loads((package_dir / "session_package_manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["session_id"], "2026-04-24T20-01-30--130-Phase-4-verification")
+        self.assertTrue(manifest["package_id"].startswith("pkg_local_2026-04-24T20-01-30--130-"))
+        self.assertLess(len(package_dir.name), 64)
         self.assertEqual(manifest["evidence"][0]["kind"], "step_auto_screenshot")
+        self.assertIn("package_source", manifest)
 
     def test_missing_optional_metadata_and_transcript_still_validates(self) -> None:
         source = self.test_output / "CODEX Source"
@@ -83,6 +86,9 @@ class PackageBuilderTests(unittest.TestCase):
         package_dir = build_package(BuildContext(source_dir=source, output_root=self.test_output / "CODEX Output"))
         report = validate_manifest(package_dir / "session_package_manifest.json")
         self.assertTrue(report.ok, report.as_dict())
+        manifest = json.loads((package_dir / "session_package_manifest.json").read_text(encoding="utf-8"))
+        warning_codes = {warning["code"] for warning in manifest["warnings"]}
+        self.assertIn("optional_source_missing", warning_codes)
 
     def test_missing_screenshot_is_recorded_without_breaking_validation(self) -> None:
         source = self.test_output / "CODEX Source"
@@ -103,7 +109,32 @@ class PackageBuilderTests(unittest.TestCase):
         report = validate_manifest(package_dir / "session_package_manifest.json")
         self.assertTrue(report.ok, report.as_dict())
         manifest = json.loads((package_dir / "session_package_manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual(manifest["missing_sources"][0]["kind"], "region_screenshot")
+        self.assertNotIn("missing_sources", manifest)
+        region_warning = next(warning for warning in manifest["warnings"] if warning["context"]["kind"] == "region_screenshot")
+        self.assertEqual(region_warning["code"], "optional_source_missing")
+
+    def test_step_zero_and_test_id_are_preserved(self) -> None:
+        source = self.test_output / "CODEX Source"
+        source.mkdir()
+        results = {
+            "run_id": "run_step_zero",
+            "results": [
+                {
+                    "step_n": 0,
+                    "test_id": "test_bootstrap",
+                    "title": "Bootstrap",
+                    "outcome": "PASS",
+                    "checklist_results": [{"label": "Loaded", "outcome": "PASS"}],
+                    "manual_screenshots": [],
+                }
+            ],
+        }
+        (source / "results_latest.json").write_text(json.dumps(results), encoding="utf-8")
+        package_dir = build_package(BuildContext(source_dir=source, output_root=self.test_output / "CODEX Output"))
+        manifest = json.loads((package_dir / "session_package_manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["steps"][0]["step_n"], 0)
+        self.assertEqual(manifest["steps"][0]["test_id"], "test_bootstrap")
+        self.assertEqual(manifest["steps"][0]["checklist_results"][0]["label"], "Loaded")
 
     def test_mock_issue_extraction_references_manifest_evidence(self) -> None:
         source = self.repo_root / "CODEX Audit MVP Starter Pack" / "CODEX samples" / "sample_source_session"
@@ -115,6 +146,7 @@ class PackageBuilderTests(unittest.TestCase):
         extraction = json.loads(issue_path.read_text(encoding="utf-8"))
         self.assertEqual(extraction["created_by"]["type"], "local_fixture")
         self.assertTrue(extraction["issues"][0]["evidence_ids"])
+        self.assertIn("source_test_ids", extraction["issues"][0])
 
     def test_issue_validation_blocks_unknown_evidence_ids(self) -> None:
         source = self.repo_root / "CODEX Audit MVP Starter Pack" / "CODEX samples" / "sample_source_session"
