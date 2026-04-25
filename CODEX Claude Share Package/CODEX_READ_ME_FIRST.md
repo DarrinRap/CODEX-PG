@@ -39,6 +39,8 @@ Canonical specs, code quality recommendations, UX review, project orientation, s
 Copy-ready Claude prompts:
 
 - `CODEX_CLAUDE_HANDOFF_PROMPT_STAGED.md` for review/planning handoff.
+- `CODEX_CODEX_RESPONSE_TO_CLAUDE_STAGE1_ALIGNMENT.md` for Codex response to Claude Stage 1 alignment.
+- `CODEX_CLAUDE_STAGE1_APPROVAL_PROMPT.md` if Darrin approves Claude to implement Stage 1.
 - `CODEX_CLAUDE_INTEGRATION_PROMPT.md` for later local package-builder integration into `C:\panda-gallery`.
 
 ### CODEX Sample Code

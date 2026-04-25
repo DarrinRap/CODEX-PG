@@ -8,19 +8,25 @@ Claude, work in C:\panda-gallery, but do not edit files yet until you have read 
 Goal:
 Integrate the Codex Audit MVP Starter Pack into Panda Gallery as a local-only session packaging capability. Do not build the final dashboard yet. Do not add Dropbox, AI provider calls, email sending, or archive search in this task.
 
-Read first:
-- C:\CODEX PG\CODEX Canonical Specs\CODEX_MASTER_SPEC_INDEX.md
-- C:\CODEX PG\CODEX Canonical Specs\CODEX_SESSION_PACKAGE_SCHEMA_v1.md
-- C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_ISSUE_SCHEMA_v1.md
-- C:\CODEX PG\CODEX Canonical Specs\CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md
-- C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md
-- C:\CODEX PG\CODEX Canonical Specs\CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md
-- C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX_AUDIT_MVP_STARTER_PACK_README.md
-- C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX docs\CODEX_MOCKUP_AND_SPEC_REFERENCES.md
-- C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX scripts\audit_mvp_reference_builder.py
-- C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX scripts\validate_audit_mvp_contracts.py
-- C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX samples\expected_package\session_package_session_20260424_194422\session_package_manifest.json
-- C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX samples\sample_audit_issue_extraction_v1.json
+Read first from the share package when available:
+- C:\CODEX PG\CODEX Claude Share Package\CODEX_READ_ME_FIRST.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_MASTER_SPEC_INDEX.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_SESSION_PACKAGE_SCHEMA_v1.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_AUDIT_ISSUE_SCHEMA_v1.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_MOCKUP_AND_SPEC_REFERENCES.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Documents\CODEX_CLAUDE_SCREENSHOT_UX_MOCKUP_REVIEW.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Desktop App Scaffold\CODEX_README.md
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Desktop App Scaffold\CODEX_pg_audit\package_builder.py
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Desktop App Scaffold\CODEX_pg_audit\validation.py
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Desktop App Scaffold\CODEX_pg_audit\issue_extraction.py
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Desktop App Scaffold\CODEX_pg_audit\review_records.py
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Desktop App Scaffold\CODEX_tests\test_package_builder.py
+- C:\CODEX PG\CODEX Claude Share Package\CODEX Prompts\CODEX_CODEX_RESPONSE_TO_CLAUDE_STAGE1_ALIGNMENT.md
+
+Original source copies also exist under `C:\CODEX PG\CODEX Canonical Specs`, `C:\CODEX PG\CODEX Desktop App`, and `C:\CODEX PG\CODEX Audit MVP Starter Pack`, but the share package is the handoff contract.
 
 Also inspect current live PG outputs read-only:
 - C:\panda-gallery\workflows\results_latest.json, if present
@@ -39,12 +45,15 @@ Design and quality gate:
 - Do not claim Panda Gallery v4 is complete unless the agreed v4 scope has been implemented, tested, visually checked, and accepted.
 
 Scope for the first integration task:
-- Create a local-only package builder module or script inside C:\panda-gallery using the starter-pack code as reference.
+- Create a new top-level `C:\panda-gallery\codex_audit\` package using the tested Codex scaffold as reference.
 - It should read existing PG testing/session outputs and generate a package folder containing session_package_manifest.json, source files, evidence files, derived ai_extraction_input_v1.json, package_summary.md, and logs.
 - It should preserve existing PG outputs; do not mutate results_latest.json or screenshots.
 - It should generate stable evidence IDs and step records.
 - It should hash copied files and record missing sources.
-- It should run locally without Dropbox, AI, or email configuration.
+- It should run locally without Dropbox, real AI, or email configuration.
+- Add a single narrow `panda_gallery.py --build-audit-package` entry point that routes to `codex_audit.cli.main`.
+- Hardcode output to `C:\CODEX PG\CODEX Audit Prototype\CODEX Session Packages\`; do not expose an arbitrary `--out` path to end users.
+- Keep Stage 1 package IDs deterministic as `pkg_local_<session_id>`; revisit timestamp/random package IDs before Stage 2 or production history requirements.
 
 Do not:
 - Do not build the final audit dashboard.
@@ -52,7 +61,7 @@ Do not:
 - Do not call an AI provider.
 - Do not send email.
 - Do not process real PHI.
-- Do not rewrite instruction_pane.py, panda_gallery.py, results_writer.py, or workflow_capture.py wholesale.
+- Do not rewrite instruction_pane.py, results_writer.py, workflow_capture.py, main_window.py, or panda_gallery.py wholesale. The only expected panda_gallery.py change is one argparse flag and narrow route.
 - Do not mix unrelated v4 clinical UI work into this task.
 
 Implementation requirements:
@@ -73,6 +82,7 @@ Acceptance criteria:
 - Validation passes for the generated package.
 - Existing PG results/screenshots are not modified.
 - The implementation summary names every changed file.
+- `C:\panda-gallery\workflows\` is byte-identical before and after the smoke run.
 
 Verification:
 - Run the new package builder against a safe sample/non-PHI session.
@@ -80,6 +90,7 @@ Verification:
 - Show the generated package path.
 - Show validation result.
 - Confirm git status before and after.
+- Confirm `C:\panda-gallery\workflows\` was not modified.
 
 Handoff:
 At the end, report:
@@ -93,4 +104,4 @@ At the end, report:
 
 ## Codex Notes For Darrin
 
-This prompt intentionally asks Claude to plan first before editing. The first live integration should be narrow: local package generation only. The dashboard, approval queue, email, Dropbox, and AI extraction can come after the generated package is stable and validated.
+This prompt intentionally asks Claude to keep Stage 1 narrow: a local-only CLI producer in Panda Gallery. The dashboard is Stage 2. Dropbox, real AI, live email, and PHI workflow remain deferred until explicit compliance and product decisions.

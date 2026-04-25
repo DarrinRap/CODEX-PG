@@ -1,6 +1,6 @@
 ﻿# CODEX Project Memory
 
-Last updated: 2026-04-24 22:33:00 -07:00
+Last updated: 2026-04-24 22:58:00 -07:00
 
 This file is the durable memory for Codex work on the PG Testing + Audit desktop project. Future Codex chats should read this file first before making plans or edits.
 
@@ -96,7 +96,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-24 22:45:45 -07:00
+Last generated: 2026-04-24 22:55:00 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -153,7 +153,7 @@ Key decisions captured:
 - Dropbox/backend processing must wait for a package-ready marker, not just file upload.
 - AI issues must reference valid evidence IDs and preserve AI suggestions separately from reviewer edits.
 
-Recommended next task: consider a minimal read-only dashboard prototype over the local package, issue, approval, email draft, and archive records.
+Recommended next task: if Darrin approves, send Claude the Stage 1 approval prompt for narrow local package-builder integration into `C:\panda-gallery`; otherwise continue Codex-side prep.
 
 ## Codebase Orientation Completed
 
@@ -164,7 +164,7 @@ Completed: 2026-04-24 19:21:32 -07:00
 - Live source inspected: C:\panda-gallery version 4.23.
 - Key understanding: PG already has guided local testing, workflow screenshot/audio capture, local faster-whisper transcription, results JSON, and Shift+F12 session-aware region capture. Testing + Audit MVP still needs canonical package/evidence/issue/approval/archive contracts before broad implementation.
 
-Recommended next task: consider a minimal read-only dashboard prototype before Dropbox, real AI, or live email.
+Recommended next task: Stage 1 integration first; dashboard prototype is Stage 2 after the PG-side local package producer exists.
 
 ## Claude Code Quality Recommendations Document
 
@@ -271,8 +271,21 @@ Verification completed with bundled Codex Python:
 
 Important boundary: this is a local-only package builder and validator scaffold. It does not build v4, does not build the final audit dashboard, does not upload to Dropbox, does not call AI, does not send email, and does not mutate `C:\panda-gallery`.
 
-Recommended next task: consider a minimal read-only dashboard prototype; keep Dropbox, real AI, live email, and full editing workflow deferred.
+Recommended next task: Stage 1 local package-builder integration in `C:\panda-gallery` if Darrin approves; keep dashboard, Dropbox, real AI, live email, and full editing workflow deferred.
+## Claude Stage 1 Alignment Response
 
+Created: 2026-04-24 22:58:00 -07:00
 
+- Claude reviewed the share package and recommended Stage 1 as narrow local package-builder integration into `C:\panda-gallery` via a CLI command.
+- Codex agrees with Stage 1 as the next implementation step, with no dashboard, Dropbox, real AI, live email, PHI workflow, or broad v4 clinical UI work.
+- Codex locked Stage 1 package IDs to deterministic `pkg_local_<session_id>` and documented that timestamp/random package IDs should be revisited before Stage 2 or production-like package history.
+- Codex updated integration prompt paths to prefer the share package layout.
+- Codex added a Stage 1 approval prompt for Darrin to send Claude only if implementation is approved.
+- Backlog added: after Stage 1 ships, perform a drift check between `C:\CODEX PG\CODEX Desktop App\CODEX_pg_audit\` and `C:\panda-gallery\codex_audit\`.
+- Stage 2 heads-up: Claude should produce HTML/CSS mockups first for the read-only audit dashboard, and Codex should review those mockups before PySide6 implementation.
 
+Prompt files:
+
+- `C:\CODEX PG\CODEX Claude Share Package\CODEX Prompts\CODEX_CODEX_RESPONSE_TO_CLAUDE_STAGE1_ALIGNMENT.md`
+- `C:\CODEX PG\CODEX Claude Share Package\CODEX Prompts\CODEX_CLAUDE_STAGE1_APPROVAL_PROMPT.md`
 
