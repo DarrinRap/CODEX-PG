@@ -96,7 +96,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-24 19:02:50 -07:00
+Last generated: 2026-04-24 20:12:55 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -107,8 +107,6 @@ Trigger words:
 - CODEX BACKUP: run GitHub backup only.
 - CODEX RESUME PG: fresh-chat startup instruction.
 <!-- CODEX_HANDOFF_AUTOMATION_END -->
-
-
 ## Local Claude PG Data Copy
 
 Created: 2026-04-24 19:06:20 -07:00
@@ -195,3 +193,4 @@ Installed: 2026-04-24 20:09:42 -07:00
 - GitHub backup policy: CODEX Playwright Browsers/ is intentionally ignored in .gitignore because it contains large downloaded browser binaries.
 
 Use Playwright for local HTML mockup screenshots, contact sheets, responsive checks, and future browser-style dashboard/spec testing. It is not the primary test tool for the live Python/PySide desktop app.
+
