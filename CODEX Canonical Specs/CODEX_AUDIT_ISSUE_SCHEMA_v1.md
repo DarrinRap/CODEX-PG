@@ -59,6 +59,7 @@ File: `audit_issue_extraction_v1.json`
   "confidence": 0.82,
   "status": "needs_review",
   "source_steps": [1],
+  "source_test_ids": ["T1"],
   "evidence_ids": ["ev_region_0001", "ev_step_auto_0001"],
   "transcript_refs": ["tr_0003"],
   "observed_behavior": "What the tester saw or what the evidence shows.",
@@ -92,6 +93,8 @@ File: `audit_issue_extraction_v1.json`
   }
 }
 ```
+
+`source_test_ids` is optional and additive. When present, it contains PG test authoring IDs copied from package `steps[].test_id`; when a source step has no `test_id`, emit an empty list rather than `null`. Real PG sessions may include lineage suffixes such as `T8_REAUTH` and `T9_REAUTH`.
 
 ## Categories
 
@@ -296,6 +299,7 @@ Minimum validation:
 7. Reviewer-edited fields do not overwrite AI-suggested fields.
 8. Approval records preserve the approved text exactly as approved.
 9. Archive records include enough text for search without requiring AI/provider access.
+10. If `source_test_ids` is present, it is a list of strings.
 
 ## Local Prototype Storage
 
@@ -311,4 +315,3 @@ CODEX Audit Prototype/
 ```
 
 Each folder starts with `CODEX` where it is Codex-created. The parent prototype folder also starts with `CODEX`.
-

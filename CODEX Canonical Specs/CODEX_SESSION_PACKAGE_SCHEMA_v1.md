@@ -39,7 +39,7 @@ session_package_<session_id>/
     packaging_log.jsonl
 ```
 
-Optional source files may be omitted only when their absence is recorded in `manifest.missing_sources[]`.
+Optional source files may be omitted only when their absence is recorded in structured `manifest.warnings[]` entries with code `optional_source_missing`. Required source omissions use code `required_source_missing` and block `local_ready`.
 
 ## Manifest Object
 
@@ -49,17 +49,19 @@ File: `session_package_manifest.json`
 {
   "schema": "pg.session_package.v1",
   "schema_version": 1,
-  "package_id": "pkg_20260424_201255_8f3b2a",
-  "session_id": "session_20260424_194422",
-  "run_id": "run_20260424_194435",
+  "package_id": "pkg_local_2026-04-24T20-01-30--130-Phase_87b9568e",
+  "session_id": "2026-04-24T20-01-30--130-Phase-4-verification",
+  "run_id": "2026-04-24T20-01-30--130-Phase-4-verification",
   "package_state": "local_ready",
   "created_at": "2026-04-24T20:12:55-07:00",
-  "created_by": "codex-local-packager",
-  "source_system": {
-    "app_name": "Panda Gallery",
-    "app_version": "4.23",
-    "source_root": "C:\\panda-gallery",
-    "source_root_policy": "read_only_reference"
+  "created_by": "codex-pg-audit-local",
+  "package_source": {
+    "source_kind": "panda_gallery_workflows",
+    "source_root": "C:\\panda-gallery\\workflows",
+    "results_path": "C:\\panda-gallery\\workflows\\results_latest.json",
+    "latest_pointer_path": "C:\\panda-gallery\\workflows\\LATEST.txt",
+    "packaged_from_live_pg": true,
+    "source_mutation_policy": "read_only"
   },
   "tester_session": {
     "title": "#130 Phase 3 test",
@@ -72,10 +74,11 @@ File: `session_package_manifest.json`
   "steps": [],
   "upload": null,
   "integrity": {},
-  "missing_sources": [],
   "warnings": []
 }
 ```
+
+Stage 1 package IDs use `pkg_local_<short_safe_session_id>_<8-char-sha256-suffix>`. The folder name uses the same shortened session form: `session_package_<short_safe_session_id>_<8-char-sha256-suffix>`. The full `session_id` and `run_id` remain untruncated in the manifest.
 
 ## Package States
 
@@ -115,6 +118,60 @@ Required source kinds for a complete audit package:
 - at least one `evidence` record, unless session has no failures and no manual screenshots
 - `metadata_json` when workflow capture session exists
 - `transcript_markdown` when audio/transcription exists
+
+Stage 1 also hash-tracks derived package files as source records after they are generated:
+
+- `ai_extraction_input`
+- `package_summary`
+- `packaging_log`
+
+## Package Source
+
+`package_source` records where the package was built from and preserves the local-only mutation boundary.
+
+```json
+{
+  "source_kind": "panda_gallery_workflows",
+  "source_root": "C:\\panda-gallery\\workflows",
+  "results_path": "C:\\panda-gallery\\workflows\\results_latest.json",
+  "latest_pointer_path": "C:\\panda-gallery\\workflows\\LATEST.txt",
+  "packaged_from_live_pg": true,
+  "source_mutation_policy": "read_only"
+}
+```
+
+`latest_pointer_path` may be `null`. For Stage 1, absolute Windows paths are acceptable because package output is local-only under `C:\CODEX PG`; redaction or relativization is required before external transfer.
+
+Implementation note: the PG v4.34 builder assumes `BuildContext.source_dir` points at the PG `workflows/` directory. Screenshot references that begin with `workflows/...` are resolved by checking `source_dir`, `source_dir.parent`, and `source_dir.parent.parent`.
+
+## Warning Records
+
+`warnings[]` is the canonical missing-source and package-readiness warning surface. `missing_sources[]` is deprecated and must not be emitted by new Stage 1 packages.
+
+```json
+{
+  "code": "optional_source_missing",
+  "severity": "warning",
+  "message": "Optional source not found: transcript_markdown",
+  "path": "manifest.sources[transcript_markdown]",
+  "action": "review_before_external_transfer",
+  "context": {
+    "kind": "transcript_markdown",
+    "required": false,
+    "candidates": ["transcript.md", "transcripts/transcript.md"]
+  }
+}
+```
+
+Allowed warning codes:
+
+| Code | Required Severity | Meaning |
+| --- | --- | --- |
+| `optional_source_missing` | `warning` | Optional source artifact was not found. Common in real sessions. |
+| `required_source_missing` | `blocking` | Required source artifact was not found. Package cannot be `local_ready`. |
+| `source_unreadable` | `blocking` | Source artifact exists but cannot be read or copied. |
+| `evidence_missing` | `blocking` | Referenced evidence cannot be resolved. |
+| `checklist_results_missing` | `warning` | Step is `kind=checklist` but has no checklist result payload. |
 
 ## Evidence Records
 
@@ -199,14 +256,25 @@ Manifest `steps[]` normalizes existing `results_latest.json` into package form.
 ```json
 {
   "step_n": 1,
-  "kind": "single",
-  "title": "Capture region screenshot",
+  "kind": "checklist",
+  "title": "Overlay + drag + flash + toast",
   "outcome": "FAIL",
   "note": "Tester note if present",
   "evidence_ids": ["ev_step_auto_0001", "ev_region_0001"],
-  "source_result_index": 0
+  "source_result_index": 0,
+  "test_id": "T1",
+  "checklist_results": [
+    {
+      "id": "item_0",
+      "label": "Screen dimmed (translucent black overlay)",
+      "outcome": "PASS",
+      "note": null
+    }
+  ]
 }
 ```
+
+`source_result_index` is 0-based and is for correlation back to `results_latest.json`. `step_n` is 1-based and is for display and reviewer-facing references. `test_id` is optional and may include lineage suffixes such as `T8_REAUTH`. `checklist_results` is a list for `kind=checklist` and `null` for `kind=single` or `kind=action`.
 
 Allowed outcomes:
 
@@ -253,7 +321,7 @@ Remote processing must wait for `_PACKAGE_READY.json`, not merely the presence o
 }
 ```
 
-The packager must hash every copied file and record missing or unreadable files in `missing_sources[]`.
+The packager must hash every copied or derived file and record missing or unreadable files in structured `warnings[]`. To avoid self-referential hashing, `manifest_without_integrity_sha256` is computed from a copy of the manifest whose `integrity` field is `{}`, then the final `integrity` block is assigned.
 
 ## AI Extraction Input
 
@@ -287,9 +355,11 @@ Minimum validation for `local_ready`:
 3. Every `evidence_id` is unique.
 4. Every `steps[].evidence_ids[]` value exists in `evidence[]`.
 5. Every copied file has `sha256` and `bytes`.
-6. Required sources are present or explicitly listed in `missing_sources[]`.
+6. Required sources are present; any missing required source is represented by a `warnings[]` entry with `severity: "blocking"`.
 7. Package paths are relative and do not escape the package folder.
 8. `C:\panda-gallery` source files are never modified by packaging.
+9. `manifest.missing_sources` is deprecated; validators may soft-warn for legacy samples, but new packages must use `warnings[]`.
+10. `package_state` cannot be `local_ready` when `warnings[]` contains a blocking warning.
 
 ## First Local Vertical Slice
 
@@ -302,4 +372,3 @@ The first implementation should:
 5. Write `session_package_manifest.json`.
 6. Write `derived/ai_extraction_input_v1.json`.
 7. Validate `local_ready`.
-
