@@ -1,4 +1,4 @@
-﻿# CODEX Claude Share Package
+# CODEX Claude Share Package
 
 This folder collects the Panda Gallery Codex materials that are useful to share with Claude.
 
@@ -19,11 +19,12 @@ Tell Claude to read these first:
 1. `CODEX Documents\CODEX_MASTER_SPEC_INDEX.md`
 2. `CODEX Documents\CODEX_SESSION_PACKAGE_SCHEMA_v1.md`
 3. `CODEX Documents\CODEX_AUDIT_ISSUE_SCHEMA_v1.md`
-4. `CODEX Documents\CODEX_AUDIT_MVP_STARTER_PACK_README.md`
-5. `CODEX Prompts\CODEX_CLAUDE_INTEGRATION_PROMPT.md`
-6. `CODEX Documents\CODEX_MOCKUP_AND_SPEC_REFERENCES.md`
-7. `CODEX Documents\CODEX_CLAUDE_SCREENSHOT_UX_MOCKUP_REVIEW.md`
-8. `CODEX Documents\CODEX_CLAUDE_CODE_QUALITY_RECOMMENDATIONS.md`
+4. `CODEX Documents\CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md`
+5. `CODEX Documents\CODEX_AUDIT_MVP_STARTER_PACK_README.md`
+6. `CODEX Prompts\CODEX_CLAUDE_INTEGRATION_PROMPT.md`
+7. `CODEX Documents\CODEX_MOCKUP_AND_SPEC_REFERENCES.md`
+8. `CODEX Documents\CODEX_CLAUDE_SCREENSHOT_UX_MOCKUP_REVIEW.md`
+9. `CODEX Documents\CODEX_CLAUDE_CODE_QUALITY_RECOMMENDATIONS.md`
 
 ## What Is Included
 
@@ -81,6 +82,13 @@ C:\CODEX PG\CODEX Claude Share Package
 
 Read CODEX_READ_ME_FIRST.md first, then follow the read order. Do not edit C:\panda-gallery yet. First summarize what you understand, then propose the next safest implementation step for the Audit MVP local package builder.
 ```
+
+
+## Claude Quality Gate
+
+Claude should match the redesign direction Claude already developed and that Codex reviewed in `CODEX_CLAUDE_SCREENSHOT_UX_MOCKUP_REVIEW.md`. Treat that redesign as the visual target unless Darrin explicitly changes direction.
+
+Claude should notify Darrin before implementing if the plan conflicts with the redesign, the MVP boundary, evidence integrity, privacy/compliance, testability, or maintainability. Push back clearly on rushed or risky implementation choices instead of silently accepting them.
 
 ## Important Boundary
 

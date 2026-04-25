@@ -1,4 +1,4 @@
-﻿# Claude Integration Prompt: Panda Gallery Audit MVP Starter Pack
+# Claude Integration Prompt: Panda Gallery Audit MVP Starter Pack
 
 Copy-ready prompt for Claude / Claude Code.
 
@@ -12,6 +12,7 @@ Read first:
 - C:\CODEX PG\CODEX Canonical Specs\CODEX_MASTER_SPEC_INDEX.md
 - C:\CODEX PG\CODEX Canonical Specs\CODEX_SESSION_PACKAGE_SCHEMA_v1.md
 - C:\CODEX PG\CODEX Canonical Specs\CODEX_AUDIT_ISSUE_SCHEMA_v1.md
+- C:\CODEX PG\CODEX Canonical Specs\CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md
 - C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX_AUDIT_MVP_STARTER_PACK_README.md
 - C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX docs\CODEX_MOCKUP_AND_SPEC_REFERENCES.md
 - C:\CODEX PG\CODEX Audit MVP Starter Pack\CODEX scripts\audit_mvp_reference_builder.py
@@ -27,6 +28,13 @@ Also inspect current live PG outputs read-only:
 - C:\panda-gallery\results_writer.py
 - C:\panda-gallery\workflow_capture.py
 - C:\panda-gallery\instruction_pane.py
+
+
+Design and quality gate:
+- Match the redesign direction Claude already developed for Panda Gallery v4 and that Codex reviewed. Use C:\CODEX PG\CODEX Claude UX Mockup Review\CODEX_CLAUDE_SCREENSHOT_UX_MOCKUP_REVIEW.md and the shared full-size mockups as the visual target for any UI-adjacent choices.
+- If implementation details conflict with that redesign, the MVP boundary, evidence integrity, privacy/compliance, testability, or maintainability, stop and notify Darrin before editing further.
+- Push back clearly on rushed, risky, or over-broad instructions. Excellence takes time; do not trade correctness or audit integrity for speed.
+- Do not claim Panda Gallery v4 is complete unless the agreed v4 scope has been implemented, tested, visually checked, and accepted.
 
 Scope for the first integration task:
 - Create a local-only package builder module or script inside C:\panda-gallery using the starter-pack code as reference.
