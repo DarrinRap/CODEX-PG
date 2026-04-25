@@ -143,3 +143,15 @@ Completed: 2026-04-24 19:21:32 -07:00
 - Key understanding: PG already has guided local testing, workflow screenshot/audio capture, local faster-whisper transcription, results JSON, and Shift+F12 session-aware region capture. Testing + Audit MVP still needs canonical package/evidence/issue/approval/archive contracts before broad implementation.
 
 Recommended next task: create CODEX_MASTER_SPEC_INDEX.md and CODEX_SESSION_PACKAGE_SCHEMA_v1.md before building the audit app/backend slice.
+
+## Claude Code Quality Recommendations Document
+
+Created: 2026-04-24 19:41:06 -07:00
+
+- Folder: C:\CODEX PG\CODEX Claude Review Recommendations
+- Main document: C:\CODEX PG\CODEX Claude Review Recommendations\CODEX_CLAUDE_CODE_QUALITY_RECOMMENDATIONS.md
+- Purpose: detailed, Claude-facing recommendations for Panda Gallery code quality, modernization, 6 C's evaluation, architecture boundaries, testing strategy, UI modernization, audit MVP data contracts, and prompt-ready implementation tasks.
+- Basis: read-only review of live C:\panda-gallery version 4.23 plus existing specs, bugs, handoff, style guidance, and Codex review artifacts.
+- File verified: 1,030 lines, no hidden control characters detected.
+
+Recommended use: share this Markdown file directly with Claude before asking for Panda Gallery modernization work. It is intentionally specific and task-oriented, with recommendations designed to avoid broad rewrites.

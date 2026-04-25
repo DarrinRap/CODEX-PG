@@ -140,3 +140,15 @@ Codex read the live C:\panda-gallery runtime modules, current specs, current han
 - C:\CODEX PG\CODEX Codebase Orientation\CODEX_PG_CODEBASE_ORIENTATION_SUMMARY.md
 
 Important result: PG v4.23 already implements guided test results, full workflow capture/audio/transcription, and #130 Shift+F12 region capture with session JSON integration. The Testing + Audit MVP should next define package/evidence/AI issue/approval/archive schemas before implementation.
+
+## Claude Code Quality Recommendations Document
+
+Created: 2026-04-24 19:41:06 -07:00
+
+- Folder: C:\CODEX PG\CODEX Claude Review Recommendations
+- Main document: C:\CODEX PG\CODEX Claude Review Recommendations\CODEX_CLAUDE_CODE_QUALITY_RECOMMENDATIONS.md
+- Purpose: detailed, Claude-facing recommendations for Panda Gallery code quality, modernization, 6 C's evaluation, architecture boundaries, testing strategy, UI modernization, audit MVP data contracts, and prompt-ready implementation tasks.
+- Basis: read-only review of live C:\panda-gallery version 4.23 plus existing specs, bugs, handoff, style guidance, and Codex review artifacts.
+- File verified: 1,030 lines, no hidden control characters detected.
+
+Recommended use: share this Markdown file directly with Claude before asking for Panda Gallery modernization work. It is intentionally specific and task-oriented, with recommendations designed to avoid broad rewrites.
