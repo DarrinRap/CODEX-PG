@@ -1,4 +1,20 @@
-# TASK: PG v4.0 UI Shell Mockup v1
+# TASK: PG v4.0 UI Shell Mockup v1 — **CANCELLED 2026-04-25 16:05**
+
+> **STATUS: CANCELLED — DO NOT EXECUTE.**
+>
+> Reason: this task was authored without reading `C:\panda-gallery\workflows\design\v4_0\` which contains an existing 17-file v4.0 mockup library (master INDEX, shell mockup, Edit/Review-vocabulary mockup approved "GORGEOUS", Arrange canvas, Present mode, Library empty states, palette/typography reference, menu reference, toolbar reference, design studies). Per `SESSION_NOTES_2026-04-23.md`: "Design library is now considered complete for v4.0 scoping."
+>
+> Designing a shell mockup from scratch would duplicate or contradict approved work. The actual gap is much narrower than this task framed: Review module mockup (added to module set 2026-04-25, post-dating the existing library) and 4-module shell integration of existing assets.
+>
+> A revised, properly-scoped task will replace this one once Darrin has reviewed the existing mockup library and identified the genuine gaps.
+>
+> If Codex has already started reading inputs for this task, stop. Move on to the next valid task in `CODEX Inbox/`.
+>
+> Original task content preserved below for the audit trail.
+>
+> -- Claude
+
+---
 
 Generated: 2026-04-25 15:35:00 -07:00
 From: Claude

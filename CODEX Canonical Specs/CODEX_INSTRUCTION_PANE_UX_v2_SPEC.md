@@ -1,6 +1,6 @@
 ﻿# CODEX Instruction Pane UX v2 Spec
 
-Status: Proposed delta spec for Claude/CC review
+Status: Accepted, v2.1.1 (Darrin answers + 5 amendments incorporated)
 Date: 2026-04-25
 Author: Codex
 Output path: `C:\CODEX PG\CODEX Canonical Specs\CODEX_INSTRUCTION_PANE_UX_v2_SPEC.md`
@@ -105,7 +105,7 @@ Esc must route through one dispatcher. The dispatcher resolves intent in this or
 3. If a question view is open, return to the step view and leave the question pending unless an answer was explicitly submitted.
 4. If the mid-run index/review drawer is open, close the drawer.
 5. If a modal confirmation dialog is open, let the dialog handle Esc according to its own button policy.
-6. If no inline panel or drawer is open, Esc is a no-op by default.
+6. If no inline panel or drawer is open, Esc is a no-op.
 
 Reset/restart must not be reachable from bare Esc. If restart remains available, it must be a named command such as "Run same test again" or "Restart run" and must show `DarkConfirmDialog`.
 
@@ -153,12 +153,15 @@ Recommended footer for single-expected steps:
 - `PASS + NOTE`
 - `FAIL`
 
+The footer label is exactly `PASS + NOTE`. Do not use `PASS WITH NOTE`; it is too long for the footer. Do not use `PASS, note`; it reads like a typo.
+
 Recommended footer for checklist steps:
 
 - Keep per-item `PASS / FAIL / SKIP` unchanged.
 - Add a step-level `+ Note` affordance in the footer once at least one item has been answered, or beside the checklist summary strip.
 - If all checklist items are PASS/SKIP and the step-level note is non-empty, derived step outcome becomes `PASS_WITH_NOTE`.
 - If any checklist item FAILs, derived step outcome remains `FAIL`; the step-level note may still exist as context but does not override failure.
+- Item-level `PASS_WITH_NOTE` is out of scope for v2.1. Defer it to a future v2.2 only if real tester use proves the pain.
 
 ### 7.3 Why a third button
 
@@ -168,11 +171,11 @@ A visible `PASS + NOTE` button solves the discoverability problem Darrin hit. A 
 
 Pressing `PASS + NOTE` opens the same note panel family as FAIL, but with different title and submit copy.
 
-Panel title: `PASS WITH NOTE - what should Claude know?`
+Panel title: `PASS + NOTE - what should Claude know?`
 
 Textarea: required, 2-3 line default height, same capped behavior as `_FailNoteEdit`.
 
-Buttons: `SAVE NOTE` and `Back`
+Buttons: `SAVE NOTE`, `Capture now`, and `Back`
 
 Submit behavior:
 
@@ -182,6 +185,7 @@ Submit behavior:
 - Advances like PASS.
 
 Manual `Capture now` remains available before saving the note if visual evidence matters.
+Place it as the third button in the PASS+NOTE panel footer, matching the FAIL panel affordance shape.
 
 ### 7.5 Results semantics
 
@@ -193,8 +197,8 @@ For pass-rate and progress:
 
 For dot strips:
 
-- Default recommendation: render `PASS_WITH_NOTE` as green dot with a small note marker in text rows, not amber.
-- Do not use amber for pass-with-note unless Darrin decides caveated passes should visually warn like skipped/failed states.
+- Render `PASS_WITH_NOTE` as a green dot with a small asterisk marker in dot strips and text rows.
+- Do not use amber. A caveated pass is still a pass; amber implies warning.
 
 ### 7.6 Schema delta
 
@@ -216,7 +220,7 @@ Single-expected result entry:
 }
 ```
 
-Checklist item result entries may also accept `PASS_WITH_NOTE` later, but v2.1 should avoid per-item note buttons unless real use proves they are needed. Start with step-level notes to keep checklist UI usable.
+Checklist item result entries do not accept `PASS_WITH_NOTE` in v2.1. Start with step-level notes to keep checklist UI usable; item-level notes may be reconsidered in v2.2 only if real use proves they are needed.
 
 ## 8. Long-Run Navigation Delta
 
@@ -249,12 +253,14 @@ Outcome strip states:
 - pending: muted ring
 - current: peach ring
 - pass: green fill
-- pass with note: green fill plus tiny note marker in tooltip/text
+- pass with note: green fill plus tiny asterisk marker in tooltip/text
 - fail: red fill
 - skip: grey dash
 - action acknowledged: muted check or neutral fill
 
 Tooltips should show `Step N - title - outcome`.
+
+Under width pressure, the strip wraps before it truncates. Wrap to a second row when the run has more than 10 steps or when pane width is below 700px. If the second row would push body content below comfortable reading height, use compressed mode: show current step plus or minus 4 dots, with `<<` and `>>` chevrons indicating hidden earlier/later steps. The full strip remains available in the index drawer.
 
 ### 8.3 Mid-run index drawer
 
@@ -277,7 +283,16 @@ Rules:
 - No answer is lost by navigation.
 - The first unanswered step remains the default resume target.
 
-### 8.4 Remaining count
+### 8.4 Gap behavior
+
+Gaps are allowed and persisted.
+
+- Pressing `PASS`, `PASS + NOTE`, or `FAIL` on any step writes that step's outcome, even if prior steps are unanswered.
+- The persistent header `R remaining` count is the count of unanswered steps, including gaps, not the count of steps after the current step.
+- The run-end summary groups unanswered gap steps under `Skipped (no answer)`, distinct from explicit `SKIP` checklist-item outcomes.
+- The mid-run index drawer marks gap steps with the existing pending muted-ring state, the same as forward steps the tester has not reached. Do not add a special gap badge.
+
+### 8.5 Remaining count
 
 The pane should show a simple count independent of dot parsing:
 
@@ -293,6 +308,8 @@ Action steps count as remaining until acknowledged, but should be visually light
 `kind: "action"` was added to solve bug #125: PASS/FAIL is wrong for pure setup/navigation. The current result shape records action steps as `kind: "action"`, `outcome: "ACK"`.
 
 The kind should survive. The failure was not the concept. The failure was that action steps felt like low-value click questions in a long run.
+
+`kind: "action"` remains part of the long-term instruction model. The AM v0 plan failure was authoring discipline, not the kind itself. Use the `action_overuse` and `action_can_fold` lint rules in section 10.4 to catch overuse rather than removing the kind.
 
 ### 9.2 Recommended UX
 
@@ -336,11 +353,13 @@ The loader enforces structural validity, but not human clarity. The AM plan was 
 
 Add a non-blocking lint pass after schema validation and before render. Structural errors still reject. Lint warnings do not block the run.
 
-Warnings should surface in:
+Warning-level lint findings should surface in:
 
 - About panel under `Authoring warnings`.
 - Optional first-load banner: `3 authoring warnings - Review`.
 - Results metadata so Claude can see that the plan itself had quality concerns.
+
+Info-level lint findings surface in author tooling and results metadata only. They do not appear in the tester About panel or first-load banner.
 
 ### 10.3 Warning shape
 
@@ -357,19 +376,25 @@ Proposed warning object:
 }
 ```
 
+Severity meanings:
+
+- `error`: structural validation failure; blocks load. These are already handled by Draft 6 validation.
+- `warning`: non-blocking authoring concern; surfaces in About plus optional first-load banner.
+- `info`: authoring-quality hint; surfaces in author tooling only, not in the tester About panel.
+
 ### 10.4 Initial lint rules
 
 Start with these rules:
 
-- `placeholder_title`: title matches common template patterns such as `B1 - ...`, `Step N - ...`, `Screen A/B`, or table references without local definition.
-- `unknown_reference`: body or expected references `table`, `screen`, `panel`, `section`, `B`, `C`, etc. without prior context in the same step or top-level context.
-- `compound_body`: body contains multiple imperatives joined by `and`, `then`, semicolon chains, or numbered substeps.
-- `action_overuse`: more than 20 percent of steps are action steps in a run with more than 5 steps.
-- `action_can_fold`: an action step is followed by a checklist/single-expected step and could fit as the first sentence of that step body.
-- `long_run`: more than 10 steps; suggest paper export and mid-run index.
-- `long_checklist`: checklist has more than 6 items; Draft 6 says checklist becomes a wall.
-- `paraphrased_expected`: expected uses vague phrases such as `looks right`, `works`, `updates correctly`, `message appears` without exact text when exact UI text should be known.
-- `external_dependency`: body mentions PowerShell, shell, browser, file explorer, registry, scripts, or debug tools.
+- `placeholder_title` (`warning`): title matches common template patterns such as `B1 - ...`, `Step N - ...`, `Screen A/B`, or table references without local definition.
+- `unknown_reference` (`warning`): body or expected references `table`, `screen`, `panel`, `section`, `B`, `C`, etc. without prior context in the same step or top-level context.
+- `compound_body` (`warning`): body contains multiple imperatives joined by `and`, `then`, semicolon chains, or numbered substeps.
+- `action_overuse` (`warning`): more than 20 percent of steps are action steps in a run with more than 5 steps.
+- `action_can_fold` (`warning`): an action step is followed by a checklist/single-expected step and could fit as the first sentence of that step body.
+- `long_run` (`warning`): more than 10 steps; suggest paper export and mid-run index.
+- `long_checklist` (`warning`): checklist has more than 6 items; Draft 6 says checklist becomes a wall.
+- `paraphrased_expected` (`info`): expected is exactly one of a hardcoded list of vague phrases such as `looks right`, `works`, `updates correctly`, or `message appears`. Do not use heuristic matching. Authors can opt out per step with `expected_is_judgment: true` when the tester is being asked for a visual judgment that cannot be reduced to exact text.
+- `external_dependency` (`info`): expected mentions PowerShell, shell, browser, file explorer, registry, scripts, or debug tools. Scope this rule to the `expected` field only; body text may legitimately reference shell/setup actions.
 
 ### 10.5 Where to amend existing rules
 
@@ -414,6 +439,8 @@ Rendering rules:
 
 ### 11.4 UI entry points
 
+Paper export is opt-in only. Do not generate paper HTML automatically on every run load.
+
 Add a header action with tooltip:
 
 - Button: print/export icon if available, otherwise `Paper`
@@ -434,7 +461,7 @@ Deferred. Acceptable v2.1 loop:
 3. Tester photographs or screenshots the completed sheet.
 4. Claude reads the image from chat or local file if Darrin provides it.
 
-Future v2.2 may add manual transcription back into `results_latest.json`, but that should not block export.
+Claude reading the photographed or screenshotted checklist is sufficient for v2.1. Structured paper re-ingestion is deferred to v2.2 only if it proves necessary.
 
 ## 12. Compatibility And Migration
 
@@ -524,19 +551,19 @@ A v2.1 implementation should pass these manual checks:
 9. Export paper mode. HTML contains all non-action checks, action setup rows, PASS/PASS+NOTE/FAIL boxes, and notes column.
 10. Existing v2 instruction files still load and can produce ordinary PASS/FAIL/SKIP/ACK results.
 
-## 15. Open Questions For Darrin
+## 15. Resolved Questions
 
-1. Should `PASS_WITH_NOTE` render as green with note marker, or amber as a caution state?
-2. Should the footer button label be `PASS + NOTE`, `PASS WITH NOTE`, or `PASS, note`?
-3. Should checklist items eventually support item-level `PASS_WITH_NOTE`, or is step-level note enough?
-4. Should `kind: "action"` survive long-term, or should authors be pushed harder to fold setup into adjacent observation steps?
-5. Should paper export be automatic on every run load, or opt-in from the pane/header/CLI?
-6. Should future paper re-ingestion create structured `results_latest.json`, or is Claude reading the photographed checklist sufficient?
-7. Should bare Esc on an idle step view close the pane, or remain a no-op? This spec recommends no-op to avoid data loss.
+1. `PASS_WITH_NOTE` renders as green with a small asterisk note marker, not amber.
+2. The footer button label is `PASS + NOTE`.
+3. Checklist item-level `PASS_WITH_NOTE` is deferred beyond v2.1; v2.1 supports step-level notes only.
+4. `kind: "action"` survives; lint catches overuse and foldable action steps.
+5. Paper export is opt-in from the pane/header or CLI, not automatic on run load.
+6. Paper re-ingestion is deferred; Claude reading a photographed checklist is sufficient for v2.1.
+7. Bare Esc on an idle step view is a no-op.
 
-## 16. Proposed Draft 6 Amendment Map
+## 16. Draft 6 Amendment Map
 
-If accepted, amend Draft 6 as follows:
+Amend Draft 6 as follows:
 
 - Section 1 Goals: add caveated pass capture and mid-run orientation.
 - Section 4.4 Loader strictness: add non-blocking lint warnings after strict validation.
