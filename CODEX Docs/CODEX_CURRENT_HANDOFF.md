@@ -94,7 +94,7 @@ Important: do not write into `C:\panda-gallery`; all Codex-derived files belong 
 <!-- CODEX_AUTOMATED_HANDOFF_START -->
 ## Automated Handoff Snapshot
 
-Generated: 2026-04-25 00:16:16 -07:00
+Generated: 2026-04-25 11:54:28 -07:00
 Mode: `Handoff`
 
 - Last automated handoff: `C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md`
@@ -271,6 +271,7 @@ Recent mailbox topics:
 - Codex asked Claude to review whole-app process streamlining, especially the proposed global context action bar and click-reduction flow.
 - Claude sent a decision lock from Darrin: v4.0 module set is **Library / Arrange / Review / Present**. Compare is a submode inside Review, not a top-level module. Use these names in all future flow mapping.
 - Codex asked Claude to review newer radiograph enhancement algorithm candidates: SwinIR/transformer restoration, adaptive guided filtering, Retinex/homomorphic normalization, multi-scale morphology, wavelet/shearlet methods, super-resolution, panoramic de-shadowing, and diffusion/generative approaches. Codex position: simple dentist-facing controls, algorithm comparison harness before production choice, no generative replacement of clinical evidence.
+
 
 
 
