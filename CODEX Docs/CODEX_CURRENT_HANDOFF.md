@@ -181,3 +181,14 @@ Created: 2026-04-24 20:04:34 -07:00
 Scope: reviewed 32 Claude UX mockups from C:\panda-gallery\workflows\design, including recent testing-pane mockups and the v4.0 shell/library/mount/review/compare/present/template/right-panel studies.
 
 Key opinion: Claude's visual direction is strong enough to be the foundation for Panda Gallery v4, but it should be made more explicitly dental. Borrow Lightroom's workflow architecture and Photoshop's focused tools, while using dental vocabulary and clinical defaults. Recommended module set: Library, Mount, Review, Compare, Present.
+
+## Playwright Browser Installed
+
+Installed: 2026-04-24 20:09:42 -07:00
+
+- Playwright Chromium browser cache: C:\CODEX PG\CODEX Playwright Browsers
+- Setup note: C:\CODEX PG\CODEX Playwright Setup\CODEX_PLAYWRIGHT_SETUP.md
+- Verification: launched Chromium headless successfully and read page title CODEX Playwright Check.
+- GitHub backup policy: CODEX Playwright Browsers/ is intentionally ignored in .gitignore because it contains large downloaded browser binaries.
+
+Use Playwright for local HTML mockup screenshots, contact sheets, responsive checks, and future browser-style dashboard/spec testing. It is not the primary test tool for the live Python/PySide desktop app.
