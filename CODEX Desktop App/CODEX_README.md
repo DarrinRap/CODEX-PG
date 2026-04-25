@@ -36,6 +36,54 @@ Expected validation result:
 }
 ```
 
+## Live-Shape Smoke Check
+
+The builder has also been smoke-tested against the current read-only PG workflow output:
+
+```powershell
+& 'C:\Users\drrap\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' -m CODEX_pg_audit.cli --source 'C:\panda-gallery\workflows' --out 'C:\CODEX PG\CODEX Audit Prototype\CODEX Session Packages' --overwrite --mock-issues --review-records
+```
+
+Latest result:
+
+```json
+{
+  "validation": {
+    "ok": true,
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "issue_validation": {
+    "ok": true,
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "review_records": {
+    "approval_record": "...appr_YYYYMMDD_HHMMSS_0001.json",
+    "email_draft_record": "...email_YYYYMMDD_HHMMSS_0001.json",
+    "archive_jsonl": "...audit_archive_records.jsonl"
+  }
+}
+```
+
+This reads `C:\panda-gallery\workflows` only and writes generated output under the ignored `C:\CODEX PG\CODEX Audit Prototype` folder.
+
+## Mock Issue Extraction
+
+`--mock-issues` creates `derived/audit_issue_extraction_v1.json` as a local fixture. It does not call an AI provider. The validator blocks issues that reference evidence IDs not present in the generated package manifest.
+
+## Local Review Records
+
+`--review-records` requires `--mock-issues` and creates:
+
+- approval JSON,
+- draft-only email JSON,
+- archive JSONL.
+
+These records are local fixtures for the future dashboard. They do not send email, upload data, or close real issues.
+
+The scaffold also includes helpers to validate the local approval/email/archive chain and search archive JSONL records by text. These are intended as read-side primitives for a future dashboard prototype.
+
 ## Boundaries
 
 - Do not mutate `C:\panda-gallery`.

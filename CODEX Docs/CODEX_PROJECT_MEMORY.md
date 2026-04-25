@@ -1,6 +1,6 @@
 ﻿# CODEX Project Memory
 
-Last updated: 2026-04-24 22:14:00 -07:00
+Last updated: 2026-04-24 22:33:00 -07:00
 
 This file is the durable memory for Codex work on the PG Testing + Audit desktop project. Future Codex chats should read this file first before making plans or edits.
 
@@ -96,7 +96,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-24 22:21:54 -07:00
+Last generated: 2026-04-24 22:33:41 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -153,7 +153,7 @@ Key decisions captured:
 - Dropbox/backend processing must wait for a package-ready marker, not just file upload.
 - AI issues must reference valid evidence IDs and preserve AI suggestions separately from reviewer edits.
 
-Recommended next task: harden the local package builder against live PG output variations, then expand tests for missing optional transcript/metadata and missing screenshot evidence.
+Recommended next task: consider a minimal read-only dashboard prototype over the local package, issue, approval, email draft, and archive records.
 
 ## Codebase Orientation Completed
 
@@ -164,7 +164,7 @@ Completed: 2026-04-24 19:21:32 -07:00
 - Live source inspected: C:\panda-gallery version 4.23.
 - Key understanding: PG already has guided local testing, workflow screenshot/audio capture, local faster-whisper transcription, results JSON, and Shift+F12 session-aware region capture. Testing + Audit MVP still needs canonical package/evidence/issue/approval/archive contracts before broad implementation.
 
-Recommended next task: continue hardening the local package builder and validator before adding Dropbox, AI, email, archive, or dashboard implementation.
+Recommended next task: consider a minimal read-only dashboard prototype before Dropbox, real AI, or live email.
 
 ## Claude Code Quality Recommendations Document
 
@@ -262,11 +262,14 @@ Created: 2026-04-24 22:18:00 -07:00
 
 Verification completed with bundled Codex Python:
 
-- `python -m unittest discover -s CODEX_tests`: 2 tests passed.
+- `python -m unittest discover -s CODEX_tests`: 8 tests passed.
 - `python -m CODEX_pg_audit.cli ...`: generated sample package and validator returned `ok: true` with zero errors and zero warnings.
+- Live PG workflow smoke test completed read-only against `C:\panda-gallery\workflows`: generated 11 evidence records and validator returned `ok: true` with zero errors and zero warnings.
+- Mock issue extraction added with `--mock-issues`; issue extraction validation returned `ok: true` with zero errors and zero warnings, and tests verify unknown evidence IDs are blocked.
+- Local approval, draft-only email, and archive JSONL scaffolds added with `--review-records`; live read-only smoke generated all records successfully.
+- Review-record validation/search helpers added for local approval/email/archive chain and archive JSONL text search.
 
 Important boundary: this is a local-only package builder and validator scaffold. It does not build v4, does not build the final audit dashboard, does not upload to Dropbox, does not call AI, does not send email, and does not mutate `C:\panda-gallery`.
 
-Recommended next task: harden the package builder against live PG output variations by reading current `results_latest.json` shapes from `C:\panda-gallery` read-only, then add tests for missing optional transcript/metadata and missing screenshot evidence.
-
+Recommended next task: consider a minimal read-only dashboard prototype; keep Dropbox, real AI, live email, and full editing workflow deferred.
 

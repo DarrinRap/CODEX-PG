@@ -1,20 +1,22 @@
 # CODEX Claude Share Package Manifest
 
-Generated: 2026-04-24 22:21:15 -07:00
+Generated: 2026-04-24 22:33:26 -07:00
 
 ## Summary
 
-- File count: 129
-- Total bytes: 12539916
+- File count: 131
+- Total bytes: 12569418
 
 ## File Inventory
 
-- `CODEX Desktop App Scaffold\CODEX_pg_audit\__init__.py` (270 bytes)
-- `CODEX Desktop App Scaffold\CODEX_pg_audit\cli.py` (933 bytes)
-- `CODEX Desktop App Scaffold\CODEX_pg_audit\package_builder.py` (14719 bytes)
-- `CODEX Desktop App Scaffold\CODEX_pg_audit\validation.py` (6117 bytes)
-- `CODEX Desktop App Scaffold\CODEX_README.md` (1375 bytes)
-- `CODEX Desktop App Scaffold\CODEX_tests\test_package_builder.py` (1735 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\__init__.py` (614 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\cli.py` (2055 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\issue_extraction.py` (6466 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\package_builder.py` (15494 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\review_records.py` (8599 bytes)
+- `CODEX Desktop App Scaffold\CODEX_pg_audit\validation.py` (9933 bytes)
+- `CODEX Desktop App Scaffold\CODEX_README.md` (3036 bytes)
+- `CODEX Desktop App Scaffold\CODEX_tests\test_package_builder.py` (8454 bytes)
 - `CODEX Desktop App Scaffold\pyproject.toml` (261 bytes)
 - `CODEX Documents\CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md` (15905 bytes)
 - `CODEX Documents\CODEX_AUDIT_ISSUE_SCHEMA_v1.md` (10045 bytes)

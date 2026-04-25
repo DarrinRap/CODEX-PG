@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -71,6 +72,29 @@ def mime_type(path: Path) -> str:
 
 def normalize_rel(path_text: str) -> Path:
     return Path(path_text.replace("\\", "/"))
+
+
+def safe_id(value: str, fallback: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "_", value.strip())
+    cleaned = cleaned.strip("._-")
+    return cleaned or fallback
+
+
+def resolve_source_path(source_dir: Path, path_text: str) -> Path:
+    """Resolve PG result paths that may be source-relative, repo-relative, or absolute."""
+    raw = Path(path_text)
+    if raw.is_absolute():
+        return raw
+    rel = normalize_rel(path_text)
+    candidates = [
+        source_dir / rel,
+        source_dir.parent / rel,
+        source_dir.parent.parent / rel,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def safe_remove_tree(target: Path, allowed_parent: Path) -> None:
@@ -189,20 +213,21 @@ def build_steps_and_evidence(ctx: BuildContext, package_dir: Path, results: dict
     for index, step in enumerate(step_list(results)):
         step_n = int(step.get("step_n") or step.get("n") or index + 1)
         evidence_ids: list[str] = []
+        screenshot_refs: list[tuple[str, str, str]] = []
         for rel_text in step.get("manual_screenshots", []) or []:
-            src = ctx.source_dir / normalize_rel(str(rel_text))
-            if not src.exists():
-                ctx.missing_sources.append({"kind": "region_screenshot", "required": False, "path": str(src), "step_n": step_n})
-                continue
-            evidence = copy_evidence_file(ctx, package_dir, src, step_n, "region", f"Step {step_n} manual region capture")
-            evidence_out.append(evidence)
-            evidence_ids.append(evidence["evidence_id"])
+            screenshot_refs.append((str(rel_text), "region", f"Step {step_n} manual region capture"))
+        if step.get("screenshot"):
+            screenshot_refs.append((str(step["screenshot"]), "step_auto", f"Step {step_n} step screenshot"))
         for rel_text in step.get("auto_screenshots", []) or []:
-            src = ctx.source_dir / normalize_rel(str(rel_text))
+            screenshot_refs.append((str(rel_text), "step_auto", f"Step {step_n} automatic failure screenshot"))
+
+        for rel_text, kind, label in screenshot_refs:
+            src = resolve_source_path(ctx.source_dir, rel_text)
             if not src.exists():
-                ctx.missing_sources.append({"kind": "step_auto_screenshot", "required": False, "path": str(src), "step_n": step_n})
+                missing_kind = "region_screenshot" if kind == "region" else "step_auto_screenshot"
+                ctx.missing_sources.append({"kind": missing_kind, "required": False, "path": str(src), "source_ref": rel_text, "step_n": step_n})
                 continue
-            evidence = copy_evidence_file(ctx, package_dir, src, step_n, "step_auto", f"Step {step_n} automatic failure screenshot")
+            evidence = copy_evidence_file(ctx, package_dir, src, step_n, kind, label)
             evidence_out.append(evidence)
             evidence_ids.append(evidence["evidence_id"])
         steps_out.append({
@@ -290,8 +315,8 @@ def build_package(ctx: BuildContext) -> Path:
     if not results_path.exists():
         raise FileNotFoundError(f"Required source missing: {results_path}")
     results = read_json(results_path)
-    session_id = str(results.get("session_id") or "session_unknown")
     run_id = str(results.get("run_id") or "run_unknown")
+    session_id = str(results.get("session_id") or safe_id(run_id, "session_unknown"))
     package_id = f"pkg_local_{session_id}"
     package_dir = ctx.output_root / f"session_package_{session_id}"
     if package_dir.exists():
