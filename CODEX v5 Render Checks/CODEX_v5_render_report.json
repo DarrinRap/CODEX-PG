@@ -1,0 +1,74 @@
+[
+  {
+    "name": "design_preview",
+    "title": "Panda Gallery v5.0 - Design System Preview",
+    "url": "file:///C:/panda-gallery/workflows/design/v5/v5_DESIGN_SYSTEM_preview.html",
+    "viewport": {
+      "width": 1440,
+      "height": 1200
+    },
+    "scroll": {
+      "width": 1440,
+      "height": 1988,
+      "bodyText": "workflows/design/v5 / v5_DESIGN_SYSTEM_preview.html\nPANDA Gallery v5.0 Design System\n\nRendered preview of the locked token set, type system, mode colors, sensor",
+      "bg": "rgb(20, 20, 31)"
+    },
+    "errors": [],
+    "screenshot": "C:\\CODEX PG\\CODEX v5 Render Checks\\design_preview.png",
+    "screenshotBytes": 122991
+  },
+  {
+    "name": "review",
+    "title": "Panda Gallery v5.0 - Review Module",
+    "url": "file:///C:/panda-gallery/workflows/design/v5/v5_review_mockup.html",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "scroll": {
+      "width": 1920,
+      "height": 3798,
+      "bodyText": "Panda Gallery v5.0 / Review module / 1920x1080 states\nSTATE A\nSingle-image Review\nP\nPANDA Gallery v5.0\n<\n>\nLibrary\nCtrl+1\nArrange\nCtrl+2\nReview\nCtrl+3\nPresent\nC",
+      "bg": "rgb(20, 20, 31)"
+    },
+    "errors": [],
+    "screenshot": "C:\\CODEX PG\\CODEX v5 Render Checks\\review.png",
+    "screenshotBytes": 372004
+  },
+  {
+    "name": "shell",
+    "title": "Panda Gallery v5.0 - Four-Module Shell Overview",
+    "url": "file:///C:/panda-gallery/workflows/design/v5/v5_shell_overview.html",
+    "viewport": {
+      "width": 1440,
+      "height": 1200
+    },
+    "scroll": {
+      "width": 1440,
+      "height": 7386,
+      "bodyText": "PANDA Gallery v5.0 Shell Overview\nFour modules, one chrome, persistent patient and Mount context.\nBreakpoints: 1440x900 / 1920x1080 / 3840x2160\nModules: Library",
+      "bg": "rgb(20, 20, 31)"
+    },
+    "errors": [],
+    "screenshot": "C:\\CODEX PG\\CODEX v5 Render Checks\\shell.png",
+    "screenshotBytes": 910286
+  },
+  {
+    "name": "mount_designer",
+    "title": "Panda Gallery v5.0 - Mount Designer",
+    "url": "file:///C:/panda-gallery/workflows/design/v5/v5_template_editor_dark.html",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "scroll": {
+      "width": 1920,
+      "height": 1080,
+      "bodyText": "M\nPANDA Gallery - Mount Designer\n/\n8.0 x 5.0 in @ 300 DPI / autosaved 8s ago\nSENSOR PALETTE\nDrag sensor slots onto the Mount canvas. Slot colors follow the clin",
+      "bg": "rgb(20, 20, 31)"
+    },
+    "errors": [],
+    "screenshot": "C:\\CODEX PG\\CODEX v5 Render Checks\\mount_designer.png",
+    "screenshotBytes": 87836
+  }
+]
