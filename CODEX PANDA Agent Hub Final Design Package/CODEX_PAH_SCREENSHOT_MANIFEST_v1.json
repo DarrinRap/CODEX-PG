@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-04-26T20:15:00-07:00",
+  "html": "C:\\CODEX PG\\CODEX PANDA Agent Hub Final Design Package\\CODEX_PAH_UX_MOCKUPS_v1.html",
+  "viewport": "1440x1000",
+  "screenshots": [
+    {
+      "screen": "overview",
+      "screenshot": "C:\\CODEX PG\\CODEX PANDA Agent Hub Final Design Package\\CODEX mockup screenshots\\CODEX_PAH_mockup_overview_1440x1000.png",
+      "primary_buttons_visible": 0,
+      "text_overflows": []
+    },
+    {
+      "screen": "threads",
+      "screenshot": "C:\\CODEX PG\\CODEX PANDA Agent Hub Final Design Package\\CODEX mockup screenshots\\CODEX_PAH_mockup_threads_1440x1000.png",
+      "primary_buttons_visible": 0,
+      "text_overflows": []
+    },
+    {
+      "screen": "decisions",
+      "screenshot": "C:\\CODEX PG\\CODEX PANDA Agent Hub Final Design Package\\CODEX mockup screenshots\\CODEX_PAH_mockup_decisions_1440x1000.png",
+      "primary_buttons_visible": 0,
+      "text_overflows": []
+    },
+    {
+      "screen": "dispatch",
+      "screenshot": "C:\\CODEX PG\\CODEX PANDA Agent Hub Final Design Package\\CODEX mockup screenshots\\CODEX_PAH_mockup_dispatch_1440x1000.png",
+      "primary_buttons_visible": 1,
+      "text_overflows": []
+    },
+    {
+      "screen": "validation",
+      "screenshot": "C:\\CODEX PG\\CODEX PANDA Agent Hub Final Design Package\\CODEX mockup screenshots\\CODEX_PAH_mockup_validation_1440x1000.png",
+      "primary_buttons_visible": 0,
+      "text_overflows": []
+    },
+    {
+      "screen": "notifications",
+      "screenshot": "C:\\CODEX PG\\CODEX PANDA Agent Hub Final Design Package\\CODEX mockup screenshots\\CODEX_PAH_mockup_notifications_1440x1000.png",
+      "primary_buttons_visible": 1,
+      "text_overflows": []
+    }
+  ]
+}

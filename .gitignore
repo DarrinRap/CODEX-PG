@@ -15,3 +15,9 @@ CODEX Claude Share Package.zip
 CODEX Audit Module UX Revision v3.zip
 CODEX Dropbox Outlook Integration Starter Pack.zip
 CODEX Audit Prototype/
+CODEX Agent Hub/CODEX config/*.local.json
+CODEX Agent Hub/CODEX approvals/*.local.jsonl
+CODEX Agent Hub/CODEX diagnostics/*.md
+CODEX Agent Hub/CODEX notifications/*.jsonl
+CODEX Agent Hub/CODEX notifications/*.local.json
+CODEX Agent Hub/CODEX state/

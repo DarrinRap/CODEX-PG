@@ -1,0 +1,35 @@
+{
+  "enabled": false,
+  "provider": "log_only",
+  "cooldown_minutes": 30,
+  "send_existing_on_start": false,
+  "message_prefix": "PANDA Agent Hub",
+  "notify_on": {
+    "darrin_decision_needed": true,
+    "claude_response_requested": true,
+    "validation_warning": false
+  },
+  "desktop_popups": {
+    "enabled": false,
+    "provider": "scaffold"
+  },
+  "twilio": {
+    "account_sid": "",
+    "auth_token": "",
+    "from_number": "",
+    "to_number": ""
+  },
+  "email_to_sms": {
+    "smtp_host": "",
+    "smtp_port": 587,
+    "use_starttls": true,
+    "username": "",
+    "password": "",
+    "from_email": "",
+    "to_email": ""
+  },
+  "webhook": {
+    "url": "",
+    "headers": {}
+  }
+}

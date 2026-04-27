@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PANDA Agent Hub UX Mockups v1</title>
+<style>
+  :root {
+    --canvas: #14141f;
+    --chrome: #161625;
+    --pane: #1a1a2e;
+    --pane-raised: #22223a;
+    --pane-selected: #2a2a4e;
+    --border-soft: #232336;
+    --border: #2a2a3e;
+    --border-hover: #3a3a4e;
+    --text: #e0ddd5;
+    --text-muted: #888888;
+    --text-dim: #555555;
+    --accent-light: #f0b98c;
+    --accent: #e8a87c;
+    --accent-hover: #d4945a;
+    --accent-soft: rgba(232,168,124,0.12);
+    --accent-border: rgba(232,168,124,0.45);
+    --accent-ink: #1a1a2e;
+    --ok: #7fb069;
+    --warn: #f39c12;
+    --err: #e74c3c;
+    --mode-review: #5fa0a8;
+    --font-ui: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    --font-mono: "Cascadia Mono", "Consolas", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--canvas);
+    color: var(--text);
+    font: 13px/1.35 var(--font-ui);
+  }
+  body { overflow: hidden; }
+  button, input, select, textarea { font: inherit; }
+
+  .app {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 44px 1fr 26px;
+    grid-template-columns: 72px minmax(560px, 1fr) 320px;
+    grid-template-areas:
+      "titlebar titlebar titlebar"
+      "rail main side"
+      "status status status";
+    background: var(--canvas);
+  }
+
+  .titlebar {
+    grid-area: titlebar;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: stretch;
+    padding: 0 12px 0 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 18px;
+    margin-right: 12px;
+    border-right: 1px solid var(--border);
+  }
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--accent-border);
+    border-radius: 6px;
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+  }
+  .brand-text .name {
+    background: linear-gradient(180deg, var(--accent-light) 0%, var(--accent) 50%, var(--accent-hover) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .brand-text .ver {
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    margin-left: 4px;
+  }
+  .tabs { display: flex; align-items: stretch; gap: 2px; }
+  .tab {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--mode-review); }
+  .tab-kbd {
+    color: var(--text-dim);
+    font: 10px var(--font-mono);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .spacer { flex: 1; }
+  .global-actions { display: flex; align-items: center; gap: 6px; }
+
+  .gbtn {
+    height: 28px;
+    padding: 0 10px;
+    background: var(--pane-raised);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .gbtn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  .gbtn.disabled {
+    color: var(--text-dim);
+    border-color: var(--border-soft);
+    background: var(--chrome);
+    cursor: default;
+  }
+  .gbtn.quiet { background: transparent; border-color: transparent; color: var(--text-muted); }
+
+  .toolstrip {
+    grid-area: rail;
+    background: var(--pane);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 8px 4px;
+    gap: 2px;
+  }
+  .ts-btn {
+    height: 52px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .ts-btn.active {
+    background: var(--pane-selected);
+    color: var(--accent);
+    border-color: var(--accent-border);
+  }
+  .ts-ico { font-size: 17px; line-height: 1; }
+  .ts-label { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .ts-sep { height: 1px; background: var(--border); margin: 6px 4px; }
+  .ts-spacer { flex: 1; }
+
+  .main {
+    grid-area: main;
+    min-width: 0;
+    display: grid;
+    grid-template-rows: 40px 1fr;
+    background: var(--canvas);
+  }
+  .vport-bar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 16px;
+  }
+  .breadcrumb { display: flex; gap: 8px; align-items: center; color: var(--text-muted); font-size: 12px; }
+  .breadcrumb-current { color: var(--text); font-weight: 500; }
+  .breadcrumb-sep { color: var(--text-dim); }
+  .view-controls { display: flex; gap: 4px; }
+  .vc-btn {
+    height: 28px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+  .vc-btn.active { background: var(--pane-selected); color: var(--accent); border-color: var(--accent-border); }
+  .stage {
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+    background: var(--canvas);
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .rightpane {
+    grid-area: side;
+    min-width: 0;
+    background: var(--pane);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-tabs {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+  }
+  .pt-btn {
+    height: 26px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 0 9px;
+  }
+  .pt-btn.active { background: var(--pane-selected); color: var(--accent); border-color: var(--accent-border); }
+  .panel-scroll { overflow: auto; padding: 12px; }
+
+  .statusbar {
+    grid-area: status;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .mono { font-family: var(--font-mono); color: var(--accent); }
+  .dim { color: var(--text-dim); }
+  .muted { color: var(--text-muted); }
+  .ok { color: var(--ok); }
+  .warn { color: var(--warn); }
+  .err { color: var(--err); }
+
+  .section-head {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-head .hint {
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+  .section-sep { height: 1px; background: var(--border-soft); margin: 10px 0 8px; }
+  .grid { display: grid; gap: 8px; }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid.workflow { grid-template-columns: 1.1fr 1fr 0.9fr; align-items: start; }
+  .panel-card, .row-card {
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+  }
+  .row-card { display: grid; gap: 6px; }
+  .panel-card.selected, .row-card.selected { background: var(--accent-soft); border-color: var(--accent-border); }
+  .metric {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border-top: 1px solid var(--border-soft);
+  }
+  .metric:first-child { border-top: 0; }
+  .metric .k { color: var(--text-muted); font-size: 12px; }
+  .metric .v { font: 11.5px var(--font-mono); text-align: right; }
+  .pill, .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 20px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .pill.on { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
+  .badge.ok { color: var(--ok); border-color: rgba(127,176,105,0.45); }
+  .badge.warn { color: var(--warn); border-color: rgba(243,156,18,0.45); }
+  .badge.err { color: var(--err); border-color: rgba(231,76,60,0.45); }
+
+  .item-title { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+  .item-title b { font-weight: 600; }
+  .item-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .summary-line { color: var(--text-muted); font-size: 12px; }
+  .list { display: grid; gap: 8px; }
+
+  .workflow-stepper { display: grid; gap: 8px; }
+  .step {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-muted);
+  }
+  .step-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid var(--border-hover);
+    display: grid;
+    place-items: center;
+    font: 10px var(--font-mono);
+  }
+  .step.done .step-dot { color: var(--ok); border-color: var(--ok); }
+  .step.active { color: var(--text); }
+  .step.active .step-dot { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .step .step-state { font: 10px var(--font-mono); color: var(--text-dim); }
+
+  .decision-card {
+    border-left: 2px solid var(--accent);
+    padding-left: 10px;
+  }
+  .decision-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .option {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    background: var(--pane-raised);
+  }
+  .option.recommended { border-color: var(--accent-border); background: var(--accent-soft); }
+
+  .table {
+    display: grid;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .table .tr { display: grid; grid-template-columns: 1.2fr 0.9fr 0.8fr 1fr; min-height: 34px; border-top: 1px solid var(--border-soft); }
+  .table .tr:first-child { border-top: 0; }
+  .table .th { background: var(--chrome); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1.1px; }
+  .table .td, .table .th { padding: 8px; display: flex; align-items: center; min-width: 0; }
+
+  .compose-box textarea, .compose-box input, .compose-box select {
+    width: 100%;
+    background: var(--chrome);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 7px;
+  }
+  .compose-box textarea { min-height: 110px; resize: vertical; }
+  .field-label {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    margin: 8px 0 4px;
+  }
+
+  .mini-chart {
+    height: 72px;
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    background:
+      linear-gradient(90deg, transparent 0 19%, var(--border-soft) 20% 20.5%, transparent 21% 39%, var(--border-soft) 40% 40.5%, transparent 41% 59%, var(--border-soft) 60% 60.5%, transparent 61% 79%, var(--border-soft) 80% 80.5%, transparent 81%),
+      linear-gradient(180deg, var(--pane-raised), var(--pane));
+    position: relative;
+    overflow: hidden;
+  }
+  .mini-chart::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 12px;
+    height: 36px;
+    border-bottom: 2px solid var(--accent);
+    border-left: 2px solid var(--accent);
+    transform: skewX(-16deg);
+    opacity: 0.75;
+  }
+
+  @media (max-width: 1040px) {
+    .app {
+      grid-template-columns: 56px minmax(0, 1fr);
+      grid-template-areas:
+        "titlebar titlebar"
+        "rail main"
+        "status status";
+    }
+    .rightpane { display: none; }
+    .grid.workflow, .grid.three, .grid.two { grid-template-columns: 1fr; }
+    .tab { padding: 0 9px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="titlebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div class="brand-text"><span class="name">PANDA</span><span>Agent Hub</span><span class="ver">v1 spec</span></div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-screen="overview">Command<span class="tab-kbd">1</span></button>
+      <button class="tab" data-screen="threads">Threads<span class="tab-kbd">2</span></button>
+      <button class="tab" data-screen="decisions">Darrin<span class="tab-kbd">3</span></button>
+      <button class="tab" data-screen="dispatch">Dispatch<span class="tab-kbd">4</span></button>
+      <button class="tab" data-screen="validation">Validate<span class="tab-kbd">5</span></button>
+      <button class="tab" data-screen="notifications">Notify<span class="tab-kbd">6</span></button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="global-actions">
+      <button class="gbtn quiet">↻ Refresh</button>
+      <button class="gbtn">▣ Export</button>
+      <button class="gbtn">Review Packet</button>
+    </div>
+  </header>
+
+  <aside class="toolstrip">
+    <div class="ts-btn active"><div class="ts-ico">⌂</div><div class="ts-label">Home</div></div>
+    <div class="ts-btn"><div class="ts-ico">☷</div><div class="ts-label">Queue</div></div>
+    <div class="ts-btn"><div class="ts-ico">⇄</div><div class="ts-label">Route</div></div>
+    <div class="ts-btn"><div class="ts-ico">✓</div><div class="ts-label">Check</div></div>
+    <div class="ts-sep"></div>
+    <div class="ts-btn"><div class="ts-ico">⚑</div><div class="ts-label">Decide</div></div>
+    <div class="ts-btn"><div class="ts-ico">◇</div><div class="ts-label">Spec</div></div>
+    <div class="ts-spacer"></div>
+    <div class="ts-btn"><div class="ts-ico">⚙</div><div class="ts-label">Prefs</div></div>
+  </aside>
+
+  <main class="main">
+    <div class="vport-bar">
+      <div class="breadcrumb"><span>PANDA Agent Hub</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current" id="crumb">Command Center</span></div>
+      <div class="spacer"></div>
+      <div class="view-controls">
+        <button class="vc-btn active">Live</button>
+        <button class="vc-btn">24h</button>
+        <button class="vc-btn">All</button>
+      </div>
+      <span class="mono">main…origin/main</span>
+    </div>
+    <div class="stage">
+      <section class="screen active" id="overview">
+        <div class="section-head">Command Center <span class="hint">updated 19:12</span></div>
+        <div class="grid workflow">
+          <div class="panel-card selected">
+            <div class="item-title"><b>Attention now</b><span class="badge warn">2 items</span></div>
+            <div class="section-sep"></div>
+            <div class="list">
+              <div class="row-card decision-card">
+                <div class="item-title"><b>PAH schema additions</b><span class="pill on">agent vote</span></div>
+                <div class="summary-line">CC and Codex recommend accepting schema_version, replies_to, validation terminal fields.</div>
+              </div>
+              <div class="row-card">
+                <div class="item-title"><b>Screen B remains foreground</b><span class="badge err">blocked</span></div>
+                <div class="summary-line">Claude deferred deeper PAH review until v4.44 Screen B target lands.</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-card">
+            <div class="item-title"><b>Agent lanes</b><span class="badge ok">healthy</span></div>
+            <div class="section-sep"></div>
+            <div class="metric"><span class="k">Codex</span><span class="v ok">designing</span></div>
+            <div class="metric"><span class="k">Claude Desktop</span><span class="v warn">holding</span></div>
+            <div class="metric"><span class="k">Claude Code</span><span class="v">reviewed</span></div>
+            <div class="metric"><span class="k">PAH</span><span class="v ok">local</span></div>
+          </div>
+          <div class="panel-card">
+            <div class="item-title"><b>Throughput</b><span class="pill">last 24h</span></div>
+            <div class="section-sep"></div>
+            <div class="mini-chart"></div>
+            <div class="metric"><span class="k">Messages parsed</span><span class="v">137</span></div>
+            <div class="metric"><span class="k">Threads active</span><span class="v">9</span></div>
+            <div class="metric"><span class="k">Validated reports</span><span class="v ok">4</span></div>
+          </div>
+        </div>
+
+        <div class="section-head">Current Work <span class="hint">risk sorted</span></div>
+        <div class="table">
+          <div class="tr th"><div class="th">Thread</div><div class="th">Owner</div><div class="th">State</div><div class="th">Next action</div></div>
+          <div class="tr"><div class="td">AGENT-HUB-V1</div><div class="td">Codex</div><div class="td"><span class="badge ok">design</span></div><div class="td">finish mockup review</div></div>
+          <div class="tr"><div class="td">AM-SCREEN-B-V3</div><div class="td">Claude</div><div class="td"><span class="badge warn">holding</span></div><div class="td">await v4.44 target</div></div>
+          <div class="tr"><div class="td">CC-SCHEMA-LINT</div><div class="td">Agents</div><div class="td"><span class="badge ok">converged</span></div><div class="td">fold into PAH schema</div></div>
+        </div>
+      </section>
+
+      <section class="screen" id="threads">
+        <div class="section-head">Thread Board <span class="hint">machine grouped</span></div>
+        <div class="grid two">
+          <div class="panel-card selected">
+            <div class="item-title"><b>AGENT-HUB-V1</b><span class="badge ok">open</span></div>
+            <div class="summary-line">PAH product, schema, routing, governance, and design package.</div>
+            <div class="section-sep"></div>
+            <div class="metric"><span class="k">Latest</span><span class="v">CC review</span></div>
+            <div class="metric"><span class="k">Risk</span><span class="v ok">low</span></div>
+            <div class="metric"><span class="k">Decision mode</span><span class="v">agent vote</span></div>
+          </div>
+          <div class="panel-card">
+            <div class="item-title"><b>AM-SCREEN-B-V3</b><span class="badge warn">waiting</span></div>
+            <div class="summary-line">Screen B UX redesign remains highest visible product risk.</div>
+            <div class="section-sep"></div>
+            <div class="metric"><span class="k">Latest</span><span class="v">Claude hold</span></div>
+            <div class="metric"><span class="k">Risk</span><span class="v warn">medium</span></div>
+            <div class="metric"><span class="k">Decision mode</span><span class="v">UX Darrin</span></div>
+          </div>
+        </div>
+
+        <div class="section-head">Timeline <span class="hint">AGENT-HUB-V1</span></div>
+        <div class="list">
+          <div class="row-card"><div class="item-title"><b>CC → Codex: approve with changes</b><span class="mono">01:00</span></div><div class="summary-line">Schema additions, atomic writes, hook caution, lint integration.</div></div>
+          <div class="row-card"><div class="item-title"><b>Codex → Claude: governance update</b><span class="mono">19:11</span></div><div class="summary-line">Technical decisions are agent-voted; UX/dental decisions go to Darrin.</div></div>
+          <div class="row-card"><div class="item-title"><b>Claude → Codex: holding reply</b><span class="mono">00:01</span></div><div class="summary-line">Security first, hardcoded participants, defer deeper review after Screen B.</div></div>
+        </div>
+      </section>
+
+      <section class="screen" id="decisions">
+        <div class="section-head">Darrin Queue <span class="hint">UX · dental · safety only</span></div>
+        <div class="grid two">
+          <div class="panel-card decision-card selected">
+            <div class="item-title"><b>What deserves SMS interruption?</b><span class="badge warn">Darrin</span></div>
+            <div class="summary-line">Product feel decision. Agents can recommend triggers, but Darrin decides interruption tolerance.</div>
+            <div class="section-sep"></div>
+            <div class="decision-options">
+              <div class="option recommended"><b>Recommended</b><br><span class="muted">Only blocked work, UX decision, protected action.</span></div>
+              <div class="option"><b>Quieter</b><br><span class="muted">Only protected action approval.</span></div>
+            </div>
+          </div>
+          <div class="panel-card">
+            <div class="item-title"><b>PAH visual density</b><span class="badge warn">Darrin</span></div>
+            <div class="summary-line">Choose whether this feels like a dense developer cockpit or a simpler command center.</div>
+            <div class="section-sep"></div>
+            <div class="decision-options">
+              <div class="option recommended"><b>Command cockpit</b><br><span class="muted">Dense, operational, low prose.</span></div>
+              <div class="option"><b>Guided console</b><br><span class="muted">More prompts, fewer visible queues.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="section-head">Agent-Decided Technical Items <span class="hint">not in Darrin queue</span></div>
+        <div class="list">
+          <div class="row-card"><div class="item-title"><b>Schema additions</b><span class="badge ok">3/3 recommend</span></div><div class="summary-line">schema_version, replies_to, validation.passed, validation.ran_at, priority enum.</div></div>
+          <div class="row-card"><div class="item-title"><b>Inbox rename</b><span class="badge ok">3/3 recommend</span></div><div class="summary-line">Use CODEX_CLAUDE_CODE Inbox with migration alias.</div></div>
+          <div class="row-card"><div class="item-title"><b>Lint mode</b><span class="badge ok">3/3 recommend</span></div><div class="summary-line">Call pg_dispatch_lint.py; do not fork rules inside PAH.</div></div>
+        </div>
+      </section>
+
+      <section class="screen" id="dispatch">
+        <div class="section-head">Structured Dispatch <span class="hint">schema v1</span></div>
+        <div class="grid two">
+          <div class="panel-card compose-box">
+            <div class="field-label"><span>Target</span><span class="mono">required</span></div>
+            <select><option>claude-code · CODEX_CLAUDE_CODE Inbox</option><option>claude-desktop · CLAUDE Inbox</option><option>codex · CODEX Inbox</option></select>
+            <div class="field-label"><span>Type</span><span class="mono">dispatch</span></div>
+            <select><option>cross_check</option><option>dispatch</option><option>response_request</option><option>decision_record</option></select>
+            <div class="field-label"><span>Approval boundary</span><span class="mono">locked</span></div>
+            <select><option>coordination_only</option><option>read_only_review</option><option>panda_gallery_write_requires_darrin</option></select>
+            <div class="field-label"><span>Message</span><span class="mono">frontmatter + body</span></div>
+            <textarea>Read the PAH final design package and return a 6 C's / Bible review. Do not edit C:\panda-gallery.</textarea>
+            <div class="section-sep"></div>
+            <button class="gbtn primary">Send Dispatch</button>
+            <button class="gbtn">Preview YAML</button>
+          </div>
+          <div class="panel-card">
+            <div class="section-head">Preflight <span class="hint">blocking checks</span></div>
+            <div class="metric"><span class="k">Message ID</span><span class="v ok">ready</span></div>
+            <div class="metric"><span class="k">Schema version</span><span class="v ok">1</span></div>
+            <div class="metric"><span class="k">Write boundary</span><span class="v ok">coordination</span></div>
+            <div class="metric"><span class="k">Atomic write</span><span class="v ok">tmp→md</span></div>
+            <div class="metric"><span class="k">Darrin needed</span><span class="v">no</span></div>
+            <div class="section-sep"></div>
+            <div class="workflow-stepper">
+              <div class="step done"><span class="step-dot">1</span><span>Compose</span><span class="step-state">done</span></div>
+              <div class="step active"><span class="step-dot">2</span><span>Preflight</span><span class="step-state">active</span></div>
+              <div class="step"><span class="step-dot">3</span><span>Atomic write</span><span class="step-state">pending</span></div>
+              <div class="step"><span class="step-dot">4</span><span>Ledger</span><span class="step-state">pending</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="validation">
+        <div class="section-head">Validation Console <span class="hint">lint · schema · safety</span></div>
+        <div class="grid three">
+          <div class="panel-card selected"><div class="item-title"><b>Schema</b><span class="badge ok">pass</span></div><div class="summary-line">New messages include schema_version, replies_to, timezone created_at.</div></div>
+          <div class="panel-card"><div class="item-title"><b>Safety</b><span class="badge warn">1 warn</span></div><div class="summary-line">Hook bridge deferred until Phase 4 review.</div></div>
+          <div class="panel-card"><div class="item-title"><b>Lint</b><span class="badge ok">external</span></div><div class="summary-line">pg_dispatch_lint.py is canonical; PAH renders JSON.</div></div>
+        </div>
+        <div class="section-head">Findings <span class="hint">highest severity first</span></div>
+        <div class="list">
+          <div class="row-card"><div class="item-title"><b>Hook bridge locked to Phase 4</b><span class="badge warn">design guard</span></div><div class="summary-line">Opt-in per Claude Code session, kill switch, PostToolUse logging only first.</div></div>
+          <div class="row-card"><div class="item-title"><b>PAH Inbox not yet active</b><span class="badge warn">defer</span></div><div class="summary-line">PAH is a router until command schema is safe.</div></div>
+          <div class="row-card"><div class="item-title"><b>Decision queue narrowed</b><span class="badge ok">pass</span></div><div class="summary-line">Technical decisions are agent-voted; Darrin sees UX/dental/safety only.</div></div>
+        </div>
+      </section>
+
+      <section class="screen" id="notifications">
+        <div class="section-head">Notification Settings <span class="hint">local secrets ignored</span></div>
+        <div class="grid two">
+          <div class="panel-card">
+            <div class="item-title"><b>Phone alerts</b><span class="badge ok">log-only</span></div>
+            <div class="section-sep"></div>
+            <div class="metric"><span class="k">Provider</span><span class="v">log_only</span></div>
+            <div class="metric"><span class="k">Cooldown</span><span class="v">30m</span></div>
+            <div class="metric"><span class="k">Existing backlog</span><span class="v">suppressed</span></div>
+            <div class="metric"><span class="k">Secrets</span><span class="v ok">ignored</span></div>
+            <div class="section-sep"></div>
+            <button class="gbtn primary">Send Test</button>
+            <button class="gbtn disabled">Twilio not configured</button>
+          </div>
+          <div class="panel-card">
+            <div class="section-head">Notify Darrin When <span class="hint">product choices</span></div>
+            <div class="metric"><span class="k">UX decision needed</span><span class="v ok">on</span></div>
+            <div class="metric"><span class="k">Dental/product judgment</span><span class="v ok">on</span></div>
+            <div class="metric"><span class="k">Protected action approval</span><span class="v ok">on</span></div>
+            <div class="metric"><span class="k">Agent technical vote</span><span class="v">off</span></div>
+            <div class="metric"><span class="k">Routine status</span><span class="v">off</span></div>
+          </div>
+        </div>
+        <div class="section-head">Recent Notification Log <span class="hint">local only</span></div>
+        <div class="list">
+          <div class="row-card"><div class="item-title"><b>Test notification</b><span class="mono">19:03</span></div><div class="summary-line">PANDA Agent Hub: SMS notification path is connected.</div></div>
+          <div class="row-card"><div class="item-title"><b>Baseline initialized</b><span class="mono">18:42</span></div><div class="summary-line">Existing backlog marked seen; no old alerts sent.</div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <aside class="rightpane">
+    <div class="panel-tabs">
+      <button class="pt-btn active">Status</button>
+      <button class="pt-btn">Policy</button>
+      <button class="pt-btn">Trace</button>
+    </div>
+    <div class="panel-scroll">
+      <div class="section-head">Governance <span class="hint">active</span></div>
+      <div class="metric"><span class="k">Technical decisions</span><span class="v ok">agent vote</span></div>
+      <div class="metric"><span class="k">UX appearance</span><span class="v warn">Darrin</span></div>
+      <div class="metric"><span class="k">Dental judgment</span><span class="v warn">Darrin</span></div>
+      <div class="metric"><span class="k">Protected writes</span><span class="v err">approval</span></div>
+      <div class="section-sep"></div>
+      <div class="section-head">Current Thread <span class="hint">AGENT-HUB-V1</span></div>
+      <div class="workflow-stepper">
+        <div class="step done"><span class="step-dot">1</span><span>Research</span><span class="step-state">done</span></div>
+        <div class="step done"><span class="step-dot">2</span><span>CC review</span><span class="step-state">done</span></div>
+        <div class="step active"><span class="step-dot">3</span><span>Design package</span><span class="step-state">active</span></div>
+        <div class="step"><span class="step-dot">4</span><span>6 C review</span><span class="step-state">pending</span></div>
+      </div>
+      <div class="section-sep"></div>
+      <div class="section-head">Boundaries <span class="hint">locked</span></div>
+      <div class="metric"><span class="k">App code changes</span><span class="v">no</span></div>
+      <div class="metric"><span class="k">panda-gallery writes</span><span class="v">no</span></div>
+      <div class="metric"><span class="k">Screenshots</span><span class="v ok">allowed</span></div>
+    </div>
+  </aside>
+
+  <footer class="statusbar">
+    <span class="mono">PAH-DESIGN-v1</span>
+    <span>Local design package only</span>
+    <span class="spacer"></span>
+    <span>6 C review pass</span>
+    <span class="mono">C:\CODEX PG</span>
+  </footer>
+</div>
+
+<script>
+  const labels = {
+    overview: "Command Center",
+    threads: "Threads",
+    decisions: "Darrin Queue",
+    dispatch: "Structured Dispatch",
+    validation: "Validation Console",
+    notifications: "Notification Settings"
+  };
+  function activate(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.screen === id));
+    document.getElementById("crumb").textContent = labels[id] || labels.overview;
+    location.hash = id;
+  }
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => activate(t.dataset.screen)));
+  const initial = location.hash.replace("#", "");
+  if (labels[initial]) activate(initial);
+</script>
+</body>
+</html>
