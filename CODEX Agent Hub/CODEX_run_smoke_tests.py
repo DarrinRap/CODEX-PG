@@ -34,8 +34,10 @@ from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
 from pah_mailbox.quarantine import quarantine_message, validate_quarantine_candidate, validate_quarantine_reason
 from pah_security.approvals import (
+    MCP_READONLY_CONFIG_PATH,
     approval_check,
     canonical_request_hash,
+    canonical_mcp_config_hash,
     enforce_protected_action,
     mark_approval_consumed,
     validate_approval_record,
@@ -443,6 +445,48 @@ def test_approval_enforcement() -> None:
         assert_true(not consumed["allowed"], "consumed one-time approval cannot be reused")
 
 
+def test_strict_mcp_config_enforcement() -> None:
+    with TemporaryDirectory() as temp_dir:
+        approvals_path = Path(temp_dir) / "approvals.jsonl"
+        command = "claude -p prompt.md --strict-mcp-config"
+        scope = "headless_agent_requires_darrin"
+        request_hash = canonical_request_hash(scope, [], command, "0")
+        headless_record = {
+            "approval_id": "APPROVAL-HEADLESS-001",
+            "scope": scope,
+            "exact_paths": [],
+            "command_or_provider": command,
+            "budget": "0",
+            "expires_at": "2099-01-01T00:00:00+00:00",
+            "one_time_use": True,
+            "approver": "Darrin",
+            "revoked": False,
+            "request_hash": request_hash,
+            "strict_mcp_config": True,
+            "mcp_config_path": str(MCP_READONLY_CONFIG_PATH),
+            "mcp_config_expected_hash": canonical_mcp_config_hash(),
+            **darrin_decision_source("DARRIN-DECISION-HEADLESS-001"),
+        }
+        errors = validate_approval_record(headless_record)
+        assert_true(not errors, "headless approval accepts canonical strict MCP config")
+
+        wrong_path = dict(headless_record, mcp_config_path="C:/tmp/unsafe_mcp.json")
+        wrong_path_errors = validate_approval_record(wrong_path)
+        assert_true(any("canonical PAH read-only MCP config" in error for error in wrong_path_errors), "MCP path is pinned")
+
+        wrong_hash = dict(headless_record, mcp_config_expected_hash="sha256:bad")
+        wrong_hash_errors = validate_approval_record(wrong_hash)
+        assert_true(any("mcp_config_expected_hash" in error for error in wrong_hash_errors), "MCP config hash is pinned")
+
+        loose_flag = dict(headless_record, strict_mcp_config=False)
+        loose_flag_errors = validate_approval_record(loose_flag)
+        assert_true(any("strict_mcp_config" in error for error in loose_flag_errors), "strict MCP flag is mandatory")
+
+        approvals_path.write_text(json.dumps(headless_record, sort_keys=True) + "\n", encoding="utf-8")
+        allowed = approval_check("headless_agent_run", [], command, "0", path=approvals_path)
+        assert_true(allowed["allowed"], "matching headless approval passes strict MCP checks")
+
+
 def test_backpressure_detection() -> None:
     now = 1_000_000.0
     records = [
@@ -717,6 +761,7 @@ def main() -> None:
     test_safety_surfaces()
     test_quarantine_move_writes_tombstone()
     test_approval_enforcement()
+    test_strict_mcp_config_enforcement()
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()
     test_read_state_marks_changed_content_unread()

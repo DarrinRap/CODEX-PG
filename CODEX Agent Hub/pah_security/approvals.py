@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Any
 
 from pah_core.schema import content_hash
 from pah_mailbox.atomic import atomic_write_text
-from pah_mailbox.paths import APPROVAL_RECORDS_PATH
+from pah_mailbox.paths import APPROVAL_RECORDS_PATH, CONFIG_DIR
 from pah_security.path_scope import classify_path
 
 
@@ -45,6 +46,13 @@ PROTECTED_ACTION_TYPES = {
 PROTECTED_PATH_SCOPES = {"panda_gallery_requires_darrin", "outside_known_scope"}
 APPROVAL_RECORD_SCOPE = "approval_record_requires_darrin_decision"
 APPROVAL_RECORD_ACTION_TYPES = {"approval_record_create", "approval_record_update"}
+HEADLESS_AGENT_SCOPE = "headless_agent_requires_darrin"
+HEADLESS_MCP_REQUIRED_FIELDS = {
+    "strict_mcp_config",
+    "mcp_config_path",
+    "mcp_config_expected_hash",
+}
+MCP_READONLY_CONFIG_PATH = CONFIG_DIR / "CODEX_pah_mcp_readonly.json"
 ACTION_SCOPE_BY_TYPE = {
     "approval_record_create": APPROVAL_RECORD_SCOPE,
     "approval_record_update": APPROVAL_RECORD_SCOPE,
@@ -55,7 +63,7 @@ ACTION_SCOPE_BY_TYPE = {
     "package_install": "package_install_requires_darrin",
     "external_api_call": "external_api_requires_darrin",
     "sms_email_send": "external_communication_requires_darrin",
-    "headless_agent_run": "headless_agent_requires_darrin",
+    "headless_agent_run": HEADLESS_AGENT_SCOPE,
     "paid_provider_setup": "paid_provider_requires_darrin",
 }
 
@@ -90,8 +98,16 @@ def hash_matches(record_value: Any, expected_hash: str) -> bool:
     return normalize_hash(record_value) == normalize_hash(expected_hash)
 
 
+def canonical_mcp_config_hash(path: Path = MCP_READONLY_CONFIG_PATH) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def normalize_path_text(value: Any) -> str:
     return str(value or "").replace("/", "\\").rstrip("\\").lower()
+
+
+def paths_match_case_insensitive(left: Any, right: Any) -> bool:
+    return normalize_path_text(left) == normalize_path_text(right)
 
 
 def path_targets_approval_records(path_value: Any) -> bool:
@@ -106,6 +122,27 @@ def approval_record_mutation_requested(action_type: str, exact_paths: list[str] 
     if normalized_action in APPROVAL_RECORD_ACTION_TYPES:
         return True
     return any(path_targets_approval_records(path_value) for path_value in exact_paths or [])
+
+
+def validate_headless_mcp_config(record: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    missing = sorted(field for field in HEADLESS_MCP_REQUIRED_FIELDS if field not in record)
+    errors.extend(f"Missing headless MCP field: {field}" for field in missing)
+    if record.get("strict_mcp_config") is not True:
+        errors.append("strict_mcp_config must be true for headless agent runs")
+    if "mcp_config_path" in record and not paths_match_case_insensitive(
+        record.get("mcp_config_path"),
+        MCP_READONLY_CONFIG_PATH,
+    ):
+        errors.append(f"mcp_config_path must match canonical PAH read-only MCP config: {MCP_READONLY_CONFIG_PATH}")
+    if not MCP_READONLY_CONFIG_PATH.exists():
+        errors.append(f"Canonical PAH read-only MCP config is missing: {MCP_READONLY_CONFIG_PATH}")
+    elif "mcp_config_expected_hash" in record and not hash_matches(
+        record.get("mcp_config_expected_hash"),
+        canonical_mcp_config_hash(),
+    ):
+        errors.append("mcp_config_expected_hash does not match canonical PAH read-only MCP config")
+    return errors
 
 
 def read_jsonl(path: Path = APPROVAL_RECORDS_PATH) -> list[dict[str, Any]]:
@@ -157,6 +194,8 @@ def validate_approval_record(record: dict[str, Any]) -> list[str]:
             errors.append("Approval records must originate from a Darrin decision_record addressed to pah")
     if str(record.get("scope", "")) == APPROVAL_RECORD_SCOPE:
         errors.append("Approval records cannot authorize approval-record mutations")
+    if str(record.get("scope", "")) == HEADLESS_AGENT_SCOPE:
+        errors.extend(validate_headless_mcp_config(record))
     if record.get("revoked") is True:
         errors.append("Approval record is revoked")
     if str(record.get("revoked_at", "")).strip():
@@ -217,6 +256,9 @@ def approval_status(path: Path = APPROVAL_RECORDS_PATH) -> dict[str, Any]:
         "expired": expired,
         "consumed": consumed,
         "required_fields": sorted(APPROVAL_REQUIRED_FIELDS),
+        "headless_mcp_required_fields": sorted(HEADLESS_MCP_REQUIRED_FIELDS),
+        "canonical_mcp_config_path": str(MCP_READONLY_CONFIG_PATH),
+        "canonical_mcp_config_hash": canonical_mcp_config_hash() if MCP_READONLY_CONFIG_PATH.exists() else "",
         "protected_action_types": sorted(PROTECTED_ACTION_TYPES),
         "enforcement": "active_for_protected_action_checks",
     }

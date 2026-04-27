@@ -1,0 +1,9 @@
+{
+  "mcpServers": {},
+  "metadata": {
+    "name": "PANDA Agent Hub read-only MCP config",
+    "owner": "PAH",
+    "policy": "no_write_tools_no_external_providers",
+    "updated_at": "2026-04-27T00:00:00-07:00"
+  }
+}
