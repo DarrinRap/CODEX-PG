@@ -24,6 +24,7 @@ from pah_core.validation_state import (
 )
 from pah_core.work_items import create_work_item, update_work_item, work_board_status
 from pah_mailbox.atomic import atomic_write_text
+from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
 from pah_adapters.registry import adapter_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
@@ -212,6 +213,18 @@ def test_safety_surfaces() -> None:
         raise AssertionError("quarantine reason enum must be closed")
 
 
+def test_backpressure_detection() -> None:
+    now = 1_000_000.0
+    records = [
+        MailboxMessageRef(thread_id="THREAD-FLOOD", path=Path(f"C:/CODEX PG/msg_{index}.md"), modified=now - 10)
+        for index in range(26)
+    ]
+    findings = detect_backpressure(records, now=now)
+    assert_true(len(findings) == 1, "backpressure emits one finding per flooded thread")
+    assert_true(findings[0].reason_code == "flood_threshold_exceeded", "backpressure reason code is stable")
+    assert_true("26 messages" in findings[0].message, "backpressure finding includes message count")
+
+
 def test_decision_state() -> None:
     with TemporaryDirectory() as temp_dir:
         state_path = Path(temp_dir) / "decision_state.json"
@@ -298,6 +311,7 @@ def main() -> None:
     test_routes_and_scope()
     test_diagnostics()
     test_safety_surfaces()
+    test_backpressure_detection()
     test_decision_state()
     test_validation_state()
     test_route_test_state()

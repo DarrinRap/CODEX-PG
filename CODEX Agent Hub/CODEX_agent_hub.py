@@ -59,6 +59,7 @@ from pah_core.work_items import create_work_item, update_work_item, work_board_s
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import create_route_test, route_test_status
 from pah_mailbox.atomic import atomic_append_text, atomic_write_text
+from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
 from pah_mailbox.paths import (
     CLAUDE_CODE_INBOX,
     CLAUDE_CODE_INBOX_LEGACY,
@@ -359,6 +360,16 @@ def validate_mailbox(messages: list[Message]) -> list[dict[str, Any]]:
                 path = Path(cleaned)
                 if any(label in cleaned.lower() for label in ("deliverable", "path", "file", "mockup")) and not path.exists():
                     add("info", msg, f"Referenced path not found: {cleaned}")
+
+    by_path = {str(msg.path): msg for msg in messages}
+    backpressure_records = [
+        MailboxMessageRef(thread_id=msg.stable_thread, path=msg.path, modified=msg.modified)
+        for msg in messages
+    ]
+    for finding in detect_backpressure(backpressure_records):
+        target = by_path.get(str(finding.path))
+        if target is not None:
+            add(finding.level, target, finding.message)
     return issues[:100]
 
 
@@ -372,6 +383,8 @@ def validation_category(text: str) -> str:
         return "schema"
     if "ledger" in lowered:
         return "ledger"
+    if "backpressure" in lowered or "flood" in lowered:
+        return "backpressure"
     if "reply-to" in lowered:
         return "threading"
     if "referenced path" in lowered or "path not found" in lowered:
@@ -382,7 +395,7 @@ def validation_category(text: str) -> str:
 def validation_is_actionable(level: str, category: str) -> bool:
     if level == "error":
         return True
-    return category in {"provenance", "ledger"}
+    return category in {"provenance", "ledger", "backpressure"}
 
 
 def issue(level: str, msg: Message, text: str) -> dict[str, Any]:

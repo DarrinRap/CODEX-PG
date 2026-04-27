@@ -64,6 +64,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Decision queue hygiene state for active/resolved/superseded/dismissed items. PAH keeps stale decisions in history without interrupting Darrin.
 - Validator categorization with actionable issues separated from legacy/info mailbox hygiene noise.
 - Validation finding state for accepted legacy, resolved, and dismissed findings. Historical ledger issues can be preserved without staying active.
+- Backpressure detection for flooded threads; PAH flags more than 25 messages in 5 minutes or more than 50 visible messages in one thread.
 - Token-protected write endpoints for compose and notification tests.
 
 ## Claude Code Bridge Model
