@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AM Screen B v3 - Codex</title>
+<style>
+  :root {
+    --canvas: #14141f;
+    --chrome: #161625;
+    --pane: #1a1a2e;
+    --pane-raised: #22223a;
+    --pane-selected: #2a2a4e;
+    --border: #2a2a3e;
+    --border-soft: #232336;
+    --border-hover: #3a3a4e;
+    --text: #e0ddd5;
+    --text-muted: #888888;
+    --text-dim: #555555;
+    --accent-light: #f0b98c;
+    --accent: #e8a87c;
+    --accent-hover: #d4945a;
+    --accent-soft: rgba(232, 168, 124, 0.12);
+    --accent-border: rgba(232, 168, 124, 0.45);
+    --accent-ink: #1a1a2e;
+    --ok: #7fb069;
+    --ok-soft: rgba(127, 176, 105, 0.12);
+    --ok-border: rgba(127, 176, 105, 0.45);
+    --warn: #f39c12;
+    --warn-soft: rgba(243, 156, 18, 0.12);
+    --warn-border: rgba(243, 156, 18, 0.45);
+    --err: #e74c3c;
+    --err-soft: rgba(231, 76, 60, 0.12);
+    --err-border: rgba(231, 76, 60, 0.45);
+    --gap-test: #5fa0a8;
+    --gap-description: #d46a6a;
+    --shadow: rgba(0, 0, 0, 0.38);
+    --font-ui: "Segoe UI", "SF Pro", "Noto Sans", sans-serif;
+    --font-mono: "Cascadia Mono", "Consolas", monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    min-height: 100%;
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  body {
+    padding: 28px 32px 72px;
+  }
+
+  .doc-head,
+  .state-wrap,
+  .notes {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .doc-head {
+    margin-bottom: 26px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 18px;
+  }
+  .doc-kicker {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+  h1 b {
+    color: var(--accent);
+    letter-spacing: 1.4px;
+  }
+  .doc-intro {
+    max-width: 900px;
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+
+  .state-wrap {
+    margin-bottom: 42px;
+  }
+  .state-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 8px;
+  }
+  .state-label h2 {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+  }
+  .state-label span {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+  }
+
+  .am-window {
+    width: 100%;
+    min-height: 700px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--pane);
+    box-shadow: 0 18px 40px var(--shadow);
+    display: grid;
+    grid-template-rows: 44px 34px 1fr 26px;
+    overflow: hidden;
+  }
+
+  .screen-header {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    min-width: 0;
+  }
+  .back-btn,
+  .utility-btn,
+  .rail-btn,
+  .quiet-btn {
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .back-btn:hover,
+  .utility-btn:hover,
+  .quiet-btn:hover {
+    background: var(--pane-raised);
+    border-color: var(--border);
+    color: var(--accent);
+  }
+  .screen-title {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-spacer { flex: 1; min-width: 12px; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 9px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    white-space: nowrap;
+  }
+  .pill::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--text-muted);
+  }
+  .pill.design {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+  }
+  .pill.design::before { background: var(--accent); }
+  .pill.running {
+    color: var(--accent-light);
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+  }
+  .pill.running::before { background: var(--accent-light); }
+  .pill.ready,
+  .pill.fixed {
+    color: var(--ok);
+    background: var(--ok-soft);
+    border-color: var(--ok-border);
+  }
+  .pill.ready::before,
+  .pill.fixed::before { background: var(--ok); }
+
+  .meta-strip {
+    background: var(--pane);
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .meta-item {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    white-space: nowrap;
+  }
+  .meta-item b {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .body {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 336px;
+  }
+  .bug-pane {
+    min-width: 0;
+    overflow-y: auto;
+    padding: 14px 16px 18px;
+    background: var(--canvas);
+  }
+  .action-rail {
+    min-width: 0;
+    overflow-y: auto;
+    padding: 12px;
+    background: var(--pane);
+    border-left: 1px solid var(--border);
+  }
+
+  .bug-title {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .bug-title h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0;
+    margin-bottom: 4px;
+  }
+  .bug-title .mono {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .section-head {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .section-head .hint {
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .section-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0 8px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .info-row {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 94px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .info-row .k {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .info-row .v {
+    color: var(--text);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .info-row .v.mono {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .text-block {
+    color: var(--text);
+    background: var(--pane);
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .text-block p + p { margin-top: 7px; }
+  .steps-list {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+  .steps-list li {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    color: var(--text);
+  }
+  .steps-list .num {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .compare-card {
+    min-width: 0;
+    background: var(--pane);
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    padding: 10px 12px;
+  }
+  .compare-card .label {
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .code-inline {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--pane-raised);
+    border: 1px solid var(--border-soft);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+
+  .rail-section {
+    border-bottom: 1px solid var(--border-soft);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+  .rail-section:last-child {
+    border-bottom: 0;
+    margin-bottom: 0;
+  }
+
+  .status-card,
+  .verdict-card,
+  .gap-card,
+  .readonly-card {
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--pane-raised);
+  }
+  .status-card {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr);
+    gap: 9px;
+    padding: 10px 11px;
+    align-items: start;
+  }
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    margin-top: 5px;
+    background: var(--text-muted);
+  }
+  .status-dot.working {
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .status-dot.ok {
+    background: var(--ok);
+    box-shadow: 0 0 0 3px var(--ok-soft);
+  }
+  .status-title {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .status-detail {
+    color: var(--text-muted);
+    font-size: 11.5px;
+  }
+  .shimmer {
+    grid-column: 1 / -1;
+    height: 3px;
+    overflow: hidden;
+    background: var(--border-soft);
+    border-radius: 999px;
+    margin-top: 4px;
+  }
+  .shimmer::before {
+    content: "";
+    display: block;
+    width: 42%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: sweep 1.5s linear infinite;
+  }
+  @keyframes sweep {
+    from { transform: translateX(-120%); }
+    to { transform: translateX(260%); }
+  }
+
+  .stepper {
+    display: grid;
+    gap: 0;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    column-gap: 9px;
+    min-height: 28px;
+  }
+  .step-mark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid var(--border-hover);
+    background: var(--pane);
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+  .rail {
+    width: 1px;
+    height: 22px;
+    background: var(--border-hover);
+    margin-top: 2px;
+  }
+  .step:last-child .rail { display: none; }
+  .step.done .dot {
+    border-color: var(--ok-border);
+    background: var(--ok-soft);
+    color: var(--ok);
+  }
+  .step.active .dot {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .step.done .rail,
+  .step.active .rail {
+    background: var(--accent);
+  }
+  .step-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    padding-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .step.done .step-label,
+  .step.active .step-label {
+    color: var(--text);
+  }
+
+  .verdict-card {
+    padding: 11px;
+  }
+  .verdict-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .verdict-title {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 650;
+  }
+  .verdict-caption {
+    color: var(--text-muted);
+    font-size: 11.5px;
+  }
+  .verdict-card.design {
+    border-color: var(--accent-border);
+    background: var(--accent-soft);
+  }
+  .verdict-card.ready,
+  .verdict-card.fixed {
+    border-color: var(--ok-border);
+    background: var(--ok-soft);
+  }
+
+  .action-stack {
+    display: grid;
+    gap: 8px;
+  }
+  .rail-btn {
+    width: 100%;
+    border-color: var(--border);
+    background: var(--pane-raised);
+    color: var(--text);
+  }
+  .rail-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .rail-btn.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 650;
+  }
+  .rail-btn.primary:hover {
+    background: var(--accent-hover);
+    color: var(--accent-ink);
+  }
+  .rail-btn[disabled] {
+    color: var(--text-dim);
+    border-color: var(--border-soft);
+    background: var(--pane);
+  }
+  .blocked-note {
+    color: var(--text-muted);
+    font-size: 11.5px;
+    line-height: 1.45;
+    border-left: 2px solid var(--warn);
+    padding-left: 9px;
+  }
+  .route-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .quiet-btn {
+    border-color: var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    width: 100%;
+  }
+
+  .gap-list {
+    display: grid;
+    gap: 8px;
+  }
+  .gap-card {
+    padding: 9px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    border-left: 2px solid var(--accent);
+  }
+  .gap-card.done {
+    border-left-color: var(--ok);
+  }
+  .gap-title {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .gap-meta {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .gap-card .quiet-btn {
+    width: auto;
+    height: 26px;
+    padding: 0 8px;
+  }
+
+  .readonly-card {
+    padding: 10px 11px;
+  }
+  .readonly-card .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-muted);
+  }
+  .readonly-card .row:last-child { border-bottom: 0; }
+  .readonly-card b {
+    color: var(--text);
+    font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .statusbar {
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 14px;
+    color: var(--text-muted);
+    font-size: 11px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .sb-mode {
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding-right: 14px;
+    border-right: 1px solid var(--border);
+  }
+  .sb-item {
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+  .sb-spacer { flex: 1; }
+
+  .notes {
+    margin-top: 12px;
+    background: var(--pane);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .notes h2 {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .notes ul {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+  .notes li {
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+  .notes b { color: var(--text); font-weight: 600; }
+
+  @media (max-width: 880px) {
+    body { padding: 18px 14px 48px; }
+    .am-window {
+      grid-template-rows: auto auto auto 26px;
+    }
+    .screen-header {
+      min-height: 44px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+    }
+    .meta-strip {
+      min-height: 34px;
+      flex-wrap: wrap;
+      align-content: center;
+      gap: 8px 12px;
+      padding: 7px 10px;
+    }
+    .body {
+      grid-template-columns: 1fr;
+    }
+    .action-rail {
+      border-left: 0;
+      border-top: 1px solid var(--border);
+    }
+    .info-grid,
+    .compare,
+    .route-row {
+      grid-template-columns: 1fr;
+    }
+    .statusbar {
+      gap: 8px;
+    }
+    .sb-spacer { display: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="doc-head">
+    <div class="doc-kicker">Audit Module / Screen B / v3 Codex pass</div>
+    <h1><b>AM</b> Bug Detail And Triage</h1>
+    <p class="doc-intro">Five states of the same bug-detail surface. Each frame keeps the bug readable on the left and makes the next valid triage action explicit on the right.</p>
+  </header>
+
+  <section class="state-wrap" id="untriaged">
+    <div class="state-label">
+      <h2>State 01 / Untriaged</h2>
+      <span>one enabled primary: Triage with AI</span>
+    </div>
+    <div class="am-window">
+      <header class="screen-header">
+        <button class="back-btn">&larr; Back</button>
+        <div class="screen-title">Bug #136</div>
+        <div class="header-spacer"></div>
+        <span class="pill">Untriaged</span>
+        <button class="utility-btn">Copy ID</button>
+      </header>
+      <div class="meta-strip">
+        <span class="meta-item"><b>Open</b></span>
+        <span class="meta-item">Priority <b>Medium</b></span>
+        <span class="meta-item">Files <b>instruction_pane.py +6</b></span>
+        <span class="meta-item">Source <b>BUGS.md:136</b></span>
+      </div>
+      <main class="body">
+        <section class="bug-pane">
+          <div class="bug-title">
+            <h3>Instruction Pane: no PASS-with-note affordance</h3>
+            <div class="mono">Opened from BUGS.md / audit module triage queue</div>
+          </div>
+          <div class="section-head"><span>Files</span><span class="hint">parsed</span></div>
+          <div class="info-grid">
+            <div class="info-row"><div class="k">Primary</div><div class="v mono">instruction_pane.py</div></div>
+            <div class="info-row"><div class="k">Change size</div><div class="v">6 lines observed</div></div>
+          </div>
+          <div class="section-sep"></div>
+          <div class="section-head"><span>Reproduce</span></div>
+          <div class="text-block">
+            <ol class="steps-list">
+              <li><span class="num">01</span><span>Open the Instruction Pane review flow.</span></li>
+              <li><span class="num">02</span><span>Review an instruction that mostly passes but needs a note.</span></li>
+              <li><span class="num">03</span><span>Look for a way to record PASS with note without marking the item failed.</span></li>
+            </ol>
+          </div>
+          <div class="section-sep"></div>
+          <div class="compare">
+            <div class="compare-card">
+              <div class="label">Expected</div>
+              <p>Reviewer can mark a passing instruction with a short note and preserve the pass outcome.</p>
+            </div>
+            <div class="compare-card">
+              <div class="label">Actual</div>
+              <p>The UI exposes PASS and FAIL only. Notes feel tied to failure, which makes the correct outcome ambiguous.</p>
+            </div>
+          </div>
+          <div class="section-sep"></div>
+          <div class="section-head"><span>Notes</span><span class="hint">raw markdown hidden</span></div>
+          <div class="text-block">
+            <p>The bug content is rendered as operational sections. Markdown markers, bullet glyphs, and heading syntax are not shown as source text.</p>
+          </div>
+        </section>
+        <aside class="action-rail">
+          <div class="rail-section">
+            <div class="section-head"><span>Workflow</span><span class="hint">bug state</span></div>
+            <div class="stepper">
+              <div class="step done"><div class="step-mark"><div class="dot">1</div><div class="rail"></div></div><div class="step-label">Read bug</div></div>
+              <div class="step active"><div class="step-mark"><div class="dot">2</div><div class="rail"></div></div><div class="step-label">Triage with AI</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">3</div><div class="rail"></div></div><div class="step-label">Resolve gaps</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">4</div><div class="rail"></div></div><div class="step-label">Build prompt</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">5</div></div><div class="step-label">Fixed</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Work status</span></div>
+            <div class="status-card">
+              <div class="status-dot"></div>
+              <div><div class="status-title">Idle</div><div class="status-detail">No triage has been run for this bug.</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Verdict</span></div>
+            <div class="verdict-card">
+              <div class="verdict-main">
+                <div>
+                  <div class="verdict-title">Untriaged</div>
+                  <div class="verdict-caption">Classification pending.</div>
+                </div>
+                <span class="pill">New</span>
+              </div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Actions</span></div>
+            <div class="action-stack">
+              <button class="rail-btn primary">Triage with AI</button>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <footer class="statusbar">
+        <span class="sb-mode">AUDIT</span>
+        <span class="sb-item">Source: BUGS.md parsed 14:55</span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item">Esc returns to list</span>
+      </footer>
+    </div>
+  </section>
+
+  <section class="state-wrap" id="triage-running">
+    <div class="state-label">
+      <h2>State 02 / Triage Running</h2>
+      <span>button-label swap plus restrained shimmer</span>
+    </div>
+    <div class="am-window">
+      <header class="screen-header">
+        <button class="back-btn">&larr; Back</button>
+        <div class="screen-title">Bug #136</div>
+        <div class="header-spacer"></div>
+        <span class="pill running">Triaging</span>
+        <button class="utility-btn">Copy ID</button>
+      </header>
+      <div class="meta-strip">
+        <span class="meta-item"><b>Open</b></span>
+        <span class="meta-item">Priority <b>Medium</b></span>
+        <span class="meta-item">Files <b>instruction_pane.py +6</b></span>
+        <span class="meta-item">Provider <b>Claude API</b></span>
+      </div>
+      <main class="body">
+        <section class="bug-pane">
+          <div class="bug-title">
+            <h3>Instruction Pane: no PASS-with-note affordance</h3>
+            <div class="mono">Bug content remains readable while triage runs</div>
+          </div>
+          <div class="section-head"><span>Files</span><span class="hint">parsed</span></div>
+          <div class="info-grid">
+            <div class="info-row"><div class="k">Primary</div><div class="v mono">instruction_pane.py</div></div>
+            <div class="info-row"><div class="k">Change size</div><div class="v">6 lines observed</div></div>
+          </div>
+          <div class="section-sep"></div>
+          <div class="section-head"><span>Reproduce</span></div>
+          <div class="text-block">
+            <ol class="steps-list">
+              <li><span class="num">01</span><span>Open the Instruction Pane review flow.</span></li>
+              <li><span class="num">02</span><span>Review an instruction that mostly passes but needs a note.</span></li>
+              <li><span class="num">03</span><span>Look for a way to record PASS with note.</span></li>
+            </ol>
+          </div>
+          <div class="section-sep"></div>
+          <div class="compare">
+            <div class="compare-card">
+              <div class="label">Expected</div>
+              <p>A pass outcome can carry a note.</p>
+            </div>
+            <div class="compare-card">
+              <div class="label">Actual</div>
+              <p>PASS and FAIL are exposed, but PASS with note is not.</p>
+            </div>
+          </div>
+        </section>
+        <aside class="action-rail">
+          <div class="rail-section">
+            <div class="section-head"><span>Workflow</span><span class="hint">bug state</span></div>
+            <div class="stepper">
+              <div class="step done"><div class="step-mark"><div class="dot">1</div><div class="rail"></div></div><div class="step-label">Read bug</div></div>
+              <div class="step active"><div class="step-mark"><div class="dot">2</div><div class="rail"></div></div><div class="step-label">Triage with AI</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">3</div><div class="rail"></div></div><div class="step-label">Resolve gaps</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">4</div><div class="rail"></div></div><div class="step-label">Build prompt</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">5</div></div><div class="step-label">Fixed</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Work status</span></div>
+            <div class="status-card">
+              <div class="status-dot working"></div>
+              <div><div class="status-title">Triaging...</div><div class="status-detail">Classifying severity, gaps, and next action.</div></div>
+              <div class="shimmer"></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Verdict</span></div>
+            <div class="verdict-card">
+              <div class="verdict-main">
+                <div>
+                  <div class="verdict-title">Pending</div>
+                  <div class="verdict-caption">Results appear here when triage completes.</div>
+                </div>
+                <span class="pill running">In flight</span>
+              </div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Actions</span></div>
+            <div class="action-stack">
+              <button class="rail-btn primary" disabled>Triaging...</button>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <footer class="statusbar">
+        <span class="sb-mode">AUDIT</span>
+        <span class="sb-item">Calling Claude API</span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item">Actions locked during triage</span>
+      </footer>
+    </div>
+  </section>
+
+  <section class="state-wrap" id="design-needed">
+    <div class="state-label">
+      <h2>State 03 / Design Decision Needed</h2>
+      <span>resolve gaps before prompt building</span>
+    </div>
+    <div class="am-window">
+      <header class="screen-header">
+        <button class="back-btn">&larr; Back</button>
+        <div class="screen-title">Bug #136</div>
+        <div class="header-spacer"></div>
+        <span class="pill design">Design</span>
+        <button class="utility-btn">Copy ID</button>
+      </header>
+      <div class="meta-strip">
+        <span class="meta-item"><b>Open</b></span>
+        <span class="meta-item">Priority <b>Medium</b></span>
+        <span class="meta-item">Files <b>instruction_pane.py +6</b></span>
+        <span class="meta-item">Gaps <b>2 unresolved</b></span>
+      </div>
+      <main class="body">
+        <section class="bug-pane">
+          <div class="bug-title">
+            <h3>Instruction Pane: no PASS-with-note affordance</h3>
+            <div class="mono">AI triage says this is implementable after a product decision</div>
+          </div>
+          <div class="section-head"><span>Triage result</span><span class="hint">latest run</span></div>
+          <div class="text-block">
+            <p>The code path is localized, but the UI needs a choice before a fix prompt would be safe: PASS with note can be modeled as a third visible outcome, or as a note attached to PASS.</p>
+          </div>
+          <div class="section-sep"></div>
+          <div class="section-head"><span>Files</span></div>
+          <div class="info-grid">
+            <div class="info-row"><div class="k">Primary</div><div class="v mono">instruction_pane.py</div></div>
+            <div class="info-row"><div class="k">Related</div><div class="v mono">tests/test_instruction_pane.py</div></div>
+          </div>
+          <div class="section-sep"></div>
+          <div class="compare">
+            <div class="compare-card">
+              <div class="label">Expected</div>
+              <p>PASS can retain a short note without becoming FAIL.</p>
+            </div>
+            <div class="compare-card">
+              <div class="label">Actual</div>
+              <p>The current action set makes note-taking feel like failure evidence.</p>
+            </div>
+          </div>
+        </section>
+        <aside class="action-rail">
+          <div class="rail-section">
+            <div class="section-head"><span>Workflow</span><span class="hint">bug state</span></div>
+            <div class="stepper">
+              <div class="step done"><div class="step-mark"><div class="dot">1</div><div class="rail"></div></div><div class="step-label">Read bug</div></div>
+              <div class="step done"><div class="step-mark"><div class="dot">2</div><div class="rail"></div></div><div class="step-label">Triage with AI</div></div>
+              <div class="step active"><div class="step-mark"><div class="dot">3</div><div class="rail"></div></div><div class="step-label">Resolve gaps</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">4</div><div class="rail"></div></div><div class="step-label">Build prompt</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">5</div></div><div class="step-label">Fixed</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Work status</span></div>
+            <div class="status-card">
+              <div class="status-dot"></div>
+              <div><div class="status-title">Waiting on decision</div><div class="status-detail">Resolve design gaps, then build the prompt.</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Verdict</span></div>
+            <div class="verdict-card design">
+              <div class="verdict-main">
+                <div>
+                  <div class="verdict-title">Design decision needed</div>
+                  <div class="verdict-caption">2 gaps block prompt generation.</div>
+                </div>
+                <span class="pill design">2 gaps</span>
+              </div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Gaps</span></div>
+            <div class="gap-list">
+              <div class="gap-card">
+                <div><div class="gap-title">Outcome model</div><div class="gap-meta">Third state or PASS metadata?</div></div>
+                <button class="quiet-btn">Decide</button>
+              </div>
+              <div class="gap-card">
+                <div><div class="gap-title">Copy text</div><div class="gap-meta">Button label and audit-note wording.</div></div>
+                <button class="quiet-btn">Decide</button>
+              </div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Actions</span></div>
+            <div class="action-stack">
+              <button class="rail-btn primary">Resolve 2 design gaps</button>
+              <button class="rail-btn" disabled>Build Fix Prompt</button>
+              <p class="blocked-note">2 design gaps still need decisions before a prompt can be built.</p>
+              <button class="rail-btn">Re-triage</button>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <footer class="statusbar">
+        <span class="sb-mode">AUDIT</span>
+        <span class="sb-item">Triage run 14:56</span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item">2 unresolved design gaps</span>
+      </footer>
+    </div>
+  </section>
+
+  <section class="state-wrap" id="ready">
+    <div class="state-label">
+      <h2>State 04 / Ready For Fix Prompt</h2>
+      <span>one enabled primary: Build Fix Prompt</span>
+    </div>
+    <div class="am-window">
+      <header class="screen-header">
+        <button class="back-btn">&larr; Back</button>
+        <div class="screen-title">Bug #136</div>
+        <div class="header-spacer"></div>
+        <span class="pill ready">Ready</span>
+        <button class="utility-btn">Copy ID</button>
+      </header>
+      <div class="meta-strip">
+        <span class="meta-item"><b>Open</b></span>
+        <span class="meta-item">Priority <b>Medium</b></span>
+        <span class="meta-item">Files <b>instruction_pane.py +6</b></span>
+        <span class="meta-item">Gaps <b>0 unresolved</b></span>
+      </div>
+      <main class="body">
+        <section class="bug-pane">
+          <div class="bug-title">
+            <h3>Instruction Pane: no PASS-with-note affordance</h3>
+            <div class="mono">All design gaps resolved; prompt can be built</div>
+          </div>
+          <div class="section-head"><span>Triage result</span><span class="hint">ready</span></div>
+          <div class="text-block">
+            <p>Implement PASS with note as PASS plus optional note metadata. Keep PASS visually successful, and render the note as audit context instead of a failure cue.</p>
+          </div>
+          <div class="section-sep"></div>
+          <div class="section-head"><span>Resolved decisions</span></div>
+          <div class="gap-list">
+            <div class="gap-card done">
+              <div><div class="gap-title">Outcome model</div><div class="gap-meta">Use PASS with attached note metadata.</div></div>
+            </div>
+            <div class="gap-card done">
+              <div><div class="gap-title">Copy text</div><div class="gap-meta">Button label: Pass with note.</div></div>
+            </div>
+          </div>
+          <div class="section-sep"></div>
+          <div class="compare">
+            <div class="compare-card">
+              <div class="label">Fix target</div>
+              <p>Add the missing affordance and keep existing PASS and FAIL behavior stable.</p>
+            </div>
+            <div class="compare-card">
+              <div class="label">Test target</div>
+              <p>Cover note persistence, pass outcome, and no regression to fail-state styling.</p>
+            </div>
+          </div>
+        </section>
+        <aside class="action-rail">
+          <div class="rail-section">
+            <div class="section-head"><span>Workflow</span><span class="hint">bug state</span></div>
+            <div class="stepper">
+              <div class="step done"><div class="step-mark"><div class="dot">1</div><div class="rail"></div></div><div class="step-label">Read bug</div></div>
+              <div class="step done"><div class="step-mark"><div class="dot">2</div><div class="rail"></div></div><div class="step-label">Triage with AI</div></div>
+              <div class="step done"><div class="step-mark"><div class="dot">3</div><div class="rail"></div></div><div class="step-label">Resolve gaps</div></div>
+              <div class="step active"><div class="step-mark"><div class="dot">4</div><div class="rail"></div></div><div class="step-label">Build prompt</div></div>
+              <div class="step"><div class="step-mark"><div class="dot">5</div></div><div class="step-label">Fixed</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Work status</span></div>
+            <div class="status-card">
+              <div class="status-dot ok"></div>
+              <div><div class="status-title">Prompt-ready</div><div class="status-detail">No unresolved gaps remain.</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Verdict</span></div>
+            <div class="verdict-card ready">
+              <div class="verdict-main">
+                <div>
+                  <div class="verdict-title">Ready for fix prompt</div>
+                  <div class="verdict-caption">The next step is prompt generation.</div>
+                </div>
+                <span class="pill ready">Ready</span>
+              </div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Actions</span></div>
+            <div class="action-stack">
+              <button class="rail-btn primary">Build Fix Prompt</button>
+              <button class="rail-btn">Re-triage</button>
+              <div class="route-row">
+                <button class="quiet-btn">File as Feature</button>
+                <button class="quiet-btn">File as Amendment</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <footer class="statusbar">
+        <span class="sb-mode">AUDIT</span>
+        <span class="sb-item">Ready since 14:59</span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item">Prompt will save to workflows/audit/prompts</span>
+      </footer>
+    </div>
+  </section>
+
+  <section class="state-wrap" id="fixed">
+    <div class="state-label">
+      <h2>State 05 / Fixed</h2>
+      <span>read-only archive view</span>
+    </div>
+    <div class="am-window">
+      <header class="screen-header">
+        <button class="back-btn">&larr; Back</button>
+        <div class="screen-title">Bug #136</div>
+        <div class="header-spacer"></div>
+        <span class="pill fixed">Fixed</span>
+        <button class="utility-btn">Copy ID</button>
+      </header>
+      <div class="meta-strip">
+        <span class="meta-item"><b>Fixed</b></span>
+        <span class="meta-item">Priority <b>Medium</b></span>
+        <span class="meta-item">Files <b>instruction_pane.py +6</b></span>
+        <span class="meta-item">Commit <b>c9178ff</b></span>
+      </div>
+      <main class="body">
+        <section class="bug-pane">
+          <div class="bug-title">
+            <h3>Instruction Pane: no PASS-with-note affordance</h3>
+            <div class="mono">Read-only fixed entry from BUGS.md</div>
+          </div>
+          <div class="section-head"><span>Fixed summary</span><span class="hint">archive</span></div>
+          <div class="text-block">
+            <p>PASS with note was added as pass-state metadata. The review flow preserves PASS as the outcome and records the note for audit context.</p>
+          </div>
+          <div class="section-sep"></div>
+          <div class="section-head"><span>Verification</span></div>
+          <div class="info-grid">
+            <div class="info-row"><div class="k">Tests</div><div class="v">Instruction Pane regression smoke passed.</div></div>
+            <div class="info-row"><div class="k">Manual</div><div class="v">PASS, PASS with note, and FAIL paths checked.</div></div>
+            <div class="info-row"><div class="k">Prompt</div><div class="v mono">prompt_bug_136.md</div></div>
+            <div class="info-row"><div class="k">Commit</div><div class="v mono">c9178ff</div></div>
+          </div>
+          <div class="section-sep"></div>
+          <div class="compare">
+            <div class="compare-card">
+              <div class="label">Before</div>
+              <p>PASS with note had no clear action.</p>
+            </div>
+            <div class="compare-card">
+              <div class="label">After</div>
+              <p>PASS with note is explicit and does not imply a failure.</p>
+            </div>
+          </div>
+        </section>
+        <aside class="action-rail">
+          <div class="rail-section">
+            <div class="section-head"><span>Workflow</span><span class="hint">complete</span></div>
+            <div class="stepper">
+              <div class="step done"><div class="step-mark"><div class="dot">1</div><div class="rail"></div></div><div class="step-label">Read bug</div></div>
+              <div class="step done"><div class="step-mark"><div class="dot">2</div><div class="rail"></div></div><div class="step-label">Triage with AI</div></div>
+              <div class="step done"><div class="step-mark"><div class="dot">3</div><div class="rail"></div></div><div class="step-label">Resolve gaps</div></div>
+              <div class="step done"><div class="step-mark"><div class="dot">4</div><div class="rail"></div></div><div class="step-label">Build prompt</div></div>
+              <div class="step done"><div class="step-mark"><div class="dot">5</div></div><div class="step-label">Fixed</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Work status</span></div>
+            <div class="status-card">
+              <div class="status-dot ok"></div>
+              <div><div class="status-title">Read-only</div><div class="status-detail">No triage or prompt actions are available on fixed bugs.</div></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Verdict</span></div>
+            <div class="verdict-card fixed">
+              <div class="verdict-main">
+                <div>
+                  <div class="verdict-title">Fixed</div>
+                  <div class="verdict-caption">The bug remains visible only for archive review.</div>
+                </div>
+                <span class="pill fixed">Done</span>
+              </div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Archive</span></div>
+            <div class="readonly-card">
+              <div class="row"><span>Fixed in</span><b>c9178ff</b></div>
+              <div class="row"><span>Prompt</span><b>bug_136</b></div>
+              <div class="row"><span>Section</span><b>BUGS.md FIXED</b></div>
+            </div>
+          </div>
+          <div class="rail-section">
+            <div class="section-head"><span>Actions</span></div>
+            <div class="action-stack">
+              <button class="rail-btn">Open Fixed Entry</button>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <footer class="statusbar">
+        <span class="sb-mode">AUDIT</span>
+        <span class="sb-item">Fixed archive entry</span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item">Esc returns to list</span>
+      </footer>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Design Decisions</h2>
+    <ul>
+      <li><b>Purpose:</b> Screen B is split into bug reading and bug action. The left pane renders parsed bug content; the right rail owns workflow, verdict, and valid actions.</li>
+      <li><b>Layout:</b> Default and wide use two columns with a capped action rail. Narrow stacks the action rail below the bug content through the media query.</li>
+      <li><b>Stepper:</b> Screen B uses an active per-bug stepper because it answers what happens next without adding instructional prose.</li>
+      <li><b>State card:</b> The giant state rectangle becomes a compact verdict card. Work status remains separate so it does not duplicate the verdict.</li>
+      <li><b>Move actions:</b> They are hidden on untriaged and running states. They return as quiet route utilities only after triage clarifies the bug.</li>
+      <li><b>Proposed Bible addition:</b> clarify that dev-tool bug detail screens may use a parsed-content pane plus action rail when both reading and action are first-class tasks.</li>
+    </ul>
+  </section>
+</body>
+</html>

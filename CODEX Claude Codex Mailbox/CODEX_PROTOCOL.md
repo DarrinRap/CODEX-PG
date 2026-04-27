@@ -26,6 +26,11 @@ Location:
 8. If a message reports implementation, list changed files and verification commands.
 9. Do not edit another agent's sent message. Reply with a new file.
 10. If Claude and Codex disagree, record the disagreement and ask Darrin to decide.
+11. Filename timestamps are labels only. Agents must not use filename timestamps as the source of truth for unread detection because agent clocks may differ across machines and sessions.
+12. The durable cross-reference is the body's `Message-ID` and `Reply-To` fields. Every message body must include a `Message-ID`. Every reply must include a `Reply-To` listing the source `Message-ID` or source filename when no `Message-ID` exists. Filesystem `LastWriteTime` is a fallback ordering hint, not a source of truth.
+13. Replies must include a `Reply-To` section listing source `Message-ID` values and filename paths when available.
+14. Implementation reports must include a `Deliverables` section with absolute paths.
+15. Important messages must be appended to `CODEX_MAILBOX_LEDGER.md`. Important means dispatches that initiate work, completion reports, decisions, blockers, and boundary questions. Routine acknowledgements and status pings are excluded. Format: `timestamp | sender->receiver | type | topic | source-file | deliverable-path`.
 
 ## Filename Pattern
 
@@ -46,6 +51,11 @@ Use 24-hour local time where practical.
 
 ```markdown
 # Short Subject
+
+Message-ID: CODEX-YYYYMMDD-HHMMSS-short-topic
+Reply-To:
+- CLAUDE-YYYYMMDD-HHMMSS-source-topic
+- CODEX Inbox\source_filename.md
 
 Generated: YYYY-MM-DD HH:MM:SS -07:00
 From: Codex or Claude

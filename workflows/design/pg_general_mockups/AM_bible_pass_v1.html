@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AM Bible Pass v1</title>
+<style>
+:root{
+  --chrome:#0a0a14;
+  --canvas:#14141f;
+  --panel:#1a1a2e;
+  --panel-raised:#22223a;
+  --panel-selected:#2a2a4e;
+  --border:#2a2a3e;
+  --border-soft:#222234;
+  --text:#e0ddd5;
+  --muted:#8a8a9a;
+  --dim:#5f5f6f;
+  --accent:#e8a87c;
+  --accent-soft:rgba(232,168,124,.10);
+  --accent-border:rgba(232,168,124,.35);
+  --ok:#7fb069;
+  --ok-soft:rgba(127,176,105,.14);
+  --err:#d46a66;
+  --err-soft:rgba(212,106,102,.14);
+  --warn:#caa15a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--chrome);
+  color:var(--text);
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  font-size:12px;
+  letter-spacing:0;
+}
+.page{padding:18px;display:grid;gap:18px}
+.caption{font-size:11px;color:var(--muted);font-family:Consolas,monospace}
+.frame{
+  background:var(--canvas);
+  border:1px solid var(--border);
+  min-height:540px;
+  overflow:hidden;
+}
+.w-narrow{width:1000px}
+.w-default{width:1280px}
+.w-wide{width:1800px}
+.am{display:flex;flex-direction:column;height:560px;background:var(--canvas)}
+.upper{display:grid;grid-template-columns:240px 1px 1fr;min-height:0;flex:1}
+.summary{background:var(--panel);padding:14px 12px;display:flex;flex-direction:column;gap:10px}
+.vsep{background:var(--border)}
+.center{padding:14px 16px 10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.header{display:flex;align-items:center;gap:10px;min-height:28px}
+.title{font-size:14px;font-weight:700;color:var(--text)}
+.spacer{flex:1}
+.sep{height:1px;background:var(--border)}
+.btn{height:28px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:3px;padding:0 10px;font-size:12px}
+.btn.utility{color:var(--muted);border-color:transparent}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#14141f;font-weight:700}
+.btn:disabled{color:var(--dim);border-color:var(--border-soft);background:transparent}
+.status-pane{border:1px solid var(--border);background:var(--panel-raised);border-radius:6px;padding:12px 14px}
+.status-pane.working{border-color:var(--accent-border);background:var(--accent-soft)}
+.status-pane.ok{border-color:rgba(127,176,105,.4);background:var(--ok-soft)}
+.status-line{display:flex;align-items:center;gap:10px;font-weight:700}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.working .dot{background:var(--accent)}
+.ok .dot{background:var(--ok)}
+.detail{margin-left:20px;margin-top:4px;color:var(--muted);font-size:11px}
+.shimmer{height:3px;margin:10px 0 0 20px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.7}
+.section{color:var(--accent);font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-top:2px}
+.stepper{display:grid;grid-template-columns:18px 1fr;column-gap:10px;align-items:start}
+.stepnum{width:18px;height:18px;border-radius:9px;border:1px solid var(--accent-border);background:var(--accent-soft);color:var(--accent);font:700 10px Consolas;display:grid;place-items:center}
+.steplabel{color:var(--muted);font-size:11px;line-height:18px}
+.steplabel.last{color:var(--text)}
+.rail{width:18px;height:22px;position:relative}
+.rail:before{content:"";position:absolute;left:9px;top:0;bottom:0;border-left:1px solid var(--border-soft)}
+.count{display:grid;grid-template-columns:1fr auto;align-items:center;border-left:2px solid var(--border-soft);background:var(--canvas);padding:7px 8px;border-radius:4px}
+.count b{font:700 15px Consolas;color:var(--text)}
+.count span{font:700 10px Consolas;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.count.total{border-left-color:var(--accent);background:var(--panel-raised)}
+.filter{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px}
+.select{border:1px solid var(--border);background:var(--panel);height:26px;padding:5px 20px 5px 8px;border-radius:3px;color:var(--text)}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font:700 10px Consolas;color:var(--muted);text-align:left;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);padding:7px 8px}
+td{border-bottom:1px solid var(--panel);padding:7px 8px;vertical-align:top}
+.c-num{width:72px}.c-sev{width:112px}.c-state{width:148px}.c-files{width:56px;text-align:right}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:3px;padding:2px 7px;font:700 10px Consolas;white-space:nowrap}
+.pill.med,.pill.design{color:var(--accent);border-color:var(--accent-border);background:var(--accent-soft)}
+.pill.ready,.pill.fixed{color:var(--ok);border-color:rgba(127,176,105,.4);background:var(--ok-soft)}
+.pill.clarify{color:var(--err);border-color:rgba(212,106,102,.4);background:var(--err-soft)}
+.statusbar{height:30px;background:var(--chrome);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--muted);font:11px Consolas}
+.mode{color:var(--accent);font-weight:700}
+.screenb{display:grid;grid-template-rows:auto 1px auto 1fr 30px;height:560px;background:var(--canvas)}
+.bbody{display:grid;grid-template-columns:1fr 320px;gap:12px;padding:12px 16px 10px;min-height:0}
+.meta{padding:8px 16px;display:flex;gap:10px;color:var(--muted);font:11px Consolas}
+.content{min-width:0;overflow:auto;background:transparent}
+.field{border-bottom:1px solid var(--panel);padding:8px 0}
+.field p{margin:4px 0 0;color:var(--text);line-height:1.45}
+.railcol{border-left:1px solid var(--border);padding-left:12px;display:flex;flex-direction:column;gap:10px}
+.verdict{border:1px solid var(--border);background:var(--panel);border-radius:4px;padding:10px}
+.actions{display:grid;gap:8px}
+.archive{display:grid;grid-template-rows:auto 1px auto 1fr 30px;height:560px}
+.archivebody{display:grid;grid-template-columns:330px 1fr;gap:12px;padding:12px 16px;min-height:0}
+.search{height:30px;background:var(--panel);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:0 10px;width:100%}
+.listrow{border-bottom:1px solid var(--panel);padding:8px;color:var(--text)}
+.empty{border:1px dashed var(--border);background:var(--panel);min-height:160px;display:grid;place-items:center;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--text);margin-bottom:6px}
+@media(max-width:1100px){
+  .w-narrow .upper{grid-template-columns:220px 1px 1fr}
+  .w-narrow .summary{padding:12px 10px}
+  .w-narrow .bbody{grid-template-columns:1fr 286px}
+  .w-narrow .c-state{width:132px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="caption">Screen A - default width - source/freshness status bar, 22px stepper rails</div>
+  <section class="frame w-default">
+    <div class="am">
+      <div class="upper">
+        <aside class="summary">
+          <div class="section">Inbox</div>
+          <div class="status-pane working"><div class="status-line"><span class="dot"></span>26 open · 23 untriaged</div></div>
+          <div class="section">What you'll do</div>
+          <div class="stepper"><div class="stepnum">1</div><div class="steplabel">Open a row to inspect the bug</div><div class="rail"></div><div></div><div class="stepnum">2</div><div class="steplabel">Triage with AI to surface gaps</div><div class="rail"></div><div></div><div class="stepnum">3</div><div class="steplabel">Resolve each readiness gap</div><div class="rail"></div><div></div><div class="stepnum">4</div><div class="steplabel last">Build the fix prompt</div></div>
+          <div class="section">Counts</div>
+          <div class="count total"><span>Total</span><b>26</b></div>
+          <div class="count"><span>Untriaged</span><b>23</b></div>
+          <div class="count"><span>Design</span><b>2</b></div>
+          <div class="spacer"></div>
+          <button class="btn">Archive</button>
+        </aside>
+        <div class="vsep"></div>
+        <main class="center">
+          <div class="header"><div class="title">AUDIT MODULE</div><div class="spacer"></div><button class="btn utility">Refresh</button></div>
+          <div class="sep"></div>
+          <div class="filter"><b>FILTER</b><span>Severity</span><span class="select">all</span><span>State</span><span class="select">all</span><label><input type="checkbox"> Show fixed</label><div class="spacer"></div><span><b style="color:var(--accent)">26</b> of 26 bugs</span></div>
+          <table>
+            <colgroup><col class="c-num"><col><col class="c-sev"><col class="c-state"><col class="c-files"></colgroup>
+            <thead><tr><th>#</th><th>Title</th><th>Severity</th><th>State</th><th>Files</th></tr></thead>
+            <tbody>
+              <tr><td>#140</td><td>AM Screen B UX is confusing for new users; needs full redesign before further code changes</td><td><span class="pill med">HIGH</span></td><td><span class="pill design">DESIGN</span></td><td>1</td></tr>
+              <tr><td>#129</td><td>Settings dialog and pane opens too large; doesn't shrink to content</td><td><span class="pill med">HIGH</span></td><td><span class="pill ready">READY</span></td><td>3</td></tr>
+              <tr><td>#114</td><td>Launch empty-state guidance is weak and should use the canonical tutorial voice</td><td><span class="pill">LOW</span></td><td><span class="pill">UNTRIAGED</span></td><td>2</td></tr>
+            </tbody>
+          </table>
+        </main>
+      </div>
+      <div class="statusbar"><span class="mode">AUDIT</span><span>·</span><span class="dot"></span><span>BUGS.md parsed 10:08:48</span><span class="spacer"></span><span>Source: BUGS.md</span></div>
+    </div>
+  </section>
+
+  <div class="caption">Screen B - untriaged - Build Prompt hidden, one primary action</div>
+  <section class="frame w-default">
+    <div class="screenb">
+      <div class="header" style="padding:14px 16px 8px"><button class="btn">Back</button><div class="title">BUG #140</div><div class="spacer"></div><span class="pill">UNTRIAGED</span></div>
+      <div class="sep"></div>
+      <div class="meta"><span>HIGH</span><span>audit_module_window.py</span><span>1 file</span><span>BUGS.md OPEN</span></div>
+      <div class="bbody">
+        <div class="content">
+          <div class="field"><div class="section">Files</div><p>audit_module/audit_module_window.py</p></div>
+          <div class="field"><div class="section">Reproduce</div><p>Open Testing -> Audit Module, double-click any bug, inspect Screen B.</p></div>
+          <div class="field"><div class="section">Expected</div><p>The next action should be obvious and irrelevant controls should stay out of view.</p></div>
+          <div class="field"><div class="section">Actual</div><p>Multiple action styles compete, the right rail has empty air, and Build Prompt appears before triage.</p></div>
+        </div>
+        <aside class="railcol">
+          <div class="status-pane"><div class="status-line"><span class="dot"></span>Ready</div><div class="detail">Run AI triage to classify this bug.</div></div>
+          <div class="verdict"><div class="section">Triage state</div><p><span class="pill">UNTRIAGED</span></p><p style="color:var(--muted)">No triage run yet.</p></div>
+          <div class="actions"><button class="btn primary">Triage with AI</button></div>
+        </aside>
+      </div>
+      <div class="statusbar"><span class="mode">AUDIT</span><span>·</span><span>Viewing BUGS.md OPEN</span></div>
+    </div>
+  </section>
+
+  <div class="caption">Screen B - ready - Build Prompt becomes the single primary</div>
+  <section class="frame w-default">
+    <div class="screenb">
+      <div class="header" style="padding:14px 16px 8px"><button class="btn">Back</button><div class="title">BUG #129</div><div class="spacer"></div><span class="pill ready">READY</span></div>
+      <div class="sep"></div>
+      <div class="meta"><span>HIGH</span><span>3 files</span><span>last triaged 10:12:04</span></div>
+      <div class="bbody">
+        <div class="content"><div class="field"><div class="section">Reproduce</div><p>Open Settings dialog and shrink the pane.</p></div><div class="field"><div class="section">Expected</div><p>Buttons remain visible, spacing is fixed, text never clips.</p></div><div class="field"><div class="section">Actual</div><p>Hardcoded sizes do not derive the Section 13 floor.</p></div></div>
+        <aside class="railcol">
+          <div class="status-pane ok"><div class="status-line"><span class="dot"></span>Ready to build</div><div class="detail">All gaps resolved.</div></div>
+          <div class="verdict"><div class="section">Readiness</div><p><span class="pill ready">0 gaps</span></p><p style="color:var(--muted)">Prompt can be generated.</p></div>
+          <div class="actions"><button class="btn primary">Build Fix Prompt</button><button class="btn">Re-triage</button></div>
+        </aside>
+      </div>
+      <div class="statusbar"><span class="mode">AUDIT</span><span>·</span><span>Prompt output: workflows/audit/prompts</span></div>
+    </div>
+  </section>
+
+  <div class="caption">Archive - default width - one-row header, operational search status</div>
+  <section class="frame w-default">
+    <div class="archive">
+      <div class="header" style="padding:14px 16px 8px"><button class="btn">Back</button><div class="title">ARCHIVE</div><div class="spacer"></div><button class="btn utility">Refresh index</button></div>
+      <div class="sep"></div>
+      <div style="padding:10px 16px;display:flex;gap:10px;align-items:center"><input class="search" value="" placeholder="Search fixed bugs and archived items"><span class="caption">14 archived items</span></div>
+      <div class="archivebody">
+        <div><div class="listrow">#128 Settings geometry persistence <span class="caption">v4.38</span></div><div class="listrow">#130 Region capture review <span class="caption">v4.27</span></div></div>
+        <div class="content"><div class="field"><div class="section">Detail</div><p>Select an archived fix to inspect its notes, verification, and source files.</p></div><div class="empty"><div><b>No selection</b><span>Choose a fixed bug from the archive list.</span></div></div></div>
+      </div>
+      <div class="statusbar"><span class="mode">AUDIT</span><span>·</span><span>Archive index loaded from BUGS.md FIXED and audit_archive.jsonl</span></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
