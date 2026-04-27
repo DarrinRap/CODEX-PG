@@ -23,6 +23,7 @@ DIAGNOSTICS_DIR = HUB_ROOT / "CODEX diagnostics"
 APPROVALS_DIR = HUB_ROOT / "CODEX approvals"
 ADAPTERS_DIR = HUB_ROOT / "CODEX adapters"
 STATE_DIR = HUB_ROOT / "CODEX state"
+PROCESSED_MESSAGES_DIR = STATE_DIR / "processed_messages"
 QUARANTINE_DIR = MAILBOX_ROOT / "PAH Quarantine"
 APPROVAL_RECORDS_PATH = APPROVALS_DIR / "CODEX_approval_records.local.jsonl"
 DECISION_STATE_PATH = STATE_DIR / "CODEX_decision_state.local.json"
@@ -47,5 +48,14 @@ ROUTE_INBOXES = {
 
 
 def ensure_runtime_dirs() -> None:
-    for path in (CONFIG_DIR, NOTIFICATIONS_DIR, DIAGNOSTICS_DIR, APPROVALS_DIR, ADAPTERS_DIR, STATE_DIR, CLAUDE_CODE_INBOX):
+    for path in (
+        CONFIG_DIR,
+        NOTIFICATIONS_DIR,
+        DIAGNOSTICS_DIR,
+        APPROVALS_DIR,
+        ADAPTERS_DIR,
+        STATE_DIR,
+        PROCESSED_MESSAGES_DIR,
+        CLAUDE_CODE_INBOX,
+    ):
         path.mkdir(parents=True, exist_ok=True)

@@ -25,6 +25,7 @@ from pah_core.validation_state import (
 from pah_core.work_items import create_work_item, update_work_item, work_board_status
 from pah_mailbox.atomic import atomic_write_text
 from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
+from pah_mailbox.idempotency import processed_message_event_status, record_processed_message_event
 from pah_adapters.registry import adapter_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
@@ -225,6 +226,93 @@ def test_backpressure_detection() -> None:
     assert_true("26 messages" in findings[0].message, "backpressure finding includes message count")
 
 
+def test_processed_message_sidecar_idempotency() -> None:
+    with TemporaryDirectory() as temp_dir:
+        state_dir = Path(temp_dir) / "processed_messages"
+        message_path = Path(temp_dir) / "message.md"
+        text = render_message_markdown(
+            {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "id": "PAH-IDEMPOTENCY-001",
+                "thread_id": "PAH-THREAD-001",
+                "created_at": "2026-04-27T02:00:00-07:00",
+                "from": "claude-code",
+                "to": "codex",
+                "type": "decision_request",
+                "priority": "high",
+                "status": "blocked",
+                "thread_status": "waiting_on_darrin",
+                "approval_boundary": "coordination_only",
+                "requires_darrin_decision": True,
+            },
+            "Idempotency smoke",
+            "Smoke test",
+            "No duplicate notification should be sent for the same content.",
+        )
+        message_path.write_text(text, encoding="utf-8")
+
+        initial = processed_message_event_status(
+            "PAH-IDEMPOTENCY-001",
+            message_path,
+            text,
+            event="notification:darrin_decision_needed",
+            state_dir=state_dir,
+        )
+        assert_true(initial.status == "unseen", "new message event starts unseen")
+
+        record = record_processed_message_event(
+            "PAH-IDEMPOTENCY-001",
+            message_path,
+            text,
+            event="notification:darrin_decision_needed",
+            outcome="sent",
+            state_dir=state_dir,
+        )
+        assert_true(record["message_id"] == "PAH-IDEMPOTENCY-001", "processed sidecar stores message id")
+        assert_true("first_seen_at" in record, "processed sidecar stores first seen timestamp")
+        assert_true(initial.sidecar_path.exists(), "processed sidecar is written")
+
+        duplicate = processed_message_event_status(
+            "PAH-IDEMPOTENCY-001",
+            message_path,
+            text,
+            event="notification:darrin_decision_needed",
+            state_dir=state_dir,
+        )
+        assert_true(duplicate.status == "already_processed", "same event and content is already processed")
+
+        next_event = processed_message_event_status(
+            "PAH-IDEMPOTENCY-001",
+            message_path,
+            text,
+            event="adapter:dry_run",
+            state_dir=state_dir,
+        )
+        assert_true(next_event.status == "new_event", "same message can process a different event")
+
+        changed = text + "\nchanged\n"
+        mismatch = processed_message_event_status(
+            "PAH-IDEMPOTENCY-001",
+            message_path,
+            changed,
+            event="notification:darrin_decision_needed",
+            state_dir=state_dir,
+        )
+        assert_true(mismatch.status == "content_mismatch", "same message id with changed content is blocked")
+        try:
+            record_processed_message_event(
+                "PAH-IDEMPOTENCY-001",
+                message_path,
+                changed,
+                event="notification:darrin_decision_needed",
+                state_dir=state_dir,
+            )
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("processed sidecar must reject changed content for the same message id")
+
+
 def test_decision_state() -> None:
     with TemporaryDirectory() as temp_dir:
         state_path = Path(temp_dir) / "decision_state.json"
@@ -312,6 +400,7 @@ def main() -> None:
     test_diagnostics()
     test_safety_surfaces()
     test_backpressure_detection()
+    test_processed_message_sidecar_idempotency()
     test_decision_state()
     test_validation_state()
     test_route_test_state()

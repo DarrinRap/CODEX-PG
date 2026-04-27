@@ -60,6 +60,7 @@ from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import create_route_test, route_test_status
 from pah_mailbox.atomic import atomic_append_text, atomic_write_text
 from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
+from pah_mailbox.idempotency import processed_message_event_status, record_processed_message_event
 from pah_mailbox.paths import (
     CLAUDE_CODE_INBOX,
     CLAUDE_CODE_INBOX_LEGACY,
@@ -74,6 +75,7 @@ from pah_mailbox.paths import (
     MAILBOX_ROOT,
     MESSAGE_DIRS,
     NOTIFICATIONS_DIR,
+    PROCESSED_MESSAGES_DIR,
     PROJECT_ROOT,
     REPORTS_DIR,
     ensure_runtime_dirs,
@@ -503,6 +505,7 @@ def notification_status() -> dict[str, Any]:
         "last_sent_at": state_data.get("last_sent_at", ""),
         "last_error": state_data.get("last_error", ""),
         "baseline_initialized": bool(state_data.get("baseline_initialized")),
+        "processed_sidecars": str(PROCESSED_MESSAGES_DIR),
         "desktop_popups": desktop_popup_status(config),
     }
 
@@ -634,6 +637,7 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
             return {"sent": 0, "enabled": False}
 
         messages = load_messages()
+        message_by_path = {str(msg.path): msg for msg in messages}
         decisions = build_decision_queue(messages, write_file=False)
         enabled_kinds = {key for key, enabled in dict(config.get("notify_on", {})).items() if enabled}
         events = [event for event in attention_events(messages, decisions) if event["kind"] in enabled_kinds]
@@ -642,6 +646,24 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
         if not state_data.get("baseline_initialized") and not config.get("send_existing_on_start"):
             for event in events:
                 sent[event["fingerprint"]] = {"baseline": True, "time": datetime.now().isoformat(timespec="seconds")}
+                target = message_by_path.get(event["path"])
+                if target and target.message_id:
+                    try:
+                        record_processed_message_event(
+                            target.message_id,
+                            target.path,
+                            target.body,
+                            event=f"notification:{event['kind']}",
+                            outcome="baseline",
+                        )
+                    except (OSError, ValueError) as exc:
+                        append_notification_log(
+                            {
+                                "time": datetime.now().isoformat(timespec="seconds"),
+                                "event": event,
+                                "error": str(exc),
+                            }
+                        )
             state_data["sent"] = sent
             state_data["baseline_initialized"] = True
             write_json(NOTIFICATION_STATE_PATH, state_data)
@@ -653,17 +675,61 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
         for event in events:
             if event["fingerprint"] in sent:
                 continue
+            target = message_by_path.get(event["path"])
+            if target and target.message_id:
+                idempotency_status = processed_message_event_status(
+                    target.message_id,
+                    target.path,
+                    target.body,
+                    event=f"notification:{event['kind']}",
+                )
+                if idempotency_status.status == "already_processed":
+                    sent[event["fingerprint"]] = {
+                        "time": datetime.now().isoformat(timespec="seconds"),
+                        "path": event["path"],
+                        "sidecar": str(idempotency_status.sidecar_path),
+                    }
+                    continue
+                if idempotency_status.status == "content_mismatch":
+                    state_data["last_error"] = (
+                        f"Notification skipped: processed sidecar hash mismatch for {target.message_id}"
+                    )
+                    append_notification_log(
+                        {
+                            "time": datetime.now().isoformat(timespec="seconds"),
+                            "event": event,
+                            "error": state_data["last_error"],
+                        }
+                    )
+                    continue
             if cooldown_seconds and now - last_sent_epoch < cooldown_seconds:
                 continue
             try:
                 result = send_notification(config, event["subject"], event["body"])
                 sent[event["fingerprint"]] = {"time": datetime.now().isoformat(timespec="seconds"), "path": event["path"]}
+                if target and target.message_id:
+                    record = record_processed_message_event(
+                        target.message_id,
+                        target.path,
+                        target.body,
+                        event=f"notification:{event['kind']}",
+                        outcome="sent",
+                    )
+                    sent[event["fingerprint"]]["sidecar"] = str(
+                        processed_message_event_status(
+                            target.message_id,
+                            target.path,
+                            target.body,
+                            event=f"notification:{event['kind']}",
+                        ).sidecar_path
+                    )
+                    sent[event["fingerprint"]]["content_hash"] = str(record.get("content_hash", ""))
                 state_data["last_sent_at"] = sent[event["fingerprint"]]["time"]
                 state_data["last_sent_epoch"] = now
                 state_data["last_error"] = ""
                 sent_count += 1
                 append_notification_log({"time": state_data["last_sent_at"], "event": event, "result": result})
-            except (HTTPError, URLError, OSError, RuntimeError, smtplib.SMTPException) as exc:
+            except (HTTPError, URLError, OSError, RuntimeError, ValueError, smtplib.SMTPException) as exc:
                 state_data["last_error"] = str(exc)
                 append_notification_log({"time": datetime.now().isoformat(timespec="seconds"), "event": event, "error": str(exc)})
                 break
