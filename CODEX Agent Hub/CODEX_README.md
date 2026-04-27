@@ -66,6 +66,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Validation finding state for accepted legacy, resolved, and dismissed findings. Historical ledger issues can be preserved without staying active.
 - Backpressure detection for flooded threads; PAH flags more than 25 messages in 5 minutes or more than 50 visible messages in one thread.
 - Processed-message sidecars for idempotency. PAH records message content hashes and processed event names so restart/refresh cannot resend the same notification for the same message content.
+- Read/unread state and status badges for mailbox messages. PAH stores read state locally and marks changed message content unread again.
 - Token-protected write endpoints for compose and notification tests.
 
 ## Claude Code Bridge Model
@@ -198,6 +199,14 @@ C:\CODEX PG\CODEX Agent Hub\CODEX state\processed_messages
 
 Each sidecar records the message ID, content hash, first-seen timestamp, last-seen timestamp, source path, and processed event names. Same ID plus same hash is treated as already processed for that event; same ID plus a different hash is blocked as a provenance mismatch.
 
+Read/unread state lives at:
+
+```text
+C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_read_state.local.json
+```
+
+This file stores local dashboard read markers only. If a message is edited after it is marked read, PAH shows it as unread again because the stored content hash no longer matches.
+
 ## Smoke Tests
 
 Run dependency-free smoke tests:
@@ -208,6 +217,7 @@ python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
 
 These tests cover schema roundtrip, Darrin decision gating, Claude Code routing, Panda Gallery path classification, and communication diagnostics.
 They also cover current mailbox schema aliases, standalone validation, quarantine reason codes, backpressure detection, and processed-message idempotency sidecars.
+Read/unread state is covered as well, including the changed-content-becomes-unread rule.
 
 Validate one or more PAH mailbox messages directly:
 

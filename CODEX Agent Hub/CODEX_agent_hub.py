@@ -39,6 +39,14 @@ from pah_core.decisions import (
     set_decision_state,
 )
 from pah_core.participants import participant_label, route_participants
+from pah_core.read_state import (
+    READ_STATE,
+    UNREAD_STATE,
+    load_read_state,
+    message_read_status,
+    read_state_summary,
+    set_message_read_state,
+)
 from pah_core.schema import (
     content_hash,
     extract_message_metadata,
@@ -77,6 +85,7 @@ from pah_mailbox.paths import (
     NOTIFICATIONS_DIR,
     PROCESSED_MESSAGES_DIR,
     PROJECT_ROOT,
+    READ_STATE_PATH,
     REPORTS_DIR,
     ensure_runtime_dirs,
 )
@@ -287,7 +296,25 @@ def load_ledger_text() -> str:
     return read_text(LEDGER_PATH) if LEDGER_PATH.exists() else ""
 
 
-def build_threads(messages: list[Message]) -> list[dict[str, Any]]:
+def message_status_badges(msg: Message, unread: bool = False) -> list[str]:
+    badges: list[str] = []
+    if unread:
+        badges.append("unread")
+    if msg.is_waiting_on_darrin:
+        badges.append("waiting_on_darrin")
+    if msg.is_request:
+        badges.append("request")
+    priority = msg.priority.lower().strip()
+    if priority in {"high", "urgent"}:
+        badges.append(priority)
+    for value in (msg.thread_status, msg.message_type):
+        normalized = value.lower().strip()
+        if normalized and normalized not in badges:
+            badges.append(normalized)
+    return badges[:5]
+
+
+def build_threads(messages: list[Message], read_state_data: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     grouped: dict[str, list[Message]] = {}
     for msg in messages:
         grouped.setdefault(msg.stable_thread, []).append(msg)
@@ -295,16 +322,21 @@ def build_threads(messages: list[Message]) -> list[dict[str, Any]]:
     for thread_id, items in grouped.items():
         items.sort(key=lambda item: item.modified)
         latest = items[-1]
+        unread_count = sum(
+            1 for item in items if message_read_status(item.path, item.message_id, item.body, read_state_data)["unread"]
+        )
         status = latest.thread_status or latest.status or ("Open" if latest.is_request else "Info")
         rows.append(
             {
                 "thread_id": thread_id,
                 "count": len(items),
+                "unread": unread_count,
                 "latest_title": latest.title,
                 "latest_direction": latest.direction,
                 "latest_path": str(latest.path),
                 "latest_modified": latest.modified,
                 "status": status,
+                "status_badges": message_status_badges(latest, unread_count > 0),
                 "owner": latest.action_owner or latest.to_agent or "",
                 "waiting_on_darrin": latest.is_waiting_on_darrin,
                 "summary": latest.summary or latest.body_preview,
@@ -947,6 +979,34 @@ def dispatch_work_item(item_id: str) -> dict[str, Any]:
     return update_work_item(item_id, state="in_progress", dispatch=dispatch)
 
 
+def find_loaded_message(path_value: str, messages: list[Message] | None = None) -> Message:
+    target = Path(path_value)
+    try:
+        resolved = target.resolve()
+    except OSError:
+        resolved = target
+    for msg in messages or load_messages():
+        try:
+            if msg.path.resolve() == resolved:
+                return msg
+        except OSError:
+            if str(msg.path) == str(target):
+                return msg
+    raise KeyError(f"Unknown PAH mailbox message: {path_value}")
+
+
+def set_read_state_for_message(path_value: str, state_name: str, actor: str = "codex") -> dict[str, Any]:
+    msg = find_loaded_message(path_value)
+    return set_message_read_state(msg.path, msg.message_id, msg.body, state_name, actor=actor)
+
+
+def mark_all_messages_read(actor: str = "codex") -> dict[str, Any]:
+    messages = load_messages()
+    for msg in messages:
+        set_message_read_state(msg.path, msg.message_id, msg.body, READ_STATE, actor=actor)
+    return {"count": len(messages), "state_path": str(READ_STATE_PATH)}
+
+
 def git_status() -> dict[str, str]:
     import subprocess
 
@@ -965,12 +1025,16 @@ def git_status() -> dict[str, str]:
 
 def state() -> dict[str, Any]:
     messages = load_messages()
+    read_state_data = load_read_state()
     decisions = build_decision_queue(messages, write_file=False)
     all_decisions = build_decision_queue(messages, write_file=False, include_inactive=True)
     validation = validate_mailbox(messages)
     validation_actionable, validation_inactive = apply_validation_state(validation)
     validation_summary = summarize_validation(validation)
-    threads = build_threads(messages)
+    threads = build_threads(messages, read_state_data)
+    unread_messages = sum(
+        1 for msg in messages if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
+    )
     diagnostics = run_communication_diagnostics(write_report=False)
     route_tests = route_test_status(refresh=True)
     work_board = work_board_status()
@@ -985,6 +1049,7 @@ def state() -> dict[str, Any]:
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "counts": {
             "messages": len(messages),
+            "unread_messages": unread_messages,
             "threads": len(threads),
             "decisions": len(decisions),
             "validation_issues": len(validation),
@@ -997,7 +1062,7 @@ def state() -> dict[str, Any]:
             "enabled_adapters": adapters["enabled"],
             "inactive_decisions": max(0, len(all_decisions) - len(decisions)),
         },
-        "latest": [message_to_json(msg) for msg in messages[:40]],
+        "latest": [message_to_json(msg, read_state_data) for msg in messages[:40]],
         "threads": threads[:80],
         "decisions": decisions,
         "decision_history": [item for item in all_decisions if item.get("decision_state") != ACTIVE_STATE],
@@ -1007,6 +1072,7 @@ def state() -> dict[str, Any]:
         "validation_inactive": validation_inactive,
         "validation_summary": validation_summary,
         "validation_state": validation_state_summary(),
+        "read_state": read_state_summary(read_state_data),
         "diagnostics": diagnostics,
         "route_tests": route_tests,
         "work_board": work_board,
@@ -1018,7 +1084,8 @@ def state() -> dict[str, Any]:
     }
 
 
-def message_to_json(msg: Message) -> dict[str, Any]:
+def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None) -> dict[str, Any]:
+    read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
     return {
         "direction": msg.direction,
         "path": str(msg.path),
@@ -1034,6 +1101,10 @@ def message_to_json(msg: Message) -> dict[str, Any]:
         "approval_boundary": msg.approval_boundary,
         "from_agent": msg.from_agent,
         "to_agent": msg.to_agent,
+        "read_state": read_status["state"],
+        "unread": read_status["unread"],
+        "content_changed_since_read": read_status["content_changed"],
+        "status_badges": message_status_badges(msg, read_status["unread"]),
         "summary": msg.summary or msg.body_preview,
     }
 
@@ -1084,8 +1155,13 @@ aside, section { min-width: 0; }
 .tab.active { background: var(--panel-2); border-color: var(--accent); }
 .list { display: grid; gap: 8px; }
 .item { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.item.unread { border-color: var(--accent); background: #211f1d; }
 .item-title { display: flex; justify-content: space-between; gap: 10px; font-weight: 650; }
 .pill { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.badge { display: inline-block; border: 1px solid var(--soft); border-radius: 999px; padding: 1px 7px; color: var(--text); background: #181b1e; font-size: 10px; text-transform: uppercase; }
+.badge.unread { color: #20140f; background: var(--accent); border-color: var(--accent); font-weight: 700; }
+.actions { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .path { color: var(--muted); font-family: Consolas, monospace; font-size: 11px; word-break: break-all; margin-top: 6px; }
 .summary { color: var(--muted); margin-top: 7px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -1119,7 +1195,7 @@ pre { white-space: pre-wrap; word-break: break-word; margin: 0; color: var(--mut
       <button class="tab" data-tab="work">Work</button>
       <button class="tab" data-tab="safety">Safety</button>
     </div>
-    <div id="latest" class="pane"><div class="list" id="latestList"></div></div>
+    <div id="latest" class="pane"><p><button id="markAllRead">Mark All Read</button></p><div class="list" id="latestList"></div></div>
     <div id="threads" class="pane hidden"><div class="list" id="threadList"></div></div>
     <div id="decisions" class="pane hidden"><div class="list" id="decisionList"></div><div class="card"><div class="card-head">Resolved / Superseded</div><div class="card-body"><div class="list" id="decisionHistoryList"></div></div></div></div>
     <div id="validation" class="pane hidden"><div class="card"><div class="card-head">Actionable Validation</div><div class="card-body"><div id="validationSummary"></div><div class="list" id="validationActionableList"></div></div></div><div class="card"><div class="card-head">Accepted / Resolved Validation</div><div class="card-body"><div class="list" id="validationInactiveList"></div></div></div><div class="card"><div class="card-head">All Validation History</div><div class="card-body"><div class="list" id="validationList"></div></div></div></div>
@@ -1177,8 +1253,8 @@ function render(data) {
   document.getElementById('notificationStatus').innerHTML = notificationBlock(data.notifications);
   document.getElementById('gitStatus').textContent = data.git.text || 'No git status available';
   document.getElementById('paths').innerHTML = `Mailbox:<br>${esc(data.mailbox_root)}<br><br>Decision queue:<br>${esc(data.decision_queue_path)}`;
-  list('latestList', data.latest, m => item(m.title, m.status || m.direction, m.summary, m.path));
-  list('threadList', data.threads, t => item(t.thread_id, t.status, t.summary, t.latest_path));
+  list('latestList', data.latest, m => messageItem(m));
+  list('threadList', data.threads, t => threadItem(t));
   list('decisionList', data.decisions, d => decisionItem(d));
   list('decisionHistoryList', data.decision_history || [], d => item(d.title, d.decision_state || 'inactive', `${d.state_note || ''} ${d.summary || ''}`, d.path));
   document.getElementById('validationSummary').innerHTML = validationSummaryBlock(data.validation_summary);
@@ -1199,6 +1275,18 @@ function render(data) {
 }
 function list(id, rows, fn) { document.getElementById(id).innerHTML = rows.length ? rows.map(fn).join('') : '<div class="item muted">Nothing to show.</div>'; }
 function item(title, pill, summary, path) { return `<div class="item"><div class="item-title"><span>${esc(title)}</span><span class="pill">${esc(pill)}</span></div><div class="summary">${esc(summary || '')}</div><div class="path">${esc(path || '')}</div></div>`; }
+function badgeBlock(row) {
+  return (row.status_badges || []).length ? `<div class="badges">${(row.status_badges || []).map(b => `<span class="badge ${b === 'unread' ? 'unread' : ''}">${esc(b)}</span>`).join('')}</div>` : '';
+}
+function messageItem(m) {
+  const payload = encodeURIComponent(JSON.stringify({path:m.path}));
+  const action = m.unread ? `<button onclick="setReadState('${payload}','read')">Mark Read</button>` : `<button onclick="setReadState('${payload}','unread')">Mark Unread</button>`;
+  return `<div class="item ${m.unread ? 'unread' : ''}"><div class="item-title"><span>${esc(m.title)}</span><span class="pill">${esc(m.status || m.direction)}</span></div>${badgeBlock(m)}<div class="summary">${esc(m.summary || '')}</div><div class="path">${esc(m.path || '')}</div><p class="actions">${action}</p></div>`;
+}
+function threadItem(t) {
+  const unread = t.unread ? ` · unread ${t.unread}` : '';
+  return `<div class="item ${t.unread ? 'unread' : ''}"><div class="item-title"><span>${esc(t.thread_id)}</span><span class="pill">${esc(t.status)}${esc(unread)}</span></div>${badgeBlock(t)}<div class="summary">${esc(t.summary || '')}</div><div class="path">${esc(t.latest_path || '')}</div></div>`;
+}
 function decisionItem(d) {
   return `<div class="item"><div class="item-title"><span>${esc(d.title)}</span><span class="pill">${esc(d.status || 'Decision')}</span></div><div class="summary">${esc(d.summary || '')}</div><div class="path">${esc(d.path || '')}</div><p><button onclick="setDecisionState('${encodeURIComponent(d.path)}','resolved')">Resolved</button> <button onclick="setDecisionState('${encodeURIComponent(d.path)}','superseded')">Superseded</button> <button onclick="setDecisionState('${encodeURIComponent(d.path)}','dismissed')">Dismiss</button></p></div>`;
 }
@@ -1225,6 +1313,12 @@ function validationSummaryBlock(v) {
 }
 document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.pane').forEach(p => p.classList.add('hidden')); document.getElementById(btn.dataset.tab).classList.remove('hidden'); }));
 document.getElementById('refresh').onclick = load;
+document.getElementById('markAllRead').onclick = async () => {
+  const res = await fetch('/api/mark-all-read', {method:'POST', headers:{'Content-Type':'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN}, body: JSON.stringify({actor:'darrin_or_codex'})});
+  const json = await res.json();
+  if (!json.ok) alert(json.error || 'Mark all read failed');
+  await load();
+};
 document.getElementById('composeJump').onclick = () => document.getElementById('subject').focus();
 document.getElementById('send').onclick = async () => {
   const payload = { route: route.value, status: status.value, subject: subject.value, thread_id: threadId.value, reply_to: replyTo.value, body: body.value };
@@ -1281,6 +1375,13 @@ async function setValidationState(payloadEncoded, state) {
   const res = await fetch('/api/validation-state', {method:'POST', headers:{'Content-Type':'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN}, body: JSON.stringify({...finding, state, note, actor:'darrin_or_codex'})});
   const json = await res.json();
   if (!json.ok) alert(json.error || 'Validation update failed');
+  await load();
+}
+async function setReadState(payloadEncoded, state) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  const res = await fetch('/api/message-read-state', {method:'POST', headers:{'Content-Type':'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN}, body: JSON.stringify({...item, state, actor:'darrin_or_codex'})});
+  const json = await res.json();
+  if (!json.ok) alert(json.error || 'Read-state update failed');
   await load();
 }
 load(); setInterval(load, 8000);
@@ -1348,6 +1449,8 @@ class Handler(BaseHTTPRequestHandler):
             "/api/quarantine-message",
             "/api/decision-state",
             "/api/validation-state",
+            "/api/message-read-state",
+            "/api/mark-all-read",
             "/api/work-item",
             "/api/dispatch-work-item",
         }:
@@ -1422,6 +1525,26 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
             self.send_json({"ok": True, "record": record})
+            return
+        if parsed_path == "/api/message-read-state":
+            try:
+                record = set_read_state_for_message(
+                    str(payload.get("path", "")),
+                    str(payload.get("state", READ_STATE)),
+                    actor=str(payload.get("actor", "codex")),
+                )
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, "record": record})
+            return
+        if parsed_path == "/api/mark-all-read":
+            try:
+                record = mark_all_messages_read(actor=str(payload.get("actor", "codex")))
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **record})
             return
         if parsed_path == "/api/work-item":
             try:

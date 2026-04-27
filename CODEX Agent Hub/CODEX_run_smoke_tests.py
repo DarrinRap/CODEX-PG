@@ -15,6 +15,7 @@ from tempfile import TemporaryDirectory
 from pah_core import MESSAGE_SCHEMA_VERSION
 from pah_core.decisions import decision_is_active, decision_state_summary, set_decision_state
 from pah_core.participants import route_participants
+from pah_core.read_state import message_read_status, read_state_summary, set_message_read_state
 from pah_core.schema import extract_message_metadata, metadata_waits_on_darrin, render_message_markdown, validate_message_text
 from pah_core.validation_state import (
     set_validation_state,
@@ -313,6 +314,55 @@ def test_processed_message_sidecar_idempotency() -> None:
             raise AssertionError("processed sidecar must reject changed content for the same message id")
 
 
+def test_read_state_marks_changed_content_unread() -> None:
+    with TemporaryDirectory() as temp_dir:
+        state_path = Path(temp_dir) / "read_state.json"
+        message_path = Path(temp_dir) / "message.md"
+        text = render_message_markdown(
+            {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "id": "PAH-READ-STATE-001",
+                "thread_id": "PAH-THREAD-001",
+                "created_at": "2026-04-27T02:00:00-07:00",
+                "from": "claude-code",
+                "to": "codex",
+                "type": "report",
+                "priority": "normal",
+                "status": "complete",
+                "approval_boundary": "coordination_only",
+                "requires_darrin_decision": False,
+            },
+            "Read state smoke",
+            "Smoke test",
+            "Initial body.",
+        )
+        message_path.write_text(text, encoding="utf-8")
+
+        initial = message_read_status(message_path, "PAH-READ-STATE-001", text)
+        assert_true(initial["unread"], "messages default to unread")
+
+        record = set_message_read_state(
+            message_path,
+            "PAH-READ-STATE-001",
+            text,
+            "read",
+            actor="smoke",
+            state_path=state_path,
+        )
+        assert_true(record["state"] == "read", "read state is persisted")
+
+        data = {"items": {str(message_path): record}}
+        read_status = message_read_status(message_path, "PAH-READ-STATE-001", text, data)
+        assert_true(not read_status["unread"], "same content remains read")
+
+        changed_status = message_read_status(message_path, "PAH-READ-STATE-001", text + "\nchanged\n", data)
+        assert_true(changed_status["unread"], "changed content becomes unread")
+        assert_true(changed_status["content_changed"], "changed content is flagged")
+
+        summary = read_state_summary(data)
+        assert_true(summary["counts"]["read"] == 1, "read state summary counts read records")
+
+
 def test_decision_state() -> None:
     with TemporaryDirectory() as temp_dir:
         state_path = Path(temp_dir) / "decision_state.json"
@@ -401,6 +451,7 @@ def main() -> None:
     test_safety_surfaces()
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()
+    test_read_state_marks_changed_content_unread()
     test_decision_state()
     test_validation_state()
     test_route_test_state()
