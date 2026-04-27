@@ -60,6 +60,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Work Board for local parallel development coordination, with owner, priority, state, summary, and source fields.
 - Work item dispatch from PAH into Claude Desktop or Claude Code mailbox routes, with dispatch metadata linked back to the work item.
 - Safety tab showing protected-action approval record status, disabled live-adapter registry, and quarantine/tombstone status.
+- Protected-action approval enforcement helpers for exact-path, hash-bound approval checks. Expired, revoked, consumed, and command-changed records cannot authorize protected actions.
 - Explicit quarantine API for mailbox messages. It requires the local write token and `confirmed: true`; PAH never auto-quarantines during refresh.
 - Decision queue hygiene state for active/resolved/superseded/dismissed items. PAH keeps stale decisions in history without interrupting Darrin.
 - Validator categorization with actionable issues separated from legacy/info mailbox hygiene noise.
@@ -173,6 +174,8 @@ C:\CODEX PG\CODEX Agent Hub\CODEX approvals\CODEX_approval_records.local.jsonl
 
 They are local/ignored records and must include scope, exact paths, command/provider, budget, expiry, one-time-use flag, approver, revocation state, and hash binding.
 
+PAH classifies Panda Gallery writes, destructive filesystem actions, git commits/pushes, package installs, external API calls, SMS/email sends, live headless agent runs, and paid provider setup as protected. A protected action is allowed only when an active approval record matches the exact scope, paths, command/provider, budget, and request hash. One-time approvals become unusable after consumption.
+
 Live adapters are registered but disabled by default. The app exposes their safety status without launching Claude Code headless, calling APIs, sending paid SMS, or writing outside PAH.
 
 Decision queue state lives at:
@@ -239,5 +242,5 @@ This starts PAH hidden, checks `/api/status`, prints a compact JSON result, and 
 2. Add explicit quarantine actions with tombstones.
 3. Add direct API-backed agent lanes for OpenAI and Anthropic.
 4. Add file/diff preview for deliverables.
-5. Add approval-record enforcement for protected actions.
+5. Add approval-record creation/revocation UI.
 6. Add a closed-thread archive workflow.

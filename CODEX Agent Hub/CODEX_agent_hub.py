@@ -1265,7 +1265,8 @@ function render(data) {
   list('routeTestList', data.route_tests.tests || [], t => item(t.test_id, t.state, `${t.from} → ${t.to} · ${t.created_at}${t.reply_seen_at ? ' · replied ' + t.reply_seen_at : ''}`, t.reply_path || t.message_path));
   list('workList', data.work_board.items || [], w => workItem(w));
   list('approvalList', [
-    {title:'Approval records', pill:data.approvals.records, summary:`active ${data.approvals.active}, invalid ${data.approvals.invalid}, revoked ${data.approvals.revoked}, expired ${data.approvals.expired}`, path:data.approvals.records_path},
+    {title:'Approval records', pill:data.approvals.records, summary:`active ${data.approvals.active}, invalid ${data.approvals.invalid}, revoked ${data.approvals.revoked}, expired ${data.approvals.expired}, consumed ${data.approvals.consumed}`, path:data.approvals.records_path},
+    {title:'Protected-action enforcement', pill:data.approvals.enforcement || 'unknown', summary:(data.approvals.protected_action_types || []).join(', '), path:''},
     {title:'Required fields', pill:'schema', summary:data.approvals.required_fields.join(', '), path:''}
   ], a => item(a.title, a.pill, a.summary, a.path));
   list('adapterList', data.adapters.adapters, a => item(a.display_name, a.enabled ? 'ENABLED' : 'DISABLED', `${a.safety_status} · ${a.notes}`, a.adapter_id));

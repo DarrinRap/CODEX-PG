@@ -31,7 +31,13 @@ from pah_adapters.registry import adapter_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
 from pah_mailbox.quarantine import validate_quarantine_candidate, validate_quarantine_reason
-from pah_security.approvals import canonical_request_hash, validate_approval_record
+from pah_security.approvals import (
+    approval_check,
+    canonical_request_hash,
+    enforce_protected_action,
+    mark_approval_consumed,
+    validate_approval_record,
+)
 from pah_security.path_scope import classify_path
 
 
@@ -213,6 +219,51 @@ def test_safety_surfaces() -> None:
         pass
     else:
         raise AssertionError("quarantine reason enum must be closed")
+
+
+def test_approval_enforcement() -> None:
+    with TemporaryDirectory() as temp_dir:
+        approvals_path = Path(temp_dir) / "approvals.jsonl"
+        target_path = "C:/CODEX PG/example.txt"
+        command = "git commit -m example"
+        scope = "git_commit_requires_darrin"
+        request_hash = canonical_request_hash(scope, [target_path], command, "0")
+        approvals_path.write_text(
+            json.dumps(
+                {
+                    "approval_id": "APPROVAL-ENFORCE-001",
+                    "scope": scope,
+                    "exact_paths": [target_path],
+                    "command_or_provider": command,
+                    "budget": "0",
+                    "expires_at": "2099-01-01T00:00:00+00:00",
+                    "one_time_use": True,
+                    "approver": "Darrin",
+                    "revoked": False,
+                    "request_hash": request_hash,
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        safe = approval_check("coordination_note", ["C:/CODEX PG/example.txt"], "compose", path=approvals_path)
+        assert_true(not safe["required"] and safe["allowed"], "coordination action does not need approval")
+
+        denied = approval_check("write_file", ["C:/panda-gallery/app.py"], "write", path=approvals_path)
+        assert_true(denied["required"] and not denied["allowed"], "Panda Gallery write requires approval")
+
+        allowed = enforce_protected_action("git_commit", [target_path], command, "0", path=approvals_path)
+        assert_true(allowed["allowed"], "matching approval allows protected action")
+        assert_true(allowed["approval_id"] == "APPROVAL-ENFORCE-001", "approval id is returned")
+
+        wrong_command = approval_check("git_commit", [target_path], "git commit -m changed", "0", path=approvals_path)
+        assert_true(not wrong_command["allowed"], "changed command invalidates approval")
+
+        mark_approval_consumed("APPROVAL-ENFORCE-001", consumed_at="2099-01-01T00:00:00+00:00", path=approvals_path)
+        consumed = approval_check("git_commit", [target_path], command, "0", path=approvals_path)
+        assert_true(not consumed["allowed"], "consumed one-time approval cannot be reused")
 
 
 def test_backpressure_detection() -> None:
@@ -449,6 +500,7 @@ def main() -> None:
     test_routes_and_scope()
     test_diagnostics()
     test_safety_surfaces()
+    test_approval_enforcement()
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()
     test_read_state_marks_changed_content_unread()
