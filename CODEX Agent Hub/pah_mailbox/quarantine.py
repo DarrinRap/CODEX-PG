@@ -12,6 +12,19 @@ from pah_mailbox.atomic import atomic_write_text
 from pah_mailbox.paths import MAILBOX_ROOT, QUARANTINE_DIR
 
 
+QUARANTINE_REASON_CODES = {
+    "schema_invalid",
+    "missing_required_field",
+    "malformed_yaml_frontmatter",
+    "parse_error",
+    "duplicate_id_hash_mismatch",
+    "unknown_participant",
+    "unsafe_boundary",
+    "spoofing_attempt",
+    "flood_threshold_exceeded",
+}
+
+
 @dataclass(frozen=True)
 class QuarantineRecord:
     original_path: str
@@ -19,6 +32,14 @@ class QuarantineRecord:
     reason: str
     moved_at: str
     tombstone_path: str = ""
+
+
+def validate_quarantine_reason(reason: str) -> str:
+    normalized = reason.strip().lower()
+    if normalized not in QUARANTINE_REASON_CODES:
+        allowed = ", ".join(sorted(QUARANTINE_REASON_CODES))
+        raise ValueError(f"Unsupported quarantine reason: {reason!r}. Allowed: {allowed}")
+    return normalized
 
 
 def quarantine_target(path: Path) -> Path:
@@ -52,12 +73,13 @@ def quarantine_message(path: Path, reason: str, confirmed: bool = False) -> Quar
     if not confirmed:
         raise ValueError("Quarantine requires confirmed=true.")
     validate_quarantine_candidate(path)
+    reason_code = validate_quarantine_reason(reason or "schema_invalid")
     QUARANTINE_DIR.mkdir(parents=True, exist_ok=True)
     target = quarantine_target(path)
     record = QuarantineRecord(
         original_path=str(path),
         quarantine_path=str(target),
-        reason=reason.strip() or "manual_quarantine",
+        reason=reason_code,
         moved_at=datetime.now().isoformat(timespec="seconds"),
     )
     os.replace(path, target)

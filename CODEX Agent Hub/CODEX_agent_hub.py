@@ -327,7 +327,7 @@ def validate_mailbox(messages: list[Message]) -> list[dict[str, Any]]:
 
     for msg in messages:
         if not msg.message_id:
-            add("warning", msg, "Missing Message-ID")
+            add("warning", msg, "Missing id / Message-ID")
         elif msg.message_id in seen_ids:
             first_path, first_hash = seen_ids[msg.message_id]
             this_hash = content_hash(msg.body)
@@ -343,7 +343,7 @@ def validate_mailbox(messages: list[Message]) -> list[dict[str, Any]]:
             seen_ids[msg.message_id] = (msg.path, content_hash(msg.body))
 
         for schema_issue in validate_message_text(msg.body, msg.name):
-            if schema_issue.message == "Missing message_id / Message-ID" and not msg.message_id:
+            if schema_issue.message == "Missing id / message_id / Message-ID" and not msg.message_id:
                 continue
             add(schema_issue.level, msg, schema_issue.message)
 
@@ -1305,7 +1305,7 @@ class Handler(BaseHTTPRequestHandler):
         if parsed_path == "/api/quarantine-message":
             try:
                 target = Path(str(payload.get("path", "")))
-                reason = str(payload.get("reason", "manual_quarantine"))
+                reason = str(payload.get("reason", "schema_invalid"))
                 confirmed = bool(payload.get("confirmed"))
                 record = quarantine_message(target, reason=reason, confirmed=confirmed)
             except Exception as exc:

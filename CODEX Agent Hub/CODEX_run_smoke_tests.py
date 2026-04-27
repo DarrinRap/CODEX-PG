@@ -7,6 +7,9 @@ or Panda Gallery writes.
 from __future__ import annotations
 
 from pathlib import Path
+import json
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 
 from pah_core import MESSAGE_SCHEMA_VERSION
@@ -24,7 +27,7 @@ from pah_mailbox.atomic import atomic_write_text
 from pah_adapters.registry import adapter_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
-from pah_mailbox.quarantine import validate_quarantine_candidate
+from pah_mailbox.quarantine import validate_quarantine_candidate, validate_quarantine_reason
 from pah_security.approvals import canonical_request_hash, validate_approval_record
 from pah_security.path_scope import classify_path
 
@@ -38,7 +41,7 @@ def test_schema_roundtrip() -> None:
     text = render_message_markdown(
         {
             "schema_version": MESSAGE_SCHEMA_VERSION,
-            "message_id": "PAH-TEST-001",
+            "id": "PAH-TEST-001",
             "thread_id": "PAH-THREAD-001",
             "created_at": "2026-04-27T02:00:00-07:00",
             "from": "codex",
@@ -57,9 +60,97 @@ def test_schema_roundtrip() -> None:
     )
     metadata = extract_message_metadata(text)
     issues = validate_message_text(text, "smoke.md")
+    assert_true(metadata["id"] == "PAH-TEST-001", "schema id roundtrip")
     assert_true(metadata["message_id"] == "PAH-TEST-001", "schema message_id roundtrip")
     assert_true(metadata["to"] == "claude-code", "schema participant canonicalization")
     assert_true(not any(issue.level == "warning" for issue in issues), "schema should not warn on valid v1")
+
+
+def test_current_mailbox_schema_aliases() -> None:
+    text = """---
+schema_version: 1
+id: CC-20260427-020000-pah-v1-final-review
+thread_id: AGENT-HUB-V1
+from: cc
+to: codex
+type: recommendation
+status: review_complete
+created_at: 2026-04-27T02:00:00-07:00
+priority: high
+action_owner: codex
+requires_darrin_decision: true
+approval_boundary: coordination_only
+---
+
+# CC -> Codex: review
+"""
+    metadata = extract_message_metadata(text)
+    issues = validate_message_text(text, "cc_review.md")
+    assert_true(metadata["message_id"] == "CC-20260427-020000-pah-v1-final-review", "id aliases to message_id")
+    assert_true(metadata["from"] == "claude-code", "cc alias canonicalizes")
+    assert_true(not any(issue.level == "warning" for issue in issues), "current mailbox schema should not warn")
+
+
+def test_frontmatter_does_not_parse_body_headings() -> None:
+    text = """---
+schema_version: 1
+id: CODEX-TEST-BODY-HEADINGS
+thread_id: AGENT-HUB-V1
+from: codex
+to: claude_desktop
+type: report
+status: complete
+created_at: 2026-04-27T02:00:00-07:00
+priority: normal
+requires_darrin_decision: false
+approval_boundary: coordination_only
+---
+
+# Report
+
+Updated file:
+
+- C:\\CODEX PG\\example.md
+"""
+    metadata = extract_message_metadata(text)
+    assert_true("updated_file" not in metadata, "frontmatter parser must not treat body labels as metadata")
+
+
+def test_standalone_validator_cli() -> None:
+    with TemporaryDirectory() as temp_dir:
+        message_path = Path(temp_dir) / "message.md"
+        message_path.write_text(
+            render_message_markdown(
+                {
+                    "schema_version": MESSAGE_SCHEMA_VERSION,
+                    "id": "PAH-VALIDATOR-CLI-001",
+                    "thread_id": "PAH-THREAD-001",
+                    "created_at": "2026-04-27T02:00:00-07:00",
+                    "from": "codex",
+                    "to": "claude-code",
+                    "type": "report",
+                    "priority": "normal",
+                    "status": "complete",
+                    "approval_boundary": "coordination_only",
+                    "requires_darrin_decision": False,
+                },
+                "Validator CLI smoke",
+                "Smoke test",
+                "No external validator involved.",
+            ),
+            encoding="utf-8",
+        )
+        validator = Path(__file__).with_name("CODEX_pah_validator.py")
+        completed = subprocess.run(
+            [sys.executable, str(validator), "--json", str(message_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(completed.stdout)
+        assert_true(completed.returncode == 0, "validator CLI exits cleanly for valid message")
+        assert_true(payload["ok"], "validator CLI reports ok")
+        assert_true(payload["results"][0]["metadata"]["id"] == "PAH-VALIDATOR-CLI-001", "validator CLI returns metadata")
 
 
 def test_decision_gate() -> None:
@@ -112,6 +203,13 @@ def test_safety_surfaces() -> None:
         pass
     else:
         raise AssertionError("quarantine must reject files outside the PAH mailbox")
+    assert_true(validate_quarantine_reason("schema_invalid") == "schema_invalid", "valid quarantine reason passes")
+    try:
+        validate_quarantine_reason("manual_quarantine")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("quarantine reason enum must be closed")
 
 
 def test_decision_state() -> None:
@@ -193,6 +291,9 @@ def test_work_board_state() -> None:
 
 def main() -> None:
     test_schema_roundtrip()
+    test_current_mailbox_schema_aliases()
+    test_frontmatter_does_not_parse_body_headings()
+    test_standalone_validator_cli()
     test_decision_gate()
     test_routes_and_scope()
     test_diagnostics()

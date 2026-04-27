@@ -37,6 +37,11 @@ MESSAGE_TYPES = {
     "response_request",
     "decision_request",
     "decision_record",
+    "report",
+    "recommendation",
+    "cross_check",
+    "counter_proposal",
+    "escalation",
     "implementation_report",
     "diagnostic_result",
     "system_event",
@@ -53,7 +58,7 @@ APPROVAL_BOUNDARIES = {
 }
 REQUIRED_FRONTMATTER_FIELDS = {
     "schema_version",
-    "message_id",
+    "id",
     "thread_id",
     "created_at",
     "from",
@@ -68,6 +73,7 @@ REQUIRED_FRONTMATTER_FIELDS = {
 
 TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 -]{1,40}:\s*(.*)$")
 FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*(?:\n|\Z)", re.DOTALL)
+ISO8601_OFFSET_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$")
 
 
 @dataclass(frozen=True)
@@ -183,14 +189,20 @@ def parse_legacy_metadata(text: str) -> dict[str, Any]:
 def extract_message_metadata(text: str) -> dict[str, Any]:
     legacy = parse_legacy_metadata(text)
     frontmatter, has_frontmatter = parse_frontmatter(text)
-    metadata = {**legacy, **frontmatter}
+    metadata = dict(frontmatter if has_frontmatter else legacy)
     metadata["_has_frontmatter"] = has_frontmatter
+    if "id" in metadata and "message_id" not in metadata:
+        metadata["message_id"] = metadata["id"]
+    if "message_id" in metadata and "id" not in metadata:
+        metadata["id"] = metadata["message_id"]
     if "from" in metadata:
         metadata["from"] = canonical_participant(str(metadata["from"]))
     if "to" in metadata:
         metadata["to"] = canonical_participant(str(metadata["to"]))
     if "thread_status" in metadata:
         metadata["thread_status"] = normalize_thread_status(str(metadata["thread_status"]))
+    elif has_frontmatter:
+        metadata["thread_status"] = "active"
     if "message_id" not in metadata and "message_id" in legacy:
         metadata["message_id"] = legacy["message_id"]
     return metadata
@@ -214,8 +226,8 @@ def validate_message_text(text: str, path_name: str = "") -> list[SchemaIssue]:
     if not has_frontmatter:
         return issues
 
-    if not metadata.get("message_id"):
-        issues.append(SchemaIssue("warning", "Missing message_id / Message-ID"))
+    if not metadata.get("id") and not metadata.get("message_id"):
+        issues.append(SchemaIssue("warning", "Missing id / message_id / Message-ID"))
 
     missing = sorted(field for field in REQUIRED_FRONTMATTER_FIELDS if field not in metadata or metadata[field] == "")
     if missing:
@@ -223,6 +235,9 @@ def validate_message_text(text: str, path_name: str = "") -> list[SchemaIssue]:
 
     if metadata.get("schema_version") != MESSAGE_SCHEMA_VERSION:
         issues.append(SchemaIssue("warning", f"Unexpected schema_version: {metadata.get('schema_version')}"))
+    created_at = str(metadata.get("created_at", "")).strip()
+    if created_at and not ISO8601_OFFSET_RE.match(created_at):
+        issues.append(SchemaIssue("warning", "created_at must be ISO-8601 with explicit timezone offset"))
 
     from_id = str(metadata.get("from", ""))
     to_id = str(metadata.get("to", ""))
@@ -273,9 +288,12 @@ def render_message_markdown(
     details: str,
     approval_note: str = "Coordination only unless Darrin explicitly approves implementation.",
 ) -> str:
+    metadata = dict(metadata)
+    if "id" not in metadata and "message_id" in metadata:
+        metadata["id"] = metadata["message_id"]
     ordered_keys = [
         "schema_version",
-        "message_id",
+        "id",
         "thread_id",
         "created_at",
         "from",

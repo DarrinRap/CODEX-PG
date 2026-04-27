@@ -61,12 +61,12 @@ Rules:
 - PAH lives under `C:\CODEX PG` for now, not inside `C:\panda-gallery`.
 - PAH must not depend on Panda Gallery runtime code.
 - PAH may coordinate work about Panda Gallery, but it is not architecturally part of Panda Gallery.
-- PG-specific lint/design integrations are optional project adapters, not PAH core dependencies.
-- PAH must include its own generic schema validator.
-- `pg_dispatch_lint.py` may be called as an external PG workflow adapter when configured, but PAH must remain useful when `C:\panda-gallery` is absent.
+- PG-specific lint/design conventions may be cited as optional reference material, not PAH runtime dependencies.
+- PAH must include and run its own standalone schema validator.
+- PAH v1 must not import, subprocess, path-link, or otherwise depend on `pg_dispatch_lint.py`; any future PG dispatch validator adapter requires a separate approval and must not be part of PAH core.
 - PAH may borrow the discipline of PG's design doctrine, but it should maintain its own design-system layer.
 - No write access to `C:\panda-gallery` is allowed unless Darrin explicitly approves a protected action.
-- CC may review or build PAH modules without touching PG files.
+- CC may review PAH design and implementation through mailbox messages, but PAH must not depend on CC-authored code that lives in `C:\panda-gallery`.
 
 ## 3. Product Principle
 
@@ -252,7 +252,7 @@ Parallel development is allowed when file ownership is clean.
 Recommended split:
 
 - Codex owns app shell, dashboard UI, mailbox parser/router, Windows tray/popup wiring, review/export packets, and standalone packaging.
-- CC owns or reviews schema validator details, approval-record enforcement, quarantine/idempotency rules, `pg_dispatch_lint.py` adapter behavior, and Claude Code adapter safety contracts.
+- CC reviews schema validator details, approval-record enforcement, quarantine/idempotency rules, and Claude Code adapter safety contracts through mailbox feedback; Codex owns all PAH runtime code under `C:\CODEX PG`.
 - Claude Desktop reviews UX/workflow coherence, Darrin queue clarity, and synthesis/escalation behavior.
 
 Parallel safety rules:
@@ -421,7 +421,7 @@ Rules:
 ```yaml
 validation:
   commands:
-    - "python C:\\panda-gallery\\workflows\\tools\\pg_dispatch_lint.py --json <path>"
+    - "python CODEX_pah_validator.py --json <path>"
   status: complete
   passed: true
   ran_at: 2026-04-26T20:10:00-07:00
@@ -590,22 +590,11 @@ Core PAH validator:
 - validates schema version, required fields, enums, participant IDs, path scopes, approval boundaries, timestamps, content hashes, and validation terminal state
 - does not depend on Panda Gallery
 - ships as part of PAH
+- is the only validator PAH v1 runs for PAH messages
 
-Optional Panda Gallery lint adapter:
+Panda Gallery dispatch lint is external reference material only in PAH v1.
 
-```text
-C:\panda-gallery\workflows\tools\pg_dispatch_lint.py
-```
-
-When a PAH thread is configured for Panda Gallery workflows, PAH may call:
-
-```text
-python C:\panda-gallery\workflows\tools\pg_dispatch_lint.py --json <message_path>
-```
-
-PAH renders the JSON output as an external adapter result.
-
-PAH does not duplicate PG-specific lint rules. CC owns or approves changes to `pg_dispatch_lint.py`. PAH must remain functional if this external adapter is disabled or missing.
+PAH v1 must not call `C:\panda-gallery\workflows\tools\pg_dispatch_lint.py`, import Panda Gallery code, or require `C:\panda-gallery` to exist. If PAH later needs to validate Panda Gallery dispatches, that work is a separate external-adapter ticket with its own approval and boundary review. Shared rule patterns may be documented in prose or pseudocode under `C:\CODEX PG`, then reimplemented inside PAH's standalone validator.
 
 Validation categories:
 
@@ -616,7 +605,7 @@ Validation categories:
 - priority
 - approval boundary
 - file paths
-- Bible/design citations where relevant
+- design/source citations where relevant
 - prerequisite commit
 - validation block terminal state
 - PHI/secrets pattern scan
@@ -624,7 +613,6 @@ Validation categories:
 Compose-time validation:
 
 - the Dispatch screen runs PAH core validation before Send is enabled
-- if the optional PG adapter is configured for the thread, it runs as read-only preflight before Send
 - P0/P1 validation failures block dispatch
 - warnings are shown but do not block unless the thread policy says otherwise
 
@@ -891,8 +879,8 @@ Key elements:
 
 Purpose:
 
-- show schema/lint/safety findings
-- render `pg_dispatch_lint.py --json`
+- show schema/lint/safety findings from PAH's standalone validator
+- render validator JSON without calling Panda Gallery tools
 - surface hook and adapter risks
 
 Key elements:
@@ -1237,7 +1225,6 @@ Acceptance:
 Work:
 
 - standalone PAH schema validator
-- optional `pg_dispatch_lint.py --json` adapter integration for PG-configured threads
 - quarantine
 - idempotency sidecars
 - backpressure policy
@@ -1247,7 +1234,7 @@ Work:
 Acceptance:
 
 - core schema validation works when `C:\panda-gallery` is absent
-- optional PG lint results render without duplicate rules when adapter is configured
+- validation JSON renders from PAH's standalone validator
 - restart does not resend notifications
 - malformed messages move to quarantine
 - duplicate message IDs with different hashes are quarantined as provenance conflicts
@@ -1372,7 +1359,7 @@ PAH v1 build is acceptable when:
 - approval records cannot be generated by agent output, auto-synthesis, or chained headless runs
 - write-capable boundaries require exact paths or explicit path roots
 - PAH core validation works without `C:\panda-gallery`
-- optional PG lint adapter integrates through `pg_dispatch_lint.py` only when configured
+- PAH v1 has no runtime dependency on `pg_dispatch_lint.py` or any Panda Gallery code
 - malformed messages are quarantined
 - processing is idempotent
 - notification events cannot route into participant inboxes

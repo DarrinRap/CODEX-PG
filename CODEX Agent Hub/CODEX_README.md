@@ -45,6 +45,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Darrin decision queue generated at:
   `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_DARRIN_DECISIONS_NEEDED.md`
 - Mailbox validator for missing message IDs, schema v1 issues, duplicate IDs, duplicate-ID provenance conflicts, important messages missing from the ledger, and some missing referenced paths.
+- Standalone validator CLI at `C:\CODEX PG\CODEX Agent Hub\CODEX_pah_validator.py`; it validates PAH messages without calling Panda Gallery tools.
 - Compose panel for:
   - Codex to Claude
   - Codex to Claude Code
@@ -196,6 +197,12 @@ python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
 ```
 
 These tests cover schema roundtrip, Darrin decision gating, Claude Code routing, Panda Gallery path classification, and communication diagnostics.
+
+Validate one or more PAH mailbox messages directly:
+
+```powershell
+python "C:\CODEX PG\CODEX Agent Hub\CODEX_pah_validator.py" --json "C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox\example.md"
+```
 
 Run the local server smoke test:
 
