@@ -48,6 +48,15 @@ def assert_true(condition: bool, label: str) -> None:
         raise AssertionError(label)
 
 
+def darrin_decision_source(message_id: str = "DARRIN-DECISION-TEST-001") -> dict[str, str]:
+    return {
+        "source_message_id": message_id,
+        "source_message_type": "decision_record",
+        "source_message_from": "darrin",
+        "source_message_to": "pah",
+    }
+
+
 def test_schema_roundtrip() -> None:
     text = render_message_markdown(
         {
@@ -294,9 +303,29 @@ def test_safety_surfaces() -> None:
             "approver": "Darrin",
             "revoked": False,
             "request_hash": request_hash,
+            **darrin_decision_source(),
         }
     )
     assert_true(not errors, "valid approval record should pass")
+    chained_errors = validate_approval_record(
+        {
+            "approval_id": "APPROVAL-CHAINED-001",
+            "scope": "git_commit_requires_darrin",
+            "exact_paths": ["C:/CODEX PG/example.txt"],
+            "command_or_provider": "example-command",
+            "budget": "0",
+            "expires_at": "2099-01-01T00:00:00+00:00",
+            "one_time_use": True,
+            "approver": "Darrin",
+            "revoked": False,
+            "request_hash": request_hash,
+            "source_message_id": "AUTO-CROSS-CHECK-001",
+            "source_message_type": "cross_check",
+            "source_message_from": "codex",
+            "source_message_to": "pah",
+        }
+    )
+    assert_true(any("decision_record" in error for error in chained_errors), "chained approval source is rejected")
     adapters = adapter_status()
     assert_true(adapters["enabled"] == 0, "live adapters must stay disabled by default")
     try:
@@ -378,6 +407,7 @@ def test_approval_enforcement() -> None:
                     "approver": "Darrin",
                     "revoked": False,
                     "request_hash": request_hash,
+                    **darrin_decision_source("DARRIN-DECISION-ENFORCE-001"),
                 },
                 sort_keys=True,
             )
@@ -390,6 +420,16 @@ def test_approval_enforcement() -> None:
 
         denied = approval_check("write_file", ["C:/panda-gallery/app.py"], "write", path=approvals_path)
         assert_true(denied["required"] and not denied["allowed"], "Panda Gallery write requires approval")
+
+        chained = approval_check("approval_record_create", [str(approvals_path)], "create approval", path=approvals_path)
+        assert_true(chained["required"] and not chained["allowed"], "approval records cannot authorize approval creation")
+        ledger_write = approval_check(
+            "write_file",
+            ["C:/CODEX PG/CODEX Agent Hub/CODEX approvals/CODEX_approval_records.local.jsonl"],
+            "write approval ledger",
+            path=approvals_path,
+        )
+        assert_true(ledger_write["required"] and not ledger_write["allowed"], "approval ledger writes cannot be chained")
 
         allowed = enforce_protected_action("git_commit", [target_path], command, "0", path=approvals_path)
         assert_true(allowed["allowed"], "matching approval allows protected action")

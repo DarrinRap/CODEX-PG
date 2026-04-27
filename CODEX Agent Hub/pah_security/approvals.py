@@ -24,8 +24,14 @@ APPROVAL_REQUIRED_FIELDS = {
     "approver",
     "revoked",
     "request_hash",
+    "source_message_id",
+    "source_message_type",
+    "source_message_from",
+    "source_message_to",
 }
 PROTECTED_ACTION_TYPES = {
+    "approval_record_create",
+    "approval_record_update",
     "write_panda_gallery",
     "destructive_filesystem",
     "git_commit",
@@ -37,7 +43,11 @@ PROTECTED_ACTION_TYPES = {
     "paid_provider_setup",
 }
 PROTECTED_PATH_SCOPES = {"panda_gallery_requires_darrin", "outside_known_scope"}
+APPROVAL_RECORD_SCOPE = "approval_record_requires_darrin_decision"
+APPROVAL_RECORD_ACTION_TYPES = {"approval_record_create", "approval_record_update"}
 ACTION_SCOPE_BY_TYPE = {
+    "approval_record_create": APPROVAL_RECORD_SCOPE,
+    "approval_record_update": APPROVAL_RECORD_SCOPE,
     "write_panda_gallery": "panda_gallery_requires_darrin",
     "destructive_filesystem": "destructive_filesystem_requires_darrin",
     "git_commit": "git_commit_requires_darrin",
@@ -80,6 +90,24 @@ def hash_matches(record_value: Any, expected_hash: str) -> bool:
     return normalize_hash(record_value) == normalize_hash(expected_hash)
 
 
+def normalize_path_text(value: Any) -> str:
+    return str(value or "").replace("/", "\\").rstrip("\\").lower()
+
+
+def path_targets_approval_records(path_value: Any) -> bool:
+    normalized = normalize_path_text(path_value)
+    records_path = normalize_path_text(APPROVAL_RECORDS_PATH)
+    approvals_dir = normalize_path_text(APPROVAL_RECORDS_PATH.parent)
+    return normalized in {records_path, approvals_dir} or normalized.startswith(f"{approvals_dir}\\")
+
+
+def approval_record_mutation_requested(action_type: str, exact_paths: list[str] | None = None) -> bool:
+    normalized_action = str(action_type or "").strip().lower()
+    if normalized_action in APPROVAL_RECORD_ACTION_TYPES:
+        return True
+    return any(path_targets_approval_records(path_value) for path_value in exact_paths or [])
+
+
 def read_jsonl(path: Path = APPROVAL_RECORDS_PATH) -> list[dict[str, Any]]:
     if not path.exists():
         return []
@@ -119,6 +147,16 @@ def validate_approval_record(record: dict[str, Any]) -> list[str]:
     errors = [f"Missing approval field: {field}" for field in missing]
     if record.get("approver") and str(record.get("approver")).lower() != "darrin":
         errors.append("Protected approvals must name Darrin as approver")
+    source_type = str(record.get("source_message_type", "")).strip().lower()
+    source_from = str(record.get("source_message_from", "")).strip().lower()
+    source_to = str(record.get("source_message_to", "")).strip().lower()
+    if "source_message_id" in record and not str(record.get("source_message_id", "")).strip():
+        errors.append("source_message_id must be nonempty")
+    if source_type or source_from or source_to:
+        if source_type != "decision_record" or source_from != "darrin" or source_to != "pah":
+            errors.append("Approval records must originate from a Darrin decision_record addressed to pah")
+    if str(record.get("scope", "")) == APPROVAL_RECORD_SCOPE:
+        errors.append("Approval records cannot authorize approval-record mutations")
     if record.get("revoked") is True:
         errors.append("Approval record is revoked")
     if str(record.get("revoked_at", "")).strip():
@@ -188,6 +226,8 @@ def protected_scope_for(action_type: str, exact_paths: list[str] | None = None) 
     normalized_action = str(action_type or "").strip().lower()
     if normalized_action in ACTION_SCOPE_BY_TYPE:
         return ACTION_SCOPE_BY_TYPE[normalized_action]
+    if approval_record_mutation_requested(action_type, exact_paths):
+        return APPROVAL_RECORD_SCOPE
     for path_value in exact_paths or []:
         if classify_path(Path(path_value)) in PROTECTED_PATH_SCOPES:
             return "protected_action_requires_darrin"
@@ -224,6 +264,14 @@ def approval_check(
     budget: str = "",
     path: Path = APPROVAL_RECORDS_PATH,
 ) -> dict[str, Any]:
+    if approval_record_mutation_requested(action_type, exact_paths):
+        return {
+            "required": True,
+            "allowed": False,
+            "scope": APPROVAL_RECORD_SCOPE,
+            "reason": "Approval records cannot be authorized by approval records; require an explicit Darrin decision_record addressed to pah.",
+            "approval_id": "",
+        }
     scope = protected_scope_for(action_type, exact_paths)
     if not scope:
         return {
