@@ -31,7 +31,7 @@ from pah_mailbox.idempotency import processed_message_event_status, record_proce
 from pah_adapters.registry import adapter_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
-from pah_mailbox.quarantine import validate_quarantine_candidate, validate_quarantine_reason
+from pah_mailbox.quarantine import quarantine_message, validate_quarantine_candidate, validate_quarantine_reason
 from pah_security.approvals import (
     approval_check,
     canonical_request_hash,
@@ -220,6 +220,50 @@ def test_safety_surfaces() -> None:
         pass
     else:
         raise AssertionError("quarantine reason enum must be closed")
+
+
+def test_quarantine_move_writes_tombstone() -> None:
+    with TemporaryDirectory() as temp_dir:
+        mailbox_root = Path(temp_dir) / "mailbox"
+        inbox = mailbox_root / "CODEX Inbox"
+        quarantine_dir = mailbox_root / "PAH Quarantine"
+        inbox.mkdir(parents=True)
+        message_path = inbox / "bad_message.md"
+        message_path.write_text("# Bad message\n\nMissing required metadata.\n", encoding="utf-8")
+
+        try:
+            quarantine_message(
+                message_path,
+                "schema_invalid",
+                mailbox_root=mailbox_root,
+                quarantine_dir=quarantine_dir,
+            )
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("quarantine move must require confirmed=true")
+
+        record = quarantine_message(
+            message_path,
+            "schema_invalid",
+            confirmed=True,
+            mailbox_root=mailbox_root,
+            quarantine_dir=quarantine_dir,
+        )
+        quarantine_path = Path(record.quarantine_path)
+        tombstone_path = Path(record.tombstone_path)
+        assert_true(not message_path.exists(), "quarantine move removes original message")
+        assert_true(quarantine_path.exists(), "quarantine move writes quarantined copy")
+        assert_true(tombstone_path.exists(), "quarantine move writes tombstone")
+        tombstone = json.loads(tombstone_path.read_text(encoding="utf-8"))
+        assert_true(tombstone["reason"] == "schema_invalid", "tombstone stores reason")
+        assert_true(tombstone["original_path"] == str(message_path), "tombstone stores original path")
+        try:
+            validate_quarantine_candidate(quarantine_path, mailbox_root=mailbox_root, quarantine_dir=quarantine_dir)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("quarantine must reject files already in quarantine")
 
 
 def test_approval_enforcement() -> None:
@@ -538,6 +582,7 @@ def main() -> None:
     test_routes_and_scope()
     test_diagnostics()
     test_safety_surfaces()
+    test_quarantine_move_writes_tombstone()
     test_approval_enforcement()
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()

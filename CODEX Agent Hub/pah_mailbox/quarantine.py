@@ -42,9 +42,9 @@ def validate_quarantine_reason(reason: str) -> str:
     return normalized
 
 
-def quarantine_target(path: Path) -> Path:
+def quarantine_target(path: Path, quarantine_dir: Path = QUARANTINE_DIR) -> Path:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return QUARANTINE_DIR / f"{stamp}_{path.name}"
+    return quarantine_dir / f"{stamp}_{path.name}"
 
 
 def write_tombstone(original_path: Path, record: QuarantineRecord) -> Path:
@@ -54,14 +54,18 @@ def write_tombstone(original_path: Path, record: QuarantineRecord) -> Path:
     return tombstone
 
 
-def validate_quarantine_candidate(path: Path, mailbox_root: Path = MAILBOX_ROOT) -> None:
+def validate_quarantine_candidate(
+    path: Path,
+    mailbox_root: Path = MAILBOX_ROOT,
+    quarantine_dir: Path = QUARANTINE_DIR,
+) -> None:
     resolved = path.resolve()
     root = mailbox_root.resolve()
     try:
         resolved.relative_to(root)
     except ValueError as exc:
         raise ValueError("Quarantine candidate must be inside the PAH mailbox root.") from exc
-    if QUARANTINE_DIR.resolve() in resolved.parents:
+    if quarantine_dir.resolve() in resolved.parents:
         raise ValueError("File is already inside quarantine.")
     if resolved.suffix.lower() != ".md":
         raise ValueError("Only Markdown mailbox messages can be quarantined.")
@@ -69,13 +73,19 @@ def validate_quarantine_candidate(path: Path, mailbox_root: Path = MAILBOX_ROOT)
         raise FileNotFoundError(str(resolved))
 
 
-def quarantine_message(path: Path, reason: str, confirmed: bool = False) -> QuarantineRecord:
+def quarantine_message(
+    path: Path,
+    reason: str,
+    confirmed: bool = False,
+    mailbox_root: Path = MAILBOX_ROOT,
+    quarantine_dir: Path = QUARANTINE_DIR,
+) -> QuarantineRecord:
     if not confirmed:
         raise ValueError("Quarantine requires confirmed=true.")
-    validate_quarantine_candidate(path)
+    validate_quarantine_candidate(path, mailbox_root=mailbox_root, quarantine_dir=quarantine_dir)
     reason_code = validate_quarantine_reason(reason or "schema_invalid")
-    QUARANTINE_DIR.mkdir(parents=True, exist_ok=True)
-    target = quarantine_target(path)
+    quarantine_dir.mkdir(parents=True, exist_ok=True)
+    target = quarantine_target(path, quarantine_dir=quarantine_dir)
     record = QuarantineRecord(
         original_path=str(path),
         quarantine_path=str(target),

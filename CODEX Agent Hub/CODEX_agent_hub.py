@@ -97,7 +97,7 @@ from pah_mailbox.paths import (
     THREAD_ARCHIVE_STATE_PATH,
     ensure_runtime_dirs,
 )
-from pah_mailbox.quarantine import quarantine_message
+from pah_mailbox.quarantine import QUARANTINE_REASON_CODES, quarantine_message, validate_quarantine_candidate
 from pah_notifications.desktop import desktop_popup_status
 from pah_security.approvals import approval_status
 
@@ -466,6 +466,8 @@ def issue(level: str, msg: Message, text: str) -> dict[str, Any]:
         "file": msg.name,
         "path": str(msg.path),
         "title": msg.title,
+        "quarantine_allowed": quarantine_candidate_allowed(msg.path),
+        "quarantine_reason": default_quarantine_reason(category, text),
     }
 
 
@@ -564,6 +566,54 @@ def notification_status() -> dict[str, Any]:
     }
 
 
+def quarantine_candidate_allowed(path: Path | str) -> bool:
+    try:
+        validate_quarantine_candidate(Path(path))
+    except (FileNotFoundError, OSError, ValueError):
+        return False
+    return True
+
+
+def default_quarantine_reason(category: str = "", message: str = "") -> str:
+    lowered = f"{category} {message}".lower()
+    if "backpressure" in lowered or "flood" in lowered:
+        return "flood_threshold_exceeded"
+    if "provenance" in lowered or "duplicate" in lowered:
+        return "duplicate_id_hash_mismatch"
+    if "unknown participant" in lowered:
+        return "unknown_participant"
+    if "frontmatter" in lowered:
+        return "malformed_yaml_frontmatter"
+    if "missing" in lowered:
+        return "missing_required_field"
+    if "unsafe" in lowered:
+        return "unsafe_boundary"
+    return "schema_invalid"
+
+
+def recent_quarantine_records(limit: int = 8) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for tombstone in MAILBOX_ROOT.glob("**/*.pah_tombstone.json"):
+        try:
+            payload = json.loads(read_text(tombstone))
+        except (json.JSONDecodeError, OSError):
+            continue
+        original_path = str(payload.get("original_path", ""))
+        records.append(
+            {
+                "original_path": original_path,
+                "original_name": Path(original_path).name if original_path else tombstone.name,
+                "quarantine_path": str(payload.get("quarantine_path", "")),
+                "reason": str(payload.get("reason", "")),
+                "moved_at": str(payload.get("moved_at", "")),
+                "tombstone_path": str(payload.get("tombstone_path", tombstone)),
+                "tombstone_modified": tombstone.stat().st_mtime,
+            }
+        )
+    records.sort(key=lambda item: (item.get("moved_at") or "", item.get("tombstone_modified") or 0), reverse=True)
+    return records[:limit]
+
+
 def quarantine_status() -> dict[str, Any]:
     from pah_mailbox.paths import QUARANTINE_DIR
 
@@ -574,6 +624,8 @@ def quarantine_status() -> dict[str, Any]:
         "messages": len(quarantined),
         "tombstones": len(tombstones),
         "automatic_moves": False,
+        "reason_codes": sorted(QUARANTINE_REASON_CODES),
+        "recent": recent_quarantine_records(),
         "detail": "Quarantine is explicit only: API requires token and confirmed=true.",
     }
 
@@ -1168,6 +1220,8 @@ def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None)
         "unread": read_status["unread"],
         "content_changed_since_read": read_status["content_changed"],
         "status_badges": message_status_badges(msg, read_status["unread"]),
+        "quarantine_allowed": quarantine_candidate_allowed(msg.path),
+        "quarantine_reason": default_quarantine_reason("schema", msg.summary or msg.title),
         "summary": msg.summary or msg.body_preview,
     }
 
@@ -1225,6 +1279,7 @@ aside, section { min-width: 0; }
 .badge { display: inline-block; border: 1px solid var(--soft); border-radius: 999px; padding: 1px 7px; color: var(--text); background: #181b1e; font-size: 10px; text-transform: uppercase; }
 .badge.unread { color: #20140f; background: var(--accent); border-color: var(--accent); font-weight: 700; }
 .actions { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.actions select { width: auto; max-width: 210px; padding: 6px 8px; }
 .path { color: var(--muted); font-family: Consolas, monospace; font-size: 11px; word-break: break-all; margin-top: 6px; }
 .summary { color: var(--muted); margin-top: 7px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -1334,18 +1389,29 @@ function render(data) {
     {title:'Required fields', pill:'schema', summary:data.approvals.required_fields.join(', '), path:''}
   ], a => item(a.title, a.pill, a.summary, a.path));
   list('adapterList', data.adapters.adapters, a => item(a.display_name, a.enabled ? 'ENABLED' : 'DISABLED', `${a.safety_status} · ${a.notes}`, a.adapter_id));
-  list('quarantineList', [
-    {title:'Quarantine', pill:data.quarantine.automatic_moves ? 'AUTO' : 'EXPLICIT', summary:`${data.quarantine.messages} quarantined messages, ${data.quarantine.tombstones} tombstones. ${data.quarantine.detail}`, path:data.quarantine.quarantine_dir}
-  ], q => item(q.title, q.pill, q.summary, q.path));
+  const quarantineRows = [
+    {title:'Quarantine', pill:data.quarantine.automatic_moves ? 'AUTO' : 'EXPLICIT', summary:`${data.quarantine.messages} quarantined messages, ${data.quarantine.tombstones} tombstones. ${data.quarantine.detail}`, path:data.quarantine.quarantine_dir},
+    ...(data.quarantine.recent || []).map(r => ({title:r.original_name || 'Tombstone', pill:r.reason || 'quarantined', summary:`Moved ${r.moved_at || ''}`, path:r.tombstone_path || r.quarantine_path}))
+  ];
+  list('quarantineList', quarantineRows, q => item(q.title, q.pill, q.summary, q.path));
 }
 function list(id, rows, fn) { document.getElementById(id).innerHTML = rows.length ? rows.map(fn).join('') : '<div class="item muted">Nothing to show.</div>'; }
 function item(title, pill, summary, path) { return `<div class="item"><div class="item-title"><span>${esc(title)}</span><span class="pill">${esc(pill)}</span></div><div class="summary">${esc(summary || '')}</div><div class="path">${esc(path || '')}</div></div>`; }
 function badgeBlock(row) {
   return (row.status_badges || []).length ? `<div class="badges">${(row.status_badges || []).map(b => `<span class="badge ${b === 'unread' ? 'unread' : ''}">${esc(b)}</span>`).join('')}</div>` : '';
 }
+function quarantineReasonSelect(defaultReason) {
+  const reasons = current?.quarantine?.reason_codes || ['schema_invalid'];
+  return `<select aria-label="Quarantine reason">${reasons.map(reason => `<option value="${esc(reason)}" ${reason === defaultReason ? 'selected' : ''}>${esc(reason)}</option>`).join('')}</select>`;
+}
+function quarantineControls(payload, defaultReason) {
+  return `${quarantineReasonSelect(defaultReason || 'schema_invalid')}<button onclick="quarantineMessage('${payload}', this.previousElementSibling.value)">Quarantine</button>`;
+}
 function messageItem(m) {
   const payload = encodeURIComponent(JSON.stringify({path:m.path}));
-  const action = m.unread ? `<button onclick="setReadState('${payload}','read')">Mark Read</button>` : `<button onclick="setReadState('${payload}','unread')">Mark Unread</button>`;
+  const readAction = m.unread ? `<button onclick="setReadState('${payload}','read')">Mark Read</button>` : `<button onclick="setReadState('${payload}','unread')">Mark Unread</button>`;
+  const quarantineAction = m.quarantine_allowed ? quarantineControls(payload, m.quarantine_reason) : '';
+  const action = `${readAction}${quarantineAction}`;
   return `<div class="item ${m.unread ? 'unread' : ''}"><div class="item-title"><span>${esc(m.title)}</span><span class="pill">${esc(m.status || m.direction)}</span></div>${badgeBlock(m)}<div class="summary">${esc(m.summary || '')}</div><div class="path">${esc(m.path || '')}</div><p class="actions">${action}</p></div>`;
 }
 function threadItem(t) {
@@ -1360,7 +1426,9 @@ function decisionItem(d) {
 }
 function validationItem(v) {
   const payload = encodeURIComponent(JSON.stringify({fingerprint:v.fingerprint, path:v.path, category:v.category, message:v.message, title:v.title}));
-  return `<div class="item"><div class="item-title"><span>${esc(v.message)}</span><span class="pill">${esc(v.level)} · ${esc(v.category)}</span></div><div class="summary">${esc(v.title || '')}</div><div class="path">${esc(v.path || '')}</div><p><button onclick="setValidationState('${payload}','resolved')">Resolved</button> <button onclick="setValidationState('${payload}','accepted_legacy')">Accept Legacy</button> <button onclick="setValidationState('${payload}','dismissed')">Dismiss</button></p></div>`;
+  const qPayload = encodeURIComponent(JSON.stringify({path:v.path}));
+  const quarantineAction = v.quarantine_allowed ? quarantineControls(qPayload, v.quarantine_reason) : '';
+  return `<div class="item"><div class="item-title"><span>${esc(v.message)}</span><span class="pill">${esc(v.level)} · ${esc(v.category)}</span></div><div class="summary">${esc(v.title || '')}</div><div class="path">${esc(v.path || '')}</div><p class="actions"><button onclick="setValidationState('${payload}','resolved')">Resolved</button> <button onclick="setValidationState('${payload}','accepted_legacy')">Accept Legacy</button> <button onclick="setValidationState('${payload}','dismissed')">Dismiss</button>${quarantineAction}</p></div>`;
 }
 function workItem(w) {
   const payload = encodeURIComponent(JSON.stringify({item_id:w.item_id}));
@@ -1450,6 +1518,14 @@ async function setReadState(payloadEncoded, state) {
   const res = await fetch('/api/message-read-state', {method:'POST', headers:{'Content-Type':'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN}, body: JSON.stringify({...item, state, actor:'darrin_or_codex'})});
   const json = await res.json();
   if (!json.ok) alert(json.error || 'Read-state update failed');
+  await load();
+}
+async function quarantineMessage(payloadEncoded, reason) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  if (!confirm('Move this mailbox message to PAH Quarantine and write a tombstone?')) return;
+  const res = await fetch('/api/quarantine-message', {method:'POST', headers:{'Content-Type':'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN}, body: JSON.stringify({...item, reason, confirmed:true, actor:'darrin_or_codex'})});
+  const json = await res.json();
+  if (!json.ok) alert(json.error || 'Quarantine failed');
   await load();
 }
 async function setThreadArchiveState(payloadEncoded, state) {
