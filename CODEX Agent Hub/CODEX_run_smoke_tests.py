@@ -12,6 +12,7 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 
+import CODEX_agent_hub as agent_hub
 from pah_core import MESSAGE_SCHEMA_VERSION
 from pah_core.decisions import decision_is_active, decision_state_summary, set_decision_state
 from pah_core.participants import route_participants
@@ -124,6 +125,97 @@ Updated file:
 """
     metadata = extract_message_metadata(text)
     assert_true("updated_file" not in metadata, "frontmatter parser must not treat body labels as metadata")
+
+
+def test_source_folder_spoofing_detection() -> None:
+    with TemporaryDirectory() as temp_dir:
+        spoof_path = Path(temp_dir) / "spoof.md"
+        spoof_path.write_text(
+            render_message_markdown(
+                {
+                    "schema_version": MESSAGE_SCHEMA_VERSION,
+                    "id": "PAH-SPOOF-001",
+                    "thread_id": "PAH-SPOOF-THREAD",
+                    "created_at": "2026-04-27T02:00:00-07:00",
+                    "from": "codex",
+                    "to": "codex",
+                    "type": "report",
+                    "priority": "normal",
+                    "status": "complete",
+                    "thread_status": "active",
+                    "approval_boundary": "coordination_only",
+                    "requires_darrin_decision": False,
+                },
+                "Spoof smoke",
+                "Spoof check.",
+                "A Codex-claimed message in the Claude to Codex lane should be flagged.",
+            ),
+            encoding="utf-8",
+        )
+        spoof_msg = agent_hub.parse_message(spoof_path, "Claude -> Codex")
+        spoof_issues = agent_hub.validate_mailbox([spoof_msg])
+        assert_true(any(item["category"] == "spoofing" for item in spoof_issues), "source spoofing is detected")
+        assert_true(
+            any(item["quarantine_reason"] == "spoofing_attempt" for item in spoof_issues),
+            "source spoofing maps to quarantine reason",
+        )
+
+        valid_path = Path(temp_dir) / "cc_to_codex.md"
+        valid_path.write_text(
+            render_message_markdown(
+                {
+                    "schema_version": MESSAGE_SCHEMA_VERSION,
+                    "id": "PAH-SPOOF-VALID-001",
+                    "thread_id": "PAH-SPOOF-THREAD",
+                    "created_at": "2026-04-27T02:00:00-07:00",
+                    "from": "cc",
+                    "to": "codex",
+                    "type": "report",
+                    "priority": "normal",
+                    "status": "complete",
+                    "thread_status": "active",
+                    "approval_boundary": "coordination_only",
+                    "requires_darrin_decision": False,
+                },
+                "CC to Codex smoke",
+                "Legitimate CC message.",
+                "The current mailbox still accepts cc as a Claude Code alias.",
+            ),
+            encoding="utf-8",
+        )
+        valid_msg = agent_hub.parse_message(valid_path, "Claude -> Codex")
+        valid_issues = agent_hub.validate_mailbox([valid_msg])
+        assert_true(not any(item["category"] == "spoofing" for item in valid_issues), "cc alias is not spoofing")
+
+        desktop_legacy_path = Path(temp_dir) / "claude_desktop_legacy.md"
+        desktop_legacy_path.write_text(
+            render_message_markdown(
+                {
+                    "schema_version": MESSAGE_SCHEMA_VERSION,
+                    "id": "PAH-SPOOF-VALID-002",
+                    "thread_id": "PAH-SPOOF-THREAD",
+                    "created_at": "2026-04-27T02:00:00-07:00",
+                    "from": "Claude (Desktop)",
+                    "to": "codex",
+                    "type": "report",
+                    "priority": "normal",
+                    "status": "complete",
+                    "thread_status": "active",
+                    "approval_boundary": "coordination_only",
+                    "requires_darrin_decision": False,
+                },
+                "Claude Desktop legacy smoke",
+                "Legitimate Claude Desktop message.",
+                "Legacy display aliases should canonicalize before source-route checks.",
+            ),
+            encoding="utf-8",
+        )
+        desktop_legacy_msg = agent_hub.parse_message(desktop_legacy_path, "Claude -> Codex")
+        desktop_legacy_issues = agent_hub.validate_mailbox([desktop_legacy_msg])
+        assert_true(
+            not any(item["category"] == "spoofing" for item in desktop_legacy_issues),
+            "Claude Desktop legacy alias is not spoofing",
+        )
 
 
 def test_standalone_validator_cli() -> None:
@@ -577,6 +669,7 @@ def main() -> None:
     test_schema_roundtrip()
     test_current_mailbox_schema_aliases()
     test_frontmatter_does_not_parse_body_headings()
+    test_source_folder_spoofing_detection()
     test_standalone_validator_cli()
     test_decision_gate()
     test_routes_and_scope()

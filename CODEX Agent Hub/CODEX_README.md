@@ -62,6 +62,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Safety tab showing protected-action approval record status, disabled live-adapter registry, quarantine/tombstone status, and recent quarantine records.
 - Protected-action approval enforcement helpers for exact-path, hash-bound approval checks. Expired, revoked, consumed, and command-changed records cannot authorize protected actions.
 - Explicit quarantine API and dashboard actions for mailbox messages. The dashboard uses a reason-code menu plus confirmation; the API requires the local write token and `confirmed: true`. PAH never auto-quarantines during refresh.
+- Source-folder spoofing detection for mailbox messages. PAH cross-checks the parsed sender/recipient against the lane a file arrived through and flags mismatches as actionable `spoofing_attempt` quarantine candidates.
 - Decision queue hygiene state for active/resolved/superseded/dismissed items. PAH keeps stale decisions in history without interrupting Darrin.
 - Validator categorization with actionable issues separated from legacy/info mailbox hygiene noise.
 - Validation finding state for accepted legacy, resolved, and dismissed findings. Historical ledger issues can be preserved without staying active.
@@ -228,7 +229,7 @@ python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
 ```
 
 These tests cover schema roundtrip, Darrin decision gating, Claude Code routing, Panda Gallery path classification, and communication diagnostics.
-They also cover current mailbox schema aliases, standalone validation, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
+They also cover current mailbox schema aliases, standalone validation, source-folder spoofing checks, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
 Read/unread and closed-thread archive state are covered as well, including changed-content-becomes-unread and new-activity-reopens-archived-thread rules.
 
 Validate one or more PAH mailbox messages directly:
@@ -248,7 +249,7 @@ This starts PAH hidden, checks `/api/status`, prints a compact JSON result, and 
 ## Suggested Next Enhancements
 
 1. Add a packaged Windows tray app with live desktop toasts.
-2. Add quarantine restore/review workflow.
+2. Tighten canonical-only participant IDs after legacy mailbox aliases are migrated or accepted.
 3. Add direct API-backed agent lanes for OpenAI and Anthropic.
 4. Add file/diff preview for deliverables.
 5. Add approval-record creation/revocation UI.

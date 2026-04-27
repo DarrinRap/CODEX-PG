@@ -111,6 +111,14 @@ NOTIFICATION_LOCK = threading.Lock()
 
 IMPORTANT_STATUSES = {"Decision Needed", "Response Requested", "Implementation Report"}
 IMPORTANT_TYPES = {"dispatch", "complete", "decision", "blocker", "response-request", "implementation"}
+SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
+    "Claude -> Codex": ({"claude-desktop", "claude-code"}, {"codex"}),
+    "Codex -> Claude": ({"codex"}, {"claude-desktop"}),
+    "Codex -> Claude Code": ({"codex"}, {"claude-code"}),
+    "Codex -> Claude Code (legacy)": ({"codex"}, {"claude-code"}),
+    "Codex Sent": ({"codex"}, {"claude-desktop", "claude-code"}),
+    "Claude Sent": ({"claude-desktop", "claude-code"}, {"codex"}),
+}
 
 TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 -]{1,40}:\s*(.*)$")
 PATH_RE = re.compile(r"[A-Za-z]:\\[^\n`*]+")
@@ -304,6 +312,20 @@ def load_ledger_text() -> str:
     return read_text(LEDGER_PATH) if LEDGER_PATH.exists() else ""
 
 
+def source_route_issue(msg: Message) -> str:
+    contract = SOURCE_ROUTE_CONTRACTS.get(msg.direction)
+    if not contract:
+        return ""
+    allowed_from, allowed_to = contract
+    if msg.from_agent and msg.from_agent not in allowed_from:
+        expected = ", ".join(sorted(allowed_from))
+        return f"Spoofing check failed: {msg.direction} message claims from={msg.from_agent}; expected {expected}"
+    if msg.to_agent and msg.to_agent not in allowed_to:
+        expected = ", ".join(sorted(allowed_to))
+        return f"Spoofing check failed: {msg.direction} message claims to={msg.to_agent}; expected {expected}"
+    return ""
+
+
 def message_status_badges(msg: Message, unread: bool = False) -> list[str]:
     badges: list[str] = []
     if unread:
@@ -404,6 +426,10 @@ def validate_mailbox(messages: list[Message]) -> list[dict[str, Any]]:
                 continue
             add(schema_issue.level, msg, schema_issue.message)
 
+        route_issue = source_route_issue(msg)
+        if route_issue:
+            add("error", msg, route_issue)
+
         if msg.status.lower() in {"response requested", "implementation report"} and not msg.reply_to:
             add("info", msg, "No Reply-To list on request/report")
 
@@ -431,6 +457,8 @@ def validate_mailbox(messages: list[Message]) -> list[dict[str, Any]]:
 
 def validation_category(text: str) -> str:
     lowered = text.lower()
+    if "spoofing" in lowered:
+        return "spoofing"
     if "provenance conflict" in lowered or "duplicate message-id" in lowered:
         return "provenance"
     if "message-id" in lowered or "message_id" in lowered:
@@ -451,7 +479,7 @@ def validation_category(text: str) -> str:
 def validation_is_actionable(level: str, category: str) -> bool:
     if level == "error":
         return True
-    return category in {"provenance", "ledger", "backpressure"}
+    return category in {"provenance", "ledger", "backpressure", "spoofing"}
 
 
 def issue(level: str, msg: Message, text: str) -> dict[str, Any]:
@@ -576,6 +604,8 @@ def quarantine_candidate_allowed(path: Path | str) -> bool:
 
 def default_quarantine_reason(category: str = "", message: str = "") -> str:
     lowered = f"{category} {message}".lower()
+    if "spoof" in lowered:
+        return "spoofing_attempt"
     if "backpressure" in lowered or "flood" in lowered:
         return "flood_threshold_exceeded"
     if "provenance" in lowered or "duplicate" in lowered:

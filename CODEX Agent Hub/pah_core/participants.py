@@ -28,6 +28,7 @@ ALIASES: dict[str, str] = {
     "claude-code": "claude-code",
     "claude_code": "claude-code",
     "claude desktop": "claude-desktop",
+    "claude (desktop)": "claude-desktop",
     "claude": "claude-desktop",
     "claude-desktop": "claude-desktop",
     "codex": "codex",
@@ -58,4 +59,3 @@ def route_participants(route: str) -> tuple[str, str]:
         return ROUTES[route]
     except KeyError as exc:
         raise ValueError(f"Unsupported PAH route: {route}") from exc
-
