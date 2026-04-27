@@ -68,6 +68,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Backpressure detection for flooded threads; PAH flags more than 25 messages in 5 minutes or more than 50 visible messages in one thread.
 - Processed-message sidecars for idempotency. PAH records message content hashes and processed event names so restart/refresh cannot resend the same notification for the same message content.
 - Read/unread state and status badges for mailbox messages. PAH stores read state locally and marks changed message content unread again.
+- Closed-thread archive state for keeping completed threads out of the active thread list. Newer activity on an archived thread surfaces it again automatically.
 - Token-protected write endpoints for compose and notification tests.
 
 ## Claude Code Bridge Model
@@ -210,6 +211,14 @@ C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_read_state.local.json
 
 This file stores local dashboard read markers only. If a message is edited after it is marked read, PAH shows it as unread again because the stored content hash no longer matches.
 
+Closed-thread archive state lives at:
+
+```text
+C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_thread_archive_state.local.json
+```
+
+Archiving a thread does not move or edit mailbox files. It records a local dashboard state marker with the latest message timestamp at archive time. If a newer message later arrives in that thread, PAH shows the thread in the active list again and flags new activity.
+
 ## Smoke Tests
 
 Run dependency-free smoke tests:
@@ -220,7 +229,7 @@ python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
 
 These tests cover schema roundtrip, Darrin decision gating, Claude Code routing, Panda Gallery path classification, and communication diagnostics.
 They also cover current mailbox schema aliases, standalone validation, quarantine reason codes, backpressure detection, and processed-message idempotency sidecars.
-Read/unread state is covered as well, including the changed-content-becomes-unread rule.
+Read/unread and closed-thread archive state are covered as well, including changed-content-becomes-unread and new-activity-reopens-archived-thread rules.
 
 Validate one or more PAH mailbox messages directly:
 
@@ -243,4 +252,4 @@ This starts PAH hidden, checks `/api/status`, prints a compact JSON result, and 
 3. Add direct API-backed agent lanes for OpenAI and Anthropic.
 4. Add file/diff preview for deliverables.
 5. Add approval-record creation/revocation UI.
-6. Add a closed-thread archive workflow.
+6. Add notification UX polish.

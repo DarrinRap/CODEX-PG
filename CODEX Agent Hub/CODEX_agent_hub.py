@@ -54,6 +54,13 @@ from pah_core.schema import (
     render_message_markdown,
     validate_message_text,
 )
+from pah_core.thread_archive import (
+    archive_thread,
+    load_thread_archive_state,
+    thread_archive_status,
+    thread_archive_summary,
+    unarchive_thread,
+)
 from pah_core.validation_state import (
     ACTIVE_STATE as ACTIVE_VALIDATION_STATE,
     load_validation_state,
@@ -87,6 +94,7 @@ from pah_mailbox.paths import (
     PROJECT_ROOT,
     READ_STATE_PATH,
     REPORTS_DIR,
+    THREAD_ARCHIVE_STATE_PATH,
     ensure_runtime_dirs,
 )
 from pah_mailbox.quarantine import quarantine_message
@@ -314,7 +322,11 @@ def message_status_badges(msg: Message, unread: bool = False) -> list[str]:
     return badges[:5]
 
 
-def build_threads(messages: list[Message], read_state_data: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def build_threads(
+    messages: list[Message],
+    read_state_data: dict[str, Any] | None = None,
+    archive_state_data: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     grouped: dict[str, list[Message]] = {}
     for msg in messages:
         grouped.setdefault(msg.stable_thread, []).append(msg)
@@ -325,6 +337,12 @@ def build_threads(messages: list[Message], read_state_data: dict[str, Any] | Non
         unread_count = sum(
             1 for item in items if message_read_status(item.path, item.message_id, item.body, read_state_data)["unread"]
         )
+        archive_status = thread_archive_status(thread_id, latest.modified, archive_state_data)
+        badges = message_status_badges(latest, unread_count > 0)
+        if archive_status["archived"] and "archived" not in badges:
+            badges.append("archived")
+        if archive_status["reopened_by_new_activity"] and "new_activity" not in badges:
+            badges.append("new_activity")
         status = latest.thread_status or latest.status or ("Open" if latest.is_request else "Info")
         rows.append(
             {
@@ -336,10 +354,14 @@ def build_threads(messages: list[Message], read_state_data: dict[str, Any] | Non
                 "latest_path": str(latest.path),
                 "latest_modified": latest.modified,
                 "status": status,
-                "status_badges": message_status_badges(latest, unread_count > 0),
+                "status_badges": badges[:6],
                 "owner": latest.action_owner or latest.to_agent or "",
                 "waiting_on_darrin": latest.is_waiting_on_darrin,
                 "summary": latest.summary or latest.body_preview,
+                "archived": archive_status["archived"],
+                "archived_at": archive_status["archived_at"],
+                "archive_reason": archive_status["archive_reason"],
+                "reopened_by_new_activity": archive_status["reopened_by_new_activity"],
             }
         )
     rows.sort(key=lambda item: item["latest_modified"], reverse=True)
@@ -1007,6 +1029,41 @@ def mark_all_messages_read(actor: str = "codex") -> dict[str, Any]:
     return {"count": len(messages), "state_path": str(READ_STATE_PATH)}
 
 
+def messages_for_thread(thread_id: str, messages: list[Message] | None = None) -> list[Message]:
+    clean_thread = thread_id.strip()
+    if not clean_thread:
+        raise ValueError("Thread ID is required.")
+    matches = [msg for msg in messages or load_messages() if msg.stable_thread == clean_thread]
+    if not matches:
+        raise KeyError(f"Unknown PAH thread: {clean_thread}")
+    return matches
+
+
+def set_thread_archive_state(
+    thread_id: str,
+    state_name: str,
+    reason: str = "",
+    actor: str = "codex",
+) -> dict[str, Any]:
+    thread_messages = messages_for_thread(thread_id)
+    latest = max(thread_messages, key=lambda item: item.modified)
+    normalized_state = state_name.strip().lower()
+    if normalized_state == "archived":
+        if any(msg.is_waiting_on_darrin for msg in thread_messages):
+            raise ValueError("Threads waiting on Darrin cannot be archived.")
+        return archive_thread(
+            latest.stable_thread,
+            latest_path=str(latest.path),
+            latest_title=latest.title,
+            latest_modified=latest.modified,
+            reason=reason,
+            actor=actor,
+        )
+    if normalized_state == "active":
+        return unarchive_thread(latest.stable_thread, actor=actor, reason=reason)
+    raise ValueError(f"Unsupported thread archive state: {state_name}")
+
+
 def git_status() -> dict[str, str]:
     import subprocess
 
@@ -1026,12 +1083,15 @@ def git_status() -> dict[str, str]:
 def state() -> dict[str, Any]:
     messages = load_messages()
     read_state_data = load_read_state()
+    archive_state_data = load_thread_archive_state()
     decisions = build_decision_queue(messages, write_file=False)
     all_decisions = build_decision_queue(messages, write_file=False, include_inactive=True)
     validation = validate_mailbox(messages)
     validation_actionable, validation_inactive = apply_validation_state(validation)
     validation_summary = summarize_validation(validation)
-    threads = build_threads(messages, read_state_data)
+    all_threads = build_threads(messages, read_state_data, archive_state_data)
+    active_threads = [thread for thread in all_threads if not thread.get("archived")]
+    archived_threads = [thread for thread in all_threads if thread.get("archived")]
     unread_messages = sum(
         1 for msg in messages if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
     )
@@ -1050,7 +1110,8 @@ def state() -> dict[str, Any]:
         "counts": {
             "messages": len(messages),
             "unread_messages": unread_messages,
-            "threads": len(threads),
+            "threads": len(active_threads),
+            "archived_threads": len(archived_threads),
             "decisions": len(decisions),
             "validation_issues": len(validation),
             "actionable_validation_issues": len(validation_actionable),
@@ -1063,7 +1124,8 @@ def state() -> dict[str, Any]:
             "inactive_decisions": max(0, len(all_decisions) - len(decisions)),
         },
         "latest": [message_to_json(msg, read_state_data) for msg in messages[:40]],
-        "threads": threads[:80],
+        "threads": active_threads[:80],
+        "archived_threads": archived_threads[:80],
         "decisions": decisions,
         "decision_history": [item for item in all_decisions if item.get("decision_state") != ACTIVE_STATE],
         "decision_state": decision_state,
@@ -1073,6 +1135,7 @@ def state() -> dict[str, Any]:
         "validation_summary": validation_summary,
         "validation_state": validation_state_summary(),
         "read_state": read_state_summary(read_state_data),
+        "thread_archive": thread_archive_summary(archive_state_data),
         "diagnostics": diagnostics,
         "route_tests": route_tests,
         "work_board": work_board,
@@ -1196,7 +1259,7 @@ pre { white-space: pre-wrap; word-break: break-word; margin: 0; color: var(--mut
       <button class="tab" data-tab="safety">Safety</button>
     </div>
     <div id="latest" class="pane"><p><button id="markAllRead">Mark All Read</button></p><div class="list" id="latestList"></div></div>
-    <div id="threads" class="pane hidden"><div class="list" id="threadList"></div></div>
+    <div id="threads" class="pane hidden"><div class="list" id="threadList"></div><div class="card"><div class="card-head">Archived Threads</div><div class="card-body"><div class="list" id="archivedThreadList"></div></div></div></div>
     <div id="decisions" class="pane hidden"><div class="list" id="decisionList"></div><div class="card"><div class="card-head">Resolved / Superseded</div><div class="card-body"><div class="list" id="decisionHistoryList"></div></div></div></div>
     <div id="validation" class="pane hidden"><div class="card"><div class="card-head">Actionable Validation</div><div class="card-body"><div id="validationSummary"></div><div class="list" id="validationActionableList"></div></div></div><div class="card"><div class="card-head">Accepted / Resolved Validation</div><div class="card-body"><div class="list" id="validationInactiveList"></div></div></div><div class="card"><div class="card-head">All Validation History</div><div class="card-body"><div class="list" id="validationList"></div></div></div></div>
     <div id="diagnostics" class="pane hidden"><div class="card"><div class="card-head">Health Checks</div><div class="card-body"><div class="list" id="diagnosticList"></div></div></div><div class="card"><div class="card-head">Route Tests</div><div class="card-body"><div class="list" id="routeTestList"></div></div></div></div>
@@ -1255,6 +1318,7 @@ function render(data) {
   document.getElementById('paths').innerHTML = `Mailbox:<br>${esc(data.mailbox_root)}<br><br>Decision queue:<br>${esc(data.decision_queue_path)}`;
   list('latestList', data.latest, m => messageItem(m));
   list('threadList', data.threads, t => threadItem(t));
+  list('archivedThreadList', data.archived_threads || [], t => threadItem(t));
   list('decisionList', data.decisions, d => decisionItem(d));
   list('decisionHistoryList', data.decision_history || [], d => item(d.title, d.decision_state || 'inactive', `${d.state_note || ''} ${d.summary || ''}`, d.path));
   document.getElementById('validationSummary').innerHTML = validationSummaryBlock(data.validation_summary);
@@ -1286,7 +1350,10 @@ function messageItem(m) {
 }
 function threadItem(t) {
   const unread = t.unread ? ` · unread ${t.unread}` : '';
-  return `<div class="item ${t.unread ? 'unread' : ''}"><div class="item-title"><span>${esc(t.thread_id)}</span><span class="pill">${esc(t.status)}${esc(unread)}</span></div>${badgeBlock(t)}<div class="summary">${esc(t.summary || '')}</div><div class="path">${esc(t.latest_path || '')}</div></div>`;
+  const payload = encodeURIComponent(JSON.stringify({thread_id:t.thread_id}));
+  const action = t.archived ? `<button onclick="setThreadArchiveState('${payload}','active')">Unarchive</button>` : `<button onclick="setThreadArchiveState('${payload}','archived')">Archive</button>`;
+  const archiveNote = t.archived ? `<div class="summary">Archived ${esc(t.archived_at || '')}${t.archive_reason ? ' · ' + esc(t.archive_reason) : ''}</div>` : '';
+  return `<div class="item ${t.unread ? 'unread' : ''}"><div class="item-title"><span>${esc(t.thread_id)}</span><span class="pill">${esc(t.status)}${esc(unread)}</span></div>${badgeBlock(t)}${archiveNote}<div class="summary">${esc(t.summary || '')}</div><div class="path">${esc(t.latest_path || '')}</div><p class="actions">${action}</p></div>`;
 }
 function decisionItem(d) {
   return `<div class="item"><div class="item-title"><span>${esc(d.title)}</span><span class="pill">${esc(d.status || 'Decision')}</span></div><div class="summary">${esc(d.summary || '')}</div><div class="path">${esc(d.path || '')}</div><p><button onclick="setDecisionState('${encodeURIComponent(d.path)}','resolved')">Resolved</button> <button onclick="setDecisionState('${encodeURIComponent(d.path)}','superseded')">Superseded</button> <button onclick="setDecisionState('${encodeURIComponent(d.path)}','dismissed')">Dismiss</button></p></div>`;
@@ -1385,6 +1452,14 @@ async function setReadState(payloadEncoded, state) {
   if (!json.ok) alert(json.error || 'Read-state update failed');
   await load();
 }
+async function setThreadArchiveState(payloadEncoded, state) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  const reason = state === 'archived' ? 'Archived from PAH dashboard.' : 'Unarchived from PAH dashboard.';
+  const res = await fetch('/api/thread-archive-state', {method:'POST', headers:{'Content-Type':'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN}, body: JSON.stringify({...item, state, reason, actor:'darrin_or_codex'})});
+  const json = await res.json();
+  if (!json.ok) alert(json.error || 'Thread archive update failed');
+  await load();
+}
 load(); setInterval(load, 8000);
 </script>
 </body>
@@ -1452,6 +1527,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/validation-state",
             "/api/message-read-state",
             "/api/mark-all-read",
+            "/api/thread-archive-state",
             "/api/work-item",
             "/api/dispatch-work-item",
         }:
@@ -1546,6 +1622,19 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
             self.send_json({"ok": True, **record})
+            return
+        if parsed_path == "/api/thread-archive-state":
+            try:
+                record = set_thread_archive_state(
+                    str(payload.get("thread_id", "")),
+                    str(payload.get("state", "archived")),
+                    reason=str(payload.get("reason", "")),
+                    actor=str(payload.get("actor", "codex")),
+                )
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, "record": record})
             return
         if parsed_path == "/api/work-item":
             try:

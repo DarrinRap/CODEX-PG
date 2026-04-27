@@ -17,6 +17,7 @@ from pah_core.decisions import decision_is_active, decision_state_summary, set_d
 from pah_core.participants import route_participants
 from pah_core.read_state import message_read_status, read_state_summary, set_message_read_state
 from pah_core.schema import extract_message_metadata, metadata_waits_on_darrin, render_message_markdown, validate_message_text
+from pah_core.thread_archive import archive_thread, thread_archive_status, thread_archive_summary, unarchive_thread
 from pah_core.validation_state import (
     set_validation_state,
     validation_is_active,
@@ -414,6 +415,43 @@ def test_read_state_marks_changed_content_unread() -> None:
         assert_true(summary["counts"]["read"] == 1, "read state summary counts read records")
 
 
+def test_thread_archive_state_reopens_on_new_activity() -> None:
+    with TemporaryDirectory() as temp_dir:
+        state_path = Path(temp_dir) / "thread_archive.json"
+        record = archive_thread(
+            "PAH-THREAD-ARCHIVE-001",
+            latest_path="C:/CODEX PG/message.md",
+            latest_title="Archive smoke",
+            latest_modified=100.0,
+            reason="smoke test",
+            actor="smoke",
+            state_path=state_path,
+        )
+        assert_true(record["state"] == "archived", "thread archive stores archived state")
+
+        state_data = {
+            "threads": {
+                "PAH-THREAD-ARCHIVE-001": record,
+            }
+        }
+        archived = thread_archive_status("PAH-THREAD-ARCHIVE-001", 100.0, state_data)
+        assert_true(archived["archived"], "thread is archived at same latest modified time")
+
+        reopened = thread_archive_status("PAH-THREAD-ARCHIVE-001", 101.0, state_data)
+        assert_true(not reopened["archived"], "newer thread activity surfaces archived thread")
+        assert_true(reopened["reopened_by_new_activity"], "newer thread activity is flagged")
+
+        active = unarchive_thread(
+            "PAH-THREAD-ARCHIVE-001",
+            actor="smoke",
+            reason="reopen",
+            state_path=state_path,
+        )
+        assert_true(active["state"] == "active", "thread unarchive stores active state")
+        summary = thread_archive_summary({"threads": {"PAH-THREAD-ARCHIVE-001": active}})
+        assert_true(summary["counts"]["active"] == 1, "thread archive summary counts active records")
+
+
 def test_decision_state() -> None:
     with TemporaryDirectory() as temp_dir:
         state_path = Path(temp_dir) / "decision_state.json"
@@ -504,6 +542,7 @@ def main() -> None:
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()
     test_read_state_marks_changed_content_unread()
+    test_thread_archive_state_reopens_on_new_activity()
     test_decision_state()
     test_validation_state()
     test_route_test_state()
