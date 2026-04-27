@@ -60,7 +60,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Work Board for local parallel development coordination, with owner, priority, state, summary, and source fields.
 - Work item dispatch from PAH into Claude Desktop or Claude Code mailbox routes, with dispatch metadata linked back to the work item.
 - Safety tab showing protected-action approval record status, disabled live-adapter registry, quarantine/tombstone status, and recent quarantine records.
-- Protected-action approval enforcement helpers for exact-path, hash-bound approval checks. Expired, revoked, consumed, command-changed, chained, and MCP-config-mismatched records cannot authorize protected actions.
+- Protected-action approval enforcement helpers for exact-path, hash-bound approval checks. Expired, revoked, consumed, command-changed, chained, MCP-config-mismatched, and non-canonical headless-command records cannot authorize protected actions.
 - Explicit quarantine API and dashboard actions for mailbox messages. The dashboard uses a reason-code menu plus confirmation; the API requires the local write token and `confirmed: true`. PAH never auto-quarantines during refresh.
 - Source-folder spoofing detection for mailbox messages. PAH cross-checks the parsed sender/recipient against the lane a file arrived through and flags mismatches as actionable `spoofing_attempt` quarantine candidates.
 - Decision queue hygiene state for active/resolved/superseded/dismissed items. PAH keeps stale decisions in history without interrupting Darrin.
@@ -188,6 +188,14 @@ C:\CODEX PG\CODEX Agent Hub\CODEX config\CODEX_pah_mcp_readonly.json
 
 For `headless_agent_run`, approval records must set `strict_mcp_config: true`, must use that exact config path, and must include `mcp_config_expected_hash` matching the checked-in file content. PAH rejects the approval if the config file is missing, swapped, or hash-mismatched.
 
+Headless execution remains disabled, but its command contract is pinned before any live executor exists. A `headless_agent_run` approval record must produce this canonical command shape:
+
+```text
+claude -p <prompt_file> --output-format json --permission-mode plan --allowedTools <allowed_tools> --disallowedTools <disallowed_tools> --strict-mcp-config --mcp-config <mcp_config_path> --settings <settings_path> --cwd <worktree_path> --max-budget-usd <budget_usd> --no-session-persistence
+```
+
+PAH recomputes the command preview from the approval fields and rejects records whose `command_preview` or `command_or_provider` differs. `allowed_tools` is restricted to read-only `Read,Grep,Glob,WebFetch`; stdout, stderr, and exit-code capture paths must be explicit; timeout defaults to 600 seconds with a 30-second hard-kill grace period. A future executor must consume the approval when the process exits.
+
 Live adapters are registered but disabled by default. The app exposes their safety status without launching Claude Code headless, calling APIs, sending paid SMS, or writing outside PAH.
 
 Decision queue state lives at:
@@ -239,7 +247,7 @@ python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
 ```
 
 These tests cover schema roundtrip, Darrin decision gating, Claude Code routing, Panda Gallery path classification, and communication diagnostics.
-They also cover current mailbox schema aliases, standalone validation, source-folder spoofing checks, non-chainable approval records, strict MCP config enforcement, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
+They also cover current mailbox schema aliases, standalone validation, source-folder spoofing checks, non-chainable approval records, strict MCP config enforcement, headless command contracts, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
 Read/unread and closed-thread archive state are covered as well, including changed-content-becomes-unread and new-activity-reopens-archived-thread rules.
 
 Validate one or more PAH mailbox messages directly:

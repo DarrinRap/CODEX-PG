@@ -29,6 +29,14 @@ from pah_core.work_items import create_work_item, update_work_item, work_board_s
 from pah_mailbox.atomic import atomic_write_text
 from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
 from pah_mailbox.idempotency import processed_message_event_status, record_processed_message_event
+from pah_adapters.headless_contract import (
+    HEADLESS_DEFAULT_TIMEOUT_SECONDS,
+    HEADLESS_SIGKILL_GRACE_SECONDS,
+    canonical_headless_command_args,
+    canonical_headless_command_preview,
+    headless_capture_contract,
+    validate_headless_command_contract,
+)
 from pah_adapters.registry import adapter_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
@@ -57,6 +65,41 @@ def darrin_decision_source(message_id: str = "DARRIN-DECISION-TEST-001") -> dict
         "source_message_from": "darrin",
         "source_message_to": "pah",
     }
+
+
+def headless_approval_record(message_id: str = "DARRIN-DECISION-HEADLESS-001") -> dict[str, object]:
+    scope = "headless_agent_requires_darrin"
+    record: dict[str, object] = {
+        "approval_id": "APPROVAL-HEADLESS-001",
+        "scope": scope,
+        "exact_paths": [],
+        "command_or_provider": "",
+        "command_preview": "",
+        "budget": "0",
+        "budget_usd": "0",
+        "expires_at": "2099-01-01T00:00:00+00:00",
+        "one_time_use": True,
+        "approver": "Darrin",
+        "revoked": False,
+        "request_hash": "",
+        "strict_mcp_config": True,
+        "mcp_config_path": str(MCP_READONLY_CONFIG_PATH),
+        "mcp_config_expected_hash": canonical_mcp_config_hash(),
+        "prompt_file": "C:/CODEX PG/CODEX Agent Hub/CODEX state/headless/prompts/APPROVAL-HEADLESS-001.md",
+        "allowed_tools": ["Read", "Grep", "Glob", "WebFetch"],
+        "disallowed_tools": ["Bash", "Write", "Edit", "MultiEdit"],
+        "settings_path": "C:/CODEX PG/CODEX Agent Hub/CODEX config/CODEX_pah_headless_settings.json",
+        "worktree_path": "C:/CODEX PG/CODEX Agent Hub/CODEX state/headless/worktrees/APPROVAL-HEADLESS-001",
+        "audit_stdout_path": "C:/CODEX PG/CODEX Agent Hub/CODEX logs/headless/APPROVAL-HEADLESS-001.stdout.jsonl",
+        "audit_stderr_path": "C:/CODEX PG/CODEX Agent Hub/CODEX logs/headless/APPROVAL-HEADLESS-001.stderr.log",
+        "audit_exit_code_path": "C:/CODEX PG/CODEX Agent Hub/CODEX logs/headless/APPROVAL-HEADLESS-001.exit_code.json",
+        **darrin_decision_source(message_id),
+    }
+    command = canonical_headless_command_preview(record)
+    record["command_or_provider"] = command
+    record["command_preview"] = command
+    record["request_hash"] = canonical_request_hash(scope, [], command, "0")
+    return record
 
 
 def test_schema_roundtrip() -> None:
@@ -448,25 +491,8 @@ def test_approval_enforcement() -> None:
 def test_strict_mcp_config_enforcement() -> None:
     with TemporaryDirectory() as temp_dir:
         approvals_path = Path(temp_dir) / "approvals.jsonl"
-        command = "claude -p prompt.md --strict-mcp-config"
-        scope = "headless_agent_requires_darrin"
-        request_hash = canonical_request_hash(scope, [], command, "0")
-        headless_record = {
-            "approval_id": "APPROVAL-HEADLESS-001",
-            "scope": scope,
-            "exact_paths": [],
-            "command_or_provider": command,
-            "budget": "0",
-            "expires_at": "2099-01-01T00:00:00+00:00",
-            "one_time_use": True,
-            "approver": "Darrin",
-            "revoked": False,
-            "request_hash": request_hash,
-            "strict_mcp_config": True,
-            "mcp_config_path": str(MCP_READONLY_CONFIG_PATH),
-            "mcp_config_expected_hash": canonical_mcp_config_hash(),
-            **darrin_decision_source("DARRIN-DECISION-HEADLESS-001"),
-        }
+        headless_record = headless_approval_record()
+        command = str(headless_record["command_or_provider"])
         errors = validate_approval_record(headless_record)
         assert_true(not errors, "headless approval accepts canonical strict MCP config")
 
@@ -485,6 +511,45 @@ def test_strict_mcp_config_enforcement() -> None:
         approvals_path.write_text(json.dumps(headless_record, sort_keys=True) + "\n", encoding="utf-8")
         allowed = approval_check("headless_agent_run", [], command, "0", path=approvals_path)
         assert_true(allowed["allowed"], "matching headless approval passes strict MCP checks")
+
+
+def test_headless_command_contract() -> None:
+    record = headless_approval_record("DARRIN-DECISION-HEADLESS-CONTRACT-001")
+    args = canonical_headless_command_args(record)
+    assert_true(args[:6] == ["claude", "-p", str(record["prompt_file"]), "--output-format", "json", "--permission-mode"], "headless command starts with canonical Claude JSON plan mode")
+    assert_true("--strict-mcp-config" in args, "headless command includes strict MCP flag")
+    assert_true("--no-session-persistence" in args, "headless command disables session persistence")
+    assert_true(args[args.index("--mcp-config") + 1] == str(MCP_READONLY_CONFIG_PATH), "headless command pins MCP config path")
+    assert_true(args[args.index("--max-budget-usd") + 1] == "0", "headless command carries approved budget")
+
+    capture = headless_capture_contract(record)
+    assert_true(capture["stdout_path"] == record["audit_stdout_path"], "stdout capture path is explicit")
+    assert_true(capture["stderr_path"] == record["audit_stderr_path"], "stderr capture path is explicit")
+    assert_true(capture["exit_code_path"] == record["audit_exit_code_path"], "exit code capture path is explicit")
+    assert_true(capture["process_timeout_seconds"] == HEADLESS_DEFAULT_TIMEOUT_SECONDS, "headless timeout defaults to 600 seconds")
+    assert_true(capture["sigkill_grace_seconds"] == HEADLESS_SIGKILL_GRACE_SECONDS, "headless kill grace defaults to 30 seconds")
+    assert_true(capture["consume_approval_on_exit"], "headless exit consumes approval")
+
+    assert_true(not validate_headless_command_contract(record), "canonical headless command contract validates")
+
+    wrong_preview = dict(record, command_preview="claude unsafe")
+    assert_true(
+        any("command_preview" in error for error in validate_headless_command_contract(wrong_preview)),
+        "changed command preview is rejected",
+    )
+
+    unsafe_tools = dict(record, allowed_tools=["Read", "Bash"])
+    assert_true(
+        any("non-read-only" in error for error in validate_headless_command_contract(unsafe_tools)),
+        "write-capable headless tools are rejected",
+    )
+
+    missing_capture = dict(record)
+    del missing_capture["audit_stdout_path"]
+    assert_true(
+        any("audit_stdout_path" in error for error in validate_headless_command_contract(missing_capture)),
+        "missing stdout capture path is rejected",
+    )
 
 
 def test_backpressure_detection() -> None:
@@ -762,6 +827,7 @@ def main() -> None:
     test_quarantine_move_writes_tombstone()
     test_approval_enforcement()
     test_strict_mcp_config_enforcement()
+    test_headless_command_contract()
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()
     test_read_state_marks_changed_content_unread()

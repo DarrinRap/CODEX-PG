@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from pah_adapters.headless_contract import HEADLESS_COMMAND_REQUIRED_FIELDS, validate_headless_command_contract
 from pah_core.schema import content_hash
 from pah_mailbox.atomic import atomic_write_text
 from pah_mailbox.paths import APPROVAL_RECORDS_PATH, CONFIG_DIR
@@ -196,6 +197,7 @@ def validate_approval_record(record: dict[str, Any]) -> list[str]:
         errors.append("Approval records cannot authorize approval-record mutations")
     if str(record.get("scope", "")) == HEADLESS_AGENT_SCOPE:
         errors.extend(validate_headless_mcp_config(record))
+        errors.extend(validate_headless_command_contract(record))
     if record.get("revoked") is True:
         errors.append("Approval record is revoked")
     if str(record.get("revoked_at", "")).strip():
@@ -256,6 +258,7 @@ def approval_status(path: Path = APPROVAL_RECORDS_PATH) -> dict[str, Any]:
         "expired": expired,
         "consumed": consumed,
         "required_fields": sorted(APPROVAL_REQUIRED_FIELDS),
+        "headless_command_required_fields": sorted(HEADLESS_COMMAND_REQUIRED_FIELDS),
         "headless_mcp_required_fields": sorted(HEADLESS_MCP_REQUIRED_FIELDS),
         "canonical_mcp_config_path": str(MCP_READONLY_CONFIG_PATH),
         "canonical_mcp_config_hash": canonical_mcp_config_hash() if MCP_READONLY_CONFIG_PATH.exists() else "",
