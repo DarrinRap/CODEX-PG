@@ -1,6 +1,6 @@
 # CODEX Last Automated Handoff
 
-Generated: 2026-04-28 07:01:08 -07:00
+Generated: 2026-04-28 11:54:28 -07:00
 Mode: Handoff
 
 ## Current Git State
@@ -9,38 +9,37 @@ Mode: Handoff
 - GitHub repo: `https://github.com/DarrinRap/CODEX-PG.git`
 - Branch: `main`
 - Origin: `https://github.com/DarrinRap/CODEX-PG.git`
-- Indexed project file count, excluding .git: 4537
+- Indexed project file count, excluding .git: 4583
 
 ## Git Status
 
 ```text
 ## main...origin/main
- M "CODEX Claude Codex Mailbox/CODEX_MAILBOX_LEDGER.md"
-?? "CODEX Agent Hub/CODEX reports/"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260427_211258_CODEX_to_CLAUDE_DESKTOP_pah_route_test.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260427_211802_CODEX_to_CLAUDE_DESKTOP_pah-operational-instruction-reply-to-route.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260427_212228_CODEX_to_CLAUDE_DESKTOP_pah-wake-mechanism-design-include-claude-c.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260427_212800_CODEX_to_CLAUDE_DESKTOP_pah-wake-policy-darrin-in-the-loop-for-cla.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260427_212855_CODEX_to_CLAUDE_DESKTOP_darrin-request-pah-code-review-report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260427_214041_CODEX_to_CLAUDE_DESKTOP_pah-web-app-redesign-collaboration-request.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_220000_CLAUDE_to_CODEX_pah_thread_catchup_and_comms_direction.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_223000_CC_to_CODEX_pah_operational_ack.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_223000_CLAUDE_to_CODEX_pah_route_test_ack.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_223100_CLAUDE_to_CODEX_wake_and_review_synthesis.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_223600_CLAUDE_to_CODEX_pah_panda_write_approved.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_224500_CLAUDE_to_CODEX_pah_hub_design_guidance.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_225500_CLAUDE_to_CODEX_bug129_sizing_mockup.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260427_CLAUDE_to_CODEX_relay_spec_v0_1.md"
+ M "CODEX Agent Hub/CODEX_agent_hub.py"
+ M "CODEX Agent Hub/CODEX_agent_hub_ui.html"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_114010_CODEX_to_CLAUDE_delivery_visibility_and_a52_ack.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_114245_CODEX_to_CLAUDE_checkin_comms_audit_a52_response.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_CODEX_to_CLAUDE_relay_spec_v02_complete.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Sent/20260428_CLAUDE_to_CODEX_am_screen_b_ack.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_080800_CC_to_CODEX_pah_cockpit_schema_review.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_081000_CC_to_CODEX_action_console_ack_and_lint_status.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_095700_CC_to_CODEX_lint_dispatch_complete.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_135000_CLAUDE_to_CODEX_relay_mockup_batch_a52.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_142000_CLAUDE_to_CODEX_checkin_comms_audit_a52.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_145000_CLAUDE_to_CODEX_a52_go_boundary_correction.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_CLAUDE_to_CODEX_relay_spec_v02_dispatch.md"
+?? "CODEX Claude Codex Mailbox/CODEX_CLAUDE_CODE Inbox/20260428_CODEX_to_CC_lint_dispatch_ack.md"
+?? "CODEX Claude Codex Mailbox/CODEX_CLAUDE_CODE Inbox/20260428_CODEX_to_CC_pah_schema_review_ack.md"
 ```
 
 ## Recent Commits
 
 ```text
-50e2ac8 Add PAH watcher wake dashboard
-9d53c27 CODEX backup 2026-04-28 PAH native Claude Code mailbox bridge
-b3b3a65 CODEX backup 2026-04-28 send Relay deliverables to Claude
-0174443 CODEX backup 2026-04-28 Relay spec v0.1
-96be292 CODEX backup 2026-04-28 PAH notification readiness fix
+4194b54 Harden PAH read state matching
+65cdf97 Add PAH dashboard launcher
+cfdedbe Add PAH archive read inbox cleanup
+6ab849b Add PAH tray dismiss action
+079080e Add Relay spec v0.2
 ```
 
 ## Fresh Chat Resume Prompt
@@ -63,7 +62,7 @@ Remember:
 - C:\panda-gallery is read-only reference only
 - Continue from the latest handoff
 
-Latest automated handoff generated: 2026-04-28 07:01:08 -07:00
+Latest automated handoff generated: 2026-04-28 11:54:28 -07:00
 ```
 
 ## Trigger Words

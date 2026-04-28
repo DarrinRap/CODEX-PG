@@ -1214,6 +1214,28 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
     }
 
 
+def archive_selected_alert(path_value: str, actor: str = "codex", dry_run: bool = False) -> dict[str, Any]:
+    msg = find_loaded_message(path_value)
+    archive_dir = CODEX_ARCHIVE / "Deleted Alerts" / datetime.now().strftime("%Y%m%d")
+    destination = unique_destination(archive_dir / msg.path.name)
+    read_record = set_message_read_state(msg.path, msg.message_id, msg.body, READ_STATE, actor=actor)
+    record = {
+        "actor": actor.strip() or "codex",
+        "dry_run": dry_run,
+        "message_id": msg.message_id,
+        "thread_id": msg.stable_thread,
+        "from": msg.from_agent,
+        "to": msg.to_agent,
+        "source": str(msg.path),
+        "destination": str(destination),
+        "read_record": read_record,
+    }
+    if not dry_run:
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(msg.path), str(destination))
+    return record
+
+
 def messages_for_thread(thread_id: str, messages: list[Message] | None = None) -> list[Message]:
     clean_thread = thread_id.strip()
     if not clean_thread:
@@ -1611,16 +1633,18 @@ def cockpit_agents(status_data: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def cockpit_action_queue(
-    feed: list[dict[str, Any]], decisions: list[dict[str, Any]], limit: int = 12
+    feed: list[dict[str, Any]], decisions: list[dict[str, Any]], limit: int = 72
 ) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
+    wake_rows: list[dict[str, Any]] = []
+    decision_rows: list[dict[str, Any]] = []
+    unread_rows: list[dict[str, Any]] = []
     seen: set[str] = set()
     for item in feed:
         key = str(item.get("id") or item.get("message_path"))
         if item.get("stale_unread"):
             seen.add(key)
             label = str(item.get("wake_candidate_label") or "agent")
-            rows.append(
+            wake_rows.append(
                 {
                     "id": key,
                     "kind": "wake",
@@ -1638,7 +1662,7 @@ def cockpit_action_queue(
         if decision.get("id") == "no-decisions":
             continue
         key = str(decision.get("id"))
-        rows.append(
+        decision_rows.append(
             {
                 "id": key,
                 "kind": "decision",
@@ -1656,7 +1680,7 @@ def cockpit_action_queue(
         key = str(item.get("id") or item.get("message_path"))
         if key in seen or not item.get("unread"):
             continue
-        rows.append(
+        unread_rows.append(
             {
                 "id": key,
                 "kind": "unread",
@@ -1671,7 +1695,9 @@ def cockpit_action_queue(
             }
         )
         seen.add(key)
-    return rows[:limit]
+    wake_limit = max(0, limit - len(decision_rows))
+    unread_limit = max(0, limit - len(decision_rows) - min(len(wake_rows), wake_limit))
+    return [*wake_rows[:wake_limit], *decision_rows, *unread_rows[:unread_limit]]
 
 
 def cockpit_payload() -> dict[str, Any]:
@@ -2621,6 +2647,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/message-read-state",
             "/api/mark-all-read",
             "/api/archive-read-codex-inbox",
+            "/api/archive-selected-alert",
             "/api/thread-archive-state",
             "/api/work-item",
             "/api/dispatch-work-item",
@@ -2736,6 +2763,18 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
             self.send_json({"ok": True, **record})
+            return
+        if parsed_path == "/api/archive-selected-alert":
+            try:
+                record = archive_selected_alert(
+                    str(payload.get("path", "")),
+                    actor=str(payload.get("actor", "codex")),
+                    dry_run=bool(payload.get("dry_run", False)),
+                )
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, "record": record})
             return
         if parsed_path == "/api/thread-archive-state":
             try:

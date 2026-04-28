@@ -47,6 +47,7 @@ button.primary {
   font-weight: 800;
 }
 button.secondary { background: transparent; color: var(--muted); }
+button.danger { background: rgba(231, 76, 60, .10); border-color: rgba(231, 76, 60, .56); color: #f1b0aa; }
 button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 button[disabled] { opacity: .48; cursor: default; }
 
@@ -145,6 +146,9 @@ button[disabled] { opacity: .48; cursor: default; }
 
 .agents { padding: 8px; display: grid; gap: 8px; align-content: start; }
 .agent {
+  width: 100%;
+  color: var(--text);
+  text-align: left;
   border: 1px solid var(--border);
   border-radius: 7px;
   background: #161624;
@@ -152,6 +156,19 @@ button[disabled] { opacity: .48; cursor: default; }
   display: grid;
   grid-template-columns: 34px 1fr;
   gap: 10px;
+  cursor: pointer;
+}
+.agent:hover {
+  border-color: rgba(232, 168, 124, .48);
+  background: #1a1a2b;
+}
+.agent:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.agent.selected {
+  border-color: rgba(232, 168, 124, .8);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .avatar {
   width: 34px;
@@ -164,22 +181,24 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 .agent-name { font-weight: 900; }
 .agent-note { color: var(--quiet); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent > .agent-note { grid-column: 2; margin-top: -4px; }
 .agent-count { grid-column: 2; color: var(--muted); font-size: 12px; }
+.agent-action { grid-column: 2; color: var(--accent); font-size: 11px; font-weight: 900; text-transform: uppercase; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--quiet); margin-right: 6px; }
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--warn); }
 .dot.err { background: var(--err); }
 .dot.active { background: var(--accent); }
 
-.queue-panel { grid-template-rows: auto auto auto 1fr; }
+.queue-panel { grid-template-rows: auto auto auto auto auto auto 1fr; }
 .guide-card {
-  margin: 10px 12px 0;
-  border: 1px solid rgba(232, 168, 124, .32);
+  margin: 8px 12px 0;
+  border: 1px solid rgba(224, 221, 213, .12);
   border-radius: 8px;
-  background: rgba(232, 168, 124, .08);
-  padding: 10px;
+  background: rgba(16, 17, 27, .50);
+  padding: 9px;
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 .guide-title { font-size: 13px; font-weight: 900; color: var(--text); }
 .guide-copy { color: var(--muted); font-size: 12px; }
@@ -213,10 +232,36 @@ button.mini-pill.active strong { color: var(--accent-ink); }
   border: 1px solid rgba(224, 221, 213, .12);
   border-radius: 7px;
   background: rgba(16, 17, 27, .68);
-  padding: 8px;
+  padding: 7px 8px;
 }
 .guide-step strong { display: block; color: var(--accent); font-size: 11px; text-transform: uppercase; }
 .guide-step span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.inbox-strip {
+  padding: 10px 12px 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.inbox-card {
+  min-width: 0;
+  min-height: 58px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #161624;
+  color: var(--text);
+  padding: 8px;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+.inbox-card:hover { border-color: rgba(232, 168, 124, .48); background: #1a1a2b; }
+.inbox-card.active { border-color: rgba(232, 168, 124, .8); box-shadow: inset 3px 0 0 var(--accent); }
+.inbox-card.waiting { border-color: rgba(215, 184, 107, .56); }
+.inbox-card.attention { border-color: rgba(231, 76, 60, .62); }
+.inbox-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.inbox-name { min-width: 0; color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inbox-count { font-size: 22px; line-height: 1; font-weight: 900; }
+.inbox-note { color: var(--quiet); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .filter-row {
   display: flex;
   gap: 8px;
@@ -225,6 +270,19 @@ button.mini-pill.active strong { color: var(--accent-ink); }
 }
 .filter-row .spacer { flex: 1; }
 .filter-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.queue-search {
+  width: min(190px, 26vw);
+  min-height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--text);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 12px;
+}
+.queue-search::placeholder { color: var(--quiet); }
+.queue-search:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
 button.filter {
   min-height: 28px;
   padding: 0 10px;
@@ -239,23 +297,31 @@ button.filter.active {
   font-weight: 900;
 }
 .summary-strip {
-  padding: 12px;
+  padding: 8px 12px 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  border-bottom: 1px solid var(--border);
 }
 .summary {
-  min-height: 70px;
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 7px;
   background: #161624;
-  padding: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.summary strong { display: block; font-size: 24px; line-height: 1; }
-.summary span { color: var(--muted); font-size: 12px; }
+.summary:hover { border-color: rgba(232, 168, 124, .48); background: #1a1a2b; }
+.summary.active { border-color: rgba(232, 168, 124, .8); box-shadow: inset 3px 0 0 var(--accent); }
+.summary strong { display: block; min-width: 30px; font-size: 20px; line-height: 1; }
+.summary span { color: var(--muted); font-size: 11px; line-height: 1.2; }
 .summary.warn { border-color: rgba(215, 184, 107, .56); }
 .summary.err { border-color: rgba(231, 76, 60, .62); }
+.summary.warn.active, .summary.err.active { border-color: rgba(232, 168, 124, .8); }
 .notice {
   margin: 10px 12px 0;
   border: 1px solid rgba(231, 76, 60, .56);
@@ -305,6 +371,7 @@ button.filter.active {
 .tag.decision { border-color: rgba(232, 168, 124, .6); color: #f0bf9d; }
 .tag.unread { border-color: rgba(224, 221, 213, .22); color: var(--text); }
 .tag.local { border-color: rgba(127, 176, 105, .45); color: var(--ok); }
+.tag.snoozed { border-color: rgba(155, 127, 176, .6); color: #cfb8e8; }
 .empty {
   padding: 28px;
   color: var(--muted);
@@ -315,6 +382,36 @@ button.filter.active {
 .detail-body { padding: 14px; display: grid; gap: 12px; align-content: start; }
 .detail-title { font-size: 20px; line-height: 1.15; font-weight: 900; }
 .detail-summary { color: var(--muted); }
+.message-preview {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #10111b;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+.message-preview-head {
+  min-height: 30px;
+  border-bottom: 1px solid rgba(224, 221, 213, .08);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.message-preview-body {
+  max-height: 180px;
+  overflow: auto;
+  color: var(--muted);
+  padding: 9px;
+  white-space: pre-wrap;
+  font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
+}
+.message-preview-empty { color: var(--quiet); font-family: inherit; }
 .fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .fact {
   border: 1px solid var(--border);
@@ -355,9 +452,20 @@ button.filter.active {
 .how-list { margin: 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
 .how-list li { margin: 3px 0; }
 .session-copy { color: var(--muted); font-size: 12px; }
-.session-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.session-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .session-actions button { min-height: 28px; padding: 0 8px; font-size: 12px; }
 .session-actions button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 900; }
+.activity-list { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+.activity-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  border-top: 1px solid rgba(224, 221, 213, .08);
+  padding-top: 6px;
+}
+.activity-row:first-child { border-top: 0; padding-top: 0; }
+.activity-time { color: var(--quiet); font: 11px/1.2 "Cascadia Mono", Consolas, monospace; }
+.activity-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .route-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -376,9 +484,11 @@ button.filter.active {
   border-top: 1px solid var(--border);
   padding: 10px;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
 }
+.detail-actions button[hidden] { display: none; }
 .footer {
   border-top: 1px solid var(--border);
   background: #151526;
@@ -397,14 +507,15 @@ button.filter.active {
   .main { grid-template-columns: 196px minmax(390px, 1fr) 320px; }
   .summary-strip { grid-template-columns: 1fr; }
   .guide-steps { grid-template-columns: 1fr; }
-  .summary { min-height: 48px; display: flex; align-items: center; gap: 10px; }
+  .summary { min-height: 40px; }
   .summary strong { font-size: 20px; }
 }
 @media (max-height: 720px) {
   .app { grid-template-rows: 54px 1fr 38px; min-height: 580px; }
   .topbar { padding: 0 14px; }
   .main { padding: 10px; gap: 10px; }
-  .summary { min-height: 58px; }
+  .guide-card { margin-top: 6px; }
+  .summary { min-height: 38px; }
   .action { padding: 10px; }
   .detail-title { font-size: 18px; }
 }
@@ -428,6 +539,7 @@ button.filter.active {
       <label class="toggle"><input type="checkbox" id="autoRefresh"> Auto refresh</label>
       <button id="refresh">Refresh</button>
       <button id="archiveRead">Archive read</button>
+      <button id="shortcutHelp">Shortcuts</button>
       <button disabled>Compose</button>
     </div>
   </header>
@@ -445,20 +557,21 @@ button.filter.active {
 
     <section class="panel queue-panel">
       <div class="panel-head">
-        <div class="panel-title">Start Here</div>
+        <div class="panel-title">Triage Queue</div>
         <div class="count" id="queueCount">0</div>
       </div>
+      <div class="inbox-strip" id="inboxStrip"></div>
       <div class="guide-card">
         <div>
           <div class="guide-title" id="guideTitle">Loading PAH guidance...</div>
           <div class="guide-copy" id="guideCopy">The hub is checking mailboxes and building the next safe action.</div>
         </div>
         <div class="guide-breakdown" id="guideBreakdown"></div>
-        <div class="guide-steps">
-          <div class="guide-step"><strong>1. Pick</strong><span>Click the oldest urgent item below.</span></div>
-          <div class="guide-step"><strong>2. Copy</strong><span>Use the wake line on the right.</span></div>
-          <div class="guide-step"><strong>3. Paste</strong><span>Paste it into the named AI session.</span></div>
-        </div>
+      <div class="guide-steps">
+        <div class="guide-step"><strong>1. Review</strong><span>Oldest actionable item stays selected.</span></div>
+        <div class="guide-step"><strong>2. Act</strong><span>Use the buttons or wake line on the right.</span></div>
+        <div class="guide-step"><strong>3. Clear</strong><span>Dismiss, snooze, or resolve when done.</span></div>
+      </div>
       </div>
       <div class="summary-strip" id="summaryStrip"></div>
       <div class="notice" id="notice" hidden></div>
@@ -469,7 +582,11 @@ button.filter.active {
         <button class="filter" data-filter="diagnostics">Diagnostics</button>
         <button class="filter" data-filter="all">All</button>
         <span class="spacer"></span>
+        <input class="queue-search" id="queueSearch" placeholder="Find in queue" aria-label="Find in current queue">
+        <label class="toggle"><input type="checkbox" id="showSnoozed"> Snoozed</label>
         <button class="filter" id="clearAgentFilter" hidden>Clear agent</button>
+        <button class="secondary" id="dismissVisible">Dismiss visible</button>
+        <button class="danger" id="deleteVisible">Delete visible</button>
       </div>
       <div class="scroll">
         <div class="action-list" id="actionList"></div>
@@ -478,13 +595,17 @@ button.filter.active {
 
     <section class="panel detail-panel">
       <div class="panel-head">
-        <div class="panel-title">Selected Item</div>
+        <div class="panel-title">Action Detail</div>
         <span class="tag" id="selectedKind">none</span>
       </div>
       <div class="scroll">
-        <div class="detail-body">
+          <div class="detail-body">
           <div class="detail-title" id="detailTitle">No item selected</div>
           <div class="detail-summary" id="detailSummary">The queue is loading.</div>
+          <div class="message-preview">
+            <div class="message-preview-head"><span>Message preview</span><span id="messagePreviewMeta">none</span></div>
+            <div class="message-preview-body message-preview-empty" id="messagePreview">Select an alert to preview its message here.</div>
+          </div>
           <div class="fact-grid" id="factGrid"></div>
           <div class="wake-box">
             <div class="wake-label">Wake line</div>
@@ -501,11 +622,16 @@ button.filter.active {
           <div class="session-box">
             <div class="session-title">Session handling</div>
             <div class="session-copy" id="sessionCopy">No local handling state yet.</div>
-            <div class="session-actions">
+          <div class="session-actions">
+              <button id="stateAck">Ack</button>
               <button id="stateCopied">Copied</button>
               <button id="stateWaiting">Waiting</button>
               <button id="stateHandled">Handled</button>
             </div>
+          </div>
+          <div class="session-box">
+            <div class="session-title">Recent actions</div>
+            <div class="activity-list" id="activityList"></div>
           </div>
           <div class="checks-box">
             <div class="checks-title">Mailbox checks</div>
@@ -515,7 +641,15 @@ button.filter.active {
       </div>
       <div class="detail-actions">
         <button class="secondary" id="openMessage">Open message</button>
-        <button class="secondary" id="markRead">Mark read</button>
+        <button class="secondary" id="openFolder">Open folder</button>
+        <button class="secondary" id="copyPath">Copy path</button>
+        <button class="secondary" id="snoozeAlert">Snooze 15m</button>
+        <button class="secondary" id="unsnoozeAlert">Unsnooze</button>
+        <button class="secondary" id="markRead">Dismiss alert</button>
+        <button class="secondary" id="resolveDecision">Resolve decision</button>
+        <button class="secondary" id="dismissDecision">Dismiss decision</button>
+        <button class="secondary" id="runDiagnostics">Run diagnostics</button>
+        <button class="danger" id="deleteAlert">Delete alert</button>
         <button class="primary" id="copyWake">Copy wake line</button>
       </div>
     </section>
@@ -533,13 +667,21 @@ let cockpit = null;
 let selected = null;
 let queueFilter = 'wake';
 let agentFilter = '';
+let selectedAgentId = '';
+let queueSearch = '';
+let currentVisibleQueue = [];
 const LOCAL_STATE_KEY = 'pahActionConsole.localHandling.v1';
 const PREFS_KEY = 'pahActionConsole.prefs.v1';
+const ACTIVITY_KEY = 'pahActionConsole.activity.v1';
+const SNOOZE_KEY = 'pahActionConsole.snooze.v1';
 const AUTO_REFRESH_MS = 30000;
 const localHandling = loadLocalHandling();
+const activityLog = loadActivityLog();
+const snoozedItems = loadSnoozedItems();
 let prefs = loadPrefs();
 let autoTimer = null;
 let refreshInFlight = false;
+const messagePreviewCache = {};
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -567,6 +709,139 @@ function itemAgeSeconds(item) {
 }
 function itemTarget(item) {
   return String(item?.primary_action || '').replace(/^Wake\s+/i, '') || 'unknown';
+}
+function agentName(agentId) {
+  const agent = (cockpit?.agents || []).find(candidate => candidate.id === agentId);
+  return agent?.display_name || agentId || 'agent';
+}
+function selectedAgent() {
+  if (!selectedAgentId) return null;
+  return (cockpit?.agents || []).find(agent => agent.id === selectedAgentId) || null;
+}
+function agentActionCount(agentId) {
+  if (!agentId) return 0;
+  const queue = cockpit?.action_queue || [];
+  if (agentId === 'darrin') return queue.filter(item => item.kind === 'decision').length;
+  return queue.filter(item => item.kind === 'wake' && itemTarget(item) === agentId).length;
+}
+function agentFocusFilter(agentId) {
+  return agentId === 'darrin' ? 'decision' : 'wake';
+}
+function focusAgent(agentId) {
+  selectedAgentId = agentId || '';
+  queueFilter = agentFocusFilter(selectedAgentId);
+  agentFilter = selectedAgentId && selectedAgentId !== 'darrin' ? selectedAgentId : '';
+  const visible = filteredQueue();
+  selected = visible[0] || null;
+  prefs.queueFilter = queueFilter;
+  prefs.agentFilter = agentFilter;
+  prefs.selectedAgentId = selectedAgentId;
+  prefs.queueSearch = queueSearch;
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  render();
+}
+function focusPanel(filter) {
+  selectedAgentId = '';
+  agentFilter = '';
+  queueFilter = filter || 'wake';
+  const visible = filteredQueue();
+  selected = visible[0] || null;
+  prefs.queueFilter = queueFilter;
+  prefs.agentFilter = '';
+  prefs.selectedAgentId = '';
+  prefs.queueSearch = queueSearch;
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  render();
+}
+async function postJson(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN},
+    body: JSON.stringify(body || {})
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok || payload.ok === false) throw new Error(payload.error || `${path} failed ${res.status}`);
+  return payload;
+}
+function visibleMessageItems() {
+  return currentVisibleQueue.filter(item => item?.message_path);
+}
+function setSnooze(item, minutes) {
+  if (!item?.id) return;
+  snoozedItems[item.id] = {
+    until: new Date(Date.now() + minutes * 60000).toISOString(),
+    title: item.title || item.id,
+  };
+  saveSnoozedItems();
+  recordActivity(`Snoozed ${minutes}m`, item);
+}
+function clearSnooze(item) {
+  if (!item?.id) return;
+  delete snoozedItems[item.id];
+  saveSnoozedItems();
+  recordActivity('Unsnoozed', item);
+}
+function selectRelative(delta) {
+  if (!currentVisibleQueue.length) return;
+  const currentIndex = currentVisibleQueue.findIndex(item => item.id === selected?.id);
+  const nextIndex = currentIndex < 0
+    ? 0
+    : Math.max(0, Math.min(currentVisibleQueue.length - 1, currentIndex + delta));
+  selected = currentVisibleQueue[nextIndex] || null;
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  render();
+}
+function showShortcutHelp() {
+  setNotice('Shortcuts: / search, J/K next/previous, O open message, C copy wake line, U dismiss alert, S snooze 15m, R run diagnostics, Esc clear search, ? show this help.', 'ok');
+}
+function parentPath(pathValue) {
+  const text = String(pathValue || '');
+  const index = Math.max(text.lastIndexOf('\\'), text.lastIndexOf('/'));
+  return index > 0 ? text.slice(0, index) : text;
+}
+function setDetailAction(id, visible, disabled = false) {
+  const button = document.getElementById(id);
+  if (!button) return;
+  button.hidden = !visible;
+  button.disabled = !visible || Boolean(disabled);
+}
+function hideDetailActions() {
+  [
+    'openMessage',
+    'openFolder',
+    'copyPath',
+    'snoozeAlert',
+    'unsnoozeAlert',
+    'markRead',
+    'resolveDecision',
+    'dismissDecision',
+    'runDiagnostics',
+    'deleteAlert',
+    'copyWake',
+  ].forEach(id => setDetailAction(id, false, true));
+}
+function configureDetailActions(item, wakeText = '') {
+  const kind = item?.kind || '';
+  const hasMessage = Boolean(item?.message_path);
+  const hasWake = Boolean(wakeText);
+  const isWake = kind === 'wake';
+  const isDecision = kind === 'decision';
+  const isDiagnostic = kind === 'diagnostic';
+  const isSnoozed = Boolean(snoozeUntilFor(item));
+  setDetailAction('openMessage', hasMessage, !hasMessage);
+  setDetailAction('openFolder', hasMessage, !hasMessage);
+  setDetailAction('copyPath', hasMessage, !hasMessage);
+  setDetailAction('snoozeAlert', Boolean(item?.id) && !isDiagnostic && !isSnoozed, !item?.id);
+  setDetailAction('unsnoozeAlert', isSnoozed, !isSnoozed);
+  setDetailAction('markRead', isWake && hasMessage, !hasMessage);
+  setDetailAction('resolveDecision', isDecision && hasMessage, !hasMessage);
+  setDetailAction('dismissDecision', isDecision && hasMessage, !hasMessage);
+  setDetailAction('runDiagnostics', isDiagnostic || queueFilter === 'diagnostics', false);
+  setDetailAction('deleteAlert', hasMessage, !hasMessage);
+  setDetailAction('copyWake', isWake && hasWake, !hasWake);
 }
 function diagnosticItems() {
   const routes = (cockpit?.routes || []).map(route => ({
@@ -627,6 +902,19 @@ function filteredQueue() {
   if (queueFilter === 'decision') visible = queue.filter(item => item.kind === 'decision');
   else if (queueFilter === 'wake') visible = queue.filter(item => item.kind === 'wake');
   if (agentFilter) visible = visible.filter(item => itemTarget(item) === agentFilter);
+  if (!prefs.showSnoozed) visible = visible.filter(item => !snoozeUntilFor(item));
+  const term = queueSearch.trim().toLowerCase();
+  if (term) {
+    visible = visible.filter(item => [
+      item.title,
+      item.summary,
+      item.primary_action,
+      item.secondary_action,
+      item.thread_id,
+      item.message_path,
+      item.wake_line,
+    ].some(value => String(value || '').toLowerCase().includes(term)));
+  }
   return [...visible].sort((a, b) => {
     if (a.kind === 'wake' || b.kind === 'wake') return itemAgeSeconds(b) - itemAgeSeconds(a);
     if (a.kind === 'diagnostic' || b.kind === 'diagnostic') return severityRank(b.severity) - severityRank(a.severity);
@@ -662,6 +950,63 @@ function loadLocalHandling() {
     return {};
   }
 }
+function loadActivityLog() {
+  try {
+    const rows = JSON.parse(window.localStorage.getItem(ACTIVITY_KEY) || '[]');
+    return Array.isArray(rows) ? rows : [];
+  } catch (err) {
+    return [];
+  }
+}
+function loadSnoozedItems() {
+  try {
+    return JSON.parse(window.localStorage.getItem(SNOOZE_KEY) || '{}');
+  } catch (err) {
+    return {};
+  }
+}
+function saveSnoozedItems() {
+  try { window.localStorage.setItem(SNOOZE_KEY, JSON.stringify(snoozedItems)); } catch (err) {}
+}
+function snoozeUntilFor(item) {
+  if (!item?.id) return '';
+  const until = snoozedItems[item.id]?.until || '';
+  if (!until) return '';
+  const time = new Date(until).getTime();
+  if (Number.isNaN(time) || time <= Date.now()) {
+    delete snoozedItems[item.id];
+    saveSnoozedItems();
+    return '';
+  }
+  return until;
+}
+function snoozeLabel(item) {
+  const until = snoozeUntilFor(item);
+  return until ? `snoozed until ${fmtTime(until)}` : '';
+}
+function saveActivityLog() {
+  try { window.localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activityLog.slice(0, 30))); } catch (err) {}
+}
+function recordActivity(action, item, detail = '') {
+  activityLog.unshift({
+    at: new Date().toISOString(),
+    action,
+    title: item?.title || item?.thread_id || 'PAH action',
+    detail,
+  });
+  activityLog.splice(30);
+  saveActivityLog();
+  renderActivity();
+}
+function renderActivity() {
+  const rows = activityLog.slice(0, 5);
+  setHTML('activityList', rows.length ? rows.map(row => `
+    <div class="activity-row">
+      <div class="activity-time">${esc(fmtTime(row.at))}</div>
+      <div class="activity-text" title="${esc(row.title)}">${esc(row.action)} - ${esc(row.title)}</div>
+    </div>
+  `).join('') : '<div class="session-copy">No actions recorded in this browser yet.</div>');
+}
 function loadPrefs() {
   try {
     return JSON.parse(window.localStorage.getItem(PREFS_KEY) || '{}');
@@ -691,6 +1036,7 @@ function localStateFor(item) {
   return localHandling[item.id]?.state || '';
 }
 function localStateLabel(state) {
+  if (state === 'ack') return 'acknowledged';
   if (state === 'copied') return 'copied this session';
   if (state === 'waiting') return 'waiting on reply';
   if (state === 'handled') return 'handled locally';
@@ -701,6 +1047,7 @@ function setLocalState(state) {
   if (state) localHandling[selected.id] = { state, at: new Date().toISOString() };
   else delete localHandling[selected.id];
   saveLocalHandling();
+  recordActivity(localStateLabel(state) || 'Cleared local state', selected);
   render();
 }
 async function loadCockpit() {
@@ -724,7 +1071,7 @@ async function loadCockpit() {
     refreshButton.disabled = false;
   }
   const visible = filteredQueue();
-  selected = visible.find(item => item.id === previousSelectedId) || visible[0] || (cockpit.action_queue || [])[0] || null;
+  selected = visible.find(item => item.id === previousSelectedId) || visible[0] || (selectedAgentId ? null : (cockpit.action_queue || [])[0] || null);
   prefs.selectedId = selected?.id || '';
   savePrefs();
   render();
@@ -766,12 +1113,15 @@ function render() {
   document.getElementById('gitState').textContent = cockpit.git?.status_label || 'git';
   renderGuide(stale, decisions);
   renderAgents(cockpit.agents || []);
+  renderInboxStatus(cockpit.agents || []);
   renderSummary(counts, cockpit.diagnostics || {});
+  currentVisibleQueue = visibleQueue;
   renderFilters();
   renderQueue(visibleQueue);
   renderDetail(selected);
   renderRoutes(cockpit.routes || []);
   renderDiagnostics(cockpit.diagnostics || {});
+  renderActivity();
 }
 function renderGuide(stale, decisions) {
   const wakeItems = (cockpit.action_queue || []).filter(item => item.kind === 'wake');
@@ -780,21 +1130,25 @@ function renderGuide(stale, decisions) {
   const title = queueFilter === 'diagnostics'
     ? 'Diagnostics show route, watcher, git, and validation health'
     : agentFilter
-      ? `Showing wake-ups for ${agentFilter}`
+      ? `${agentName(agentFilter)} queue`
+    : selectedAgentId === 'darrin'
+      ? 'Darrin decision queue'
     : stale
-    ? `${stale} overdue message${stale === 1 ? '' : 's'} need wake-up`
+    ? `${stale} overdue message${stale === 1 ? '' : 's'} need action`
     : decisions
       ? `${decisions} decision${decisions === 1 ? '' : 's'} need Darrin`
-      : 'Nothing urgent right now';
+      : 'Triage queue is clear';
   const copy = queueFilter === 'diagnostics'
-    ? 'Use this view to answer: are the mailboxes checked, is the watcher held, are diagnostics quiet, and is git clean?'
+    ? 'Check this when PAH feels off: mailbox routes, watcher hold state, diagnostics, and git health are all summarized here.'
     : agentFilter
-      ? 'Clear the agent filter to return to all overdue wake-ups.'
+      ? 'Review this agent only. Pick a queue item, then use Action Detail to wake, snooze, dismiss, or inspect the source message.'
+    : selectedAgentId === 'darrin'
+      ? 'Review decisions, then resolve, defer, or ask an AI to follow up. PAH keeps the decision context beside the action controls.'
     : stale
-    ? `Oldest first. A wake-up is unread for ${fmtAge(threshold)} or longer. The selected item gives you the exact line to paste into the right AI.${oldest ? ` Oldest is ${fmtAge(oldest)} overdue.` : ''}`
+    ? `Oldest first. Anything unread for ${fmtAge(threshold)} or longer is treated as actionable. The selected row opens its full controls on the right.${oldest ? ` Oldest is ${fmtAge(oldest)} overdue.` : ''}`
     : decisions
-      ? 'Switch to Darrin decisions to review what needs approval or deferral.'
-      : 'Refresh when you want to check all PAH routes again.';
+      ? 'Open Darrin decisions to approve, defer, or route follow-up work.'
+      : 'No inbox needs action. Refresh checks all PAH routes again.';
   document.getElementById('guideTitle').textContent = title;
   document.getElementById('guideCopy').textContent = copy;
   renderGuideBreakdown(wakeItems, decisions);
@@ -808,19 +1162,11 @@ function renderGuideBreakdown(wakeItems, decisions) {
   const pills = Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .map(([target, count]) => `<button class="mini-pill ${target === agentFilter ? 'active' : ''}" data-agent="${esc(target)}"><strong>${esc(count)}</strong>${esc(target)}</button>`);
-  if (decisions) pills.push(`<span class="mini-pill"><strong>${esc(decisions)}</strong>Darrin decision${decisions === 1 ? '' : 's'}</span>`);
+  if (decisions) pills.push(`<button class="mini-pill ${selectedAgentId === 'darrin' ? 'active' : ''}" data-agent="darrin"><strong>${esc(decisions)}</strong>Darrin decision${decisions === 1 ? '' : 's'}</button>`);
   setHTML('guideBreakdown', pills.length ? pills.join('') : '<span class="mini-pill">No overdue wake-ups</span>');
   document.querySelectorAll('button.mini-pill[data-agent]').forEach(button => {
     button.addEventListener('click', () => {
-      agentFilter = button.dataset.agent || '';
-      queueFilter = 'wake';
-      const visible = filteredQueue();
-      selected = visible[0] || null;
-      prefs.queueFilter = queueFilter;
-      prefs.agentFilter = agentFilter;
-      prefs.selectedId = selected?.id || '';
-      savePrefs();
-      render();
+      focusAgent(button.dataset.agent || '');
     });
   });
 }
@@ -829,37 +1175,93 @@ function renderFilters() {
     button.classList.toggle('active', button.dataset.filter === queueFilter);
   });
   const clear = document.getElementById('clearAgentFilter');
-  clear.hidden = !agentFilter;
-  clear.textContent = agentFilter ? `Clear ${agentFilter}` : 'Clear agent';
+  clear.hidden = !agentFilter && !selectedAgentId;
+  clear.textContent = selectedAgentId ? `Clear ${agentName(selectedAgentId)}` : 'Clear agent';
+  const search = document.getElementById('queueSearch');
+  if (document.activeElement !== search) search.value = queueSearch;
+  const showSnoozed = document.getElementById('showSnoozed');
+  showSnoozed.checked = Boolean(prefs.showSnoozed);
+  const hasActiveSnooze = Object.values(snoozedItems).some(entry => Date.parse(entry?.until || '') > Date.now());
+  showSnoozed.closest('label').hidden = !hasActiveSnooze && !prefs.showSnoozed;
+  const visibleMessages = visibleMessageItems();
+  const bulkDisabled = !visibleMessages.length || queueFilter === 'diagnostics';
+  const dismissVisible = document.getElementById('dismissVisible');
+  const deleteVisible = document.getElementById('deleteVisible');
+  dismissVisible.hidden = bulkDisabled;
+  deleteVisible.hidden = bulkDisabled;
+  dismissVisible.disabled = bulkDisabled;
+  deleteVisible.disabled = bulkDisabled;
+  dismissVisible.textContent = visibleMessages.length ? `Dismiss visible (${visibleMessages.length})` : 'Dismiss visible';
+  deleteVisible.textContent = visibleMessages.length ? `Delete visible (${visibleMessages.length})` : 'Delete visible';
 }
 function renderAgents(agents) {
   document.getElementById('agentCount').textContent = agents.length;
-  setHTML('agentList', agents.map(agent => `
-    <div class="agent">
+  setHTML('agentList', agents.map(agent => {
+    const actionCount = agentActionCount(agent.id);
+    const actionLabel = agent.id === 'darrin' ? 'open decisions' : actionCount ? 'open wake-ups' : 'open details';
+    const inboxLabel = agent.id === 'darrin'
+      ? `${esc(agent.count_value)} decision${Number(agent.count_value) === 1 ? '' : 's'} waiting`
+      : `${esc(agent.count_value)} message${Number(agent.count_value) === 1 ? '' : 's'} waiting`;
+    return `
+    <button class="agent ${agent.id === selectedAgentId ? 'selected' : ''}" data-agent-id="${esc(agent.id)}" title="Show ${esc(agent.display_name)} details and actions">
       <div class="avatar">${esc(agent.code)}</div>
       <div>
         <div class="agent-name"><span class="dot ${statusClass(agent.status)}"></span>${esc(agent.display_name)}</div>
         <div class="agent-note" title="${esc(agent.summary_line)}">${esc(agent.status_label || agent.summary_line || 'Ready')}</div>
       </div>
       <div class="agent-count">${esc(agent.count_value)} ${esc(agent.count_label)}</div>
-    </div>
-  `).join(''));
+      <div class="agent-note">${inboxLabel}</div>
+      <div class="agent-action">${esc(actionLabel)}</div>
+    </button>
+  `}).join(''));
+  document.querySelectorAll('button.agent[data-agent-id]').forEach(button => {
+    button.addEventListener('click', () => focusAgent(button.dataset.agentId || ''));
+  });
+}
+function renderInboxStatus(agents) {
+  const lastCheck = latestMailboxCheck();
+  setHTML('inboxStrip', agents.map(agent => {
+    const count = Number(agent.count_value || 0);
+    const attention = agent.id === 'darrin' && count > 0;
+    const tone = attention ? 'attention' : count > 0 ? 'waiting' : '';
+    const label = agent.id === 'darrin' ? 'decisions' : 'waiting';
+    const note = count > 0
+      ? `${count} ${label}`
+      : 'clear';
+    return `
+      <button class="inbox-card ${esc(tone)} ${agent.id === selectedAgentId ? 'active' : ''}" data-agent-id="${esc(agent.id)}" title="Open ${esc(agent.display_name)} ${esc(label)}">
+        <div class="inbox-top"><span class="inbox-name">${esc(agent.display_name)}</span><span class="dot ${statusClass(agent.status)}"></span></div>
+        <div class="inbox-count">${esc(count)}</div>
+        <div class="inbox-note">${esc(note)} · checked ${esc(fmtTime(lastCheck))}</div>
+      </button>
+    `;
+  }).join(''));
+  document.querySelectorAll('button.inbox-card[data-agent-id]').forEach(button => {
+    button.addEventListener('click', () => focusAgent(button.dataset.agentId || ''));
+  });
 }
 function renderSummary(counts, diagnostics) {
   const diagProblems = Number(diagnostics.checks_warn || 0) + Number(diagnostics.checks_fail || 0);
   const cards = [
-    ['Needs wake', counts.stale_unread || 0, 'Unread over 60 seconds', counts.stale_unread ? 'warn' : ''],
-    ['Unread', counts.unread || 0, 'Waiting in mailbox', ''],
-    ['Diagnostics', diagProblems, diagProblems ? 'Needs review' : 'Quiet', diagProblems ? 'warn' : ''],
+    ['wake', 'Overdue', counts.stale_unread || 0, 'unread over 60s', counts.stale_unread ? 'warn' : ''],
+    ['all', 'Inbox', counts.unread || 0, 'total waiting', ''],
+    ['diagnostics', 'Health', diagProblems, diagProblems ? 'needs review' : 'quiet', diagProblems ? 'warn' : ''],
   ];
-  setHTML('summaryStrip', cards.map(([label, value, note, tone]) => `
-    <div class="summary ${esc(tone)}"><strong>${esc(value)}</strong><span>${esc(label)} - ${esc(note)}</span></div>
+  setHTML('summaryStrip', cards.map(([filter, label, value, note, tone]) => `
+    <button class="summary ${esc(tone)} ${queueFilter === filter && !selectedAgentId ? 'active' : ''}" data-filter="${esc(filter)}" title="Show ${esc(label)} items">
+      <strong>${esc(value)}</strong><span>${esc(label)}<br>${esc(note)}</span>
+    </button>
   `).join(''));
+  document.querySelectorAll('button.summary[data-filter]').forEach(button => {
+    button.addEventListener('click', () => focusPanel(button.dataset.filter || 'wake'));
+  });
 }
 function renderQueue(queue) {
   if (!queue.length) {
     const lastCheck = latestMailboxCheck();
-    const message = queueFilter === 'wake'
+    const message = queueSearch.trim()
+      ? `No items match "${queueSearch.trim()}".`
+      : queueFilter === 'wake'
       ? agentFilter ? `No overdue wake-ups for ${agentFilter}.` : 'No overdue wake-ups in this view.'
       : queueFilter === 'decision'
         ? 'No Darrin decisions in this view.'
@@ -872,7 +1274,7 @@ function renderQueue(queue) {
   }
   setHTML('actionList', queue.map(item => `
     <button class="action ${item.id === selected?.id ? 'selected' : ''} ${esc(item.severity)}" data-id="${esc(item.id)}">
-      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.kind === 'wake' ? 'Needs wake-up' : item.kind)}</span>${localStateFor(item) ? `<span class="tag local">${esc(localStateLabel(localStateFor(item)))}</span>` : ''}</div>
+      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.kind === 'wake' ? 'Needs wake-up' : item.kind)}</span>${localStateFor(item) ? `<span class="tag local">${esc(localStateLabel(localStateFor(item)))}</span>` : ''}${snoozeLabel(item) ? `<span class="tag snoozed">${esc(snoozeLabel(item))}</span>` : ''}</div>
       <div class="action-title">${esc(item.title)}</div>
       <div class="action-summary">${esc(humanSummary(item))}</div>
       <div class="action-help">${esc(item.thread_id || item.message_path || '')}</div>
@@ -895,28 +1297,124 @@ function latestMailboxCheck() {
   return routeTimes[routeTimes.length - 1] || cockpit.cockpit_state?.as_of_iso || cockpit.generated_at || '';
 }
 function renderDetail(item) {
+  const agent = selectedAgent();
+  if (!item && agent) {
+    renderAgentDetail(agent);
+    return;
+  }
   const kind = item?.kind || 'none';
   document.getElementById('selectedKind').textContent = kind === 'wake' ? 'needs wake-up' : kind;
   document.getElementById('selectedKind').className = `tag ${kindClass(kind)}`;
   document.getElementById('detailTitle').textContent = item?.title || 'No item selected';
   document.getElementById('detailSummary').textContent = humanSummary(item) || 'No current action is required.';
+  const lifecycle = localStateLabel(localStateFor(item))
+    || snoozeLabel(item)
+    || (item?.kind === 'wake' ? 'new wake-up' : item?.kind === 'decision' ? 'new decision' : 'not started');
   const facts = item?.kind === 'diagnostic'
     ? diagnosticFacts(item)
     : [
+        ['Lifecycle', lifecycle],
         ['Primary action', item?.primary_action || 'None'],
-        ['Secondary action', item?.secondary_action || 'None'],
         ['Thread', item?.thread_id || 'None'],
-        ['State', item?.kind === 'wake' ? 'Wake line ready' : 'Not handled here'],
+        ['Source', item?.message_path ? 'mailbox message' : 'none'],
       ];
   setHTML('factGrid', facts.map(([label, value]) => `
     <div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value" title="${esc(value)}">${esc(value)}</div></div>
   `).join(''));
-  document.getElementById('wakeLine').textContent = item?.wake_line || cockpit?.wake?.line || 'No wake needed.';
-  document.getElementById('copyWake').disabled = !(item?.wake_line || cockpit?.wake?.line);
-  document.getElementById('markRead').disabled = !item?.message_path;
-  document.getElementById('openMessage').disabled = !item?.message_path;
+  const wakeText = item?.wake_line || (!item ? cockpit?.wake?.line : '');
+  document.getElementById('wakeLine').textContent = wakeText || 'No wake needed.';
+  document.getElementById('markRead').textContent = item?.kind === 'decision' ? 'Dismiss alert' : 'Dismiss alert';
+  configureDetailActions(item, wakeText);
+  renderMessagePreview(item);
   renderHow(item);
   renderSessionState(item);
+}
+function renderMessagePreview(item) {
+  const preview = document.getElementById('messagePreview');
+  const meta = document.getElementById('messagePreviewMeta');
+  if (!item?.message_path) {
+    meta.textContent = 'none';
+    preview.classList.add('message-preview-empty');
+    preview.textContent = item?.kind === 'diagnostic'
+      ? 'Diagnostics do not have a mailbox message body.'
+      : 'Select an alert to preview its message here.';
+    return;
+  }
+  meta.textContent = item.kind || 'message';
+  const cached = messagePreviewCache[item.message_path];
+  if (cached?.ok) {
+    preview.classList.remove('message-preview-empty');
+    preview.textContent = cached.content;
+    return;
+  }
+  if (cached?.loading) {
+    preview.classList.add('message-preview-empty');
+    preview.textContent = 'Loading message preview...';
+    return;
+  }
+  messagePreviewCache[item.message_path] = {loading: true};
+  preview.classList.add('message-preview-empty');
+  preview.textContent = 'Loading message preview...';
+  fetch(`/api/message?path=${encodeURIComponent(item.message_path)}`, { cache: 'no-store' })
+    .then(res => res.json().then(payload => ({res, payload})))
+    .then(({res, payload}) => {
+      if (!res.ok || payload.ok === false) throw new Error(payload.error || `preview failed ${res.status}`);
+      const content = String(payload.content || '').slice(0, 6000);
+      messagePreviewCache[item.message_path] = {ok: true, content};
+      if (selected?.message_path === item.message_path) {
+        preview.classList.remove('message-preview-empty');
+        preview.textContent = content || 'Message is empty.';
+      }
+    })
+    .catch(err => {
+      messagePreviewCache[item.message_path] = {ok: false, error: err.message || String(err)};
+      if (selected?.message_path === item.message_path) {
+        preview.classList.add('message-preview-empty');
+        preview.textContent = `Preview unavailable: ${err.message || err}`;
+      }
+    });
+}
+function renderAgentDetail(agent) {
+  const actionCount = agentActionCount(agent.id);
+  const kind = agent.id === 'darrin' ? 'decision' : 'wake';
+  document.getElementById('selectedKind').textContent = agent.id === 'darrin' ? 'agent decisions' : 'agent wake-ups';
+  document.getElementById('selectedKind').className = `tag ${kindClass(kind)}`;
+  document.getElementById('detailTitle').textContent = agent.display_name;
+  document.getElementById('detailSummary').textContent = actionCount
+    ? `${actionCount} actionable ${agent.id === 'darrin' ? 'decision' : 'wake-up'}${actionCount === 1 ? '' : 's'} in this view.`
+    : `${agent.display_name} has no overdue queue item in this view.`;
+  const facts = [
+    ['Status', agent.status_label || agent.status || 'Ready'],
+    ['Queue', `${agent.count_value ?? 0} ${agent.count_label || 'queued'}`],
+    ['Actions here', actionCount || 'None'],
+    ['Last activity', fmtTime(agent.last_activity_iso)],
+  ];
+  setHTML('factGrid', facts.map(([label, value]) => `
+    <div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value" title="${esc(value)}">${esc(value)}</div></div>
+  `).join(''));
+  document.getElementById('wakeLine').textContent = actionCount && agent.id !== 'darrin'
+    ? `Select the oldest ${agent.display_name} item, then copy its wake line.`
+    : 'No wake line selected.';
+  hideDetailActions();
+  renderMessagePreview(null);
+  const lines = agent.id === 'darrin'
+    ? [
+        'Click a decision in the queue to open its action controls.',
+        'Use Open message when the summary is not enough.',
+        'Resolve, defer, or ask an AI to handle the follow-up.'
+      ]
+    : [
+        `Click a ${agent.display_name} item to open its action controls.`,
+        'Use Copy wake line or Open message from Action Detail.',
+        `Paste the wake line into ${agent.display_name}, then refresh after the reply.`
+      ];
+  setHTML('howList', lines.map(line => `<li>${esc(line)}</li>`).join(''));
+  document.getElementById('sessionCopy').textContent = 'Choose a specific queue item before setting local handling state.';
+  ['stateAck', 'stateCopied', 'stateWaiting', 'stateHandled'].forEach(id => {
+    const button = document.getElementById(id);
+    button.disabled = true;
+    button.classList.remove('active');
+  });
 }
 function renderHow(item) {
   const target = itemTarget(item) || 'the named AI';
@@ -929,19 +1427,19 @@ function renderHow(item) {
     : item?.kind === 'wake'
     ? [
         `Open or switch to ${target}.`,
-        'Click Copy wake line.',
+        'Click Copy wake line in Action Detail.',
         'Paste the line into that AI and send it.',
-        'After the AI responds, click Refresh here.'
+        'After the AI responds, mark local state or dismiss the alert.'
       ]
     : item?.kind === 'decision'
       ? [
           'Read the summary and message path.',
-          'Open the message if you need context.',
-          'Decide, defer, or ask Codex to handle the follow-up.'
+          'Open the message if you need the full context.',
+          'Resolve, dismiss, or ask Codex to handle the follow-up.'
         ]
       : [
           'Select an action from the queue.',
-          'Use the details and wake line on this side.',
+          'Use Action Detail for source, wake line, and lifecycle controls.',
           'Refresh after any AI replies.'
         ];
   setHTML('howList', lines.map(line => `<li>${esc(line)}</li>`).join(''));
@@ -953,11 +1451,12 @@ function renderSessionState(item) {
   const copy = item?.kind === 'diagnostic'
     ? 'Diagnostics are read-only review items. No handling state needed.'
     : label
-      ? `${label}${at}. This is local browser memory only; no mailbox files were changed.`
-      : 'Track your local progress without changing PAH mailboxes.';
+      ? `${label}${at}. Local lifecycle only; use dismiss or delete when you want to clear the mailbox alert.`
+      : 'Use Ack, Copied, Waiting, or Handled to track progress before clearing the alert.';
   document.getElementById('sessionCopy').textContent = copy;
   const disabled = !item?.id || item?.kind === 'diagnostic';
   [
+    ['stateAck', 'ack'],
     ['stateCopied', 'copied'],
     ['stateWaiting', 'waiting'],
     ['stateHandled', 'handled'],
@@ -1026,21 +1525,42 @@ document.getElementById('refresh').addEventListener('click', loadCockpit);
 document.querySelectorAll('button.filter').forEach(button => {
   button.addEventListener('click', () => {
     queueFilter = button.dataset.filter || 'wake';
+    selectedAgentId = '';
     if (queueFilter !== 'wake') agentFilter = '';
     const visible = filteredQueue();
     if (!visible.some(item => item.id === selected?.id)) selected = visible[0] || null;
     prefs.queueFilter = queueFilter;
     prefs.agentFilter = agentFilter;
+    prefs.selectedAgentId = '';
     prefs.selectedId = selected?.id || '';
     savePrefs();
     render();
   });
 });
+document.getElementById('queueSearch').addEventListener('input', event => {
+  queueSearch = event.target.value || '';
+  const visible = filteredQueue();
+  if (!visible.some(item => item.id === selected?.id)) selected = visible[0] || null;
+  prefs.queueSearch = queueSearch;
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  render();
+});
+document.getElementById('showSnoozed').addEventListener('change', event => {
+  prefs.showSnoozed = Boolean(event.target.checked);
+  const visible = filteredQueue();
+  if (!visible.some(item => item.id === selected?.id)) selected = visible[0] || null;
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  render();
+});
 document.getElementById('clearAgentFilter').addEventListener('click', () => {
   agentFilter = '';
+  selectedAgentId = '';
   const visible = filteredQueue();
   selected = visible[0] || null;
   prefs.agentFilter = '';
+  prefs.selectedAgentId = '';
   prefs.selectedId = selected?.id || '';
   savePrefs();
   render();
@@ -1058,6 +1578,7 @@ document.getElementById('copyWake').addEventListener('click', async () => {
   if (copied && selected?.kind === 'wake') {
     localHandling[selected.id] = { state: 'copied', at: new Date().toISOString() };
     saveLocalHandling();
+    recordActivity('Copied wake line', selected);
     render();
   }
   const button = document.getElementById('copyWake');
@@ -1065,6 +1586,7 @@ document.getElementById('copyWake').addEventListener('click', async () => {
   button.textContent = copied ? 'Copied' : 'Copy failed';
   window.setTimeout(() => { button.textContent = old; }, 1400);
 });
+document.getElementById('stateAck').addEventListener('click', () => setLocalState('ack'));
 document.getElementById('stateCopied').addEventListener('click', () => setLocalState('copied'));
 document.getElementById('stateWaiting').addEventListener('click', () => setLocalState('waiting'));
 document.getElementById('stateHandled').addEventListener('click', () => setLocalState('handled'));
@@ -1078,20 +1600,153 @@ document.getElementById('openMessage').addEventListener('click', async () => {
     setNotice(`Open message failed: ${err.message || err}`);
   }
 });
+document.getElementById('openFolder').addEventListener('click', async () => {
+  if (!selected?.message_path) return;
+  try {
+    const res = await fetch(`/api/open?path=${encodeURIComponent(parentPath(selected.message_path))}`);
+    if (!res.ok) throw new Error(`open folder failed ${res.status}`);
+    recordActivity('Opened folder', selected);
+    setNotice('Open folder request sent.', 'ok');
+  } catch (err) {
+    setNotice(`Open folder failed: ${err.message || err}`);
+  }
+});
+document.getElementById('copyPath').addEventListener('click', async () => {
+  if (!selected?.message_path) return;
+  try {
+    await navigator.clipboard.writeText(selected.message_path);
+    recordActivity('Copied path', selected);
+    setNotice('Message path copied.', 'ok');
+  } catch (err) {
+    setNotice('Copy path failed. Select the path from the details and copy manually.');
+  }
+});
+document.getElementById('snoozeAlert').addEventListener('click', () => {
+  if (!selected?.id) return;
+  setSnooze(selected, 15);
+  const visible = filteredQueue();
+  selected = visible.find(item => item.id === selected?.id) || visible[0] || null;
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  setNotice('Alert snoozed locally for 15 minutes.', 'ok');
+  render();
+});
+document.getElementById('unsnoozeAlert').addEventListener('click', () => {
+  if (!selected?.id) return;
+  clearSnooze(selected);
+  setNotice('Alert unsnoozed.', 'ok');
+  render();
+});
 document.getElementById('markRead').addEventListener('click', async () => {
   if (!selected?.message_path) return;
   try {
-    const res = await fetch('/api/message-read-state', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN},
-      body: JSON.stringify({path: selected.message_path, state: 'read', actor: 'codex'})
-    });
-    const payload = await res.json().catch(() => ({}));
-    if (!res.ok || payload.ok === false) throw new Error(payload.error || `mark read failed ${res.status}`);
-    setNotice('Message marked read.', 'ok');
+    await postJson('/api/message-read-state', {path: selected.message_path, state: 'read', actor: 'codex'});
+    recordActivity('Dismissed alert', selected);
+    setNotice('Alert dismissed and marked read.', 'ok');
     await loadCockpit();
   } catch (err) {
-    setNotice(`Mark read was blocked: ${err.message || err}`);
+    setNotice(`Dismiss alert was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('resolveDecision').addEventListener('click', async () => {
+  if (selected?.kind !== 'decision' || !selected?.message_path) return;
+  try {
+    await postJson('/api/decision-state', {
+      path: selected.message_path,
+      state: 'resolved',
+      note: 'Resolved from PAH action console.',
+      actor: 'darrin_or_codex',
+      title: selected.title || ''
+    });
+    await postJson('/api/message-read-state', {path: selected.message_path, state: 'read', actor: 'codex'});
+    recordActivity('Resolved decision', selected);
+    setNotice('Decision resolved and alert dismissed.', 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Resolve decision was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('dismissDecision').addEventListener('click', async () => {
+  if (selected?.kind !== 'decision' || !selected?.message_path) return;
+  try {
+    await postJson('/api/decision-state', {
+      path: selected.message_path,
+      state: 'dismissed',
+      note: 'Dismissed from PAH action console.',
+      actor: 'darrin_or_codex',
+      title: selected.title || ''
+    });
+    await postJson('/api/message-read-state', {path: selected.message_path, state: 'read', actor: 'codex'});
+    recordActivity('Dismissed decision', selected);
+    setNotice('Decision dismissed and alert marked read.', 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Dismiss decision was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('deleteAlert').addEventListener('click', async () => {
+  if (!selected?.message_path) return;
+  const ok = confirm('Delete this alert from the active mailbox view? PAH will move the message into CODEX Archive / Deleted Alerts, not permanently erase it.');
+  if (!ok) return;
+  try {
+    await postJson('/api/archive-selected-alert', {path: selected.message_path, actor: 'darrin_or_codex'});
+    recordActivity('Deleted alert', selected);
+    setNotice('Alert deleted from the active mailbox view and moved to Deleted Alerts.', 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Delete alert was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('dismissVisible').addEventListener('click', async () => {
+  const items = visibleMessageItems();
+  if (!items.length) return;
+  const ok = confirm(`Dismiss ${items.length} visible alert(s) by marking them read?`);
+  if (!ok) return;
+  try {
+    for (const item of items) {
+      await postJson('/api/message-read-state', {path: item.message_path, state: 'read', actor: 'codex'});
+      if (item.kind === 'decision') {
+        await postJson('/api/decision-state', {
+          path: item.message_path,
+          state: 'dismissed',
+          note: 'Bulk dismissed from PAH action console.',
+          actor: 'darrin_or_codex',
+          title: item.title || ''
+        });
+      }
+    }
+    recordActivity(`Dismissed ${items.length} visible alerts`, items[0], `${items.length}`);
+    setNotice(`Dismissed ${items.length} visible alert(s).`, 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Dismiss visible was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('deleteVisible').addEventListener('click', async () => {
+  const items = visibleMessageItems();
+  if (!items.length) return;
+  const ok = confirm(`Delete ${items.length} visible alert(s) from active mailbox views? PAH will move them into CODEX Archive / Deleted Alerts.`);
+  if (!ok) return;
+  try {
+    for (const item of items) {
+      await postJson('/api/archive-selected-alert', {path: item.message_path, actor: 'darrin_or_codex'});
+    }
+    recordActivity(`Deleted ${items.length} visible alerts`, items[0], `${items.length}`);
+    setNotice(`Deleted ${items.length} visible alert(s) from active mailbox views.`, 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Delete visible was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('runDiagnostics').addEventListener('click', async () => {
+  try {
+    const payload = await postJson('/api/run-diagnostics', {});
+    const fail = Number(payload.checks_fail || 0);
+    const warn = Number(payload.checks_warn || 0);
+    setNotice(fail || warn ? `Diagnostics complete: ${fail} failed, ${warn} warning.` : 'Diagnostics complete: all checks passed.', fail || warn ? 'err' : 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Run diagnostics was blocked: ${err.message || err}`);
   }
 });
 document.getElementById('archiveRead').addEventListener('click', async () => {
@@ -1115,8 +1770,72 @@ document.addEventListener('keydown', event => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') {
     event.preventDefault();
     loadCockpit();
+    return;
+  }
+  const target = event.target;
+  const isTyping = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+  if (event.key === 'Escape') {
+    if (queueSearch) {
+      event.preventDefault();
+      queueSearch = '';
+      document.getElementById('queueSearch').value = '';
+      const visible = filteredQueue();
+      selected = visible[0] || null;
+      prefs.queueSearch = '';
+      prefs.selectedId = selected?.id || '';
+      savePrefs();
+      render();
+    }
+    return;
+  }
+  if (isTyping) return;
+  const key = event.key.toLowerCase();
+  if (key === '/') {
+    event.preventDefault();
+    document.getElementById('queueSearch').focus();
+    return;
+  }
+  if (key === '?') {
+    event.preventDefault();
+    showShortcutHelp();
+    return;
+  }
+  if (key === 'j' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    selectRelative(1);
+    return;
+  }
+  if (key === 'k' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    selectRelative(-1);
+    return;
+  }
+  if (key === 'o') {
+    event.preventDefault();
+    document.getElementById('openMessage').click();
+    return;
+  }
+  if (key === 'c') {
+    event.preventDefault();
+    document.getElementById('copyWake').click();
+    return;
+  }
+  if (key === 'u') {
+    event.preventDefault();
+    document.getElementById('markRead').click();
+    return;
+  }
+  if (key === 'r') {
+    event.preventDefault();
+    if (!document.getElementById('runDiagnostics').disabled) document.getElementById('runDiagnostics').click();
+    return;
+  }
+  if (key === 's') {
+    event.preventDefault();
+    document.getElementById('snoozeAlert').click();
   }
 });
+document.getElementById('shortcutHelp').addEventListener('click', showShortcutHelp);
 document.getElementById('autoRefresh').addEventListener('change', event => {
   prefs.autoRefresh = Boolean(event.target.checked);
   savePrefs();
@@ -1133,7 +1852,11 @@ function configureAutoRefresh() {
 function applyPrefs() {
   queueFilter = prefs.queueFilter || 'wake';
   agentFilter = prefs.agentFilter || '';
+  selectedAgentId = prefs.selectedAgentId || '';
+  queueSearch = prefs.queueSearch || '';
+  if (selectedAgentId && selectedAgentId !== 'darrin' && !agentFilter) agentFilter = selectedAgentId;
   document.getElementById('autoRefresh').checked = Boolean(prefs.autoRefresh);
+  document.getElementById('queueSearch').value = queueSearch;
 }
 applyPrefs();
 configureAutoRefresh();
