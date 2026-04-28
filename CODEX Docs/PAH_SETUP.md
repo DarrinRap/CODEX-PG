@@ -187,12 +187,12 @@ Local tests completed:
 - Safe-open endpoint for Panda Gallery mailbox path: passed.
 - Live `/api/status`: diagnostics OK.
 
-Observed live status during setup:
+Observed live status after route-test completion:
 
 ```text
 diagnostics_ok: true
-messages indexed: 189
-route_tests: 1 received_reply, 1 pending_reply
+messages indexed: 199
+route_tests: 2 received_reply, 0 pending_reply
 ```
 
 Live route tests:
@@ -206,8 +206,18 @@ Live route tests:
 - Codex -> Desktop Claude:
   - Test id:
     `PAH-ROUTE-TEST-20260427-211258-codex_to_claude`
-  - Result: delivered, still pending exact route-test ACK at the time of this
-    document.
+  - Result: `received_reply`.
+  - ACK:
+    `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX Inbox\20260427_223000_CLAUDE_to_CODEX_pah_route_test_ack.md`
+
+Desktop Claude's ACK confirmed:
+
+- Codex -> Desktop Claude: working.
+- Desktop Claude -> Codex: working.
+- Codex -> Claude Code: working.
+- Claude Code -> Codex / PAH reply detection: working.
+
+All three agents are connected through the PAH file bridge.
 
 Claude Code review:
 
@@ -223,6 +233,17 @@ CC noted three optional low-risk improvements:
   quoted in an unrelated message.
 - Native CC directories are not created by `ensure_runtime_dirs()`, though
   they already exist in this setup and are created on demand by message writes.
+
+Desktop Claude synthesis:
+
+- Overall verdict: ready with caveats for the current Darrin-in-the-loop wake
+  model.
+- Keep the native CC mailbox as PAH's operational path.
+- Treat `CODEX_CLAUDE_CODE Inbox` as a parallel / compatibility lane that CC
+  may check at session start, not as the PAH route.
+- Add paste-ready wake line generation as a near-term convenience improvement.
+- Surface a Darrin approval question for standing PAH writes to the native CC
+  inbox.
 
 ## Wake Policy
 
@@ -330,14 +351,23 @@ Get-CimInstance Win32_Process |
 
 ## Open Items
 
-- Desktop Claude still needs to send an exact ACK for the PAH
-  `codex_to_claude` route test if complete route-test parity is required.
+- Darrin should explicitly approve or reject standing PAH writes to:
+
+  ```text
+  C:\panda-gallery\workflows\cc_mailbox\CC Inbox\
+  ```
+
+  This is already operational and has been used for coordination messages, but
+  it crosses the Panda Gallery path boundary. Current recommendation is to
+  approve this as standing behavior for coordination-only Markdown messages.
 - Consider reconciling `CC_PROTOCOL.md` wording so it clearly matches this
-  setup doc's canonical native PAH route.
+  setup doc's canonical native PAH route while preserving
+  `CODEX_CLAUDE_CODE Inbox` as a secondary lane.
 - Consider adding a hermetic test for `refresh_route_tests()` detecting a real
   reply file in `CC_CLAUDE_INBOX`.
 - Consider adding comments or startup handling for the import-time
   `CLAUDE_CODE_INBOX` selection.
+- Consider adding paste-ready wake line generation when PAH writes to the
+  native Claude Code inbox.
 - Keep using Darrin-in-the-loop wake until a safer headless adapter is
   explicitly approved.
-
