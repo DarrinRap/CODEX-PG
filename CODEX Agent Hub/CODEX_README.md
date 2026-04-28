@@ -89,6 +89,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Processed-message sidecars for idempotency. PAH records message content hashes and processed event names so restart/refresh cannot resend the same notification for the same message content.
 - Read/unread state and status badges for mailbox messages. PAH stores read state locally and marks changed message content unread again.
 - Closed-thread archive state for keeping completed threads out of the active thread list. Newer activity on an archived thread surfaces it again automatically.
+- Physical cleanup action for read Codex inbox messages. `Archive read` moves PAH-confirmed read files from `CODEX Inbox` into `CODEX Archive\Read Messages\YYYYMMDD`; unread and waiting-on-Darrin messages stay in place.
 - Token-protected write endpoints for compose and notification tests.
 
 ## Claude Code Bridge Model

@@ -13,6 +13,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import socket
 import smtplib
 import threading
@@ -82,6 +83,7 @@ from pah_mailbox.paths import (
     CLAUDE_INBOX,
     CLAUDE_SENT,
     CC_MAILBOX_ROOT,
+    CODEX_ARCHIVE,
     CODEX_INBOX,
     CODEX_SENT,
     CONFIG_DIR,
@@ -1151,6 +1153,65 @@ def mark_all_messages_read(actor: str = "codex") -> dict[str, Any]:
     for msg in messages:
         set_message_read_state(msg.path, msg.message_id, msg.body, READ_STATE, actor=actor)
     return {"count": len(messages), "state_path": str(READ_STATE_PATH)}
+
+
+def unique_destination(path: Path) -> Path:
+    if not path.exists():
+        return path
+    stem = path.stem
+    suffix = path.suffix
+    for index in range(1, 1000):
+        candidate = path.with_name(f"{stem}_{index:03d}{suffix}")
+        if not candidate.exists():
+            return candidate
+    raise FileExistsError(f"Could not find unique archive destination for {path}")
+
+
+def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = False) -> dict[str, Any]:
+    read_state_data = load_read_state()
+    codex_inbox = CODEX_INBOX.resolve()
+    archive_dir = CODEX_ARCHIVE / "Read Messages" / datetime.now().strftime("%Y%m%d")
+    candidates: list[Message] = []
+    skipped_waiting = 0
+    for msg in load_messages():
+        try:
+            if msg.path.parent.resolve() != codex_inbox:
+                continue
+        except OSError:
+            continue
+        if msg.is_waiting_on_darrin:
+            skipped_waiting += 1
+            continue
+        read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+        if read_status["unread"]:
+            continue
+        candidates.append(msg)
+
+    moved: list[dict[str, str]] = []
+    if not dry_run:
+        archive_dir.mkdir(parents=True, exist_ok=True)
+    for msg in candidates:
+        destination = unique_destination(archive_dir / msg.path.name)
+        record = {
+            "message_id": msg.message_id,
+            "thread_id": msg.stable_thread,
+            "from": msg.from_agent,
+            "to": msg.to_agent,
+            "source": str(msg.path),
+            "destination": str(destination),
+        }
+        if not dry_run:
+            shutil.move(str(msg.path), str(destination))
+        moved.append(record)
+
+    return {
+        "actor": actor.strip() or "codex",
+        "dry_run": dry_run,
+        "count": len(moved),
+        "skipped_waiting_on_darrin": skipped_waiting,
+        "archive_dir": str(archive_dir),
+        "moved": moved,
+    }
 
 
 def messages_for_thread(thread_id: str, messages: list[Message] | None = None) -> list[Message]:
@@ -2559,6 +2620,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/validation-state",
             "/api/message-read-state",
             "/api/mark-all-read",
+            "/api/archive-read-codex-inbox",
             "/api/thread-archive-state",
             "/api/work-item",
             "/api/dispatch-work-item",
@@ -2659,6 +2721,17 @@ class Handler(BaseHTTPRequestHandler):
         if parsed_path == "/api/mark-all-read":
             try:
                 record = mark_all_messages_read(actor=str(payload.get("actor", "codex")))
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **record})
+            return
+        if parsed_path == "/api/archive-read-codex-inbox":
+            try:
+                record = archive_read_codex_inbox_messages(
+                    actor=str(payload.get("actor", "codex")),
+                    dry_run=bool(payload.get("dry_run", False)),
+                )
             except Exception as exc:
                 self.send_json({"ok": False, "error": str(exc)}, 400)
                 return

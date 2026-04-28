@@ -424,6 +424,7 @@ The console guards against common operator and local-server failure cases:
 - copy/open/mark-read failures show an inline notice instead of silently failing
 - clipboard failure does not mark an item as copied
 - mark-read API rejections surface the backend guard reason
+- archive-read moves only PAH-confirmed read `CODEX Inbox` files and skips unread or waiting-on-Darrin messages
 - selected queue item is preserved across refreshes when it still exists
 - empty queues include the latest mailbox check timestamp where available
 
@@ -601,6 +602,7 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Refresh failure notice with stale-data fallback
 - [x] Persisted queue/agent/selection preferences
 - [x] Visible Mark Read/Open Message failure notices
+- [x] Archive read CODEX Inbox cleanup action
 - [x] Quiet diagnostics footer
 - [x] Read-only compose/send safety
 - [x] Direct wake disabled

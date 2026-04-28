@@ -9,6 +9,7 @@ HUB_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = HUB_ROOT.parent
 MAILBOX_ROOT = PROJECT_ROOT / "CODEX Claude Codex Mailbox"
 CODEX_INBOX = MAILBOX_ROOT / "CODEX Inbox"
+CODEX_ARCHIVE = MAILBOX_ROOT / "CODEX Archive"
 CLAUDE_INBOX = MAILBOX_ROOT / "CLAUDE Inbox"
 PANDA_GALLERY_ROOT = PROJECT_ROOT.parent / "panda-gallery"
 CC_MAILBOX_ROOT = PANDA_GALLERY_ROOT / "workflows" / "cc_mailbox"

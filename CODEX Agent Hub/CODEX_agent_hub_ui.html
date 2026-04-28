@@ -427,6 +427,7 @@ button.filter.active {
     <div class="top-actions">
       <label class="toggle"><input type="checkbox" id="autoRefresh"> Auto refresh</label>
       <button id="refresh">Refresh</button>
+      <button id="archiveRead">Archive read</button>
       <button disabled>Compose</button>
     </div>
   </header>
@@ -527,6 +528,7 @@ button.filter.active {
 </div>
 
 <script>
+const WRITE_TOKEN = "__WRITE_TOKEN__";
 let cockpit = null;
 let selected = null;
 let queueFilter = 'wake';
@@ -1081,7 +1083,7 @@ document.getElementById('markRead').addEventListener('click', async () => {
   try {
     const res = await fetch('/api/message-read-state', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN},
       body: JSON.stringify({path: selected.message_path, state: 'read', actor: 'codex'})
     });
     const payload = await res.json().catch(() => ({}));
@@ -1090,6 +1092,23 @@ document.getElementById('markRead').addEventListener('click', async () => {
     await loadCockpit();
   } catch (err) {
     setNotice(`Mark read was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('archiveRead').addEventListener('click', async () => {
+  const ok = confirm('Move read CODEX Inbox messages to CODEX Archive? Unread messages and waiting-on-Darrin messages stay put.');
+  if (!ok) return;
+  try {
+    const res = await fetch('/api/archive-read-codex-inbox', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN},
+      body: JSON.stringify({actor: 'darrin_or_codex'})
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || payload.ok === false) throw new Error(payload.error || `archive failed ${res.status}`);
+    setNotice(`Archived ${payload.count || 0} read CODEX Inbox message(s). Waiting-on-Darrin skipped: ${payload.skipped_waiting_on_darrin || 0}.`, 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Archive read was blocked: ${err.message || err}`);
   }
 });
 document.addEventListener('keydown', event => {
