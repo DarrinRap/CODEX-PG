@@ -939,6 +939,10 @@ def test_read_state_marks_changed_content_unread() -> None:
         read_status = message_read_status(message_path, "PAH-READ-STATE-001", text, data)
         assert_true(not read_status["unread"], "same content remains read")
 
+        renamed_path = Path(temp_dir) / "renamed-message.md"
+        renamed_status = message_read_status(renamed_path, "PAH-READ-STATE-001", text, data)
+        assert_true(not renamed_status["unread"], "same message id and content remains read after path drift")
+
         changed_status = message_read_status(message_path, "PAH-READ-STATE-001", text + "\nchanged\n", data)
         assert_true(changed_status["unread"], "changed content becomes unread")
         assert_true(changed_status["content_changed"], "changed content is flagged")

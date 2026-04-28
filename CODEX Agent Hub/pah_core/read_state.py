@@ -51,15 +51,29 @@ def save_read_state(state: dict[str, Any], path: Path = READ_STATE_PATH) -> None
     atomic_write_text(path, json.dumps(state, indent=2, sort_keys=True) + "\n")
 
 
-def read_record_for(path: Path | str, state: dict[str, Any] | None = None) -> dict[str, Any]:
+def read_record_for(
+    path: Path | str,
+    state: dict[str, Any] | None = None,
+    message_id: str = "",
+) -> dict[str, Any]:
     data = state or load_read_state()
-    record = data.get("items", {}).get(message_read_key(path), {})
+    items = data.get("items", {})
+    record = items.get(message_read_key(path), {})
+    if not isinstance(record, dict) and message_id:
+        record = {}
+    if not record and message_id:
+        for candidate in items.values():
+            if not isinstance(candidate, dict):
+                continue
+            if str(candidate.get("message_id", "")) == message_id:
+                record = candidate
+                break
     return record if isinstance(record, dict) else {}
 
 
 def message_read_status(path: Path | str, message_id: str, text: str, state: dict[str, Any] | None = None) -> dict[str, Any]:
     digest = content_hash(text)
-    record = read_record_for(path, state)
+    record = read_record_for(path, state, message_id=message_id)
     state_name = str(record.get("state", UNREAD_STATE)).strip().lower()
     if state_name not in READ_STATES:
         state_name = UNREAD_STATE
