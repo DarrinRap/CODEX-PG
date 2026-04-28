@@ -61,6 +61,10 @@ button.primary {
   color: var(--accent-ink);
   font-weight: 700;
 }
+button[disabled] {
+  opacity: .45;
+  cursor: default;
+}
 button.icon {
   width: 30px;
   padding: 0;
@@ -95,8 +99,8 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
   min-width: 0;
 }
 .mark {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--text);
   position: relative;
@@ -105,14 +109,14 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
 .mark:before, .mark:after {
   content: "";
   position: absolute;
-  top: 8px;
-  width: 7px;
-  height: 7px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #11111a;
 }
-.mark:before { left: 7px; }
-.mark:after { right: 7px; }
+.mark:before { left: 6px; }
+.mark:after { right: 6px; }
 .brand-title {
   font-weight: 800;
   font-size: 14px;
@@ -265,6 +269,23 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
 .agent-name { font-weight: 800; font-size: 12px; }
 .agent-meta { color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .agent-num { font-size: 17px; font-weight: 800; color: var(--text); text-align: right; }
+.agent-count {
+  text-align: right;
+  color: var(--muted-2);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.agent-count strong {
+  display: block;
+  color: var(--text);
+  font-size: 16px;
+}
+.agent-count span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
 .agent-foot {
   grid-column: 2 / 4;
   display: grid;
@@ -523,7 +544,7 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
 }
 .detail-copy {
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   padding: 12px;
   display: grid;
   gap: 10px;
@@ -599,6 +620,15 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
   height: 24px;
   padding: 0 7px;
 }
+.scope-preview {
+  grid-column: 1 / 3;
+  border: 1px solid rgba(232, 168, 124, .34);
+  border-radius: 7px;
+  background: rgba(232, 168, 124, .055);
+  padding: 8px;
+  color: var(--muted-2);
+}
+.scope-preview strong { color: var(--text); }
 .decision-title {
   font-weight: 800;
   white-space: nowrap;
@@ -667,7 +697,7 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
   border-top: 1px solid var(--border);
   background: #151526;
   display: grid;
-  grid-template-columns: 236px 1fr auto;
+  grid-template-columns: minmax(220px, .75fr) minmax(320px, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 0 10px;
@@ -680,6 +710,13 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
   text-overflow: ellipsis;
   font-family: "Cascadia Mono", Consolas, monospace;
 }
+.path-label {
+  color: var(--muted-2);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-right: 6px;
+}
 .footer-actions { display: flex; gap: 7px; }
 
 @media (max-height: 760px) {
@@ -691,14 +728,13 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
   .agent-list { grid-auto-rows: 68px; }
   .agent { padding: 7px; }
   .side { grid-template-rows: 132px minmax(0, 1fr) 150px; }
-  .message-card:nth-child(n+4) { display: none; }
 }
 
 @media (max-width: 1260px) {
   .app { min-width: 1040px; }
   .main { grid-template-columns: 214px minmax(500px, 1fr) 304px; }
-  .footer { grid-template-columns: 214px 1fr auto; }
-  .context-chip.optional { display: none; }
+  .footer { grid-template-columns: minmax(200px, .75fr) minmax(280px, 1fr) auto; }
+  .context-chip.hide-first { display: none; }
 }
 </style>
 </head>
@@ -713,15 +749,16 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
       </div>
     </div>
     <div class="context-strip">
-      <div class="context-chip"><span class="status-dot ok"></span><strong>Routes healthy</strong></div>
-      <div class="context-chip"><strong>220</strong> messages</div>
+      <div class="context-chip"><span class="status-dot warn"></span><strong>3/4 routes pass</strong><span>1 held</span></div>
+      <div class="context-chip hide-first"><strong>220</strong> messages</div>
       <div class="context-chip"><strong>7</strong> actionable checks</div>
       <div class="context-chip optional"><strong>main</strong> synced with origin</div>
+      <div class="context-chip"><strong>as of</strong> 07:24:18</div>
     </div>
     <div class="top-actions">
       <input class="search" value="PAH watcher" aria-label="Search">
       <button class="icon" title="Refresh">R</button>
-      <button class="primary">Compose</button>
+      <button disabled>Compose</button>
     </div>
   </header>
 
@@ -731,10 +768,10 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
         <div class="section-title">Agents</div>
         <span class="count-pill">4</span>
       </div>
-      <div class="mode-strip">
+      <div class="mode-strip" title="V1 ships Live only. Plan and Review are intentionally unavailable.">
         <div class="mode active">Live</div>
-        <div class="mode">Plan</div>
-        <div class="mode">Review</div>
+        <div class="mode">Soon</div>
+        <div class="mode">Later</div>
       </div>
       <div class="agent-list">
         <div class="agent active">
@@ -743,7 +780,7 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
             <div class="agent-name"><span class="status-dot active"></span>Codex</div>
             <div class="agent-meta">PAH cleanup shipped</div>
           </div>
-          <div class="agent-num">1</div>
+          <div class="agent-count"><strong>1</strong><span>open</span></div>
           <div class="agent-foot">
             <div class="mini-meter"><span style="width: 74%"></span></div>
             <span>ready</span>
@@ -755,7 +792,7 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
             <div class="agent-name"><span class="status-dot ok"></span>Claude Desktop</div>
             <div class="agent-meta">review queue clear</div>
           </div>
-          <div class="agent-num">3</div>
+          <div class="agent-count"><strong>3</strong><span>unread</span></div>
           <div class="agent-foot">
             <div class="mini-meter"><span style="width: 48%; background: var(--ok)"></span></div>
             <span>clear</span>
@@ -767,7 +804,7 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
             <div class="agent-name"><span class="status-dot warn"></span>Claude Code</div>
             <div class="agent-meta">watcher awaits permission</div>
           </div>
-          <div class="agent-num">5</div>
+          <div class="agent-count"><strong>5</strong><span>queued</span></div>
           <div class="agent-foot">
             <div class="mini-meter"><span style="width: 82%; background: var(--warn)"></span></div>
             <span>queued</span>
@@ -779,7 +816,7 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
             <div class="agent-name"><span class="status-dot err"></span>Darrin</div>
             <div class="agent-meta">1 decision needed</div>
           </div>
-          <div class="agent-num">1</div>
+          <div class="agent-count"><strong>1</strong><span>decision</span></div>
           <div class="agent-foot">
             <div class="mini-meter"><span style="width: 28%; background: var(--err)"></span></div>
             <span>decision</span>
@@ -788,8 +825,8 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
       </div>
       <div class="rail-tools">
         <button>All Mail</button>
-        <button>Routes</button>
-        <button>Decisions</button>
+        <button>History</button>
+        <button>Schema</button>
         <button>Archive</button>
       </div>
     </aside>
@@ -797,9 +834,9 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
     <section class="center">
       <div class="status-grid">
         <div class="stat">
-          <div class="stat-label"><span>Unread</span><span class="status-dot active"></span></div>
+          <div class="stat-label"><span>Unread</span><span class="status-dot"></span></div>
           <div class="stat-value">12</div>
-          <div class="stat-note">new since last cockpit load</div>
+          <div class="stat-note">+3 since last load</div>
         </div>
         <div class="stat">
           <div class="stat-label"><span>Waiting</span><span class="status-dot warn"></span></div>
@@ -829,14 +866,14 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
             <button class="ghost">Mark read</button>
           </div>
           <div class="filter-bar">
-            <div class="quick-filters">
+          <div class="quick-filters">
               <span class="filter active">Needs action</span>
               <span class="filter">Unread</span>
-              <span class="filter">CC</span>
+              <span class="filter">Claude Code</span>
               <span class="filter">Decisions</span>
               <span class="filter">Shipped</span>
             </div>
-            <div class="density"><span>C</span><span class="active">M</span><span>L</span></div>
+            <div class="density" title="Density: compact, medium, large"><span>C</span><span class="active">M</span><span>L</span></div>
           </div>
           <div class="pane-body">
             <div class="feed">
@@ -897,6 +934,7 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
                   <span>Owner: Darrin</span>
                   <span>Source: Claude Code feedback</span>
                   <span>Route: CC mailbox</span>
+                  <span>as of 07:24:18</span>
                 </div>
               </div>
               <div class="detail-copy">
@@ -956,16 +994,19 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
               <div class="decision-title">Standing read permission</div>
               <div class="decision-sub">PAH watcher reads CC mailbox continuously</div>
               <div class="decision-actions">
-                <button class="primary">Approve</button>
+                <button class="primary">Review scope</button>
                 <button>Route outside PG</button>
               </div>
             </div>
             <span class="badge wait">needed</span>
+            <div class="scope-preview">
+              <strong>Confirmation required:</strong> path, cadence, logged fields, and no-write limits must be reviewed before grant.
+            </div>
           </div>
           <div class="decision">
             <div>
               <div class="decision-title">Bug #129 mockup</div>
-              <div class="decision-sub">Waiting behind PAH watcher decision</div>
+              <div class="decision-sub">Blocked by: standing read permission</div>
             </div>
             <span class="badge open">queued</span>
           </div>
@@ -1030,12 +1071,12 @@ button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
   </main>
 
   <footer class="footer">
-    <div class="path">C:\CODEX PG\CODEX Claude Codex Mailbox</div>
-    <div class="path">Will write to: C:\panda-gallery\workflows\cc_mailbox\CC Inbox\</div>
+    <div class="path"><span class="path-label">Source</span>C:\CODEX PG\CODEX Claude Codex Mailbox</div>
+    <div class="path"><span class="path-label">Destination</span>read-only preview; no draft staged</div>
     <div class="footer-actions">
       <button>Validate</button>
       <button>Backup</button>
-      <button class="primary">Send</button>
+      <button disabled>Send</button>
     </div>
   </footer>
 </div>
