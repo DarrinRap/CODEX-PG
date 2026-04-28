@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PANDA Agent Hub Compact Cockpit Mockup</title>
+<style>
+:root {
+  --canvas: #14141f;
+  --pane: #1a1a2e;
+  --pane-raised: #22223a;
+  --field: #10111b;
+  --border: #2a2a3e;
+  --border-soft: rgba(224, 221, 213, 0.12);
+  --text: #e0ddd5;
+  --muted: #888888;
+  --muted-2: #aaa59b;
+  --accent: #e8a87c;
+  --accent-ink: #21150e;
+  --ok: #7fb069;
+  --warn: #d7b86b;
+  --err: #e74c3c;
+  --info: #7aa9c2;
+  --shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+  font: 12px/1.35 "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0;
+}
+button, input, select, textarea { font: inherit; }
+input, select {
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--field);
+  color: var(--text);
+  padding: 0 9px;
+}
+button {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(224, 221, 213, 0.045);
+  color: var(--text);
+  padding: 0 10px;
+  white-space: nowrap;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+button.icon {
+  width: 30px;
+  padding: 0;
+  font-weight: 700;
+}
+button.ghost { background: transparent; }
+button.ok { border-color: rgba(127, 176, 105, .55); color: #c5e4b8; }
+button.warn { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
+
+.app {
+  height: 100vh;
+  min-width: 1120px;
+  min-height: 680px;
+  display: grid;
+  grid-template-rows: 48px 1fr 42px;
+  background: var(--canvas);
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: 260px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: #151526;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--text);
+  position: relative;
+  border: 1px solid rgba(224, 221, 213, .35);
+}
+.mark:before, .mark:after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #11111a;
+}
+.mark:before { left: 7px; }
+.mark:after { right: 7px; }
+.brand-title {
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.05;
+}
+.brand-sub {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 1px;
+}
+.context-strip {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+.context-chip {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(224, 221, 213, .04);
+  padding: 0 10px;
+  color: var(--muted-2);
+  white-space: nowrap;
+}
+.context-chip strong { color: var(--text); font-weight: 700; }
+.top-actions { display: flex; align-items: center; gap: 7px; }
+.search {
+  width: 180px;
+  color: var(--muted-2);
+}
+
+.main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 236px minmax(560px, 1fr) 334px;
+  overflow: hidden;
+}
+
+.rail, .center, .side {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.rail, .side {
+  background: #151526;
+  border-color: var(--border);
+}
+.rail {
+  border-right: 1px solid var(--border);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.center {
+  padding: 10px;
+  display: grid;
+  grid-template-rows: 96px minmax(0, 1fr);
+  gap: 10px;
+}
+.side {
+  border-left: 1px solid var(--border);
+  display: grid;
+  grid-template-rows: 152px minmax(0, 1fr) 170px;
+}
+
+.section-head {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.section-title {
+  color: var(--muted-2);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.count-pill {
+  min-width: 22px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted-2);
+  padding: 0 7px;
+}
+.agent-list {
+  min-height: 0;
+  padding: 8px;
+  display: grid;
+  grid-auto-rows: minmax(76px, auto);
+  gap: 8px;
+  overflow: hidden;
+}
+.mode-strip {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.mode {
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 700;
+}
+.mode.active {
+  border-color: rgba(232, 168, 124, .55);
+  color: var(--accent);
+  background: rgba(232, 168, 124, .075);
+}
+.agent {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--pane);
+  padding: 9px;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 9px;
+  align-items: center;
+}
+.agent.active {
+  border-color: rgba(232, 168, 124, .72);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--pane-raised);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: var(--text);
+}
+.agent-name { font-weight: 800; font-size: 12px; }
+.agent-meta { color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-num { font-size: 17px; font-weight: 800; color: var(--text); text-align: right; }
+.agent-foot {
+  grid-column: 2 / 4;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+.mini-meter {
+  height: 4px;
+  border-radius: 999px;
+  background: #10111b;
+  overflow: hidden;
+}
+.mini-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  width: 58%;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  display: inline-block;
+  margin-right: 5px;
+}
+.status-dot.ok { background: var(--ok); }
+.status-dot.active { background: var(--accent); animation: pulse 1.5s infinite; }
+.status-dot.warn { background: var(--warn); }
+.status-dot.err { background: var(--err); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .42; }
+}
+.rail-tools {
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.status-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+}
+.stat {
+  min-height: 96px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--pane);
+  padding: 10px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.stat-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.stat-value {
+  align-self: center;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 800;
+}
+.stat-note {
+  color: var(--muted-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workbench {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(330px, .92fr) minmax(360px, 1.08fr);
+  gap: 10px;
+}
+.pane {
+  min-height: 0;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--pane);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: 38px 1fr;
+}
+.mailbox-pane {
+  grid-template-rows: 38px 34px 1fr;
+}
+.filter-bar {
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.quick-filters {
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+.filter {
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 10px;
+}
+.filter.active {
+  color: var(--accent);
+  border-color: rgba(232, 168, 124, .48);
+  background: rgba(232, 168, 124, .07);
+}
+.density {
+  display: flex;
+  gap: 3px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.density span {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 10px;
+}
+.density span.active {
+  background: var(--pane-raised);
+  color: var(--accent);
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+.tab {
+  height: 28px;
+  border-radius: 5px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+.tab.active {
+  color: var(--accent);
+  border-color: rgba(232, 168, 124, .42);
+  background: rgba(232, 168, 124, .08);
+}
+.pane-body { min-height: 0; overflow: hidden; }
+.feed {
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-auto-rows: 78px;
+  gap: 0;
+}
+.feed-item {
+  border-top: 1px solid var(--border-soft);
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: 78px 1fr auto;
+  gap: 9px;
+  align-items: center;
+  min-width: 0;
+  position: relative;
+}
+.feed-item.unread:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--accent);
+}
+.time { color: var(--muted); font-family: "Cascadia Mono", Consolas, monospace; font-size: 11px; }
+.feed-title {
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.feed-sub {
+  color: var(--muted);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.badge-row { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+.badge {
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 0 7px;
+  color: var(--muted-2);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.badge.open { border-color: rgba(232, 168, 124, .55); color: #f0bf9d; }
+.badge.wait { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
+.badge.closed { border-color: rgba(127, 176, 105, .55); color: #c5e4b8; }
+.badge.blocked { border-color: rgba(231, 76, 60, .62); color: #f3aaa1; }
+
+.detail {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.detail-head {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.detail-title {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.detail-meta {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--muted);
+}
+.detail-copy {
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fact {
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #141421;
+  padding: 8px;
+}
+.fact-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.fact-value {
+  margin-top: 4px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.message-card {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #161624;
+  padding: 10px;
+}
+.message-card strong { color: var(--text); }
+.message-card p { margin: 6px 0 0; color: var(--muted-2); }
+.detail-actions {
+  height: 45px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+}
+
+.decision-stack {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-auto-rows: 52px;
+}
+.decision {
+  border-top: 1px solid var(--border-soft);
+  padding: 7px 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.decision.featured {
+  background: rgba(232, 168, 124, .055);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.decision-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+}
+.decision-actions button {
+  height: 24px;
+  padding: 0 7px;
+}
+.decision-title {
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.decision-sub {
+  color: var(--muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.queue-body {
+  min-height: 0;
+  overflow: hidden;
+}
+.route-list {
+  height: 100%;
+  display: grid;
+  grid-auto-rows: 58px;
+  overflow: hidden;
+}
+.route {
+  border-top: 1px solid var(--border-soft);
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.route-name { font-weight: 800; }
+.route-path { color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wake {
+  border-top: 1px solid var(--border);
+  background: #151526;
+  display: grid;
+  grid-template-rows: 34px 1fr;
+}
+.wake-body {
+  padding: 10px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 8px;
+}
+.wake-line {
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--field);
+  color: var(--muted-2);
+  padding: 8px;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  overflow: hidden;
+}
+.safety-strip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+}
+.safety-strip strong { color: var(--accent); }
+
+.footer {
+  border-top: 1px solid var(--border);
+  background: #151526;
+  display: grid;
+  grid-template-columns: 236px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+}
+.footer .path {
+  min-width: 0;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+.footer-actions { display: flex; gap: 7px; }
+
+@media (max-height: 760px) {
+  .app { grid-template-rows: 44px 1fr 38px; min-height: 640px; }
+  .center { grid-template-rows: 82px minmax(0, 1fr); gap: 8px; padding: 8px; }
+  .stat { min-height: 82px; padding: 8px; }
+  .stat-value { font-size: 23px; }
+  .feed { grid-auto-rows: 68px; }
+  .agent-list { grid-auto-rows: 68px; }
+  .agent { padding: 7px; }
+  .side { grid-template-rows: 132px minmax(0, 1fr) 150px; }
+  .message-card:nth-child(n+4) { display: none; }
+}
+
+@media (max-width: 1260px) {
+  .app { min-width: 1040px; }
+  .main { grid-template-columns: 214px minmax(500px, 1fr) 304px; }
+  .footer { grid-template-columns: 214px 1fr auto; }
+  .context-chip.optional { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <div class="brand-title">PANDA Agent Hub</div>
+        <div class="brand-sub">Desktop command cockpit</div>
+      </div>
+    </div>
+    <div class="context-strip">
+      <div class="context-chip"><span class="status-dot ok"></span><strong>Routes healthy</strong></div>
+      <div class="context-chip"><strong>220</strong> messages</div>
+      <div class="context-chip"><strong>7</strong> actionable checks</div>
+      <div class="context-chip optional"><strong>main</strong> synced with origin</div>
+    </div>
+    <div class="top-actions">
+      <input class="search" value="PAH watcher" aria-label="Search">
+      <button class="icon" title="Refresh">R</button>
+      <button class="primary">Compose</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <aside class="rail">
+      <div class="section-head">
+        <div class="section-title">Agents</div>
+        <span class="count-pill">4</span>
+      </div>
+      <div class="mode-strip">
+        <div class="mode active">Live</div>
+        <div class="mode">Plan</div>
+        <div class="mode">Review</div>
+      </div>
+      <div class="agent-list">
+        <div class="agent active">
+          <div class="avatar">CX</div>
+          <div>
+            <div class="agent-name"><span class="status-dot active"></span>Codex</div>
+            <div class="agent-meta">PAH cleanup shipped</div>
+          </div>
+          <div class="agent-num">1</div>
+          <div class="agent-foot">
+            <div class="mini-meter"><span style="width: 74%"></span></div>
+            <span>ready</span>
+          </div>
+        </div>
+        <div class="agent">
+          <div class="avatar">CL</div>
+          <div>
+            <div class="agent-name"><span class="status-dot ok"></span>Claude Desktop</div>
+            <div class="agent-meta">review queue clear</div>
+          </div>
+          <div class="agent-num">3</div>
+          <div class="agent-foot">
+            <div class="mini-meter"><span style="width: 48%; background: var(--ok)"></span></div>
+            <span>clear</span>
+          </div>
+        </div>
+        <div class="agent">
+          <div class="avatar">CC</div>
+          <div>
+            <div class="agent-name"><span class="status-dot warn"></span>Claude Code</div>
+            <div class="agent-meta">watcher awaits permission</div>
+          </div>
+          <div class="agent-num">5</div>
+          <div class="agent-foot">
+            <div class="mini-meter"><span style="width: 82%; background: var(--warn)"></span></div>
+            <span>queued</span>
+          </div>
+        </div>
+        <div class="agent">
+          <div class="avatar">DR</div>
+          <div>
+            <div class="agent-name"><span class="status-dot err"></span>Darrin</div>
+            <div class="agent-meta">1 decision needed</div>
+          </div>
+          <div class="agent-num">1</div>
+          <div class="agent-foot">
+            <div class="mini-meter"><span style="width: 28%; background: var(--err)"></span></div>
+            <span>decision</span>
+          </div>
+        </div>
+      </div>
+      <div class="rail-tools">
+        <button>All Mail</button>
+        <button>Routes</button>
+        <button>Decisions</button>
+        <button>Archive</button>
+      </div>
+    </aside>
+
+    <section class="center">
+      <div class="status-grid">
+        <div class="stat">
+          <div class="stat-label"><span>Unread</span><span class="status-dot active"></span></div>
+          <div class="stat-value">12</div>
+          <div class="stat-note">new since last cockpit load</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label"><span>Waiting</span><span class="status-dot warn"></span></div>
+          <div class="stat-value">1</div>
+          <div class="stat-note">Darrin permission gate</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label"><span>Routes</span><span class="status-dot ok"></span></div>
+          <div class="stat-value">7/7</div>
+          <div class="stat-note">file bridge checks pass</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label"><span>PG Work</span><span class="status-dot ok"></span></div>
+          <div class="stat-value">v4.59</div>
+          <div class="stat-note">285 tests passing</div>
+        </div>
+      </div>
+
+      <div class="workbench">
+        <section class="pane mailbox-pane">
+          <div class="section-head">
+            <div class="tabs">
+              <div class="tab active">Feed</div>
+              <div class="tab">Threads</div>
+              <div class="tab">Files</div>
+            </div>
+            <button class="ghost">Mark read</button>
+          </div>
+          <div class="filter-bar">
+            <div class="quick-filters">
+              <span class="filter active">Needs action</span>
+              <span class="filter">Unread</span>
+              <span class="filter">CC</span>
+              <span class="filter">Decisions</span>
+              <span class="filter">Shipped</span>
+            </div>
+            <div class="density"><span>C</span><span class="active">M</span><span>L</span></div>
+          </div>
+          <div class="pane-body">
+            <div class="feed">
+              <div class="feed-item unread">
+                <div class="time">07:10</div>
+                <div>
+                  <div class="feed-title">Watcher feedback ack</div>
+                  <div class="feed-sub">Codex -> Claude Code / PAH-WATCHER-WAKE-SERVICE</div>
+                </div>
+                <div class="badge-row"><span class="badge wait">waiting</span><span class="badge open">high</span></div>
+              </div>
+              <div class="feed-item unread">
+                <div class="time">08:06</div>
+                <div>
+                  <div class="feed-title">Session status + watcher spec feedback</div>
+                  <div class="feed-sub">Claude Code -> Codex / one open item remains</div>
+                </div>
+                <div class="badge-row"><span class="badge open">active</span></div>
+              </div>
+              <div class="feed-item unread">
+                <div class="time">08:00</div>
+                <div>
+                  <div class="feed-title">Watcher service engineering feedback</div>
+                  <div class="feed-sub">P0 cleanup done; read permission still gated</div>
+                </div>
+                <div class="badge-row"><span class="badge open">review</span></div>
+              </div>
+              <div class="feed-item">
+                <div class="time">07:05</div>
+                <div>
+                  <div class="feed-title">PAH path cleanup complete</div>
+                  <div class="feed-sub">Codex -> Claude Desktop / smoke tests passed</div>
+                </div>
+                <div class="badge-row"><span class="badge closed">closed</span></div>
+              </div>
+              <div class="feed-item">
+                <div class="time">22:55</div>
+                <div>
+                  <div class="feed-title">Bug #129 settings sizing mockup</div>
+                  <div class="feed-sub">Claude Desktop -> Codex / separate design task</div>
+                </div>
+                <div class="badge-row"><span class="badge open">open</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="pane">
+          <div class="section-head">
+            <div class="section-title">Selected Thread</div>
+            <div class="badge-row"><span class="badge wait">waiting on Darrin</span></div>
+          </div>
+          <div class="pane-body">
+            <div class="detail">
+              <div class="detail-head">
+                <div class="detail-title">PAH watcher wake service</div>
+                <div class="detail-meta">
+                  <span>Owner: Darrin</span>
+                  <span>Source: Claude Code feedback</span>
+                  <span>Route: CC mailbox</span>
+                </div>
+              </div>
+              <div class="detail-copy">
+                <div class="detail-grid">
+                  <div class="fact">
+                    <div class="fact-label">State</div>
+                    <div class="fact-value">Waiting on Darrin</div>
+                  </div>
+                  <div class="fact">
+                    <div class="fact-label">Next action</div>
+                    <div class="fact-value">Approve read scope</div>
+                  </div>
+                  <div class="fact">
+                    <div class="fact-label">Writes</div>
+                    <div class="fact-value">None planned</div>
+                  </div>
+                  <div class="fact">
+                    <div class="fact-label">Wake model</div>
+                    <div class="fact-value">Copy line only</div>
+                  </div>
+                </div>
+                <div class="message-card">
+                  <strong>Current gate</strong>
+                  <p>Confirm whether PAH may continuously read the native Claude Code mailbox under C:\panda-gallery\workflows\cc_mailbox.</p>
+                </div>
+                <div class="message-card">
+                  <strong>Implementation shape</strong>
+                  <p>Mailbox-only presence, startup path validation, schema-versioned event log, copy-ready wake line, no direct wake automation.</p>
+                </div>
+                <div class="message-card">
+                  <strong>Already handled</strong>
+                  <p>Legacy CC inboxes removed from active routes. Bridge protocol exists. Smoke tests pass.</p>
+                </div>
+              </div>
+              <div class="detail-actions">
+                <button>Open Message</button>
+                <div class="top-actions">
+                  <button class="warn">Defer</button>
+                  <button class="primary">Draft Approval</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section>
+        <div class="section-head">
+          <div class="section-title">Decision Queue</div>
+          <span class="count-pill">1</span>
+        </div>
+        <div class="decision-stack">
+          <div class="decision featured">
+            <div>
+              <div class="decision-title">Standing read permission</div>
+              <div class="decision-sub">PAH watcher reads CC mailbox continuously</div>
+              <div class="decision-actions">
+                <button class="primary">Approve</button>
+                <button>Route outside PG</button>
+              </div>
+            </div>
+            <span class="badge wait">needed</span>
+          </div>
+          <div class="decision">
+            <div>
+              <div class="decision-title">Bug #129 mockup</div>
+              <div class="decision-sub">Waiting behind PAH watcher decision</div>
+            </div>
+            <span class="badge open">queued</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="queue-body">
+        <div class="section-head">
+          <div class="section-title">Route Health</div>
+          <button class="ghost">Run</button>
+        </div>
+        <div class="route-list">
+          <div class="route">
+            <div>
+              <div class="route-name"><span class="status-dot ok"></span>Codex -> Claude Desktop</div>
+              <div class="route-path">CODEX PG / CLAUDE Inbox</div>
+            </div>
+            <span class="badge closed">pass</span>
+          </div>
+          <div class="route">
+            <div>
+              <div class="route-name"><span class="status-dot ok"></span>Codex -> Claude Code</div>
+              <div class="route-path">panda-gallery / CC Inbox</div>
+            </div>
+            <span class="badge closed">pass</span>
+          </div>
+          <div class="route">
+            <div>
+              <div class="route-name"><span class="status-dot ok"></span>Claude Desktop -> Codex</div>
+              <div class="route-path">CODEX PG / CODEX Inbox</div>
+            </div>
+            <span class="badge closed">pass</span>
+          </div>
+          <div class="route">
+            <div>
+              <div class="route-name"><span class="status-dot warn"></span>Watcher</div>
+              <div class="route-path">held until read permission</div>
+            </div>
+            <span class="badge wait">held</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="wake">
+        <div class="section-head">
+          <div class="section-title">Wake Line</div>
+          <span class="count-pill">CC</span>
+        </div>
+        <div class="wake-body">
+          <div class="safety-strip">
+            <span><strong>No automation.</strong> Darrin pastes into Claude Code.</span>
+            <span class="badge wait">held</span>
+          </div>
+          <div class="wake-line">Read PAH-WATCHER-WAKE-SERVICE-20260428 and reply to CODEX.</div>
+          <div class="top-actions">
+            <button class="primary">Copy</button>
+            <button>Open Folder</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div class="path">C:\CODEX PG\CODEX Claude Codex Mailbox</div>
+    <div class="path">Will write to: C:\panda-gallery\workflows\cc_mailbox\CC Inbox\</div>
+    <div class="footer-actions">
+      <button>Validate</button>
+      <button>Backup</button>
+      <button class="primary">Send</button>
+    </div>
+  </footer>
+</div>
+</body>
+</html>
