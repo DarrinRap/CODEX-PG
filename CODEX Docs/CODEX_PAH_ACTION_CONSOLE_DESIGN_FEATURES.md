@@ -63,9 +63,12 @@ The top bar provides global orientation:
 - current system state, such as `19 messages need wake-up`
 - refresh timestamp
 - refresh button
+- optional auto-refresh toggle
 - disabled compose button in read-only v1
 
 The system state uses a plain-language sentence instead of a vague status badge. It tells Darrin what kind of work is waiting.
+
+The auto-refresh toggle refreshes the cockpit every 30 seconds when enabled. It preserves the selected queue item where possible and stores the setting in local browser memory.
 
 ### Left Panel: Agents
 
@@ -161,6 +164,14 @@ This prevents Darrin from having to scan every row just to understand which AI i
 
 The target mini pills are clickable. Selecting a pill filters the wake-up queue to that AI, and a Clear Agent button returns the queue to all overdue wake-ups.
 
+Queue filter, agent filter, selected item, and auto-refresh preference are persisted in browser `localStorage`:
+
+```text
+pahActionConsole.prefs.v1
+```
+
+This lets Darrin refresh the page without losing triage context.
+
 ### Three-step guide
 
 The visible guide is:
@@ -170,6 +181,19 @@ The visible guide is:
 3. Paste: paste it into the named AI session.
 
 The guide uses verbs rather than system terminology.
+
+### Empty states
+
+When a queue has no matching items, the center panel shows a calm empty state rather than leaving a blank list.
+
+Example:
+
+```text
+No overdue wake-ups in this view.
+Last mailbox check: 8:12 AM.
+```
+
+The last mailbox check line tells Darrin whether the quiet state is current.
 
 ## Queue Filters
 
@@ -389,6 +413,20 @@ Diagnostics are surfaced in the footer and summary strip.
 
 The console uses diagnostics as reassurance unless there is a warning or failure. This keeps the main screen focused on human action rather than system internals.
 
+## Robustness Behavior
+
+The console guards against common operator and local-server failure cases:
+
+- only one cockpit refresh can run at a time
+- the Refresh button is disabled while a refresh is in flight
+- refresh requests bypass browser cache
+- failed refreshes show a visible notice and keep the last loaded cockpit payload on screen
+- copy/open/mark-read failures show an inline notice instead of silently failing
+- clipboard failure does not mark an item as copied
+- mark-read API rejections surface the backend guard reason
+- selected queue item is preserved across refreshes when it still exists
+- empty queues include the latest mailbox check timestamp where available
+
 ## Read-only Safety Model
 
 The console exposes:
@@ -515,11 +553,18 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Queue row tags for copied/waiting/handled
 - [x] Wake line copy surface
 - [x] Copy feedback
+- [x] Clipboard failure feedback
 - [x] Per-item usage instructions
 - [x] Mailbox check times
+- [x] Empty-state mailbox check time
 - [x] Route status and hold reason display
 - [x] Diagnostic route/git/check suite view
 - [x] Summary metrics
+- [x] Auto-refresh toggle
+- [x] Concurrent refresh guard
+- [x] Refresh failure notice with stale-data fallback
+- [x] Persisted queue/agent/selection preferences
+- [x] Visible Mark Read/Open Message failure notices
 - [x] Quiet diagnostics footer
 - [x] Read-only compose/send safety
 - [x] Direct wake disabled
@@ -528,17 +573,7 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 
 ## Recommended Next Enhancements
 
-### 1. Guided Empty State
-
-When no wake-ups exist, show a calm success state:
-
-```text
-No overdue wake-ups. All agents are caught up.
-```
-
-Include the last mailbox check time in the same empty state.
-
-### 2. Read/Unread UX Clarification
+### 1. Read/Unread UX Clarification
 
 Session handling reduces operator memory load, but PAH should still separate "unread" from "unseen" semantics if it later distinguishes:
 
@@ -546,7 +581,7 @@ Session handling reduces operator memory load, but PAH should still separate "un
 - notification seen state
 - persistent handled/archive state
 
-### 3. Decision Review Panel
+### 2. Decision Review Panel
 
 Decision items should eventually render structured scope text first:
 
@@ -556,11 +591,7 @@ Decision items should eventually render structured scope text first:
 - will not do
 - confirmation requirement
 
-### 4. Safer Mark Read
-
-Keep the write-token/origin guard, but make UI failures visible if Mark Read is rejected.
-
-### 5. Route Health Detail Drawer
+### 3. Route Health Detail Drawer
 
 Add a small route detail view that expands from Mailbox Checks:
 
@@ -571,7 +602,7 @@ Add a small route detail view that expands from Mailbox Checks:
 - hold reason
 - latest error
 
-### 6. Schema Cleanup From CC Review
+### 4. Schema Cleanup From CC Review
 
 Address remaining CC schema review items:
 
