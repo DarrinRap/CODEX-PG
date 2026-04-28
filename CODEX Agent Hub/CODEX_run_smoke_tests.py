@@ -454,6 +454,18 @@ def test_cockpit_payload_contract() -> None:
     assert_true(not actions["send"]["enabled"], "send disabled in read-only cockpit")
 
 
+def test_tray_status_payload_contract() -> None:
+    status = agent_hub.tray_status_payload()
+    assert_true(status["schema_version"] == 1, "tray status schema version")
+    assert_true(status["ok"], "tray status reports ok")
+    assert_true(status["level"] in {"ok", "attention", "decision", "diagnostic"}, "tray status level enum")
+    assert_true("stale_unread" in status["counts"], "tray status includes stale unread count")
+    assert_true("diagnostic_problems" in status["counts"], "tray status includes diagnostic count")
+    assert_true(isinstance(status["target_counts"], dict), "tray status target counts are structured")
+    assert_true(not status["direct_wake_supported"], "tray status does not imply direct wake support")
+    assert_true("Human-in-the-loop" in status["safety_label"], "tray status carries safety label")
+
+
 def test_diagnostics() -> None:
     diagnostics = run_communication_diagnostics(write_report=False)
     assert_true("checks" in diagnostics, "diagnostics returns checks")
@@ -1059,6 +1071,7 @@ def main() -> None:
     test_cross_check_auto_resolution_rule()
     test_routes_and_scope()
     test_cockpit_payload_contract()
+    test_tray_status_payload_contract()
     test_diagnostics()
     test_notification_provider_status()
     test_safety_surfaces()

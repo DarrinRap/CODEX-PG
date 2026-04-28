@@ -1688,6 +1688,80 @@ def cockpit_payload() -> dict[str, Any]:
     }
 
 
+def human_duration(seconds: int) -> str:
+    seconds = max(0, int(seconds or 0))
+    if seconds < 60:
+        return f"{seconds}s"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes}m"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours}h {minutes % 60}m"
+    days = hours // 24
+    return f"{days}d {hours % 24}h"
+
+
+def tray_status_payload(cockpit: dict[str, Any] | None = None) -> dict[str, Any]:
+    cockpit = cockpit or cockpit_payload()
+    state = cockpit.get("cockpit_state", {})
+    counts = state.get("counts", {})
+    diagnostics = cockpit.get("diagnostics", {})
+    routes_summary = state.get("routes_summary", {})
+    wake_candidates = cockpit.get("wake_candidates", [])
+    decisions = int(counts.get("decisions_needed", 0) or 0)
+    stale = int(counts.get("stale_unread", 0) or 0)
+    unread = int(counts.get("unread", 0) or 0)
+    diag_problems = int(diagnostics.get("checks_warn", 0) or 0) + int(diagnostics.get("checks_fail", 0) or 0)
+    oldest = max((int(item.get("age_seconds", 0) or 0) for item in wake_candidates), default=0)
+    target_counts: dict[str, int] = {}
+    for item in wake_candidates:
+        target = str(item.get("wake_candidate_label") or item.get("wake_candidate_agent") or "Agent")
+        target_counts[target] = target_counts.get(target, 0) + 1
+
+    if stale:
+        level = "attention"
+        title = f"{stale} overdue PAH message{'s' if stale != 1 else ''}"
+        body = f"Oldest unread is {human_duration(oldest)}. Open PAH and paste the prepared wake line into the named AI."
+    elif decisions:
+        level = "decision"
+        title = f"{decisions} Darrin decision{'s' if decisions != 1 else ''} pending"
+        body = "Open PAH to review approval or deferral work."
+    elif diag_problems:
+        level = "diagnostic"
+        title = f"{diag_problems} PAH diagnostic item{'s' if diag_problems != 1 else ''}"
+        body = "Open PAH diagnostics to review route, watcher, or validation health."
+    else:
+        level = "ok"
+        title = "PAH quiet"
+        body = "No overdue wake-ups right now."
+
+    tooltip = title if len(title) <= 60 else title[:57] + "..."
+    return {
+        "ok": True,
+        "schema_version": 1,
+        "generated_at": cockpit.get("generated_at", ""),
+        "level": level,
+        "title": title,
+        "body": body,
+        "tooltip": tooltip,
+        "counts": {
+            "stale_unread": stale,
+            "unread": unread,
+            "decisions_needed": decisions,
+            "diagnostic_problems": diag_problems,
+            "routes_failed": int(routes_summary.get("failed", 0) or 0),
+            "routes_held": int(routes_summary.get("held", 0) or 0),
+        },
+        "oldest_stale_unread_seconds": oldest,
+        "oldest_stale_unread_label": human_duration(oldest) if oldest else "",
+        "target_counts": target_counts,
+        "stale_unread_threshold_seconds": state.get("stale_unread_threshold_seconds", STALE_UNREAD_SECONDS),
+        "direct_wake_supported": False,
+        "safety_label": "Human-in-the-loop. Tray alerts only; Darrin still pastes wake lines.",
+    }
+
+
 def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None) -> dict[str, Any]:
     read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
     age_seconds = max(0, int(time.time() - msg.modified))
@@ -2429,6 +2503,9 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/cockpit":
             self.send_json(cockpit_payload())
+            return
+        if parsed.path == "/api/tray-status":
+            self.send_json(tray_status_payload())
             return
         if parsed.path == "/api/status":
             self.send_json(state())

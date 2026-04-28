@@ -20,6 +20,20 @@ Windows tray launcher:
 & "C:\CODEX PG\CODEX Agent Hub\CODEX_start_agent_hub_tray.ps1"
 ```
 
+The tray launcher reuses an already-running local PAH server when possible. If PAH is not running, it starts the server hidden, polls `/api/tray-status`, updates the tray tooltip/menu with unread, overdue, decision, and diagnostic counts, and raises a Windows tray balloon when messages sit unread past the stale threshold.
+
+Tray menu actions:
+
+- Open Dashboard
+- Refresh Status
+- Open PAH Folder
+- Open Logs
+- Install at Windows Startup
+- Remove Windows Startup
+- Exit PANDA Agent Hub
+
+Startup install/remove is an explicit tray-menu action. PAH does not install itself at Windows startup automatically.
+
 Or directly:
 
 ```powershell
@@ -53,8 +67,8 @@ If that port is busy, the app picks a free local port and prints it.
 - Important composed messages append to `CODEX_MAILBOX_LEDGER.md`.
 - Git status panel for `C:\CODEX PG`.
 - Local notification subsystem for SMS-style alerts when Darrin attention is needed.
-- Windows tray launcher with Open Dashboard, Open PAH Folder, Open Logs, and Exit actions.
-- Tray balloon popups for new PAH notification log entries while the tray launcher is running.
+- Windows tray companion with Open Dashboard, Refresh Status, live status counts, Open PAH Folder, Open Logs, startup shortcut install/remove, and Exit actions.
+- Tray balloon popups for overdue unread PAH messages and for new PAH notification log entries while the tray launcher is running.
 - Communication diagnostics tab and endpoint for file-bridge readiness across Codex, Claude Desktop, and Claude Code.
 - Route-test pings for Codex to Claude and Codex to Claude Code. PAH writes a traceable diagnostic ping and watches `CODEX Inbox` for a matching reply.
 - Work Board for local parallel development coordination, with owner, priority, state, summary, and source fields.
@@ -271,7 +285,7 @@ This starts PAH hidden, checks `/api/status`, prints a compact JSON result, and 
 
 ## Suggested Next Enhancements
 
-1. Add a packaged Windows tray app with live desktop toasts.
+1. Package the Windows tray companion as a signed executable instead of a PowerShell script.
 2. Tighten canonical-only participant IDs after legacy mailbox aliases are migrated or accepted.
 3. Add direct API-backed agent lanes for OpenAI and Anthropic.
 4. Add file/diff preview for deliverables.

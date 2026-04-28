@@ -427,6 +427,30 @@ The console guards against common operator and local-server failure cases:
 - selected queue item is preserved across refreshes when it still exists
 - empty queues include the latest mailbox check timestamp where available
 
+## System Tray Companion
+
+The Windows tray companion is:
+
+```text
+C:\CODEX PG\CODEX Agent Hub\CODEX_start_agent_hub_tray.ps1
+```
+
+It makes PAH available from the Windows notification area without keeping a terminal window visible.
+
+Tray behavior:
+
+- reuses an already-running local PAH server when possible
+- starts the PAH server hidden when needed
+- polls `/api/tray-status` for compact health and attention state
+- updates tray tooltip and menu rows with unread, overdue, decision, and diagnostic counts
+- raises a Windows tray balloon when unread messages pass the stale threshold
+- mirrors new PAH notification-log entries as tray balloons
+- can open the dashboard, PAH folder, and logs
+- can install or remove a Windows Startup shortcut from explicit tray-menu commands
+- exits cleanly and stops only the server process it started itself
+
+The tray status endpoint is intentionally compact. It exposes counts, target wake distribution, oldest overdue age, and a safety label, but it does not expose message bodies and it does not perform wake/send actions.
+
 ## Read-only Safety Model
 
 The console exposes:
@@ -444,6 +468,7 @@ No direct wake.
 No watcher startup without standing read permission.
 No compose/send in read-only v1.
 No permission grant from a single click.
+Tray alerts only; Darrin remains the wake bridge.
 ```
 
 ## Current Limitations
@@ -458,6 +483,8 @@ The app currently does not:
 - mark messages read through shell-origin requests without write-token/origin validation
 
 The web UI has controls for some local actions, but write-protected endpoints enforce safety checks.
+
+The tray companion currently remains a PowerShell tray app rather than a signed packaged executable.
 
 ## Research Rationale
 
@@ -521,6 +548,12 @@ Backend payload:
 C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub.py
 ```
 
+Tray companion:
+
+```text
+C:\CODEX PG\CODEX Agent Hub\CODEX_start_agent_hub_tray.ps1
+```
+
 Schema:
 
 ```text
@@ -570,6 +603,11 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Direct wake disabled
 - [x] Stale-unread threshold exposed by API
 - [x] Schema updated for stale-unread threshold
+- [x] Compact `/api/tray-status` endpoint
+- [x] Windows tray companion
+- [x] Tray overdue-unread balloon alerts
+- [x] Tray live status menu counts
+- [x] Tray startup shortcut install/remove commands
 
 ## Recommended Next Enhancements
 

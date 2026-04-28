@@ -1,11 +1,13 @@
 param(
-    [int]$Port = 8765
+    [int]$Port = 8765,
+    [int]$PollSeconds = 15,
+    [switch]$NoServer
 )
 
 $ErrorActionPreference = 'Stop'
 
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
-    Start-Process -FilePath powershell.exe -ArgumentList @(
+    $argsList = @(
         '-NoProfile',
         '-STA',
         '-ExecutionPolicy',
@@ -13,8 +15,14 @@ if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
         '-File',
         "`"$PSCommandPath`"",
         '-Port',
-        "$Port"
-    ) -WindowStyle Hidden
+        "$Port",
+        '-PollSeconds',
+        "$PollSeconds"
+    )
+    if ($NoServer) {
+        $argsList += '-NoServer'
+    }
+    Start-Process -FilePath powershell.exe -ArgumentList $argsList -WindowStyle Hidden
     exit
 }
 
@@ -25,6 +33,7 @@ $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $App = Join-Path $ScriptRoot 'CODEX_agent_hub.py'
 $Logs = Join-Path $ScriptRoot 'CODEX logs'
 $Notifications = Join-Path $ScriptRoot 'CODEX notifications'
+$StartupShortcut = Join-Path ([Environment]::GetFolderPath('Startup')) 'PANDA Agent Hub Tray.lnk'
 New-Item -ItemType Directory -Force -Path $Logs | Out-Null
 New-Item -ItemType Directory -Force -Path $Notifications | Out-Null
 
@@ -34,27 +43,136 @@ $NotificationLog = Join-Path $Notifications 'CODEX_notification_log.jsonl'
 Remove-Item -LiteralPath $Stdout -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $Stderr -Force -ErrorAction SilentlyContinue
 
-$Arguments = @(
-    "`"$App`"",
-    '--host',
-    '127.0.0.1',
-    '--port',
-    "$Port",
-    '--no-browser'
-)
-
-$Process = Start-Process -FilePath python -ArgumentList $Arguments -WindowStyle Hidden -RedirectStandardOutput $Stdout -RedirectStandardError $Stderr -PassThru
-
 $script:Url = "http://127.0.0.1:$Port"
-for ($i = 0; $i -lt 40; $i++) {
-    Start-Sleep -Milliseconds 250
-    if (Test-Path -LiteralPath $Stdout) {
-        $line = Get-Content -LiteralPath $Stdout -ErrorAction SilentlyContinue | Select-String -Pattern 'PANDA Agent Hub running at ' | Select-Object -Last 1
-        if ($line) {
-            $script:Url = ($line.Line -replace '^.*PANDA Agent Hub running at ', '').Trim()
-            break
+$script:Process = $null
+$script:StartedServer = $false
+$script:RestartAttempts = 0
+$script:LastAlertKey = ''
+$script:LastStaleUnread = -1
+$script:NotificationPosition = 0
+
+function Limit-Text {
+    param([string]$Text, [int]$Max = 60)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return 'PANDA Agent Hub' }
+    if ($Text.Length -le $Max) { return $Text }
+    return $Text.Substring(0, [Math]::Max(0, $Max - 3)) + '...'
+}
+
+function Invoke-PahJson {
+    param([string]$Path)
+    $uri = "$script:Url$Path"
+    try {
+        return Invoke-RestMethod -Uri $uri -Method Get -TimeoutSec 4
+    }
+    catch {
+        return $null
+    }
+}
+
+function Test-PahServer {
+    $status = Invoke-PahJson '/api/tray-status'
+    return $null -ne $status -and $status.ok
+}
+
+function Read-ServerUrlFromLog {
+    if (-not (Test-Path -LiteralPath $Stdout)) {
+        return $null
+    }
+    $line = Get-Content -LiteralPath $Stdout -ErrorAction SilentlyContinue |
+        Select-String -Pattern 'PANDA Agent Hub running at ' |
+        Select-Object -Last 1
+    if ($line) {
+        return ($line.Line -replace '^.*PANDA Agent Hub running at ', '').Trim()
+    }
+    return $null
+}
+
+function Start-PahServer {
+    if ($NoServer) {
+        return
+    }
+    $arguments = @(
+        "`"$App`"",
+        '--host',
+        '127.0.0.1',
+        '--port',
+        "$Port",
+        '--no-browser'
+    )
+    $script:Process = Start-Process -FilePath python -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $Stdout -RedirectStandardError $Stderr -PassThru
+    $script:StartedServer = $true
+    for ($i = 0; $i -lt 40; $i++) {
+        Start-Sleep -Milliseconds 250
+        $fromLog = Read-ServerUrlFromLog
+        if ($fromLog) {
+            $script:Url = $fromLog
+            return
         }
     }
+}
+
+function Show-PahBalloon {
+    param([string]$Title, [string]$Message, [int]$Ms = 8000)
+    $NotifyIcon.BalloonTipTitle = (Limit-Text $Title 63)
+    $NotifyIcon.BalloonTipText = (Limit-Text $Message 255)
+    $NotifyIcon.ShowBalloonTip($Ms)
+}
+
+function Set-TrayMenuStatus {
+    param($Status)
+    if ($null -eq $Status) {
+        $StatusItem.Text = 'Status: offline'
+        $UnreadItem.Text = 'Unread: unknown'
+        $DecisionItem.Text = 'Decisions: unknown'
+        $DiagnosticItem.Text = 'Diagnostics: unknown'
+        $NotifyIcon.Text = 'PAH offline'
+        return
+    }
+    $counts = $Status.counts
+    $StatusItem.Text = "Status: $($Status.title)"
+    $UnreadItem.Text = "Unread: $($counts.unread), overdue: $($counts.stale_unread)"
+    $DecisionItem.Text = "Decisions: $($counts.decisions_needed)"
+    $DiagnosticItem.Text = "Diagnostics: $($counts.diagnostic_problems)"
+    $NotifyIcon.Text = Limit-Text $Status.tooltip 63
+}
+
+function Update-TrayStatus {
+    $status = Invoke-PahJson '/api/tray-status'
+    Set-TrayMenuStatus $status
+    if ($null -eq $status) {
+        if ($script:StartedServer -and $script:Process -and $script:Process.HasExited -and $script:RestartAttempts -lt 3) {
+            $script:RestartAttempts += 1
+            Show-PahBalloon 'PANDA Agent Hub restarted' 'The local PAH server stopped, so the tray is starting it again.' 6000
+            Start-PahServer
+        }
+        return
+    }
+
+    $stale = [int]$status.counts.stale_unread
+    $alertKey = "$($status.level)|$stale|$($status.oldest_stale_unread_seconds)"
+    if ($stale -gt 0 -and ($script:LastAlertKey -ne $alertKey -or $stale -gt $script:LastStaleUnread)) {
+        Show-PahBalloon $status.title $status.body 10000
+    }
+    $script:LastAlertKey = $alertKey
+    $script:LastStaleUnread = $stale
+}
+
+function Install-StartupShortcut {
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($StartupShortcut)
+    $shortcut.TargetPath = 'powershell.exe'
+    $shortcut.Arguments = "-NoProfile -STA -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Port $Port -PollSeconds $PollSeconds"
+    $shortcut.WorkingDirectory = $ScriptRoot
+    $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,44"
+    $shortcut.Save()
+}
+
+function Remove-StartupShortcut {
+    Remove-Item -LiteralPath $StartupShortcut -Force -ErrorAction SilentlyContinue
+}
+
+if (-not (Test-PahServer)) {
+    Start-PahServer
 }
 
 $NotifyIcon = New-Object System.Windows.Forms.NotifyIcon
@@ -63,9 +181,22 @@ $NotifyIcon.Text = 'PANDA Agent Hub'
 $NotifyIcon.Visible = $true
 
 $Menu = New-Object System.Windows.Forms.ContextMenuStrip
-
 $OpenItem = $Menu.Items.Add('Open Dashboard')
 $OpenItem.Add_Click({ Start-Process $script:Url })
+
+$RefreshItem = $Menu.Items.Add('Refresh Status')
+$RefreshItem.Add_Click({ Update-TrayStatus })
+
+$StatusItem = $Menu.Items.Add('Status: starting')
+$StatusItem.Enabled = $false
+$UnreadItem = $Menu.Items.Add('Unread: checking')
+$UnreadItem.Enabled = $false
+$DecisionItem = $Menu.Items.Add('Decisions: checking')
+$DecisionItem.Enabled = $false
+$DiagnosticItem = $Menu.Items.Add('Diagnostics: checking')
+$DiagnosticItem.Enabled = $false
+
+$Menu.Items.Add('-') | Out-Null
 
 $FolderItem = $Menu.Items.Add('Open PAH Folder')
 $FolderItem.Add_Click({ Start-Process $ScriptRoot })
@@ -73,31 +204,44 @@ $FolderItem.Add_Click({ Start-Process $ScriptRoot })
 $LogsItem = $Menu.Items.Add('Open Logs')
 $LogsItem.Add_Click({ Start-Process $Logs })
 
+$InstallStartupItem = $Menu.Items.Add('Install at Windows Startup')
+$InstallStartupItem.Add_Click({
+    Install-StartupShortcut
+    Show-PahBalloon 'PANDA Agent Hub' 'Tray startup shortcut installed.' 5000
+})
+
+$RemoveStartupItem = $Menu.Items.Add('Remove Windows Startup')
+$RemoveStartupItem.Add_Click({
+    Remove-StartupShortcut
+    Show-PahBalloon 'PANDA Agent Hub' 'Tray startup shortcut removed.' 5000
+})
+
 $Menu.Items.Add('-') | Out-Null
 
 $ExitItem = $Menu.Items.Add('Exit PANDA Agent Hub')
 $ExitItem.Add_Click({
-    if ($NotificationTimer) {
-        $NotificationTimer.Stop()
-    }
+    if ($StatusTimer) { $StatusTimer.Stop() }
+    if ($NotificationTimer) { $NotificationTimer.Stop() }
     $NotifyIcon.Visible = $false
-    if ($Process -and -not $Process.HasExited) {
-        $Process.Kill()
-        $Process.WaitForExit()
+    if ($script:StartedServer -and $script:Process -and -not $script:Process.HasExited) {
+        $script:Process.Kill()
+        $script:Process.WaitForExit()
     }
     [System.Windows.Forms.Application]::Exit()
 })
 
 $NotifyIcon.ContextMenuStrip = $Menu
 $NotifyIcon.Add_DoubleClick({ Start-Process $script:Url })
-$NotifyIcon.BalloonTipTitle = 'PANDA Agent Hub'
-$NotifyIcon.BalloonTipText = "Running at $script:Url"
-$NotifyIcon.ShowBalloonTip(5000)
+Show-PahBalloon 'PANDA Agent Hub' "Running at $script:Url" 5000
 
-$script:NotificationPosition = 0
 if (Test-Path -LiteralPath $NotificationLog) {
     $script:NotificationPosition = (Get-Item -LiteralPath $NotificationLog).Length
 }
+
+$StatusTimer = New-Object System.Windows.Forms.Timer
+$StatusTimer.Interval = [Math]::Max(5, $PollSeconds) * 1000
+$StatusTimer.Add_Tick({ Update-TrayStatus })
+$StatusTimer.Start()
 
 $NotificationTimer = New-Object System.Windows.Forms.Timer
 $NotificationTimer.Interval = 5000
@@ -141,17 +285,14 @@ $NotificationTimer.Add_Tick({
                 $title = 'PANDA Agent Hub test'
                 $message = 'Notification test completed.'
             }
-            $NotifyIcon.BalloonTipTitle = $title
-            $NotifyIcon.BalloonTipText = $message
-            $NotifyIcon.ShowBalloonTip(8000)
+            Show-PahBalloon $title $message 8000
         }
         catch {
-            $NotifyIcon.BalloonTipTitle = 'PANDA Agent Hub'
-            $NotifyIcon.BalloonTipText = 'New notification log entry.'
-            $NotifyIcon.ShowBalloonTip(5000)
+            Show-PahBalloon 'PANDA Agent Hub' 'New notification log entry.' 5000
         }
     }
 })
 $NotificationTimer.Start()
 
+Update-TrayStatus
 [System.Windows.Forms.Application]::Run()
