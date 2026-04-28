@@ -40,7 +40,8 @@ from pah_adapters.headless_contract import (
 from pah_adapters.registry import adapter_status
 from pah_core.cross_check import cross_check_auto_resolution_status
 from pah_diagnostics.checks import run_communication_diagnostics
-from pah_diagnostics.route_tests import route_test_status, save_route_test_state
+from pah_diagnostics.route_tests import reply_search_dirs_for_route, route_test_status, save_route_test_state
+from pah_mailbox.paths import CC_CLAUDE_INBOX, CLAUDE_CODE_INBOX, ROUTE_INBOXES
 from pah_mailbox.quarantine import quarantine_message, validate_quarantine_candidate, validate_quarantine_reason
 from pah_security.approvals import (
     MCP_READONLY_CONFIG_PATH,
@@ -415,6 +416,12 @@ def test_cross_check_auto_resolution_rule() -> None:
 
 def test_routes_and_scope() -> None:
     assert_true(route_participants("codex_to_claude_code") == ("codex", "claude-code"), "Claude Code route")
+    assert_true(ROUTE_INBOXES["codex_to_claude_code"] == CLAUDE_CODE_INBOX, "Claude Code route uses configured inbox")
+    if CC_CLAUDE_INBOX.exists():
+        assert_true(
+            CC_CLAUDE_INBOX in reply_search_dirs_for_route("codex_to_claude_code"),
+            "Claude Code route watches native CC reply inbox",
+        )
     assert_true(classify_path(Path("C:/panda-gallery/test.txt")) == "panda_gallery_requires_darrin", "PG path boundary")
 
 

@@ -10,7 +10,14 @@ PROJECT_ROOT = HUB_ROOT.parent
 MAILBOX_ROOT = PROJECT_ROOT / "CODEX Claude Codex Mailbox"
 CODEX_INBOX = MAILBOX_ROOT / "CODEX Inbox"
 CLAUDE_INBOX = MAILBOX_ROOT / "CLAUDE Inbox"
-CLAUDE_CODE_INBOX = MAILBOX_ROOT / "CODEX_CLAUDE_CODE Inbox"
+PANDA_GALLERY_ROOT = PROJECT_ROOT.parent / "panda-gallery"
+CC_MAILBOX_ROOT = PANDA_GALLERY_ROOT / "workflows" / "cc_mailbox"
+CC_INBOX = CC_MAILBOX_ROOT / "CC Inbox"
+CC_CLAUDE_INBOX = CC_MAILBOX_ROOT / "CLAUDE Inbox"
+CC_SENT = CC_MAILBOX_ROOT / "CC Sent"
+CC_CLAUDE_SENT = CC_MAILBOX_ROOT / "CLAUDE Sent"
+PAH_CLAUDE_CODE_INBOX = MAILBOX_ROOT / "CODEX_CLAUDE_CODE Inbox"
+CLAUDE_CODE_INBOX = CC_INBOX if CC_MAILBOX_ROOT.exists() else PAH_CLAUDE_CODE_INBOX
 CLAUDE_CODE_INBOX_LEGACY = MAILBOX_ROOT / "CODEX Claude Code Inbox"
 CODEX_SENT = MAILBOX_ROOT / "CODEX Sent"
 CLAUDE_SENT = MAILBOX_ROOT / "CLAUDE Sent"
@@ -36,7 +43,11 @@ WORK_ITEMS_STATE_PATH = STATE_DIR / "CODEX_work_items.local.json"
 MESSAGE_DIRS = [
     ("Claude -> Codex", CODEX_INBOX),
     ("Codex -> Claude", CLAUDE_INBOX),
-    ("Codex -> Claude Code", CLAUDE_CODE_INBOX),
+    ("To Claude Code", CLAUDE_CODE_INBOX),
+    ("Claude Code -> Claude", CC_CLAUDE_INBOX),
+    ("Claude Code Sent", CC_SENT),
+    ("Claude Sent (CC mailbox)", CC_CLAUDE_SENT),
+    ("Codex -> Claude Code (PAH local legacy)", PAH_CLAUDE_CODE_INBOX),
     ("Codex -> Claude Code (legacy)", CLAUDE_CODE_INBOX_LEGACY),
     ("Codex Sent", CODEX_SENT),
     ("Claude Sent", CLAUDE_SENT),
@@ -58,6 +69,6 @@ def ensure_runtime_dirs() -> None:
         ADAPTERS_DIR,
         STATE_DIR,
         PROCESSED_MESSAGES_DIR,
-        CLAUDE_CODE_INBOX,
+        PAH_CLAUDE_CODE_INBOX,
     ):
         path.mkdir(parents=True, exist_ok=True)

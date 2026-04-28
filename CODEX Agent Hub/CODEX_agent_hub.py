@@ -90,6 +90,7 @@ from pah_mailbox.paths import (
     MAILBOX_ROOT,
     MESSAGE_DIRS,
     NOTIFICATIONS_DIR,
+    PANDA_GALLERY_ROOT,
     PROCESSED_MESSAGES_DIR,
     PROJECT_ROOT,
     READ_STATE_PATH,
@@ -114,7 +115,11 @@ IMPORTANT_TYPES = {"dispatch", "complete", "decision", "blocker", "response-requ
 SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
     "Claude -> Codex": ({"claude-desktop", "claude-code"}, {"codex"}),
     "Codex -> Claude": ({"codex"}, {"claude-desktop"}),
-    "Codex -> Claude Code": ({"codex"}, {"claude-code"}),
+    "To Claude Code": ({"codex", "claude-desktop"}, {"claude-code"}),
+    "Claude Code -> Claude": ({"claude-code"}, {"claude-desktop"}),
+    "Claude Code Sent": ({"claude-code"}, {"claude-desktop"}),
+    "Claude Sent (CC mailbox)": ({"claude-desktop"}, {"claude-code"}),
+    "Codex -> Claude Code (PAH local legacy)": ({"codex"}, {"claude-code"}),
     "Codex -> Claude Code (legacy)": ({"codex"}, {"claude-code"}),
     "Codex Sent": ({"codex"}, {"claude-desktop", "claude-code"}),
     "Claude Sent": ({"claude-desktop", "claude-code"}, {"codex"}),
@@ -1217,6 +1222,7 @@ def state() -> dict[str, Any]:
     return {
         "project_root": str(PROJECT_ROOT),
         "mailbox_root": str(MAILBOX_ROOT),
+        "panda_gallery_root": str(PANDA_GALLERY_ROOT),
         "decision_queue_path": str(DECISION_QUEUE_PATH),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "counts": {
@@ -1641,7 +1647,8 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/open":
             query = parse_qs(parsed.query)
             target = Path(query.get("path", [""])[0])
-            if target.exists() and str(target).lower().startswith(str(PROJECT_ROOT).lower()):
+            allowed_roots = (PROJECT_ROOT, PANDA_GALLERY_ROOT)
+            if target.exists() and any(str(target).lower().startswith(str(root).lower()) for root in allowed_roots):
                 os.startfile(target)  # type: ignore[attr-defined]
                 self.send_json({"ok": True})
             else:

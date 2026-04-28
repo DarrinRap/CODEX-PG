@@ -15,7 +15,7 @@ from pah_core import MESSAGE_SCHEMA_VERSION
 from pah_core.participants import participant_label, route_participants
 from pah_core.schema import extract_message_metadata, render_message_markdown
 from pah_mailbox.atomic import atomic_write_text
-from pah_mailbox.paths import CODEX_INBOX, ROUTE_INBOXES, ROUTE_TEST_STATE_PATH
+from pah_mailbox.paths import CC_CLAUDE_INBOX, CODEX_INBOX, ROUTE_INBOXES, ROUTE_TEST_STATE_PATH
 
 
 ROUTE_TEST_ROUTES = {"codex_to_claude", "codex_to_claude_code"}
@@ -58,6 +58,8 @@ def create_route_test(route: str, note: str = "", state_path: Path = ROUTE_TEST_
     from_id, to_id = route_participants(route)
     target_inbox = ROUTE_INBOXES[route]
     target_inbox.mkdir(parents=True, exist_ok=True)
+    reply_targets = reply_search_dirs_for_route(route)
+    reply_instruction = str(reply_targets[0]) if reply_targets else str(CODEX_INBOX)
 
     test_id = route_test_id(route)
     created_at = datetime.now().astimezone().isoformat(timespec="seconds")
@@ -82,7 +84,7 @@ def create_route_test(route: str, note: str = "", state_path: Path = ROUTE_TEST_
         [
             "This is a PANDA Agent Hub communication diagnostic ping.",
             "",
-            "Please reply into the CODEX Inbox with:",
+            f"Please reply into `{reply_instruction}` with:",
             f"- Reply-To: {test_id}",
             f"- Thread-ID: {test_id}",
             "- A short confirmation that you received the route test.",
@@ -109,6 +111,12 @@ def create_route_test(route: str, note: str = "", state_path: Path = ROUTE_TEST_
     state["tests"][test_id] = record
     save_route_test_state(state, state_path)
     return record
+
+
+def reply_search_dirs_for_route(route: str) -> list[Path]:
+    if route == "codex_to_claude_code" and CC_CLAUDE_INBOX.exists():
+        return [CC_CLAUDE_INBOX, CODEX_INBOX]
+    return [CODEX_INBOX]
 
 
 def read_text(path: Path) -> str:
@@ -142,14 +150,17 @@ def refresh_route_tests(state_path: Path = ROUTE_TEST_STATE_PATH) -> dict[str, A
             continue
         if record.get("state") == "received_reply":
             continue
-        if not CODEX_INBOX.exists():
-            continue
-        for path in CODEX_INBOX.glob("*.md"):
-            if message_replies_to_test(path, test_id):
-                record["state"] = "received_reply"
-                record["reply_path"] = str(path)
-                record["reply_seen_at"] = datetime.now().isoformat(timespec="seconds")
-                changed = True
+        for inbox in reply_search_dirs_for_route(str(record.get("route", ""))):
+            if not inbox.exists():
+                continue
+            for path in inbox.glob("*.md"):
+                if message_replies_to_test(path, test_id):
+                    record["state"] = "received_reply"
+                    record["reply_path"] = str(path)
+                    record["reply_seen_at"] = datetime.now().isoformat(timespec="seconds")
+                    changed = True
+                    break
+            if record.get("state") == "received_reply":
                 break
     if changed:
         save_route_test_state(state, state_path)
