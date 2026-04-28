@@ -11,7 +11,7 @@ Scope: data contract for the first live PAH action-console slice. This slice is 
 - All potentially risky action affordances can render as disabled or confirmation-required from structured fields.
 - The default screen answers: "What needs action right now?"
 - Long raw Markdown is not required for the default console view.
-- Unread messages older than 60 seconds are promoted to wake candidates.
+- Unread messages older than `cockpit_state.stale_unread_threshold_seconds` are promoted to wake candidates.
 - Feed, selected thread, route health, and decisions can be refreshed independently later without changing the schema.
 
 ## Top-Level Payload
@@ -45,6 +45,7 @@ Scope: data contract for the first live PAH action-console slice. This slice is 
   "active_filter": "needs_action",
   "density": "medium",
   "search_query": "PAH watcher",
+  "stale_unread_threshold_seconds": 60,
   "routes_summary": {
     "total": 4,
     "pass": 3,
@@ -69,6 +70,7 @@ Rules:
 - Top-bar route chip and route panel must both use `routes_summary`.
 - `as_of_iso` must update on every successful refresh.
 - `read_only: true` disables compose/send/write actions in v1.
+- `stale_unread_threshold_seconds` is authoritative for both producer wake promotion and consumer labels such as "overdue >60s".
 
 ## agents[]
 

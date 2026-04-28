@@ -169,6 +169,23 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 .guide-title { font-size: 13px; font-weight: 900; color: var(--text); }
 .guide-copy { color: var(--muted); font-size: 12px; }
+.guide-breakdown {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.mini-pill {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(224, 221, 213, .14);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(16, 17, 27, .72);
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.mini-pill strong { color: var(--text); margin-right: 4px; }
 .guide-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .guide-step {
   min-width: 0;
@@ -391,6 +408,7 @@ button.filter.active {
           <div class="guide-title" id="guideTitle">Loading PAH guidance...</div>
           <div class="guide-copy" id="guideCopy">The hub is checking mailboxes and building the next safe action.</div>
         </div>
+        <div class="guide-breakdown" id="guideBreakdown"></div>
         <div class="guide-steps">
           <div class="guide-step"><strong>1. Pick</strong><span>Click the oldest urgent item below.</span></div>
           <div class="guide-step"><strong>2. Copy</strong><span>Use the wake line on the right.</span></div>
@@ -480,18 +498,25 @@ function itemAgeSeconds(item) {
   const match = String(item?.summary || '').match(/Unread\s+(\d+)s/i);
   return match ? Number(match[1]) : 0;
 }
+function itemTarget(item) {
+  return String(item?.primary_action || '').replace(/^Wake\s+/i, '') || 'unknown';
+}
 function humanSummary(item) {
   if (!item) return '';
   const age = itemAgeSeconds(item);
-  const target = String(item.primary_action || '').replace(/^Wake\s+/i, '');
+  const target = itemTarget(item);
   if (item.kind === 'wake' && age) return `Overdue ${fmtAge(age)} - paste wake line into ${target || 'the target AI'}.`;
   return item.summary || '';
 }
 function filteredQueue() {
   const queue = cockpit?.action_queue || [];
-  if (queueFilter === 'all') return queue;
-  if (queueFilter === 'decision') return queue.filter(item => item.kind === 'decision');
-  return queue.filter(item => item.kind === 'wake');
+  let visible = queue;
+  if (queueFilter === 'decision') visible = queue.filter(item => item.kind === 'decision');
+  else if (queueFilter === 'wake') visible = queue.filter(item => item.kind === 'wake');
+  return [...visible].sort((a, b) => {
+    if (a.kind === 'wake' || b.kind === 'wake') return itemAgeSeconds(b) - itemAgeSeconds(a);
+    return String(a.title || '').localeCompare(String(b.title || ''));
+  });
 }
 function statusClass(value) {
   const text = String(value || '').toLowerCase();
@@ -541,18 +566,34 @@ function render() {
   renderDiagnostics(cockpit.diagnostics || {});
 }
 function renderGuide(stale, decisions) {
+  const wakeItems = (cockpit.action_queue || []).filter(item => item.kind === 'wake');
+  const oldest = wakeItems.reduce((max, item) => Math.max(max, itemAgeSeconds(item)), 0);
+  const threshold = cockpit.cockpit_state?.stale_unread_threshold_seconds || 60;
   const title = stale
     ? `${stale} overdue message${stale === 1 ? '' : 's'} need wake-up`
     : decisions
       ? `${decisions} decision${decisions === 1 ? '' : 's'} need Darrin`
       : 'Nothing urgent right now';
   const copy = stale
-    ? 'Use the queue below like an inbox triage list. The selected item gives you the exact line to paste into the right AI.'
+    ? `Oldest first. A wake-up is unread for ${fmtAge(threshold)} or longer. The selected item gives you the exact line to paste into the right AI.${oldest ? ` Oldest is ${fmtAge(oldest)} overdue.` : ''}`
     : decisions
       ? 'Switch to Darrin decisions to review what needs approval or deferral.'
       : 'Refresh when you want to check all PAH routes again.';
   document.getElementById('guideTitle').textContent = title;
   document.getElementById('guideCopy').textContent = copy;
+  renderGuideBreakdown(wakeItems, decisions);
+}
+function renderGuideBreakdown(wakeItems, decisions) {
+  const counts = {};
+  wakeItems.forEach(item => {
+    const target = itemTarget(item);
+    counts[target] = (counts[target] || 0) + 1;
+  });
+  const pills = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([target, count]) => `<span class="mini-pill"><strong>${esc(count)}</strong>${esc(target)}</span>`);
+  if (decisions) pills.push(`<span class="mini-pill"><strong>${esc(decisions)}</strong>Darrin decision${decisions === 1 ? '' : 's'}</span>`);
+  setHTML('guideBreakdown', pills.length ? pills.join('') : '<span class="mini-pill">No overdue wake-ups</span>');
 }
 function renderFilters() {
   document.querySelectorAll('button.filter').forEach(button => {
@@ -630,7 +671,7 @@ function renderDetail(item) {
   renderHow(item);
 }
 function renderHow(item) {
-  const target = String(item?.primary_action || '').replace(/^Wake\s+/i, '') || 'the named AI';
+  const target = itemTarget(item) || 'the named AI';
   const lines = item?.kind === 'wake'
     ? [
         `Open or switch to ${target}.`,

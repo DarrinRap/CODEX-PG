@@ -1637,6 +1637,7 @@ def cockpit_payload() -> dict[str, Any]:
             "active_filter": "needs_action",
             "density": "medium",
             "search_query": "",
+            "stale_unread_threshold_seconds": STALE_UNREAD_SECONDS,
             "routes_summary": route_summary,
             "counts": {
                 "messages": status_data.get("counts", {}).get("messages", 0),
