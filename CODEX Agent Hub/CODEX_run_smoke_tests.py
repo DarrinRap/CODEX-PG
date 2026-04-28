@@ -38,6 +38,7 @@ from pah_adapters.headless_contract import (
     validate_headless_command_contract,
 )
 from pah_adapters.registry import adapter_status
+from pah_core.cross_check import cross_check_auto_resolution_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import route_test_status, save_route_test_state
 from pah_mailbox.quarantine import quarantine_message, validate_quarantine_candidate, validate_quarantine_reason
@@ -316,6 +317,87 @@ def test_decision_gate() -> None:
     assert_true(not metadata_waits_on_darrin(mention_only), "mention-only metadata must not trigger Darrin queue")
     assert_true(metadata_waits_on_darrin(explicit), "explicit Darrin flag should trigger queue")
     assert_true(metadata_waits_on_darrin(thread_wait), "waiting_on_darrin should trigger queue")
+
+
+def test_cross_check_auto_resolution_rule() -> None:
+    base_metadata = {
+        "schema_version": MESSAGE_SCHEMA_VERSION,
+        "id": "PAH-CROSS-CHECK-001",
+        "thread_id": "PAH-CROSS-CHECK-THREAD",
+        "created_at": "2026-04-27T02:00:00-07:00",
+        "from": "codex",
+        "to": "claude-code",
+        "type": "cross_check",
+        "priority": "normal",
+        "status": "review_complete",
+        "thread_status": "active",
+        "approval_boundary": "coordination_only",
+        "requires_darrin_decision": False,
+        "agrees_with": ["CC-LOW-RISK-001"],
+        "disagrees_with": [],
+        "caught_by_one": ["CC-LOW-RISK-001 risk=low"],
+        "recommendation": "auto_resolve",
+        "auto_resolution": True,
+    }
+    eligible_text = render_message_markdown(
+        base_metadata,
+        "Cross-check smoke",
+        "Low-risk agreement.",
+        "No Darrin-gated boundary involved.",
+    )
+    eligible_metadata = extract_message_metadata(eligible_text)
+    eligible_status = cross_check_auto_resolution_status(eligible_metadata)
+    eligible_issues = validate_message_text(eligible_text, "cross_check.md")
+    assert_true(eligible_status["eligible"], "low-risk cross_check is auto-resolution eligible")
+    assert_true(
+        not any("cross_check auto-resolution blocked" in issue.message for issue in eligible_issues),
+        "eligible cross_check does not warn",
+    )
+
+    medium_text = render_message_markdown(
+        dict(base_metadata, caught_by_one=["CC-MEDIUM-RISK-001 risk=medium"]),
+        "Cross-check medium risk",
+        "Medium risk.",
+        "Medium risk blocks auto-resolution.",
+    )
+    medium_issues = validate_message_text(medium_text, "cross_check.md")
+    assert_true(
+        any("risk must be low only" in issue.message for issue in medium_issues),
+        "medium caught_by_one risk blocks auto-resolution",
+    )
+
+    disagreement_text = render_message_markdown(
+        dict(base_metadata, disagrees_with=["CLAUDE-DISAGREE-001"]),
+        "Cross-check disagreement",
+        "Disagreement.",
+        "Any disagreement blocks auto-resolution.",
+    )
+    disagreement_issues = validate_message_text(disagreement_text, "cross_check.md")
+    assert_true(
+        any("disagrees_with must be empty" in issue.message for issue in disagreement_issues),
+        "nonempty disagrees_with blocks auto-resolution",
+    )
+
+    darrin_boundary_text = render_message_markdown(
+        dict(base_metadata, approval_boundary="protected_action_requires_darrin"),
+        "Cross-check protected boundary",
+        "Protected boundary.",
+        "Darrin-gated boundaries block auto-resolution.",
+    )
+    darrin_boundary_issues = validate_message_text(darrin_boundary_text, "cross_check.md")
+    assert_true(
+        any("approval_boundary requiring Darrin" in issue.message for issue in darrin_boundary_issues),
+        "Darrin-gated approval boundary blocks auto-resolution",
+    )
+    involved_status = cross_check_auto_resolution_status(
+        eligible_metadata,
+        [{"approval_boundary": "protected_action_requires_darrin"}],
+    )
+    assert_true(
+        not involved_status["eligible"]
+        and any("approval_boundary requiring Darrin" in reason for reason in involved_status["reasons"]),
+        "Darrin-gated involved messages block auto-resolution",
+    )
 
 
 def test_routes_and_scope() -> None:
@@ -821,6 +903,7 @@ def main() -> None:
     test_source_folder_spoofing_detection()
     test_standalone_validator_cli()
     test_decision_gate()
+    test_cross_check_auto_resolution_rule()
     test_routes_and_scope()
     test_diagnostics()
     test_safety_surfaces()

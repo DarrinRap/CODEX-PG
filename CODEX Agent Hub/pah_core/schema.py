@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from pah_core import MESSAGE_SCHEMA_VERSION
+from pah_core.cross_check import validate_cross_check_auto_resolution
 from pah_core.participants import PARTICIPANTS, canonical_participant
 
 
@@ -263,6 +264,8 @@ def validate_message_text(text: str, path_name: str = "") -> list[SchemaIssue]:
         issues.append(SchemaIssue("warning", f"Unsupported message type: {msg_type}"))
     if approval_boundary and approval_boundary not in APPROVAL_BOUNDARIES:
         issues.append(SchemaIssue("warning", f"Unsupported approval_boundary enum: {approval_boundary}"))
+    for message in validate_cross_check_auto_resolution(metadata):
+        issues.append(SchemaIssue("warning", message))
 
     if metadata_waits_on_darrin(metadata) and not path_name:
         issues.append(SchemaIssue("info", "Message is an explicit Darrin queue candidate"))
@@ -305,6 +308,11 @@ def render_message_markdown(
         "approval_boundary",
         "requires_darrin_decision",
         "reply_to",
+        "agrees_with",
+        "disagrees_with",
+        "caught_by_one",
+        "recommendation",
+        "auto_resolution",
     ]
     lines = ["---"]
     for key in ordered_keys:

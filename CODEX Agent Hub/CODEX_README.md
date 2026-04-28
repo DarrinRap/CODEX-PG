@@ -63,6 +63,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Protected-action approval enforcement helpers for exact-path, hash-bound approval checks. Expired, revoked, consumed, command-changed, chained, MCP-config-mismatched, and non-canonical headless-command records cannot authorize protected actions.
 - Explicit quarantine API and dashboard actions for mailbox messages. The dashboard uses a reason-code menu plus confirmation; the API requires the local write token and `confirmed: true`. PAH never auto-quarantines during refresh.
 - Source-folder spoofing detection for mailbox messages. PAH cross-checks the parsed sender/recipient against the lane a file arrived through and flags mismatches as actionable `spoofing_attempt` quarantine candidates.
+- Cross-check auto-resolution safety rule. PAH does not use an undefined parent-thread risk field; auto-resolution is allowed only when `disagrees_with` is empty, every `caught_by_one` item is explicitly `risk=low`, and no involved approval boundary requires Darrin.
 - Decision queue hygiene state for active/resolved/superseded/dismissed items. PAH keeps stale decisions in history without interrupting Darrin.
 - Validator categorization with actionable issues separated from legacy/info mailbox hygiene noise.
 - Validation finding state for accepted legacy, resolved, and dismissed findings. Historical ledger issues can be preserved without staying active.
@@ -196,6 +197,8 @@ claude -p <prompt_file> --output-format json --permission-mode plan --allowedToo
 
 PAH recomputes the command preview from the approval fields and rejects records whose `command_preview` or `command_or_provider` differs. `allowed_tools` is restricted to read-only `Read,Grep,Glob,WebFetch`; stdout, stderr, and exit-code capture paths must be explicit; timeout defaults to 600 seconds with a 30-second hard-kill grace period. A future executor must consume the approval when the process exits.
 
+Cross-check auto-resolution uses explicit local gates rather than a parent-thread risk field. A `cross_check` message requesting auto-resolution is blocked unless `disagrees_with` is empty, every `caught_by_one` entry includes `risk=low`, and no involved message has an `approval_boundary` containing `_requires_darrin`.
+
 Live adapters are registered but disabled by default. The app exposes their safety status without launching Claude Code headless, calling APIs, sending paid SMS, or writing outside PAH.
 
 Decision queue state lives at:
@@ -247,7 +250,7 @@ python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
 ```
 
 These tests cover schema roundtrip, Darrin decision gating, Claude Code routing, Panda Gallery path classification, and communication diagnostics.
-They also cover current mailbox schema aliases, standalone validation, source-folder spoofing checks, non-chainable approval records, strict MCP config enforcement, headless command contracts, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
+They also cover current mailbox schema aliases, standalone validation, source-folder spoofing checks, cross-check auto-resolution gates, non-chainable approval records, strict MCP config enforcement, headless command contracts, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
 Read/unread and closed-thread archive state are covered as well, including changed-content-becomes-unread and new-activity-reopens-archived-thread rules.
 
 Validate one or more PAH mailbox messages directly:
