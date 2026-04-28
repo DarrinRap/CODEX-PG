@@ -7,20 +7,19 @@
 <style>
 :root {
   --canvas: #14141f;
-  --pane: #1a1a2e;
-  --pane-raised: #22223a;
+  --panel: #1a1a2e;
+  --panel-2: #202038;
   --field: #10111b;
   --border: #2a2a3e;
-  --border-soft: rgba(224, 221, 213, 0.12);
   --text: #e0ddd5;
-  --muted: #888888;
-  --muted-2: #aaa59b;
+  --muted: #aaa59b;
+  --quiet: #888888;
   --accent: #e8a87c;
-  --accent-ink: #21150e;
+  --accent-ink: #24150e;
   --ok: #7fb069;
   --warn: #d7b86b;
   --err: #e74c3c;
-  --shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+  --focus: rgba(232, 168, 124, .42);
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; overflow: hidden; }
@@ -28,488 +27,258 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--text);
-  font: 12px/1.35 "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font: 14px/1.35 "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   letter-spacing: 0;
 }
-button, input, select, textarea { font: inherit; }
-input {
-  height: 30px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--field);
-  color: var(--text);
-  padding: 0 9px;
-}
+button { font: inherit; }
 button {
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(224, 221, 213, 0.045);
+  background: rgba(224, 221, 213, .05);
   color: var(--text);
-  padding: 0 10px;
-  white-space: nowrap;
+  padding: 0 12px;
   cursor: pointer;
 }
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
-  font-weight: 700;
+  font-weight: 800;
 }
-button[disabled] { opacity: .45; cursor: default; }
-button.icon { width: 30px; padding: 0; font-weight: 700; }
-button.ghost { background: transparent; }
+button.secondary { background: transparent; color: var(--muted); }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button[disabled] { opacity: .48; cursor: default; }
 
 .app {
   height: 100vh;
-  min-width: 1040px;
-  min-height: 640px;
+  min-width: 980px;
+  min-height: 620px;
   display: grid;
-  grid-template-rows: 48px 1fr 42px;
-  background: var(--canvas);
+  grid-template-rows: 64px 1fr 44px;
 }
 .topbar {
   display: grid;
-  grid-template-columns: 250px 1fr auto;
+  grid-template-columns: 260px 1fr auto;
   align-items: center;
-  gap: 12px;
-  padding: 0 12px;
+  gap: 18px;
+  padding: 0 18px;
   border-bottom: 1px solid var(--border);
   background: #151526;
 }
-.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .mark {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--text);
-  position: relative;
-  border: 1px solid rgba(224, 221, 213, .35);
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 900;
 }
-.mark:before, .mark:after {
-  content: "";
-  position: absolute;
-  top: 7px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #11111a;
-}
-.mark:before { left: 6px; }
-.mark:after { right: 6px; }
-.brand-title { font-weight: 800; font-size: 14px; line-height: 1.05; }
-.brand-sub { color: var(--muted); font-size: 11px; margin-top: 1px; }
-.context-strip {
+.brand-title { font-size: 15px; font-weight: 900; }
+.brand-sub { color: var(--quiet); font-size: 12px; margin-top: 2px; }
+.status-line {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  color: var(--muted);
+  white-space: nowrap;
   overflow: hidden;
 }
-.context-chip {
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: rgba(224, 221, 213, .04);
-  padding: 0 10px;
-  color: var(--muted-2);
-  white-space: nowrap;
+.system-state {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.context-chip strong { color: var(--text); font-weight: 700; }
-.top-actions { display: flex; align-items: center; gap: 7px; }
-.search { width: 180px; color: var(--muted-2); }
+.meta { color: var(--quiet); font-size: 12px; }
+.top-actions { display: flex; gap: 8px; align-items: center; }
 
 .main {
   min-height: 0;
   display: grid;
-  grid-template-columns: 236px minmax(520px, 1fr) 334px;
+  grid-template-columns: 220px minmax(420px, 1fr) 360px;
+  gap: 12px;
+  padding: 12px;
   overflow: hidden;
 }
-.rail, .center, .side { min-height: 0; min-width: 0; overflow: hidden; }
-.rail, .side { background: #151526; border-color: var(--border); }
-.rail {
-  border-right: 1px solid var(--border);
+.panel {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr;
 }
-.center {
-  padding: 10px;
-  display: grid;
-  grid-template-rows: 96px minmax(0, 1fr);
-  gap: 10px;
-}
-.side {
-  border-left: 1px solid var(--border);
-  display: grid;
-  grid-template-rows: 152px minmax(0, 1fr) 170px;
-}
-.section-head {
-  height: 34px;
+.panel-head {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 10px;
-  border-bottom: 1px solid var(--border);
+  gap: 10px;
 }
-.section-title {
-  color: var(--muted-2);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-.count-pill {
-  min-width: 22px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted-2);
-  padding: 0 7px;
-}
-.mode-strip {
-  padding: 8px;
-  border-bottom: 1px solid var(--border);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-}
-.mode {
-  height: 28px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  font-weight: 700;
-}
-.mode.active {
-  border-color: rgba(232, 168, 124, .55);
-  color: var(--accent);
-  background: rgba(232, 168, 124, .075);
-}
-.agent-list {
-  min-height: 0;
-  padding: 8px;
-  display: grid;
-  grid-auto-rows: minmax(74px, auto);
-  gap: 8px;
-  overflow: hidden;
-}
+.panel-title { font-size: 12px; font-weight: 900; color: var(--muted); text-transform: uppercase; }
+.count { color: var(--text); font-weight: 900; }
+.scroll { min-height: 0; overflow: auto; }
+
+.agents { padding: 8px; display: grid; gap: 8px; align-content: start; }
 .agent {
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--pane);
-  padding: 8px;
+  background: #161624;
+  padding: 10px;
   display: grid;
-  grid-template-columns: 36px 1fr auto;
-  gap: 8px;
-  align-items: center;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
 }
-.agent.active { border-color: rgba(232, 168, 124, .72); box-shadow: inset 2px 0 0 var(--accent); }
 .avatar {
   width: 34px;
   height: 34px;
   border-radius: 7px;
-  border: 1px solid var(--border);
-  background: var(--pane-raised);
+  background: var(--panel-2);
   display: grid;
   place-items: center;
-  font-weight: 800;
+  font-weight: 900;
 }
-.agent-name { font-weight: 800; font-size: 12px; }
-.agent-meta { color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.agent-count { text-align: right; color: var(--muted-2); font-weight: 800; line-height: 1.1; }
-.agent-count strong { display: block; color: var(--text); font-size: 16px; }
-.agent-count span { display: block; margin-top: 2px; font-size: 10px; text-transform: uppercase; }
-.agent-foot {
-  grid-column: 2 / 4;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px;
-  align-items: center;
-  color: var(--muted);
-  font-size: 11px;
-}
-.mini-meter { height: 4px; border-radius: 999px; background: #10111b; overflow: hidden; }
-.mini-meter span { display: block; height: 100%; background: var(--accent); }
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--muted);
-  display: inline-block;
-  margin-right: 5px;
-}
-.status-dot.ok { background: var(--ok); }
-.status-dot.active { background: var(--accent); animation: pulse 1.5s infinite; }
-.status-dot.warn { background: var(--warn); }
-.status-dot.err { background: var(--err); }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .42; } }
-.rail-tools {
-  border-top: 1px solid var(--border);
-  padding: 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-}
+.agent-name { font-weight: 900; }
+.agent-note { color: var(--quiet); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-count { grid-column: 2; color: var(--muted); font-size: 12px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--quiet); margin-right: 6px; }
+.dot.ok { background: var(--ok); }
+.dot.warn { background: var(--warn); }
+.dot.err { background: var(--err); }
+.dot.active { background: var(--accent); }
 
-.status-grid { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; }
-.stat {
-  min-height: 96px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--pane);
-  padding: 10px;
-  box-shadow: var(--shadow);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-}
-.stat-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-.stat-value { align-self: center; font-size: 28px; line-height: 1; font-weight: 800; }
-.stat-note { color: var(--muted-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.workbench { min-height: 0; display: grid; grid-template-columns: minmax(330px, .92fr) minmax(360px, 1.08fr); gap: 10px; }
-.pane {
-  min-height: 0;
-  min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--pane);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  display: grid;
-  grid-template-rows: 38px 1fr;
-}
-.mailbox-pane { grid-template-rows: 38px 34px 1fr; }
-.tabs { display: flex; gap: 4px; padding: 4px; }
-.tab {
-  height: 28px;
-  border-radius: 5px;
-  padding: 0 9px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--muted);
-  border: 1px solid transparent;
-}
-.tab.active { color: var(--accent); border-color: rgba(232, 168, 124, .42); background: rgba(232, 168, 124, .08); }
-.filter-bar {
-  min-height: 34px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: center;
-  padding: 0 8px;
-  border-bottom: 1px solid var(--border-soft);
-}
-.quick-filters { display: flex; gap: 5px; min-width: 0; overflow: hidden; }
-.filter {
-  height: 22px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 8px;
-  color: var(--muted);
-  white-space: nowrap;
-  font-weight: 700;
-  font-size: 10px;
-}
-.filter.active { color: var(--accent); border-color: rgba(232, 168, 124, .48); background: rgba(232, 168, 124, .07); }
-.density { display: flex; gap: 3px; border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
-.density span {
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  border-radius: 4px;
-  font-weight: 800;
-  font-size: 10px;
-}
-.density span.active { background: var(--pane-raised); color: var(--accent); }
-.pane-body { min-height: 0; overflow: hidden; }
-.feed { height: 100%; overflow: hidden; display: grid; grid-auto-rows: 78px; }
-.feed-item {
-  border-top: 1px solid var(--border-soft);
-  padding: 8px 10px;
-  display: grid;
-  grid-template-columns: 62px 1fr auto;
-  gap: 9px;
-  align-items: center;
-  min-width: 0;
-  position: relative;
-}
-.feed-item.unread:before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  background: var(--accent);
-}
-.time { color: var(--muted); font-family: "Cascadia Mono", Consolas, monospace; font-size: 11px; }
-.feed-title { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.feed-sub { color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.badge-row { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
-.badge {
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  padding: 0 7px;
-  color: var(--muted-2);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-.badge.open { border-color: rgba(232, 168, 124, .55); color: #f0bf9d; }
-.badge.wait { border-color: rgba(215, 184, 107, .55); color: #ecd9a4; }
-.badge.closed { border-color: rgba(127, 176, 105, .55); color: #c5e4b8; }
-.badge.blocked { border-color: rgba(231, 76, 60, .62); color: #f3aaa1; }
-
-.detail { height: 100%; min-height: 0; display: grid; grid-template-rows: auto 1fr auto; }
-.detail-head { padding: 12px; border-bottom: 1px solid var(--border-soft); }
-.detail-title { font-size: 17px; font-weight: 800; line-height: 1.15; }
-.detail-meta { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; color: var(--muted); }
-.detail-copy {
-  min-height: 0;
-  overflow: auto;
+.queue-panel { grid-template-rows: auto auto 1fr; }
+.summary-strip {
   padding: 12px;
   display: grid;
-  gap: 10px;
-  align-content: start;
-}
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.fact { min-height: 48px; border: 1px solid var(--border); border-radius: 7px; background: #141421; padding: 8px; }
-.fact-label { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
-.fact-value { margin-top: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.message-card { border: 1px solid var(--border); border-radius: 7px; background: #161624; padding: 10px; }
-.message-card strong { color: var(--text); }
-.message-card p { margin: 6px 0 0; color: var(--muted-2); }
-.detail-actions {
-  height: 45px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
 }
-.decision-stack { min-height: 0; overflow: hidden; display: grid; grid-auto-rows: minmax(52px, auto); }
-.decision {
-  border-top: 1px solid var(--border-soft);
-  padding: 7px 10px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: center;
-}
-.decision.featured { background: rgba(232, 168, 124, .055); box-shadow: inset 2px 0 0 var(--accent); }
-.decision-title { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.decision-sub { color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.decision-actions { display: flex; gap: 5px; margin-top: 6px; }
-.decision-actions button { height: 24px; padding: 0 7px; }
-.scope-preview {
-  grid-column: 1 / 3;
-  border: 1px solid rgba(232, 168, 124, .34);
-  border-radius: 7px;
-  background: rgba(232, 168, 124, .055);
-  padding: 8px;
-  color: var(--muted-2);
-}
-.scope-preview strong { color: var(--text); }
-.queue-body { min-height: 0; overflow: hidden; }
-.route-list { height: 100%; display: grid; grid-auto-rows: 58px; overflow: hidden; }
-.route {
-  border-top: 1px solid var(--border-soft);
-  padding: 8px 10px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: center;
-}
-.route-name { font-weight: 800; }
-.route-path { color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wake {
-  border-top: 1px solid var(--border);
-  background: #151526;
-  display: grid;
-  grid-template-rows: 34px 1fr;
-}
-.wake-body { padding: 10px; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; }
-.wake-line {
-  min-height: 48px;
+.summary {
+  min-height: 70px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--field);
-  color: var(--muted-2);
-  padding: 8px;
-  font-family: "Cascadia Mono", Consolas, monospace;
-  overflow: hidden;
+  background: #161624;
+  padding: 10px;
 }
-.safety-strip { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; color: var(--muted); }
-.safety-strip strong { color: var(--accent); }
+.summary strong { display: block; font-size: 24px; line-height: 1; }
+.summary span { color: var(--muted); font-size: 12px; }
+.summary.warn { border-color: rgba(215, 184, 107, .56); }
+.summary.err { border-color: rgba(231, 76, 60, .62); }
+
+.action-list { padding: 8px; display: grid; gap: 8px; align-content: start; }
+.action {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #171727;
+  color: var(--text);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+.action.selected { border-color: rgba(232, 168, 124, .8); box-shadow: inset 3px 0 0 var(--accent); }
+.action.warn { border-color: rgba(215, 184, 107, .56); }
+.action-title { font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action-summary { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag {
+  min-height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.tag.wake { border-color: rgba(215, 184, 107, .75); color: #ecd9a4; }
+.tag.decision { border-color: rgba(232, 168, 124, .6); color: #f0bf9d; }
+.tag.unread { border-color: rgba(224, 221, 213, .22); color: var(--text); }
+.empty {
+  padding: 28px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.detail-panel { grid-template-rows: auto 1fr auto; }
+.detail-body { padding: 14px; display: grid; gap: 12px; align-content: start; }
+.detail-title { font-size: 20px; line-height: 1.15; font-weight: 900; }
+.detail-summary { color: var(--muted); }
+.fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fact {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #161624;
+  padding: 9px;
+  min-width: 0;
+}
+.fact-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.fact-value { margin-top: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wake-box {
+  border: 1px solid rgba(215, 184, 107, .45);
+  border-radius: 7px;
+  background: rgba(215, 184, 107, .07);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+.wake-label { color: #ecd9a4; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.wake-line {
+  min-height: 54px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--field);
+  color: var(--text);
+  padding: 9px;
+  font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
+}
+.detail-actions {
+  border-top: 1px solid var(--border);
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 .footer {
   border-top: 1px solid var(--border);
   background: #151526;
   display: grid;
-  grid-template-columns: minmax(220px, .75fr) minmax(320px, 1fr) auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding: 0 10px;
+  gap: 12px;
+  padding: 0 14px;
+  color: var(--quiet);
+  font-size: 12px;
 }
-.footer .path {
-  min-width: 0;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: "Cascadia Mono", Consolas, monospace;
+.diag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.footer strong { color: var(--muted); }
+@media (max-width: 1160px) {
+  .app { min-width: 900px; }
+  .main { grid-template-columns: 196px minmax(390px, 1fr) 320px; }
+  .summary-strip { grid-template-columns: 1fr; }
+  .summary { min-height: 48px; display: flex; align-items: center; gap: 10px; }
+  .summary strong { font-size: 20px; }
 }
-.path-label {
-  color: var(--muted-2);
-  font-family: "Segoe UI", system-ui, sans-serif;
-  font-weight: 800;
-  text-transform: uppercase;
-  margin-right: 6px;
-}
-.footer-actions { display: flex; gap: 7px; }
-
-@media (max-height: 760px) {
-  .app { grid-template-rows: 44px 1fr 38px; min-height: 640px; }
-  .center { grid-template-rows: 82px minmax(0, 1fr); gap: 8px; padding: 8px; }
-  .stat { min-height: 82px; padding: 8px; }
-  .stat-value { font-size: 23px; }
-  .feed { grid-auto-rows: 68px; }
-  .agent-list { grid-auto-rows: 68px; }
-  .agent { padding: 7px; }
-  .side { grid-template-rows: 132px minmax(0, 1fr) 150px; }
-}
-@media (max-width: 1260px) {
-  .app { min-width: 1040px; }
-  .main { grid-template-columns: 214px minmax(500px, 1fr) 304px; }
-  .footer { grid-template-columns: minmax(200px, .75fr) minmax(280px, 1fr) auto; }
-  .context-chip.hide-first { display: none; }
+@media (max-height: 720px) {
+  .app { grid-template-rows: 54px 1fr 38px; min-height: 580px; }
+  .topbar { padding: 0 14px; }
+  .main { padding: 10px; gap: 10px; }
+  .summary { min-height: 58px; }
+  .action { padding: 10px; }
+  .detail-title { font-size: 18px; }
 }
 </style>
 </head>
@@ -517,152 +286,77 @@ button.ghost { background: transparent; }
 <div class="app">
   <header class="topbar">
     <div class="brand">
-      <div class="mark"></div>
+      <div class="mark">P</div>
       <div>
         <div class="brand-title">PANDA Agent Hub</div>
-        <div class="brand-sub">Desktop command cockpit</div>
+        <div class="brand-sub">Action console</div>
       </div>
     </div>
-    <div class="context-strip">
-      <div class="context-chip" id="routeChip"><span class="status-dot warn"></span><strong>Loading routes</strong></div>
-      <div class="context-chip hide-first"><strong id="messageCount">0</strong> messages</div>
-      <div class="context-chip"><strong id="checkCount">0</strong> actionable checks</div>
-      <div class="context-chip optional"><strong id="gitState">git</strong></div>
-      <div class="context-chip"><strong>as of</strong> <span id="asOf">--</span></div>
+    <div class="status-line">
+      <div class="system-state" id="systemState">Loading...</div>
+      <div class="meta" id="asOf">as of --</div>
     </div>
     <div class="top-actions">
-      <input class="search" id="search" value="" aria-label="Search">
-      <button class="icon" id="refresh" title="Refresh">R</button>
+      <button id="refresh">Refresh</button>
       <button disabled>Compose</button>
     </div>
   </header>
 
   <main class="main">
-    <aside class="rail">
-      <div class="section-head">
-        <div class="section-title">Agents</div>
-        <span class="count-pill" id="agentCount">0</span>
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Agents</div>
+        <div class="count" id="agentCount">0</div>
       </div>
-      <div class="mode-strip" title="V1 ships Live only. Plan and Review are intentionally unavailable.">
-        <div class="mode active">Live</div>
-        <div class="mode">Soon</div>
-        <div class="mode">Later</div>
-      </div>
-      <div class="agent-list" id="agentList"></div>
-      <div class="rail-tools">
-        <button>All Mail</button>
-        <button>History</button>
-        <button>Schema</button>
-        <button>Archive</button>
-      </div>
-    </aside>
-
-    <section class="center">
-      <div class="status-grid" id="statusGrid"></div>
-      <div class="workbench">
-        <section class="pane mailbox-pane">
-          <div class="section-head">
-            <div class="tabs">
-              <div class="tab active">Feed</div>
-              <div class="tab">Threads</div>
-              <div class="tab">Files</div>
-            </div>
-            <button class="ghost" disabled>Mark read</button>
-          </div>
-          <div class="filter-bar">
-            <div class="quick-filters">
-              <span class="filter active">Needs action</span>
-              <span class="filter">Unread</span>
-              <span class="filter">Claude Code</span>
-              <span class="filter">Decisions</span>
-              <span class="filter">Shipped</span>
-            </div>
-            <div class="density" title="Density: compact, medium, large"><span>C</span><span class="active">M</span><span>L</span></div>
-          </div>
-          <div class="pane-body">
-            <div class="feed" id="feedList"></div>
-          </div>
-        </section>
-
-        <section class="pane">
-          <div class="section-head">
-            <div class="section-title">Selected Thread</div>
-            <div class="badge-row" id="selectedBadge"></div>
-          </div>
-          <div class="pane-body">
-            <div class="detail">
-              <div class="detail-head">
-                <div class="detail-title" id="selectedTitle">Loading</div>
-                <div class="detail-meta" id="selectedMeta"></div>
-              </div>
-              <div class="detail-copy">
-                <div class="detail-grid" id="factGrid"></div>
-                <div id="detailCards"></div>
-              </div>
-              <div class="detail-actions">
-                <button id="openMessage">Open Message</button>
-                <div class="top-actions">
-                  <button class="ghost" disabled>Defer</button>
-                  <button disabled>Review scope</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+      <div class="scroll">
+        <div class="agents" id="agentList"></div>
       </div>
     </section>
 
-    <aside class="side">
-      <section>
-        <div class="section-head">
-          <div class="section-title">Decision Queue</div>
-          <span class="count-pill" id="decisionCount">0</span>
-        </div>
-        <div class="decision-stack" id="decisionList"></div>
-      </section>
+    <section class="panel queue-panel">
+      <div class="panel-head">
+        <div class="panel-title">Action Queue</div>
+        <div class="count" id="queueCount">0</div>
+      </div>
+      <div class="summary-strip" id="summaryStrip"></div>
+      <div class="scroll">
+        <div class="action-list" id="actionList"></div>
+      </div>
+    </section>
 
-      <section class="queue-body">
-        <div class="section-head">
-          <div class="section-title">Route Health</div>
-          <button class="ghost" disabled>Run</button>
-        </div>
-        <div class="route-list" id="routeList"></div>
-      </section>
-
-      <section class="wake">
-        <div class="section-head">
-          <div class="section-title">Wake Line</div>
-          <span class="count-pill">CC</span>
-        </div>
-        <div class="wake-body">
-          <div class="safety-strip">
-            <span><strong>No automation.</strong> <span id="wakeSafety">Copy line only.</span></span>
-            <span class="badge wait" id="wakeStatus">held</span>
-          </div>
-          <div class="wake-line" id="wakeLine">Loading wake preview...</div>
-          <div class="top-actions">
-            <button id="copyWake">Copy</button>
-            <button disabled>Open Folder</button>
+    <section class="panel detail-panel">
+      <div class="panel-head">
+        <div class="panel-title">Selected Item</div>
+        <span class="tag" id="selectedKind">none</span>
+      </div>
+      <div class="scroll">
+        <div class="detail-body">
+          <div class="detail-title" id="detailTitle">No item selected</div>
+          <div class="detail-summary" id="detailSummary">The queue is loading.</div>
+          <div class="fact-grid" id="factGrid"></div>
+          <div class="wake-box">
+            <div class="wake-label">Wake line</div>
+            <div class="wake-line" id="wakeLine">No wake needed.</div>
           </div>
         </div>
-      </section>
-    </aside>
+      </div>
+      <div class="detail-actions">
+        <button class="secondary" id="openMessage">Open message</button>
+        <button class="secondary" id="markRead">Mark read</button>
+        <button class="primary" id="copyWake">Copy wake line</button>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
-    <div class="path"><span class="path-label">Source</span><span id="sourcePath">C:\CODEX PG\CODEX Claude Codex Mailbox</span></div>
-    <div class="path"><span class="path-label">Destination</span><span id="destPath">read-only preview; no draft staged</span></div>
-    <div class="footer-actions">
-      <button disabled>Validate</button>
-      <button disabled>Backup</button>
-      <button disabled>Send</button>
-    </div>
+    <div class="diag" id="diagnosticsLine">Diagnostics quiet.</div>
+    <div><strong id="gitState">git</strong></div>
   </footer>
 </div>
 
 <script>
 let cockpit = null;
-let selectedMessagePath = "";
+let selected = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -673,19 +367,17 @@ function fmtTime(value) {
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
   return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
 }
-function dotClass(status) {
-  if (status === 'active') return 'active';
-  if (status === 'ok' || status === 'pass') return 'ok';
-  if (status === 'err' || status === 'failed') return 'err';
-  if (status === 'warn' || status === 'held' || status === 'untested') return 'warn';
-  return '';
+function statusClass(value) {
+  const text = String(value || '').toLowerCase();
+  if (text.includes('err') || text.includes('fail')) return 'err';
+  if (text.includes('warn') || text.includes('held') || text.includes('wake') || text.includes('wait')) return 'warn';
+  if (text.includes('active')) return 'active';
+  return 'ok';
 }
-function badgeClass(label) {
-  const value = String(label || '').toLowerCase();
-  if (value.includes('wait') || value.includes('held') || value.includes('needed')) return 'wait';
-  if (value.includes('fail') || value.includes('blocked')) return 'blocked';
-  if (value.includes('pass') || value.includes('closed') || value.includes('clear')) return 'closed';
-  return 'open';
+function kindClass(kind) {
+  if (kind === 'wake') return 'wake';
+  if (kind === 'decision') return 'decision';
+  return 'unread';
 }
 function setHTML(id, html) {
   document.getElementById(id).innerHTML = html;
@@ -693,122 +385,100 @@ function setHTML(id, html) {
 async function loadCockpit() {
   const res = await fetch('/api/cockpit');
   cockpit = await res.json();
-  render(cockpit);
+  selected = (cockpit.action_queue || [])[0] || null;
+  render();
 }
-function render(data) {
-  const state = data.cockpit_state || {};
+function render() {
+  const state = cockpit.cockpit_state || {};
   const counts = state.counts || {};
-  const routeSummary = state.routes_summary || {};
-  const git = data.git || {};
-  document.getElementById('routeChip').innerHTML = `<span class="status-dot ${dotClass(routeSummary.severity)}"></span><strong>${esc(routeSummary.label || 'Routes')}</strong>`;
-  document.getElementById('messageCount').textContent = counts.messages ?? 0;
-  document.getElementById('checkCount').textContent = counts.actionable_checks ?? 0;
-  document.getElementById('gitState').textContent = git.status_label || 'git';
-  document.getElementById('asOf').textContent = fmtTime(state.as_of_iso || data.generated_at);
-  document.getElementById('search').value = state.search_query || '';
-  renderAgents(data.agents || []);
-  renderStats(data);
-  renderFeed(data.feed || []);
-  renderSelected(data.selected_thread || {});
-  renderDecisions(data.decisions || []);
-  renderRoutes(data.routes || []);
-  renderWake(data.wake || {});
+  const queue = cockpit.action_queue || [];
+  const stale = counts.stale_unread || 0;
+  const decisions = counts.decisions_needed || 0;
+  const systemText = stale
+    ? `${stale} message${stale === 1 ? '' : 's'} need wake-up`
+    : decisions
+      ? `${decisions} decision${decisions === 1 ? '' : 's'} waiting`
+      : 'No urgent action';
+  document.getElementById('systemState').textContent = systemText;
+  document.getElementById('asOf').textContent = `as of ${fmtTime(state.as_of_iso || cockpit.generated_at)}`;
+  document.getElementById('queueCount').textContent = queue.length;
+  document.getElementById('gitState').textContent = cockpit.git?.status_label || 'git';
+  renderAgents(cockpit.agents || []);
+  renderSummary(counts, cockpit.diagnostics || {});
+  renderQueue(queue);
+  renderDetail(selected);
+  renderDiagnostics(cockpit.diagnostics || {});
 }
 function renderAgents(agents) {
   document.getElementById('agentCount').textContent = agents.length;
   setHTML('agentList', agents.map(agent => `
-    <div class="agent ${agent.id === 'codex' ? 'active' : ''}">
+    <div class="agent">
       <div class="avatar">${esc(agent.code)}</div>
       <div>
-        <div class="agent-name"><span class="status-dot ${dotClass(agent.status)}"></span>${esc(agent.display_name)}</div>
-        <div class="agent-meta" title="${esc(agent.summary_line)}">${esc(agent.summary_line || agent.status_label)}</div>
+        <div class="agent-name"><span class="dot ${statusClass(agent.status)}"></span>${esc(agent.display_name)}</div>
+        <div class="agent-note" title="${esc(agent.summary_line)}">${esc(agent.status_label || agent.summary_line || 'Ready')}</div>
       </div>
-      <div class="agent-count"><strong>${esc(agent.count_value)}</strong><span>${esc(agent.count_label)}</span></div>
-      <div class="agent-foot">
-        <div class="mini-meter"><span style="width:${Math.max(8, Math.min(100, Number(agent.meter_pct || 0)))}%; background:var(--${agent.meter_color === 'err' ? 'err' : agent.meter_color === 'warn' ? 'warn' : 'ok'})"></span></div>
-        <span>${esc(agent.status_label)}</span>
-      </div>
+      <div class="agent-count">${esc(agent.count_value)} ${esc(agent.count_label)}</div>
     </div>
   `).join(''));
 }
-function renderStats(data) {
-  const counts = data.cockpit_state?.counts || {};
-  const routeSummary = data.cockpit_state?.routes_summary || {};
-  const diagnostics = data.diagnostics || {};
-  const git = data.git || {};
-  const stats = [
-    ['Unread', counts.unread || 0, '+ new since last load', ''],
-    ['Waiting', counts.decisions_needed || 0, 'Darrin permission gate', 'warn'],
-    ['Routes', `${routeSummary.pass || 0}/${routeSummary.total || 0}`, routeSummary.label || '', dotClass(routeSummary.severity)],
-    ['Git', git.clean ? 'clean' : 'check', git.status_label || '', git.clean ? 'ok' : 'warn'],
+function renderSummary(counts, diagnostics) {
+  const diagProblems = Number(diagnostics.checks_warn || 0) + Number(diagnostics.checks_fail || 0);
+  const cards = [
+    ['Needs wake', counts.stale_unread || 0, 'Unread over 60 seconds', counts.stale_unread ? 'warn' : ''],
+    ['Unread', counts.unread || 0, 'Waiting in mailbox', ''],
+    ['Diagnostics', diagProblems, diagProblems ? 'Needs review' : 'Quiet', diagProblems ? 'warn' : ''],
   ];
-  setHTML('statusGrid', stats.map(([label, value, note, status]) => `
-    <div class="stat">
-      <div class="stat-label"><span>${esc(label)}</span><span class="status-dot ${esc(status)}"></span></div>
-      <div class="stat-value">${esc(value)}</div>
-      <div class="stat-note">${esc(note)}</div>
-    </div>
+  setHTML('summaryStrip', cards.map(([label, value, note, tone]) => `
+    <div class="summary ${esc(tone)}"><strong>${esc(value)}</strong><span>${esc(label)} - ${esc(note)}</span></div>
   `).join(''));
 }
-function renderFeed(feed) {
-  setHTML('feedList', feed.slice(0, 7).map(item => `
-    <div class="feed-item ${item.unread ? 'unread' : ''}" data-path="${esc(item.message_path)}">
-      <div class="time">${esc(fmtTime(item.time_iso))}</div>
-      <div>
-        <div class="feed-title">${esc(item.title)}</div>
-        <div class="feed-sub">${esc(item.sub)}</div>
-      </div>
-      <div class="badge-row">${(item.badges || []).slice(0, 2).map(b => `<span class="badge ${badgeClass(b.label)}">${esc(b.label)}</span>`).join('')}</div>
-    </div>
-  `).join('') || '<div class="feed-item"><div></div><div class="feed-title">No feed items</div></div>');
-}
-function renderSelected(selected) {
-  selectedMessagePath = selected.primary_message_path || '';
-  document.getElementById('selectedTitle').textContent = selected.title || 'No selected thread';
-  setHTML('selectedBadge', `<span class="badge ${badgeClass(selected.state)}">${esc(selected.state || 'active')}</span>`);
-  setHTML('selectedMeta', [
-    `Owner: ${selected.owner || 'unknown'}`,
-    `Source: ${selected.source || 'mailbox'}`,
-    `Route: ${selected.route_id || 'unknown'}`,
-    `Next: ${selected.next_action || 'review'}`
-  ].map(item => `<span>${esc(item)}</span>`).join(''));
-  setHTML('factGrid', (selected.facts || []).map(fact => `
-    <div class="fact"><div class="fact-label">${esc(fact.label)}</div><div class="fact-value">${esc(fact.value)}</div></div>
+function renderQueue(queue) {
+  if (!queue.length) {
+    setHTML('actionList', '<div class="empty">Nothing needs action right now.</div>');
+    return;
+  }
+  setHTML('actionList', queue.map(item => `
+    <button class="action ${item.id === selected?.id ? 'selected' : ''} ${esc(item.severity)}" data-id="${esc(item.id)}">
+      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.kind === 'wake' ? 'Needs wake-up' : item.kind)}</span></div>
+      <div class="action-title">${esc(item.title)}</div>
+      <div class="action-summary">${esc(item.summary)}</div>
+    </button>
   `).join(''));
-  setHTML('detailCards', (selected.cards || []).map(card => `
-    <div class="message-card"><strong>${esc(card.title)}</strong><p>${esc(card.body)}</p></div>
-  `).join(''));
+  document.querySelectorAll('.action').forEach(button => {
+    button.addEventListener('click', () => {
+      selected = queue.find(item => item.id === button.dataset.id) || null;
+      render();
+    });
+  });
 }
-function renderDecisions(decisions) {
-  document.getElementById('decisionCount').textContent = decisions.filter(d => d.id !== 'no-decisions').length;
-  setHTML('decisionList', decisions.slice(0, 3).map((decision, index) => `
-    <div class="decision ${index === 0 ? 'featured' : ''}">
-      <div>
-        <div class="decision-title">${esc(decision.title)}</div>
-        <div class="decision-sub">${esc(decision.sub)}</div>
-        <div class="decision-actions">${(decision.actions || []).slice(0, 2).map(action => `<button ${action.enabled ? '' : 'disabled'}>${esc(action.label)}</button>`).join('')}</div>
-      </div>
-      <span class="badge ${badgeClass(decision.badge)}">${esc(decision.badge)}</span>
-      ${decision.scope_text && decision.scope_text.path ? `<div class="scope-preview"><strong>Confirmation required:</strong> ${esc(decision.scope_text.path)} / ${esc(decision.scope_text.read_frequency)}</div>` : ''}
-    </div>
+function renderDetail(item) {
+  const kind = item?.kind || 'none';
+  document.getElementById('selectedKind').textContent = kind === 'wake' ? 'needs wake-up' : kind;
+  document.getElementById('selectedKind').className = `tag ${kindClass(kind)}`;
+  document.getElementById('detailTitle').textContent = item?.title || 'No item selected';
+  document.getElementById('detailSummary').textContent = item?.summary || 'No current action is required.';
+  const facts = [
+    ['Primary action', item?.primary_action || 'None'],
+    ['Secondary action', item?.secondary_action || 'None'],
+    ['Thread', item?.thread_id || 'None'],
+    ['Writes', 'None from this screen'],
+  ];
+  setHTML('factGrid', facts.map(([label, value]) => `
+    <div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value" title="${esc(value)}">${esc(value)}</div></div>
   `).join(''));
+  document.getElementById('wakeLine').textContent = item?.wake_line || cockpit?.wake?.line || 'No wake needed.';
+  document.getElementById('copyWake').disabled = !(item?.wake_line || cockpit?.wake?.line);
+  document.getElementById('markRead').disabled = !item?.message_path;
+  document.getElementById('openMessage').disabled = !item?.message_path;
 }
-function renderRoutes(routes) {
-  setHTML('routeList', routes.map(route => `
-    <div class="route">
-      <div>
-        <div class="route-name"><span class="status-dot ${dotClass(route.status)}"></span>${esc(route.name)}</div>
-        <div class="route-path">${esc(route.status === 'held' ? route.hold_reason : route.dest_path)}</div>
-      </div>
-      <span class="badge ${badgeClass(route.status)}">${esc(route.status)}</span>
-    </div>
-  `).join(''));
-}
-function renderWake(wake) {
-  document.getElementById('wakeSafety').textContent = wake.safety_label || 'Copy line only.';
-  document.getElementById('wakeStatus').textContent = wake.route_status || 'held';
-  document.getElementById('wakeStatus').className = `badge ${badgeClass(wake.route_status)}`;
-  document.getElementById('wakeLine').textContent = wake.line || '';
+function renderDiagnostics(diagnostics) {
+  const warn = Number(diagnostics.checks_warn || 0);
+  const fail = Number(diagnostics.checks_fail || 0);
+  const text = fail || warn
+    ? `Diagnostics need review: ${fail} failed, ${warn} warning.`
+    : `Diagnostics quiet. ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass.`;
+  document.getElementById('diagnosticsLine').textContent = text;
 }
 document.getElementById('refresh').addEventListener('click', loadCockpit);
 document.getElementById('copyWake').addEventListener('click', async () => {
@@ -816,15 +486,19 @@ document.getElementById('copyWake').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(text); } catch (err) {}
 });
 document.getElementById('openMessage').addEventListener('click', async () => {
-  if (!selectedMessagePath) return;
-  const url = `/api/open?path=${encodeURIComponent(selectedMessagePath)}`;
-  await fetch(url);
+  if (!selected?.message_path) return;
+  await fetch(`/api/open?path=${encodeURIComponent(selected.message_path)}`);
+});
+document.getElementById('markRead').addEventListener('click', async () => {
+  if (!selected?.message_path) return;
+  await fetch('/api/message-read-state', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: selected.message_path, state: 'read', actor: 'codex'})
+  });
+  await loadCockpit();
 });
 document.addEventListener('keydown', event => {
-  if (event.key === '/') {
-    event.preventDefault();
-    document.getElementById('search').focus();
-  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') {
     event.preventDefault();
     loadCockpit();

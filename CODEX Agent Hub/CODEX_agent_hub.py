@@ -115,6 +115,7 @@ ALLOW_SIMULATED_INBOUND = False
 NOTIFICATION_LOCK = threading.Lock()
 WATCHER_LOCK = threading.Lock()
 WATCHER_SNOOZE_DEFAULT_MINUTES = 15
+STALE_UNREAD_SECONDS = 60
 
 IMPORTANT_STATUSES = {"Decision Needed", "Response Requested", "Implementation Report"}
 IMPORTANT_TYPES = {"dispatch", "complete", "decision", "blocker", "response-request", "implementation"}
@@ -1372,7 +1373,11 @@ def summarize_cockpit_routes(routes: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def cockpit_feed_item(row: dict[str, Any]) -> dict[str, Any]:
+    is_stale = bool(row.get("stale_unread"))
     badges = [{"kind": "status", "label": str(label)} for label in row.get("status_badges", [])[:3]]
+    if is_stale:
+        badges.insert(0, {"kind": "wake", "label": "needs wake-up"})
+    wake_label = str(row.get("wake_candidate_label", ""))
     return {
         "id": row.get("message_id") or row.get("name", ""),
         "thread_id": row.get("thread_id") or row.get("message_id") or row.get("name", ""),
@@ -1383,37 +1388,59 @@ def cockpit_feed_item(row: dict[str, Any]) -> dict[str, Any]:
         "from_agents": [row.get("from_agent", "")],
         "to_agents": [row.get("to_agent", "")],
         "unread": bool(row.get("unread")),
+        "age_seconds": int(row.get("age_seconds", 0) or 0),
+        "stale_unread": is_stale,
+        "wake_candidate_agent": row.get("wake_candidate_agent", ""),
+        "wake_candidate_label": wake_label,
         "badges": badges,
         "message_path": row.get("path", ""),
         "summary": row.get("summary", ""),
     }
 
 
-def cockpit_selected_thread(status_data: dict[str, Any], feed: list[dict[str, Any]]) -> dict[str, Any]:
+def cockpit_selected_thread(
+    status_data: dict[str, Any], feed: list[dict[str, Any]], wake_candidates: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
     decisions = status_data.get("decisions", [])
     decision = decisions[0] if decisions else {}
-    selected = decision or (feed[0] if feed else {})
+    wake_item = (wake_candidates or [None])[0] or {}
+    selected = wake_item or decision or (feed[0] if feed else {})
     title = str(selected.get("title", "No active thread"))
     path_value = str(selected.get("path") or selected.get("message_path") or "")
     thread_id = str(selected.get("thread_id") or selected.get("id") or safe_slug(title))
     route_id = str(selected.get("route_id") or route_id_for_direction(str(selected.get("direction", ""))))
+    if wake_item:
+        state = "needs_wake"
+        owner = str(wake_item.get("wake_candidate_label") or "Agent")
+        source = "Unread over 60 seconds"
+        next_action = f"Wake {owner}"
+    elif decisions:
+        state = "waiting_on_darrin"
+        owner = "darrin"
+        source = "Decision queue"
+        next_action = "Review standing read scope" if "watcher" in title.lower() else "Review decision"
+    else:
+        state = "active"
+        owner = "codex"
+        source = "Latest mailbox"
+        next_action = "Open message"
     return {
         "id": thread_id,
         "title": title,
-        "state": "waiting_on_darrin" if decisions else "active",
-        "owner": "darrin" if decisions else "codex",
-        "source": "Decision queue" if decisions else "Latest mailbox",
+        "state": state,
+        "owner": owner,
+        "source": source,
         "route_id": route_id,
-        "next_action": "Review standing read scope" if "watcher" in title.lower() else "Open message",
+        "next_action": next_action,
         "facts": [
-            {"label": "State", "value": "Waiting on Darrin" if decisions else "Active"},
-            {"label": "Next action", "value": "Review scope" if decisions else "Review message"},
+            {"label": "State", "value": "Needs wake-up" if wake_item else "Waiting on Darrin" if decisions else "Active"},
+            {"label": "Next action", "value": next_action},
             {"label": "Writes", "value": "None in read-only v1"},
             {"label": "Wake model", "value": "Copy line only"},
         ],
         "cards": [
             {
-                "title": "Current gate" if decisions else "Latest message",
+                "title": "Unread alert" if wake_item else "Current gate" if decisions else "Latest message",
                 "body": str(selected.get("summary", "No summary available.")),
             },
             {
@@ -1522,6 +1549,70 @@ def cockpit_agents(status_data: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def cockpit_action_queue(
+    feed: list[dict[str, Any]], decisions: list[dict[str, Any]], limit: int = 12
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in feed:
+        key = str(item.get("id") or item.get("message_path"))
+        if item.get("stale_unread"):
+            seen.add(key)
+            label = str(item.get("wake_candidate_label") or "agent")
+            rows.append(
+                {
+                    "id": key,
+                    "kind": "wake",
+                    "severity": "warn",
+                    "title": item.get("title", "Unread message"),
+                    "summary": f"Unread {item.get('age_seconds', 0)}s. Wake {label}.",
+                    "primary_action": f"Wake {label}",
+                    "secondary_action": "Mark read",
+                    "message_path": item.get("message_path", ""),
+                    "thread_id": item.get("thread_id", ""),
+                    "wake_line": f"Read {item.get('thread_id') or item.get('id')} and reply to CODEX.",
+                }
+            )
+    for decision in decisions:
+        if decision.get("id") == "no-decisions":
+            continue
+        key = str(decision.get("id"))
+        rows.append(
+            {
+                "id": key,
+                "kind": "decision",
+                "severity": decision.get("severity", "warn"),
+                "title": decision.get("title", "Decision needed"),
+                "summary": decision.get("sub", ""),
+                "primary_action": "Review",
+                "secondary_action": "Defer",
+                "message_path": decision.get("path", ""),
+                "thread_id": key,
+                "wake_line": "",
+            }
+        )
+    for item in feed:
+        key = str(item.get("id") or item.get("message_path"))
+        if key in seen or not item.get("unread"):
+            continue
+        rows.append(
+            {
+                "id": key,
+                "kind": "unread",
+                "severity": "open",
+                "title": item.get("title", "Unread message"),
+                "summary": item.get("sub", ""),
+                "primary_action": "Open",
+                "secondary_action": "Mark read",
+                "message_path": item.get("message_path", ""),
+                "thread_id": item.get("thread_id", ""),
+                "wake_line": "",
+            }
+        )
+        seen.add(key)
+    return rows[:limit]
+
+
 def cockpit_payload() -> dict[str, Any]:
     status_data = state()
     generated_at = str(status_data.get("generated_at", datetime.now().isoformat(timespec="seconds")))
@@ -1529,7 +1620,9 @@ def cockpit_payload() -> dict[str, Any]:
     route_summary = summarize_cockpit_routes(routes)
     feed = [cockpit_feed_item(row) for row in status_data.get("latest", [])[:24]]
     decisions = cockpit_decisions(status_data)
-    selected_thread = cockpit_selected_thread(status_data, feed)
+    wake_candidates = [item for item in feed if item.get("stale_unread")]
+    action_queue = cockpit_action_queue(feed, decisions)
+    selected_thread = cockpit_selected_thread(status_data, feed, wake_candidates)
     diagnostics = status_data.get("diagnostics", {})
     validation_summary = status_data.get("validation_summary", {})
     git = status_data.get("git", {})
@@ -1548,22 +1641,25 @@ def cockpit_payload() -> dict[str, Any]:
             "counts": {
                 "messages": status_data.get("counts", {}).get("messages", 0),
                 "unread": status_data.get("counts", {}).get("unread_messages", 0),
+                "stale_unread": len(wake_candidates),
                 "decisions_needed": status_data.get("counts", {}).get("decisions", 0),
                 "actionable_checks": status_data.get("counts", {}).get("actionable_validation_issues", 0),
             },
         },
         "agents": cockpit_agents(status_data),
+        "action_queue": action_queue,
+        "wake_candidates": wake_candidates,
         "feed": feed,
         "selected_thread": selected_thread,
         "decisions": decisions,
         "routes": routes,
         "wake": {
-            "target_agent": "claude_code",
-            "line": f"Read {selected_thread.get('id', 'the PAH thread')} and reply to CODEX.",
-            "route_status": "held" if route_summary["held"] else "pass",
+            "target_agent": wake_candidates[0].get("wake_candidate_agent", "claude_code") if wake_candidates else "claude_code",
+            "line": action_queue[0].get("wake_line") if action_queue and action_queue[0].get("wake_line") else f"Read {selected_thread.get('id', 'the PAH thread')} and reply to CODEX.",
+            "route_status": "wake_candidate" if wake_candidates else "held" if route_summary["held"] else "pass",
             "last_copy_iso": "",
             "direct_wake_supported": False,
-            "safety_label": "Copy line only; Darrin pastes into Claude Code.",
+            "safety_label": f"{len(wake_candidates)} unread over 60s. Copy line only." if wake_candidates else "Copy line only; Darrin pastes into Claude Code.",
         },
         "diagnostics": {
             "ok": bool(diagnostics.get("ok")),
@@ -1593,6 +1689,10 @@ def cockpit_payload() -> dict[str, Any]:
 
 def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None) -> dict[str, Any]:
     read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+    age_seconds = max(0, int(time.time() - msg.modified))
+    stale_unread = bool(read_status["unread"] and age_seconds >= STALE_UNREAD_SECONDS)
+    wake_candidate_agent = safe_slug(msg.to_agent).replace("-", "_") if msg.to_agent else ""
+    wake_candidate_label = msg.to_agent or ""
     return {
         "direction": msg.direction,
         "path": str(msg.path),
@@ -1610,6 +1710,10 @@ def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None)
         "to_agent": msg.to_agent,
         "read_state": read_status["state"],
         "unread": read_status["unread"],
+        "age_seconds": age_seconds,
+        "stale_unread": stale_unread,
+        "wake_candidate_agent": wake_candidate_agent,
+        "wake_candidate_label": wake_candidate_label,
         "content_changed_since_read": read_status["content_changed"],
         "status_badges": message_status_badges(msg, read_status["unread"]),
         "quarantine_allowed": quarantine_candidate_allowed(msg.path),

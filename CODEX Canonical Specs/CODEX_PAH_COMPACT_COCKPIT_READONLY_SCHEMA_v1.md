@@ -1,15 +1,17 @@
-# CODEX PAH Compact Cockpit Read-Only Schema v1
+# CODEX PAH Action Console Read-Only Schema v1
 
 Status: draft for CC review before live implementation.
 
-Scope: data contract for the first live PAH compact cockpit slice. This slice is read-only: it renders agent state, mailbox feed, selected-thread detail, decision queue, route health, wake preview, diagnostics summary, and local git state. It does not send messages, grant approvals, start watchers, or write to Panda Gallery.
+Scope: data contract for the first live PAH action-console slice. This slice is read-only: it renders agent state, an action queue, mailbox feed, selected-thread detail, route health, wake preview, diagnostics summary, and local git state. It does not send messages, grant approvals, start watchers, or write to Panda Gallery.
 
 ## Design Goals
 
 - Single source of truth for every visible status.
 - No disagreement between summary chips and detail panels.
 - All potentially risky action affordances can render as disabled or confirmation-required from structured fields.
-- Long raw Markdown is not required for the default cockpit view.
+- The default screen answers: "What needs action right now?"
+- Long raw Markdown is not required for the default console view.
+- Unread messages older than 60 seconds are promoted to wake candidates.
 - Feed, selected thread, route health, and decisions can be refreshed independently later without changing the schema.
 
 ## Top-Level Payload
@@ -20,6 +22,8 @@ Scope: data contract for the first live PAH compact cockpit slice. This slice is
   "generated_at": "2026-04-28T07:24:18-07:00",
   "cockpit_state": {},
   "agents": [],
+  "action_queue": [],
+  "wake_candidates": [],
   "feed": [],
   "selected_thread": {},
   "decisions": [],
@@ -53,6 +57,7 @@ Scope: data contract for the first live PAH compact cockpit slice. This slice is
   "counts": {
     "messages": 220,
     "unread": 12,
+    "stale_unread": 2,
     "decisions_needed": 1,
     "actionable_checks": 7
   }
@@ -104,7 +109,12 @@ Rules:
   "from_agents": ["claude_code"],
   "to_agents": ["codex"],
   "unread": true,
+  "age_seconds": 74,
+  "stale_unread": true,
+  "wake_candidate_agent": "claude_code",
+  "wake_candidate_label": "Claude Code",
   "badges": [
+    {"kind": "wake", "label": "needs wake-up"},
     {"kind": "status", "label": "waiting_on_codex"},
     {"kind": "priority", "label": "high"}
   ],
@@ -116,7 +126,38 @@ Rules:
 
 - Feed item title is one line.
 - `sub` is one line and should include route or thread context.
+- `stale_unread: true` means the message is unread and at least 60 seconds old.
+- Stale unread messages must be visually promoted in the action queue.
 - Raw message body is available through `message_path`, not displayed by default.
+
+## action_queue[]
+
+```json
+{
+  "id": "CC-PAH-COMPACT-COCKPIT-UX-REVIEW-20260428-073000",
+  "kind": "wake",
+  "severity": "warn",
+  "title": "PAH compact cockpit UX review",
+  "summary": "Unread 74s. Wake Claude Code.",
+  "primary_action": "Wake Claude Code",
+  "secondary_action": "Mark read",
+  "message_path": "C:\\CODEX PG\\CODEX Claude Codex Mailbox\\CODEX Inbox\\20260428_073000_CC_to_CODEX_pah_compact_cockpit_ux_review.md",
+  "thread_id": "PAH-COMPACT-COCKPIT-UX-20260428",
+  "wake_line": "Read PAH-COMPACT-COCKPIT-UX-20260428 and reply to CODEX."
+}
+```
+
+Allowed `kind`: `wake`, `decision`, `unread`.
+
+Rules:
+
+- `wake` items render first.
+- Action copy must be plain language.
+- The queue is the primary user workflow; route health and diagnostics stay secondary.
+
+## wake_candidates[]
+
+Same item shape as `feed[]`, filtered to stale unread messages. The first item drives the default wake line.
 
 ## selected_thread
 
@@ -223,7 +264,7 @@ Rules:
 {
   "target_agent": "claude_code",
   "line": "Read PAH-WATCHER-WAKE-SERVICE-20260428 and reply to CODEX.",
-  "route_status": "held",
+  "route_status": "wake_candidate",
   "last_copy_iso": "",
   "direct_wake_supported": false,
   "safety_label": "Copy line only; Darrin pastes into Claude Code."
@@ -234,6 +275,7 @@ Rules:
 
 - Direct wake remains unsupported.
 - Copying the wake line does not send it anywhere.
+- `wake_candidate` means a stale unread message is ready for Darrin to wake the target agent.
 
 ## diagnostics
 

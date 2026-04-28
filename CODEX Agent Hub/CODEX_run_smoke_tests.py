@@ -440,8 +440,15 @@ def test_cockpit_payload_contract() -> None:
     assert_true(payload["schema_version"] == 1, "cockpit schema version")
     assert_true(payload["cockpit_state"]["read_only"], "cockpit v1 is read-only")
     assert_true("routes_summary" in payload["cockpit_state"], "cockpit has route summary")
+    assert_true("stale_unread" in payload["cockpit_state"]["counts"], "cockpit counts stale unread")
     assert_true(len(payload["agents"]) == 4, "cockpit exposes four agents")
+    assert_true("action_queue" in payload, "cockpit exposes action queue")
+    assert_true("wake_candidates" in payload, "cockpit exposes wake candidates")
     assert_true(payload["routes"], "cockpit exposes route health")
+    if payload["feed"]:
+        assert_true("age_seconds" in payload["feed"][0], "feed includes age seconds")
+        assert_true("stale_unread" in payload["feed"][0], "feed includes stale unread flag")
+        assert_true("wake_candidate_label" in payload["feed"][0], "feed includes wake target label")
     actions = {item["id"]: item for item in payload["read_only_actions"]}
     assert_true(not actions["compose"]["enabled"], "compose disabled in read-only cockpit")
     assert_true(not actions["send"]["enabled"], "send disabled in read-only cockpit")
