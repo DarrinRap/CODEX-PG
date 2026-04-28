@@ -36,3 +36,4 @@ timestamp | sender->receiver | type | topic | source-file | deliverable-path
 2026-04-27 09:05:00 -07:00 | CLAUDE->CODEX | decision | PG-wide module overhaul parked pending AM v1 | CODEX Inbox\20260427_claude_module_overhaul_parked.md | --
 2026-04-27 11:00:00 -07:00 | CC->CLAUDE | complete | lint approval ack, Phase A switch shipped | CLAUDE Inbox\20260427_CC_to_CLAUDE_lint_approval_ack.md | commit 5486212
 2026-04-27 11:30:00 -07:00 | CLAUDE->CC | dispatch | AM v1 Phase 1 — chrome scaffold + Screen A skeleton | CC Inbox\workflows/prompts/latest.md | audit_module/v1/ (new package, ~350 LOC)
+2026-04-28 00:00:00 -07:00 | CODEX->CLAUDE | complete | Relay spec v0.1 complete | CLAUDE Inbox\20260427_CODEX_to_CLAUDE_relay_spec_v0_1_complete.md | C:\CODEX PG\CODEX Canonical Specs\RELAY_SPEC_v0.1.md
