@@ -443,8 +443,10 @@ Tray behavior:
 - starts the PAH server hidden when needed
 - polls `/api/tray-status` for compact health and attention state
 - updates tray tooltip and menu rows with unread, overdue, decision, and diagnostic counts
-- raises a Windows tray balloon when unread messages pass the stale threshold
-- mirrors new PAH notification-log entries as tray balloons
+- keeps routine tray balloons off by default
+- can enable overdue-unread popups from the tray menu, with a 60-minute cooldown
+- can snooze overdue-unread popups for 2 hours
+- can enable or disable notification-log popups separately
 - can open the dashboard, PAH folder, and logs
 - can install or remove a Windows Startup shortcut from explicit tray-menu commands
 - exits cleanly and stops only the server process it started itself
@@ -468,7 +470,7 @@ No direct wake.
 No watcher startup without standing read permission.
 No compose/send in read-only v1.
 No permission grant from a single click.
-Tray alerts only; Darrin remains the wake bridge.
+Tray alerts are opt-in; Darrin remains the wake bridge.
 ```
 
 ## Current Limitations
@@ -605,7 +607,9 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Schema updated for stale-unread threshold
 - [x] Compact `/api/tray-status` endpoint
 - [x] Windows tray companion
-- [x] Tray overdue-unread balloon alerts
+- [x] Tray overdue-unread balloon controls
+- [x] Tray notification-log popup controls
+- [x] Tray popup snooze and cooldown behavior
 - [x] Tray live status menu counts
 - [x] Tray startup shortcut install/remove commands
 

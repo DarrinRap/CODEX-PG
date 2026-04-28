@@ -1,6 +1,7 @@
 param(
     [int]$Port = 8765,
     [int]$PollSeconds = 15,
+    [int]$AlertCooldownMinutes = 60,
     [switch]$NoServer
 )
 
@@ -17,7 +18,9 @@ if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
         '-Port',
         "$Port",
         '-PollSeconds',
-        "$PollSeconds"
+        "$PollSeconds",
+        '-AlertCooldownMinutes',
+        "$AlertCooldownMinutes"
     )
     if ($NoServer) {
         $argsList += '-NoServer'
@@ -49,6 +52,10 @@ $script:StartedServer = $false
 $script:RestartAttempts = 0
 $script:LastAlertKey = ''
 $script:LastStaleUnread = -1
+$script:LastAlertAt = [datetime]::MinValue
+$script:AlertsEnabled = $false
+$script:SnoozeUntil = [datetime]::MaxValue
+$script:NotificationLogPopupsEnabled = $false
 $script:NotificationPosition = 0
 
 function Limit-Text {
@@ -118,6 +125,38 @@ function Show-PahBalloon {
     $NotifyIcon.ShowBalloonTip($Ms)
 }
 
+function Alert-CooldownElapsed {
+    return ((Get-Date) - $script:LastAlertAt).TotalMinutes -ge $AlertCooldownMinutes
+}
+
+function Alerts-AreActive {
+    return $script:AlertsEnabled -and (Get-Date) -ge $script:SnoozeUntil
+}
+
+function Update-AlertMenuText {
+    if (-not $script:AlertsEnabled) {
+        $AlertsToggleItem.Text = 'Overdue popups: Off'
+        $SnoozeItem.Text = 'Snooze overdue popups'
+        return
+    }
+    if ((Get-Date) -lt $script:SnoozeUntil) {
+        $remaining = [Math]::Max(1, [int][Math]::Ceiling(($script:SnoozeUntil - (Get-Date)).TotalMinutes))
+        $AlertsToggleItem.Text = "Overdue popups: Snoozed ${remaining}m"
+        $SnoozeItem.Text = 'Snooze overdue popups'
+        return
+    }
+    $AlertsToggleItem.Text = "Overdue popups: On, ${AlertCooldownMinutes}m cooldown"
+    $SnoozeItem.Text = 'Snooze overdue popups for 2 hours'
+}
+
+function Update-NotificationMenuText {
+    if ($script:NotificationLogPopupsEnabled) {
+        $NotificationToggleItem.Text = 'Notification-log popups: On'
+        return
+    }
+    $NotificationToggleItem.Text = 'Notification-log popups: Off'
+}
+
 function Set-TrayMenuStatus {
     param($Status)
     if ($null -eq $Status) {
@@ -149,19 +188,26 @@ function Update-TrayStatus {
     }
 
     $stale = [int]$status.counts.stale_unread
-    $alertKey = "$($status.level)|$stale|$($status.oldest_stale_unread_seconds)"
-    if ($stale -gt 0 -and ($script:LastAlertKey -ne $alertKey -or $stale -gt $script:LastStaleUnread)) {
+    $alertKey = "$($status.level)|$stale"
+    if (
+        $stale -gt 0 -and
+        (Alerts-AreActive) -and
+        (Alert-CooldownElapsed) -and
+        ($script:LastAlertKey -ne $alertKey -or $stale -gt $script:LastStaleUnread)
+    ) {
         Show-PahBalloon $status.title $status.body 10000
+        $script:LastAlertAt = Get-Date
     }
     $script:LastAlertKey = $alertKey
     $script:LastStaleUnread = $stale
+    Update-AlertMenuText
 }
 
 function Install-StartupShortcut {
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($StartupShortcut)
     $shortcut.TargetPath = 'powershell.exe'
-    $shortcut.Arguments = "-NoProfile -STA -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Port $Port -PollSeconds $PollSeconds"
+    $shortcut.Arguments = "-NoProfile -STA -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Port $Port -PollSeconds $PollSeconds -AlertCooldownMinutes $AlertCooldownMinutes"
     $shortcut.WorkingDirectory = $ScriptRoot
     $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,44"
     $shortcut.Save()
@@ -186,6 +232,37 @@ $OpenItem.Add_Click({ Start-Process $script:Url })
 
 $RefreshItem = $Menu.Items.Add('Refresh Status')
 $RefreshItem.Add_Click({ Update-TrayStatus })
+
+$AlertsToggleItem = $Menu.Items.Add('Overdue popups: Off')
+$AlertsToggleItem.Add_Click({
+    $script:AlertsEnabled = -not $script:AlertsEnabled
+    if ($script:AlertsEnabled) {
+        $script:SnoozeUntil = [datetime]::MinValue
+        $script:LastAlertAt = Get-Date
+        Show-PahBalloon 'PANDA Agent Hub' "Overdue popups enabled with a ${AlertCooldownMinutes} minute cooldown." 5000
+    }
+    else {
+        $script:SnoozeUntil = [datetime]::MaxValue
+    }
+    Update-AlertMenuText
+})
+
+$SnoozeItem = $Menu.Items.Add('Snooze overdue popups')
+$SnoozeItem.Add_Click({
+    $script:AlertsEnabled = $true
+    $script:SnoozeUntil = (Get-Date).AddHours(2)
+    Update-AlertMenuText
+    Show-PahBalloon 'PANDA Agent Hub' 'Overdue popups snoozed for 2 hours.' 4000
+})
+
+$NotificationToggleItem = $Menu.Items.Add('Notification-log popups: Off')
+$NotificationToggleItem.Add_Click({
+    $script:NotificationLogPopupsEnabled = -not $script:NotificationLogPopupsEnabled
+    Update-NotificationMenuText
+    if ($script:NotificationLogPopupsEnabled) {
+        Show-PahBalloon 'PANDA Agent Hub' 'Notification-log popups enabled.' 4000
+    }
+})
 
 $StatusItem = $Menu.Items.Add('Status: starting')
 $StatusItem.Enabled = $false
@@ -232,7 +309,7 @@ $ExitItem.Add_Click({
 
 $NotifyIcon.ContextMenuStrip = $Menu
 $NotifyIcon.Add_DoubleClick({ Start-Process $script:Url })
-Show-PahBalloon 'PANDA Agent Hub' "Running at $script:Url" 5000
+$NotifyIcon.Text = 'PANDA Agent Hub'
 
 if (Test-Path -LiteralPath $NotificationLog) {
     $script:NotificationPosition = (Get-Item -LiteralPath $NotificationLog).Length
@@ -269,6 +346,10 @@ $NotificationTimer.Add_Tick({
         $stream.Dispose()
     }
 
+    if (-not $script:NotificationLogPopupsEnabled) {
+        return
+    }
+
     foreach ($line in ($newText -split "`r?`n")) {
         if ([string]::IsNullOrWhiteSpace($line)) {
             continue
@@ -295,4 +376,6 @@ $NotificationTimer.Add_Tick({
 $NotificationTimer.Start()
 
 Update-TrayStatus
+Update-AlertMenuText
+Update-NotificationMenuText
 [System.Windows.Forms.Application]::Run()
