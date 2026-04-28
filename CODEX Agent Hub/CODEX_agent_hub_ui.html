@@ -276,6 +276,7 @@ button.filter.active {
 .tag.wake { border-color: rgba(215, 184, 107, .75); color: #ecd9a4; }
 .tag.decision { border-color: rgba(232, 168, 124, .6); color: #f0bf9d; }
 .tag.unread { border-color: rgba(224, 221, 213, .22); color: var(--text); }
+.tag.local { border-color: rgba(127, 176, 105, .45); color: var(--ok); }
 .empty {
   padding: 28px;
   color: var(--muted);
@@ -314,7 +315,7 @@ button.filter.active {
   padding: 9px;
   font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
 }
-.how-box, .checks-box {
+.how-box, .checks-box, .session-box {
   border: 1px solid var(--border);
   border-radius: 7px;
   background: #161624;
@@ -322,9 +323,13 @@ button.filter.active {
   display: grid;
   gap: 8px;
 }
-.how-title, .checks-title { color: var(--accent); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.how-title, .checks-title, .session-title { color: var(--accent); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 .how-list { margin: 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
 .how-list li { margin: 3px 0; }
+.session-copy { color: var(--muted); font-size: 12px; }
+.session-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.session-actions button { min-height: 28px; padding: 0 8px; font-size: 12px; }
+.session-actions button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 900; }
 .route-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -462,6 +467,15 @@ button.filter.active {
               <li>Paste it into the correct AI window.</li>
             </ol>
           </div>
+          <div class="session-box">
+            <div class="session-title">Session handling</div>
+            <div class="session-copy" id="sessionCopy">No local handling state yet.</div>
+            <div class="session-actions">
+              <button id="stateCopied">Copied</button>
+              <button id="stateWaiting">Waiting</button>
+              <button id="stateHandled">Handled</button>
+            </div>
+          </div>
           <div class="checks-box">
             <div class="checks-title">Mailbox checks</div>
             <div id="routeChecks"></div>
@@ -487,6 +501,8 @@ let cockpit = null;
 let selected = null;
 let queueFilter = 'wake';
 let agentFilter = '';
+const LOCAL_STATE_KEY = 'pahActionConsole.localHandling.v1';
+const localHandling = loadLocalHandling();
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -601,6 +617,33 @@ function kindClass(kind) {
 }
 function setHTML(id, html) {
   document.getElementById(id).innerHTML = html;
+}
+function loadLocalHandling() {
+  try {
+    return JSON.parse(window.localStorage.getItem(LOCAL_STATE_KEY) || '{}');
+  } catch (err) {
+    return {};
+  }
+}
+function saveLocalHandling() {
+  try { window.localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(localHandling)); } catch (err) {}
+}
+function localStateFor(item) {
+  if (!item?.id) return '';
+  return localHandling[item.id]?.state || '';
+}
+function localStateLabel(state) {
+  if (state === 'copied') return 'copied this session';
+  if (state === 'waiting') return 'waiting on reply';
+  if (state === 'handled') return 'handled locally';
+  return '';
+}
+function setLocalState(state) {
+  if (!selected?.id) return;
+  if (state) localHandling[selected.id] = { state, at: new Date().toISOString() };
+  else delete localHandling[selected.id];
+  saveLocalHandling();
+  render();
 }
 async function loadCockpit() {
   const res = await fetch('/api/cockpit');
@@ -729,7 +772,7 @@ function renderQueue(queue) {
   }
   setHTML('actionList', queue.map(item => `
     <button class="action ${item.id === selected?.id ? 'selected' : ''} ${esc(item.severity)}" data-id="${esc(item.id)}">
-      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.kind === 'wake' ? 'Needs wake-up' : item.kind)}</span></div>
+      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.kind === 'wake' ? 'Needs wake-up' : item.kind)}</span>${localStateFor(item) ? `<span class="tag local">${esc(localStateLabel(localStateFor(item)))}</span>` : ''}</div>
       <div class="action-title">${esc(item.title)}</div>
       <div class="action-summary">${esc(humanSummary(item))}</div>
       <div class="action-help">${esc(item.thread_id || item.message_path || '')}</div>
@@ -764,6 +807,7 @@ function renderDetail(item) {
   document.getElementById('markRead').disabled = !item?.message_path;
   document.getElementById('openMessage').disabled = !item?.message_path;
   renderHow(item);
+  renderSessionState(item);
 }
 function renderHow(item) {
   const target = itemTarget(item) || 'the named AI';
@@ -792,6 +836,27 @@ function renderHow(item) {
           'Refresh after any AI replies.'
         ];
   setHTML('howList', lines.map(line => `<li>${esc(line)}</li>`).join(''));
+}
+function renderSessionState(item) {
+  const state = localStateFor(item);
+  const at = item?.id && localHandling[item.id]?.at ? ` at ${fmtTime(localHandling[item.id].at)}` : '';
+  const label = localStateLabel(state);
+  const copy = item?.kind === 'diagnostic'
+    ? 'Diagnostics are read-only review items. No handling state needed.'
+    : label
+      ? `${label}${at}. This is local browser memory only; no mailbox files were changed.`
+      : 'Track your local progress without changing PAH mailboxes.';
+  document.getElementById('sessionCopy').textContent = copy;
+  const disabled = !item?.id || item?.kind === 'diagnostic';
+  [
+    ['stateCopied', 'copied'],
+    ['stateWaiting', 'waiting'],
+    ['stateHandled', 'handled'],
+  ].forEach(([id, value]) => {
+    const button = document.getElementById(id);
+    button.disabled = disabled;
+    button.classList.toggle('active', state === value);
+  });
 }
 function diagnosticFacts(item) {
   const d = item?.diagnostic || {};
@@ -867,11 +932,19 @@ document.getElementById('clearAgentFilter').addEventListener('click', () => {
 document.getElementById('copyWake').addEventListener('click', async () => {
   const text = document.getElementById('wakeLine').textContent || '';
   try { await navigator.clipboard.writeText(text); } catch (err) {}
+  if (selected?.kind === 'wake') {
+    localHandling[selected.id] = { state: 'copied', at: new Date().toISOString() };
+    saveLocalHandling();
+    render();
+  }
   const button = document.getElementById('copyWake');
   const old = button.textContent;
   button.textContent = 'Copied';
   window.setTimeout(() => { button.textContent = old; }, 1400);
 });
+document.getElementById('stateCopied').addEventListener('click', () => setLocalState('copied'));
+document.getElementById('stateWaiting').addEventListener('click', () => setLocalState('waiting'));
+document.getElementById('stateHandled').addEventListener('click', () => setLocalState('handled'));
 document.getElementById('openMessage').addEventListener('click', async () => {
   if (!selected?.message_path) return;
   await fetch(`/api/open?path=${encodeURIComponent(selected.message_path)}`);

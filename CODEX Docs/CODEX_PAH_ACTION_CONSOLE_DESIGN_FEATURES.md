@@ -268,6 +268,34 @@ When a queue item is selected, the right panel shows:
 
 The design goal is to make the selected item self-contained. Darrin should not have to cross-reference the row, the raw message, and the mailbox folder to know what to do.
 
+## Session Handling
+
+The Selected Item panel includes a local Session Handling box.
+
+It tracks Darrin's current browser-side progress without changing mailbox files:
+
+- Copied
+- Waiting
+- Handled
+
+Copying a wake line automatically marks the selected wake item as `copied this session`.
+
+The state is stored in browser `localStorage` under:
+
+```text
+pahActionConsole.localHandling.v1
+```
+
+This is intentionally local-only. It does not mark a message read, archive a thread, modify a mailbox file, or notify another agent. It exists to reduce operator memory load while PAH remains read-only.
+
+Queue rows display a small local status tag when session handling state exists, such as:
+
+```text
+copied this session
+waiting on reply
+handled locally
+```
+
 ## Wake Line
 
 The wake line is the safest current wake mechanism.
@@ -483,6 +511,8 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Oldest-overdue-first wake sorting
 - [x] Human-readable overdue ages
 - [x] Selected-item detail panel
+- [x] Local session handling state
+- [x] Queue row tags for copied/waiting/handled
 - [x] Wake line copy surface
 - [x] Copy feedback
 - [x] Per-item usage instructions
@@ -510,11 +540,11 @@ Include the last mailbox check time in the same empty state.
 
 ### 2. Read/Unread UX Clarification
 
-Separate "unread" from "unseen" semantics if PAH later distinguishes:
+Session handling reduces operator memory load, but PAH should still separate "unread" from "unseen" semantics if it later distinguishes:
 
 - mailbox item read state
 - notification seen state
-- action handled state
+- persistent handled/archive state
 
 ### 3. Decision Review Panel
 
