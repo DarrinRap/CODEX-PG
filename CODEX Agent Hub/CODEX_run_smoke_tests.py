@@ -424,6 +424,41 @@ def test_diagnostics() -> None:
     assert_true(any(item["name"] == "two_way_file_bridge" for item in diagnostics["checks"]), "diagnostics includes bridge test")
 
 
+def test_notification_provider_status() -> None:
+    config = json.loads(json.dumps(agent_hub.DEFAULT_NOTIFICATION_CONFIG))
+    assert_true(
+        not agent_hub.provider_is_configured(config, "log_only"),
+        "log_only is not a configured live notification provider",
+    )
+    result = agent_hub.send_notification(config, "Smoke", "Log-only notification should still be testable")
+    assert_true(result["provider"] == "log_only", "log_only notification returns log-only provider")
+
+    twilio_config = json.loads(json.dumps(config))
+    twilio_config["provider"] = "twilio"
+    assert_true(not agent_hub.provider_is_configured(twilio_config, "twilio"), "incomplete Twilio config is not ready")
+    twilio_config["twilio"].update(
+        {
+            "account_sid": "AC00000000000000000000000000000000",
+            "auth_token": "secret",
+            "from_number": "+15550000001",
+            "to_number": "+15550000002",
+        }
+    )
+    assert_true(agent_hub.provider_is_configured(twilio_config, "twilio"), "complete Twilio config is ready")
+
+    email_config = json.loads(json.dumps(config))
+    email_config["provider"] = "email_to_sms"
+    assert_true(not agent_hub.provider_is_configured(email_config, "email_to_sms"), "incomplete email-to-SMS config is not ready")
+    email_config["email_to_sms"].update(
+        {
+            "smtp_host": "smtp.example.test",
+            "from_email": "pah@example.test",
+            "to_email": "5550000002@carrier.example",
+        }
+    )
+    assert_true(agent_hub.provider_is_configured(email_config, "email_to_sms"), "complete email-to-SMS config is ready")
+
+
 def test_safety_surfaces() -> None:
     request_hash = canonical_request_hash(
         "protected_action_requires_darrin",
@@ -988,6 +1023,7 @@ def main() -> None:
     test_cross_check_auto_resolution_rule()
     test_routes_and_scope()
     test_diagnostics()
+    test_notification_provider_status()
     test_safety_surfaces()
     test_quarantine_move_writes_tombstone()
     test_approval_enforcement()

@@ -157,6 +157,8 @@ DEFAULT_NOTIFICATION_CONFIG = {
         "headers": {},
     },
 }
+LIVE_NOTIFICATION_PROVIDERS = {"twilio", "email_to_sms", "webhook"}
+SMS_NOTIFICATION_PROVIDERS = {"twilio", "email_to_sms"}
 
 
 @dataclass
@@ -568,8 +570,14 @@ def ensure_notification_template() -> None:
         write_json(NOTIFICATION_CONFIG_TEMPLATE_PATH, DEFAULT_NOTIFICATION_CONFIG)
 
 
-def load_notification_config() -> dict[str, Any]:
+def ensure_notification_local_config() -> None:
     ensure_notification_template()
+    if not NOTIFICATION_CONFIG_LOCAL_PATH.exists():
+        write_json(NOTIFICATION_CONFIG_LOCAL_PATH, DEFAULT_NOTIFICATION_CONFIG)
+
+
+def load_notification_config() -> dict[str, Any]:
+    ensure_notification_local_config()
     local = read_json(NOTIFICATION_CONFIG_LOCAL_PATH, {})
     return deep_merge(DEFAULT_NOTIFICATION_CONFIG, local)
 
@@ -578,11 +586,27 @@ def notification_status() -> dict[str, Any]:
     config = load_notification_config()
     state_data = read_json(NOTIFICATION_STATE_PATH, {})
     provider = str(config.get("provider", "log_only"))
-    configured = provider == "log_only" or provider_is_configured(config, provider)
+    configured = provider_is_configured(config, provider)
+    enabled = bool(config.get("enabled"))
+    live_delivery_ready = enabled and configured and provider in LIVE_NOTIFICATION_PROVIDERS
+    if provider == "log_only":
+        setup_hint = "Log-only mode is for local testing. Choose twilio or email_to_sms in the local config to send a real SMS."
+    elif provider in LIVE_NOTIFICATION_PROVIDERS and not configured:
+        setup_hint = f"Provider {provider} is selected but missing required local config values."
+    elif provider in LIVE_NOTIFICATION_PROVIDERS and not enabled:
+        setup_hint = f"Provider {provider} is configured but notifications are disabled."
+    else:
+        setup_hint = "Live notification delivery is ready."
     return {
-        "enabled": bool(config.get("enabled")),
+        "enabled": enabled,
         "provider": provider,
         "configured": configured,
+        "live_delivery_ready": live_delivery_ready,
+        "real_sms_ready": live_delivery_ready and provider in SMS_NOTIFICATION_PROVIDERS,
+        "delivery_mode": "live" if live_delivery_ready else "log_only",
+        "setup_required": not live_delivery_ready,
+        "setup_hint": setup_hint,
+        "local_config_exists": NOTIFICATION_CONFIG_LOCAL_PATH.exists(),
         "config_path": str(NOTIFICATION_CONFIG_LOCAL_PATH),
         "template_path": str(NOTIFICATION_CONFIG_TEMPLATE_PATH),
         "log_path": str(NOTIFICATION_LOG_PATH),
@@ -669,7 +693,7 @@ def provider_is_configured(config: dict[str, Any], provider: str) -> bool:
         return all(email_config.get(key) for key in ("smtp_host", "from_email", "to_email"))
     if provider == "webhook":
         return bool(config.get("webhook", {}).get("url"))
-    return provider == "log_only"
+    return False
 
 
 def append_notification_log(event: dict[str, Any]) -> None:
@@ -764,11 +788,17 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
         now = time.time()
         if manual_test:
             result = send_notification(config, "Test notification", "Your PANDA Agent Hub SMS notification path is connected.")
+            real_delivery_attempted = str(result.get("provider", "log_only")) != "log_only"
             state_data["last_sent_at"] = datetime.now().isoformat(timespec="seconds")
             state_data["last_error"] = ""
             write_json(NOTIFICATION_STATE_PATH, state_data)
             append_notification_log({"time": state_data["last_sent_at"], "manual_test": True, "result": result})
-            return {"sent": 1, "result": result}
+            return {
+                "sent": 1 if real_delivery_attempted else 0,
+                "logged": 0 if real_delivery_attempted else 1,
+                "real_delivery_attempted": real_delivery_attempted,
+                "result": result,
+            }
         if not config.get("enabled"):
             return {"sent": 0, "enabled": False}
 
@@ -1365,7 +1395,7 @@ pre { white-space: pre-wrap; word-break: break-word; margin: 0; color: var(--mut
       <pre id="sendResult"></pre>
     </div></div>
     <div class="card"><div class="card-head">SMS Test</div><div class="card-body">
-      <p class="muted">Uses local notification config. Secrets stay in ignored <code>*.local.json</code>.</p>
+      <p class="muted">Sends a real SMS only when Twilio or email-to-SMS is enabled in the ignored local config. Otherwise it logs the test.</p>
       <p><button id="testSms">Send Test Notification</button></p>
       <pre id="smsResult"></pre>
     </div></div>
@@ -1473,8 +1503,9 @@ function workItem(w) {
 function notificationBlock(n) {
   const enabled = n.enabled ? '<span class="good">enabled</span>' : '<span class="muted">disabled</span>';
   const configured = n.configured ? '<span class="good">configured</span>' : '<span class="warn">needs config</span>';
+  const liveReady = n.live_delivery_ready ? '<span class="good">live ready</span>' : '<span class="warn">setup required</span>';
   const popup = n.desktop_popups?.enabled ? '<span class="good">enabled</span>' : '<span class="muted">tray-ready</span>';
-  return `<div class="metric"><span>Status</span><strong>${enabled}</strong></div><div class="metric"><span>Provider</span><span>${esc(n.provider)} · ${configured}</span></div><div class="metric"><span>Desktop popups</span><span>${popup}</span></div><div class="metric"><span>Last sent</span><span class="muted">${esc(n.last_sent_at || 'never')}</span></div><div class="metric"><span>Config</span><span class="path">${esc(n.config_path)}</span></div>${n.last_error ? `<div class="bad">${esc(n.last_error)}</div>` : ''}`;
+  return `<div class="metric"><span>Status</span><strong>${enabled}</strong></div><div class="metric"><span>Provider</span><span>${esc(n.provider)} · ${configured}</span></div><div class="metric"><span>Delivery</span><span>${liveReady}</span></div><div class="metric"><span>Desktop popups</span><span>${popup}</span></div><div class="metric"><span>Last sent</span><span class="muted">${esc(n.last_sent_at || 'never')}</span></div><div class="metric"><span>Config</span><span class="path">${esc(n.config_path)}</span></div>${n.setup_hint ? `<div class="warn">${esc(n.setup_hint)}</div>` : ''}${n.last_error ? `<div class="bad">${esc(n.last_error)}</div>` : ''}`;
 }
 function validationSummaryBlock(v) {
   const cats = Object.entries(v.by_category || {}).map(([k,val]) => `${esc(k)} ${val}`).join(' · ');

@@ -662,19 +662,19 @@
 
       <section id="notifications">
         <h2>Notifications</h2>
-        <p>PAH can notify your phone or a relay provider when attention events appear, but live sending is off until local config is enabled.</p>
+        <p>PAH can notify your phone or a relay provider when attention events appear, but live sending is off until local config is enabled and complete.</p>
 
         <h3>Configuration File</h3>
-        <p>Copy the template:</p>
-        <pre>C:\CODEX PG\CODEX Agent Hub\CODEX config\CODEX_notification_config.template.json</pre>
-        <p>To this ignored local file:</p>
+        <p>PAH creates this ignored local file automatically the first time notification status is loaded:</p>
         <pre>C:\CODEX PG\CODEX Agent Hub\CODEX config\CODEX_notification_config.local.json</pre>
+        <p>Use the tracked template as the reference for required fields:</p>
+        <pre>C:\CODEX PG\CODEX Agent Hub\CODEX config\CODEX_notification_config.template.json</pre>
 
         <h3>Providers</h3>
         <table>
           <thead><tr><th>Provider</th><th>Use</th></tr></thead>
           <tbody>
-            <tr><td><code>log_only</code></td><td>Records notification attempts without sending anything.</td></tr>
+            <tr><td><code>log_only</code></td><td>Records notification attempts without sending anything. The dashboard shows this as setup required, not live ready.</td></tr>
             <tr><td><code>twilio</code></td><td>Sends SMS through Twilio after credentials are configured.</td></tr>
             <tr><td><code>email_to_sms</code></td><td>Sends through SMTP to a carrier gateway.</td></tr>
             <tr><td><code>webhook</code></td><td>Posts JSON to a notification relay you control.</td></tr>
