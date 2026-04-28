@@ -17,6 +17,7 @@ CC_CLAUDE_INBOX = CC_MAILBOX_ROOT / "CLAUDE Inbox"
 CC_SENT = CC_MAILBOX_ROOT / "CC Sent"
 CC_CLAUDE_SENT = CC_MAILBOX_ROOT / "CLAUDE Sent"
 PAH_CLAUDE_CODE_INBOX = MAILBOX_ROOT / "CODEX_CLAUDE_CODE Inbox"
+# Static at import time: restart PAH after creating/removing the native CC mailbox.
 CLAUDE_CODE_INBOX = CC_INBOX if CC_MAILBOX_ROOT.exists() else PAH_CLAUDE_CODE_INBOX
 CLAUDE_CODE_INBOX_LEGACY = MAILBOX_ROOT / "CODEX Claude Code Inbox"
 CODEX_SENT = MAILBOX_ROOT / "CODEX Sent"
@@ -47,8 +48,6 @@ MESSAGE_DIRS = [
     ("Claude Code -> Claude", CC_CLAUDE_INBOX),
     ("Claude Code Sent", CC_SENT),
     ("Claude Sent (CC mailbox)", CC_CLAUDE_SENT),
-    ("Codex -> Claude Code (PAH local legacy)", PAH_CLAUDE_CODE_INBOX),
-    ("Codex -> Claude Code (legacy)", CLAUDE_CODE_INBOX_LEGACY),
     ("Codex Sent", CODEX_SENT),
     ("Claude Sent", CLAUDE_SENT),
 ]
@@ -69,6 +68,8 @@ def ensure_runtime_dirs() -> None:
         ADAPTERS_DIR,
         STATE_DIR,
         PROCESSED_MESSAGES_DIR,
+        CC_INBOX,
+        CC_CLAUDE_INBOX,
         PAH_CLAUDE_CODE_INBOX,
     ):
         path.mkdir(parents=True, exist_ok=True)

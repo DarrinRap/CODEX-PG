@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pah_mailbox.paths import HUB_ROOT, MAILBOX_ROOT, PROJECT_ROOT
+from pah_mailbox.paths import CC_MAILBOX_ROOT, HUB_ROOT, MAILBOX_ROOT, PROJECT_ROOT
 
 
 CODEX_WORKSPACE_ROOT = PROJECT_ROOT
@@ -25,6 +25,8 @@ def classify_path(path: Path) -> str:
         return "pah_app"
     if is_inside(resolved, MAILBOX_ROOT):
         return "mailbox"
+    if is_inside(resolved, CC_MAILBOX_ROOT):
+        return "panda_gallery_cc_mailbox_approved"
     if is_inside(resolved, PANDA_GALLERY_ROOT):
         return "panda_gallery_requires_darrin"
     if is_inside(resolved, CODEX_WORKSPACE_ROOT):
