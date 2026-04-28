@@ -1,6 +1,6 @@
 # CODEX Master Spec Index
 
-Generated: 2026-04-24
+Generated: 2026-04-28
 
 Purpose: define which Panda Gallery documents are canonical, current reference, historical, superseded, implementation artifacts, or development-process guidance for the PG Testing + Audit track.
 
@@ -44,6 +44,7 @@ Rules:
 | `CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md` | Codex canonical | Testing + Audit | Pipeline architecture, component boundaries, local prototype sequence, adapter seams, and dashboard/storage responsibilities. |
 | `CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md` | Codex canonical | Testing + Audit | Dashboard views, visual alignment, evidence review workflow, approval/email/archive UX, and local prototype acceptance criteria. |
 | `CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md` | Codex canonical | Testing + Audit | Privacy, PHI, Dropbox, AI, email, archive, logging, and stop-condition guardrails for MVP development. |
+| `RELAY_SPEC_v0.1.md` | Codex canonical | PG Core Relay module | Two-sided asynchronous bug-report relay, Dropbox transport reuse, BUGS.md capture, status updates, and settings contract. |
 
 Recommended next Codex canonical docs:
 
