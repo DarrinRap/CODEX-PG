@@ -157,7 +157,48 @@ button[disabled] { opacity: .48; cursor: default; }
 .dot.err { background: var(--err); }
 .dot.active { background: var(--accent); }
 
-.queue-panel { grid-template-rows: auto auto 1fr; }
+.queue-panel { grid-template-rows: auto auto auto 1fr; }
+.guide-card {
+  margin: 10px 12px 0;
+  border: 1px solid rgba(232, 168, 124, .32);
+  border-radius: 8px;
+  background: rgba(232, 168, 124, .08);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+.guide-title { font-size: 13px; font-weight: 900; color: var(--text); }
+.guide-copy { color: var(--muted); font-size: 12px; }
+.guide-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.guide-step {
+  min-width: 0;
+  border: 1px solid rgba(224, 221, 213, .12);
+  border-radius: 7px;
+  background: rgba(16, 17, 27, .68);
+  padding: 8px;
+}
+.guide-step strong { display: block; color: var(--accent); font-size: 11px; text-transform: uppercase; }
+.guide-step span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px 0;
+}
+.filter-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+button.filter {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+button.filter.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 900;
+}
 .summary-strip {
   padding: 12px;
   display: grid;
@@ -193,6 +234,7 @@ button[disabled] { opacity: .48; cursor: default; }
 .action.warn { border-color: rgba(215, 184, 107, .56); }
 .action-title { font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action-summary { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action-help { color: var(--quiet); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag {
   min-height: 22px;
@@ -245,6 +287,31 @@ button[disabled] { opacity: .48; cursor: default; }
   padding: 9px;
   font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
 }
+.how-box, .checks-box {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #161624;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+.how-title, .checks-title { color: var(--accent); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.how-list { margin: 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
+.how-list li { margin: 3px 0; }
+.route-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(224, 221, 213, .08);
+}
+.route-row:first-of-type { border-top: 0; }
+.route-name { min-width: 0; color: var(--text); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.route-meta { color: var(--quiet); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.route-time { color: var(--muted); font: 11px/1.2 "Cascadia Mono", Consolas, monospace; white-space: nowrap; }
+.route-status { color: var(--ok); }
+.route-status.warn { color: var(--warn); }
+.route-status.err { color: var(--err); }
 .detail-actions {
   border-top: 1px solid var(--border);
   padding: 10px;
@@ -269,6 +336,7 @@ button[disabled] { opacity: .48; cursor: default; }
   .app { min-width: 900px; }
   .main { grid-template-columns: 196px minmax(390px, 1fr) 320px; }
   .summary-strip { grid-template-columns: 1fr; }
+  .guide-steps { grid-template-columns: 1fr; }
   .summary { min-height: 48px; display: flex; align-items: center; gap: 10px; }
   .summary strong { font-size: 20px; }
 }
@@ -315,10 +383,27 @@ button[disabled] { opacity: .48; cursor: default; }
 
     <section class="panel queue-panel">
       <div class="panel-head">
-        <div class="panel-title">Action Queue</div>
+        <div class="panel-title">Start Here</div>
         <div class="count" id="queueCount">0</div>
       </div>
+      <div class="guide-card">
+        <div>
+          <div class="guide-title" id="guideTitle">Loading PAH guidance...</div>
+          <div class="guide-copy" id="guideCopy">The hub is checking mailboxes and building the next safe action.</div>
+        </div>
+        <div class="guide-steps">
+          <div class="guide-step"><strong>1. Pick</strong><span>Click the oldest urgent item below.</span></div>
+          <div class="guide-step"><strong>2. Copy</strong><span>Use the wake line on the right.</span></div>
+          <div class="guide-step"><strong>3. Paste</strong><span>Paste it into the named AI session.</span></div>
+        </div>
+      </div>
       <div class="summary-strip" id="summaryStrip"></div>
+      <div class="filter-row">
+        <span class="filter-label">Show</span>
+        <button class="filter active" data-filter="wake">Wake-ups</button>
+        <button class="filter" data-filter="decision">Decisions</button>
+        <button class="filter" data-filter="all">All</button>
+      </div>
       <div class="scroll">
         <div class="action-list" id="actionList"></div>
       </div>
@@ -337,6 +422,18 @@ button[disabled] { opacity: .48; cursor: default; }
           <div class="wake-box">
             <div class="wake-label">Wake line</div>
             <div class="wake-line" id="wakeLine">No wake needed.</div>
+          </div>
+          <div class="how-box">
+            <div class="how-title">How to use this item</div>
+            <ol class="how-list" id="howList">
+              <li>Select an action from the queue.</li>
+              <li>Copy the wake line when one is available.</li>
+              <li>Paste it into the correct AI window.</li>
+            </ol>
+          </div>
+          <div class="checks-box">
+            <div class="checks-title">Mailbox checks</div>
+            <div id="routeChecks"></div>
           </div>
         </div>
       </div>
@@ -357,6 +454,7 @@ button[disabled] { opacity: .48; cursor: default; }
 <script>
 let cockpit = null;
 let selected = null;
+let queueFilter = 'wake';
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -366,6 +464,34 @@ function fmtTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
   return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+}
+function fmtAge(seconds) {
+  const total = Math.max(0, Number(seconds || 0));
+  if (!total) return 'just now';
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (days) return `${days}d ${hours}h`;
+  if (hours) return `${hours}h ${minutes}m`;
+  if (minutes) return `${minutes}m`;
+  return `${total}s`;
+}
+function itemAgeSeconds(item) {
+  const match = String(item?.summary || '').match(/Unread\s+(\d+)s/i);
+  return match ? Number(match[1]) : 0;
+}
+function humanSummary(item) {
+  if (!item) return '';
+  const age = itemAgeSeconds(item);
+  const target = String(item.primary_action || '').replace(/^Wake\s+/i, '');
+  if (item.kind === 'wake' && age) return `Overdue ${fmtAge(age)} - paste wake line into ${target || 'the target AI'}.`;
+  return item.summary || '';
+}
+function filteredQueue() {
+  const queue = cockpit?.action_queue || [];
+  if (queueFilter === 'all') return queue;
+  if (queueFilter === 'decision') return queue.filter(item => item.kind === 'decision');
+  return queue.filter(item => item.kind === 'wake');
 }
 function statusClass(value) {
   const text = String(value || '').toLowerCase();
@@ -385,13 +511,15 @@ function setHTML(id, html) {
 async function loadCockpit() {
   const res = await fetch('/api/cockpit');
   cockpit = await res.json();
-  selected = (cockpit.action_queue || [])[0] || null;
+  const visible = filteredQueue();
+  selected = visible[0] || (cockpit.action_queue || [])[0] || null;
   render();
 }
 function render() {
   const state = cockpit.cockpit_state || {};
   const counts = state.counts || {};
   const queue = cockpit.action_queue || [];
+  const visibleQueue = filteredQueue();
   const stale = counts.stale_unread || 0;
   const decisions = counts.decisions_needed || 0;
   const systemText = stale
@@ -401,13 +529,35 @@ function render() {
       : 'No urgent action';
   document.getElementById('systemState').textContent = systemText;
   document.getElementById('asOf').textContent = `as of ${fmtTime(state.as_of_iso || cockpit.generated_at)}`;
-  document.getElementById('queueCount').textContent = queue.length;
+  document.getElementById('queueCount').textContent = visibleQueue.length;
   document.getElementById('gitState').textContent = cockpit.git?.status_label || 'git';
+  renderGuide(stale, decisions);
   renderAgents(cockpit.agents || []);
   renderSummary(counts, cockpit.diagnostics || {});
-  renderQueue(queue);
+  renderFilters();
+  renderQueue(visibleQueue);
   renderDetail(selected);
+  renderRoutes(cockpit.routes || []);
   renderDiagnostics(cockpit.diagnostics || {});
+}
+function renderGuide(stale, decisions) {
+  const title = stale
+    ? `${stale} overdue message${stale === 1 ? '' : 's'} need wake-up`
+    : decisions
+      ? `${decisions} decision${decisions === 1 ? '' : 's'} need Darrin`
+      : 'Nothing urgent right now';
+  const copy = stale
+    ? 'Use the queue below like an inbox triage list. The selected item gives you the exact line to paste into the right AI.'
+    : decisions
+      ? 'Switch to Darrin decisions to review what needs approval or deferral.'
+      : 'Refresh when you want to check all PAH routes again.';
+  document.getElementById('guideTitle').textContent = title;
+  document.getElementById('guideCopy').textContent = copy;
+}
+function renderFilters() {
+  document.querySelectorAll('button.filter').forEach(button => {
+    button.classList.toggle('active', button.dataset.filter === queueFilter);
+  });
 }
 function renderAgents(agents) {
   document.getElementById('agentCount').textContent = agents.length;
@@ -435,14 +585,20 @@ function renderSummary(counts, diagnostics) {
 }
 function renderQueue(queue) {
   if (!queue.length) {
-    setHTML('actionList', '<div class="empty">Nothing needs action right now.</div>');
+    const message = queueFilter === 'wake'
+      ? 'No overdue wake-ups in this view.'
+      : queueFilter === 'decision'
+        ? 'No Darrin decisions in this view.'
+        : 'Nothing needs action right now.';
+    setHTML('actionList', `<div class="empty">${esc(message)}</div>`);
     return;
   }
   setHTML('actionList', queue.map(item => `
     <button class="action ${item.id === selected?.id ? 'selected' : ''} ${esc(item.severity)}" data-id="${esc(item.id)}">
       <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.kind === 'wake' ? 'Needs wake-up' : item.kind)}</span></div>
       <div class="action-title">${esc(item.title)}</div>
-      <div class="action-summary">${esc(item.summary)}</div>
+      <div class="action-summary">${esc(humanSummary(item))}</div>
+      <div class="action-help">${esc(item.thread_id || item.message_path || '')}</div>
     </button>
   `).join(''));
   document.querySelectorAll('.action').forEach(button => {
@@ -457,7 +613,7 @@ function renderDetail(item) {
   document.getElementById('selectedKind').textContent = kind === 'wake' ? 'needs wake-up' : kind;
   document.getElementById('selectedKind').className = `tag ${kindClass(kind)}`;
   document.getElementById('detailTitle').textContent = item?.title || 'No item selected';
-  document.getElementById('detailSummary').textContent = item?.summary || 'No current action is required.';
+  document.getElementById('detailSummary').textContent = humanSummary(item) || 'No current action is required.';
   const facts = [
     ['Primary action', item?.primary_action || 'None'],
     ['Secondary action', item?.secondary_action || 'None'],
@@ -471,6 +627,48 @@ function renderDetail(item) {
   document.getElementById('copyWake').disabled = !(item?.wake_line || cockpit?.wake?.line);
   document.getElementById('markRead').disabled = !item?.message_path;
   document.getElementById('openMessage').disabled = !item?.message_path;
+  renderHow(item);
+}
+function renderHow(item) {
+  const target = String(item?.primary_action || '').replace(/^Wake\s+/i, '') || 'the named AI';
+  const lines = item?.kind === 'wake'
+    ? [
+        `Open or switch to ${target}.`,
+        'Click Copy wake line.',
+        'Paste the line into that AI and send it.',
+        'After the AI responds, click Refresh here.'
+      ]
+    : item?.kind === 'decision'
+      ? [
+          'Read the summary and message path.',
+          'Open the message if you need context.',
+          'Decide, defer, or ask Codex to handle the follow-up.'
+        ]
+      : [
+          'Select an action from the queue.',
+          'Use the details and wake line on this side.',
+          'Refresh after any AI replies.'
+        ];
+  setHTML('howList', lines.map(line => `<li>${esc(line)}</li>`).join(''));
+}
+function renderRoutes(routes) {
+  if (!routes.length) {
+    setHTML('routeChecks', '<div class="route-meta">No route check data available.</div>');
+    return;
+  }
+  setHTML('routeChecks', routes.map(route => {
+    const status = statusClass(route.status);
+    const hold = route.hold_reason ? ` - ${route.hold_reason}` : '';
+    return `
+      <div class="route-row">
+        <div>
+          <div class="route-name">${esc(route.name)}</div>
+          <div class="route-meta"><span class="route-status ${status}">${esc(route.status)}</span>${esc(hold)}</div>
+        </div>
+        <div class="route-time">${esc(fmtTime(route.last_check_iso))}</div>
+      </div>
+    `;
+  }).join(''));
 }
 function renderDiagnostics(diagnostics) {
   const warn = Number(diagnostics.checks_warn || 0);
@@ -481,9 +679,21 @@ function renderDiagnostics(diagnostics) {
   document.getElementById('diagnosticsLine').textContent = text;
 }
 document.getElementById('refresh').addEventListener('click', loadCockpit);
+document.querySelectorAll('button.filter').forEach(button => {
+  button.addEventListener('click', () => {
+    queueFilter = button.dataset.filter || 'wake';
+    const visible = filteredQueue();
+    if (!visible.some(item => item.id === selected?.id)) selected = visible[0] || null;
+    render();
+  });
+});
 document.getElementById('copyWake').addEventListener('click', async () => {
   const text = document.getElementById('wakeLine').textContent || '';
   try { await navigator.clipboard.writeText(text); } catch (err) {}
+  const button = document.getElementById('copyWake');
+  const old = button.textContent;
+  button.textContent = 'Copied';
+  window.setTimeout(() => { button.textContent = old; }, 1400);
 });
 document.getElementById('openMessage').addEventListener('click', async () => {
   if (!selected?.message_path) return;
