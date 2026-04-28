@@ -81,6 +81,7 @@ from pah_mailbox.paths import (
     CLAUDE_CODE_INBOX_LEGACY,
     CLAUDE_INBOX,
     CLAUDE_SENT,
+    CC_MAILBOX_ROOT,
     CODEX_INBOX,
     CODEX_SENT,
     CONFIG_DIR,
@@ -1275,6 +1276,321 @@ def state() -> dict[str, Any]:
     }
 
 
+def route_id_for_direction(direction: str) -> str:
+    lowered = direction.lower()
+    if "to claude code" in lowered:
+        return "codex_to_claude_code"
+    if "claude code" in lowered and "codex" in lowered:
+        return "claude_code_to_codex"
+    if "codex -> claude" in lowered:
+        return "codex_to_claude"
+    if "claude -> codex" in lowered:
+        return "claude_to_codex"
+    return safe_slug(direction).replace("-", "_")
+
+
+def cockpit_status_from_agent_state(state_name: str) -> str:
+    normalized = state_name.lower()
+    if normalized in {"active", "needs_wake"}:
+        return "active" if normalized == "active" else "warn"
+    if normalized in {"recent", "idle"}:
+        return "ok" if normalized == "recent" else "idle"
+    if normalized in {"waiting", "unknown"}:
+        return "warn"
+    if normalized == "needs_attention":
+        return "err"
+    return "idle"
+
+
+def build_cockpit_routes(status_data: dict[str, Any]) -> list[dict[str, Any]]:
+    diagnostics = status_data.get("diagnostics", {})
+    check_by_name = {str(item.get("name", "")): item for item in diagnostics.get("checks", [])}
+    route_specs = [
+        ("codex_to_claude", "Codex -> Claude Desktop", MAILBOX_ROOT, CLAUDE_INBOX, "route:codex_to_claude"),
+        ("codex_to_claude_code", "Codex -> Claude Code", MAILBOX_ROOT, CLAUDE_CODE_INBOX, "route:codex_to_claude_code"),
+        ("claude_to_codex", "Claude Desktop -> Codex", CLAUDE_INBOX, CODEX_INBOX, "route:claude_to_codex"),
+    ]
+    rows: list[dict[str, Any]] = []
+    now_iso = status_data.get("generated_at", datetime.now().isoformat(timespec="seconds"))
+    for route_id, name, source_path, dest_path, check_name in route_specs:
+        check = check_by_name.get(check_name, {})
+        ok = bool(check.get("ok"))
+        rows.append(
+            {
+                "id": route_id,
+                "name": name,
+                "source_path": str(source_path),
+                "dest_path": str(dest_path),
+                "status": "pass" if ok else "failed",
+                "hold_reason": "" if ok else str(check.get("detail", "Route check failed")),
+                "last_check_iso": now_iso,
+                "latency_ms": 0,
+            }
+        )
+    rows.append(
+        {
+            "id": "watcher",
+            "name": "Watcher",
+            "source_path": str(CC_MAILBOX_ROOT),
+            "dest_path": str(WATCHER_EVENT_LOG_PATH),
+            "status": "held",
+            "hold_reason": "Waiting for Darrin standing read permission",
+            "last_check_iso": now_iso,
+            "latency_ms": 0,
+        }
+    )
+    return rows
+
+
+def summarize_cockpit_routes(routes: list[dict[str, Any]]) -> dict[str, Any]:
+    counts = {
+        "total": len(routes),
+        "pass": sum(1 for route in routes if route.get("status") == "pass"),
+        "held": sum(1 for route in routes if route.get("status") == "held"),
+        "failed": sum(1 for route in routes if route.get("status") == "failed"),
+        "untested": sum(1 for route in routes if route.get("status") == "untested"),
+    }
+    if counts["failed"]:
+        severity = "err"
+    elif counts["held"] or counts["untested"]:
+        severity = "warn"
+    else:
+        severity = "ok"
+    if counts["held"] or counts["failed"] or counts["untested"]:
+        label = f"{counts['pass']}/{counts['total']} routes pass"
+        details = []
+        if counts["held"]:
+            details.append(f"{counts['held']} held")
+        if counts["failed"]:
+            details.append(f"{counts['failed']} failed")
+        if counts["untested"]:
+            details.append(f"{counts['untested']} untested")
+        label = f"{label}; {', '.join(details)}"
+    else:
+        label = f"{counts['pass']}/{counts['total']} routes pass"
+    return {**counts, "label": label, "severity": severity}
+
+
+def cockpit_feed_item(row: dict[str, Any]) -> dict[str, Any]:
+    badges = [{"kind": "status", "label": str(label)} for label in row.get("status_badges", [])[:3]]
+    return {
+        "id": row.get("message_id") or row.get("name", ""),
+        "thread_id": row.get("thread_id") or row.get("message_id") or row.get("name", ""),
+        "title": row.get("title", "Untitled"),
+        "sub": f"{row.get('from_agent') or '?'} -> {row.get('to_agent') or '?'} / {row.get('thread_id') or row.get('direction')}",
+        "time_iso": row.get("modified", ""),
+        "route_id": route_id_for_direction(str(row.get("direction", ""))),
+        "from_agents": [row.get("from_agent", "")],
+        "to_agents": [row.get("to_agent", "")],
+        "unread": bool(row.get("unread")),
+        "badges": badges,
+        "message_path": row.get("path", ""),
+        "summary": row.get("summary", ""),
+    }
+
+
+def cockpit_selected_thread(status_data: dict[str, Any], feed: list[dict[str, Any]]) -> dict[str, Any]:
+    decisions = status_data.get("decisions", [])
+    decision = decisions[0] if decisions else {}
+    selected = decision or (feed[0] if feed else {})
+    title = str(selected.get("title", "No active thread"))
+    path_value = str(selected.get("path") or selected.get("message_path") or "")
+    thread_id = str(selected.get("thread_id") or selected.get("id") or safe_slug(title))
+    route_id = str(selected.get("route_id") or route_id_for_direction(str(selected.get("direction", ""))))
+    return {
+        "id": thread_id,
+        "title": title,
+        "state": "waiting_on_darrin" if decisions else "active",
+        "owner": "darrin" if decisions else "codex",
+        "source": "Decision queue" if decisions else "Latest mailbox",
+        "route_id": route_id,
+        "next_action": "Review standing read scope" if "watcher" in title.lower() else "Open message",
+        "facts": [
+            {"label": "State", "value": "Waiting on Darrin" if decisions else "Active"},
+            {"label": "Next action", "value": "Review scope" if decisions else "Review message"},
+            {"label": "Writes", "value": "None in read-only v1"},
+            {"label": "Wake model", "value": "Copy line only"},
+        ],
+        "cards": [
+            {
+                "title": "Current gate" if decisions else "Latest message",
+                "body": str(selected.get("summary", "No summary available.")),
+            },
+            {
+                "title": "Read-only v1",
+                "body": "Compose, send, permission grants, and watcher startup are disabled in this cockpit slice.",
+            },
+            {
+                "title": "Safety boundary",
+                "body": "Standing permissions must show scope before any future grant can be recorded.",
+            },
+        ],
+        "primary_message_path": path_value,
+    }
+
+
+def cockpit_decisions(status_data: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for index, item in enumerate(status_data.get("decisions", [])[:6]):
+        title = str(item.get("title", "Decision needed"))
+        requires_scope = "watcher" in title.lower() or "read" in str(item.get("summary", "")).lower()
+        rows.append(
+            {
+                "id": safe_slug(title) or f"decision-{index + 1}",
+                "title": title,
+                "sub": compact(str(item.get("summary", "")), 120),
+                "badge": "needed",
+                "severity": "warn",
+                "blocked_by": [],
+                "path": str(item.get("path", "")),
+                "actions": [
+                    {
+                        "id": "review_scope" if requires_scope else "open_message",
+                        "label": "Review scope" if requires_scope else "Open",
+                        "kind": "confirm_required" if requires_scope else "secondary",
+                        "enabled": True,
+                        "requires_confirm": requires_scope,
+                    },
+                    {
+                        "id": "defer",
+                        "label": "Defer",
+                        "kind": "secondary",
+                        "enabled": True,
+                        "requires_confirm": False,
+                    },
+                ],
+                "scope_text": {
+                    "path": str(CC_MAILBOX_ROOT),
+                    "read_frequency": "Not started in read-only v1.",
+                    "writes": f"Future watcher logs would stay under {HUB_ROOT}.",
+                    "will_not_do": [
+                        "No headless wake",
+                        "No window automation",
+                        "No Panda Gallery writes outside approved coordination messages",
+                    ],
+                }
+                if requires_scope
+                else {},
+            }
+        )
+    if not rows:
+        rows.append(
+            {
+                "id": "no-decisions",
+                "title": "No Darrin decisions",
+                "sub": "Decision queue is clear.",
+                "badge": "clear",
+                "severity": "ok",
+                "blocked_by": [],
+                "path": "",
+                "actions": [],
+                "scope_text": {},
+            }
+        )
+    return rows
+
+
+def cockpit_agents(status_data: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for agent in status_data.get("agent_status", []):
+        state_name = str(agent.get("state", "idle"))
+        if agent.get("id") == "darrin":
+            count_value = status_data.get("counts", {}).get("decisions", 0)
+            count_label = "decision" if count_value == 1 else "decisions"
+        elif agent.get("waiting", 0):
+            count_value = agent.get("waiting", 0)
+            count_label = "queued"
+        else:
+            count_value = agent.get("unread", 0)
+            count_label = "unread"
+        rows.append(
+            {
+                "id": agent.get("id", ""),
+                "code": agent.get("initials", ""),
+                "display_name": agent.get("label", ""),
+                "status": cockpit_status_from_agent_state(state_name),
+                "status_label": str(agent.get("state_label", state_name)),
+                "summary_line": str((agent.get("current_work") or {}).get("title") or agent.get("status_note", "")),
+                "count_value": count_value,
+                "count_label": count_label,
+                "meter_pct": min(100, max(10, int(count_value or 1) * 16)),
+                "meter_color": "warn" if state_name in {"waiting", "needs_wake"} else "err" if state_name == "needs_attention" else "ok",
+                "last_activity_iso": str((agent.get("current_work") or {}).get("modified", "")),
+                "pulse": state_name == "active",
+            }
+        )
+    return rows
+
+
+def cockpit_payload() -> dict[str, Any]:
+    status_data = state()
+    generated_at = str(status_data.get("generated_at", datetime.now().isoformat(timespec="seconds")))
+    routes = build_cockpit_routes(status_data)
+    route_summary = summarize_cockpit_routes(routes)
+    feed = [cockpit_feed_item(row) for row in status_data.get("latest", [])[:24]]
+    decisions = cockpit_decisions(status_data)
+    selected_thread = cockpit_selected_thread(status_data, feed)
+    diagnostics = status_data.get("diagnostics", {})
+    validation_summary = status_data.get("validation_summary", {})
+    git = status_data.get("git", {})
+    git_text = str(git.get("text", ""))
+    return {
+        "schema_version": 1,
+        "generated_at": generated_at,
+        "cockpit_state": {
+            "as_of_iso": generated_at,
+            "mode": "live",
+            "read_only": True,
+            "active_filter": "needs_action",
+            "density": "medium",
+            "search_query": "",
+            "routes_summary": route_summary,
+            "counts": {
+                "messages": status_data.get("counts", {}).get("messages", 0),
+                "unread": status_data.get("counts", {}).get("unread_messages", 0),
+                "decisions_needed": status_data.get("counts", {}).get("decisions", 0),
+                "actionable_checks": status_data.get("counts", {}).get("actionable_validation_issues", 0),
+            },
+        },
+        "agents": cockpit_agents(status_data),
+        "feed": feed,
+        "selected_thread": selected_thread,
+        "decisions": decisions,
+        "routes": routes,
+        "wake": {
+            "target_agent": "claude_code",
+            "line": f"Read {selected_thread.get('id', 'the PAH thread')} and reply to CODEX.",
+            "route_status": "held" if route_summary["held"] else "pass",
+            "last_copy_iso": "",
+            "direct_wake_supported": False,
+            "safety_label": "Copy line only; Darrin pastes into Claude Code.",
+        },
+        "diagnostics": {
+            "ok": bool(diagnostics.get("ok")),
+            "checks_total": len(diagnostics.get("checks", [])),
+            "checks_pass": sum(1 for check in diagnostics.get("checks", []) if check.get("ok")),
+            "checks_warn": sum(1 for check in diagnostics.get("checks", []) if not check.get("ok") and check.get("severity") == "warning"),
+            "checks_fail": sum(1 for check in diagnostics.get("checks", []) if not check.get("ok") and check.get("severity") != "warning"),
+            "actionable_validation_issues": validation_summary.get("actionable", 0),
+            "last_run_iso": generated_at,
+        },
+        "git": {
+            "branch": "main",
+            "tracking": "origin/main",
+            "clean": "## main...origin/main" in git_text and "\n" not in git_text,
+            "status_label": "main synced with origin" if "## main...origin/main" in git_text and "\n" not in git_text else git_text,
+            "last_commit": "",
+        },
+        "read_only_actions": [
+            {"id": "refresh", "label": "Refresh", "enabled": True},
+            {"id": "validate", "label": "Validate", "enabled": True},
+            {"id": "backup", "label": "Backup", "enabled": True},
+            {"id": "compose", "label": "Compose", "enabled": False, "reason": "disabled in read-only v1"},
+            {"id": "send", "label": "Send", "enabled": False, "reason": "no draft staged in read-only v1"},
+        ],
+    }
+
+
 def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None) -> dict[str, Any]:
     read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
     return {
@@ -2006,6 +2322,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path == "/api/cockpit":
+            self.send_json(cockpit_payload())
+            return
         if parsed.path == "/api/status":
             self.send_json(state())
             return

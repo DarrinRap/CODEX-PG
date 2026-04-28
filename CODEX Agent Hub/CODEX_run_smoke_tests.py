@@ -435,6 +435,18 @@ def test_routes_and_scope() -> None:
     assert_true(classify_path(Path("C:/panda-gallery/test.txt")) == "panda_gallery_requires_darrin", "PG path boundary")
 
 
+def test_cockpit_payload_contract() -> None:
+    payload = agent_hub.cockpit_payload()
+    assert_true(payload["schema_version"] == 1, "cockpit schema version")
+    assert_true(payload["cockpit_state"]["read_only"], "cockpit v1 is read-only")
+    assert_true("routes_summary" in payload["cockpit_state"], "cockpit has route summary")
+    assert_true(len(payload["agents"]) == 4, "cockpit exposes four agents")
+    assert_true(payload["routes"], "cockpit exposes route health")
+    actions = {item["id"]: item for item in payload["read_only_actions"]}
+    assert_true(not actions["compose"]["enabled"], "compose disabled in read-only cockpit")
+    assert_true(not actions["send"]["enabled"], "send disabled in read-only cockpit")
+
+
 def test_diagnostics() -> None:
     diagnostics = run_communication_diagnostics(write_report=False)
     assert_true("checks" in diagnostics, "diagnostics returns checks")
@@ -1039,6 +1051,7 @@ def main() -> None:
     test_decision_gate()
     test_cross_check_auto_resolution_rule()
     test_routes_and_scope()
+    test_cockpit_payload_contract()
     test_diagnostics()
     test_notification_provider_status()
     test_safety_surfaces()
