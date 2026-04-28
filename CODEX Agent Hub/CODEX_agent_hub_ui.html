@@ -1,0 +1,1638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PANDA Agent Hub</title>
+<style>
+:root {
+  --ink: #14141f;
+  --ink-2: #1a1a2e;
+  --ink-3: #22223a;
+  --paper: #e0ddd5;
+  --paper-2: #f0eee7;
+  --line: rgba(247, 244, 236, 0.14);
+  --line-strong: rgba(247, 244, 236, 0.26);
+  --muted: #888888;
+  --text: #e0ddd5;
+  --bamboo: #7fb069;
+  --bamboo-2: #9ccf8d;
+  --gold: #e8a87c;
+  --coral: #e8a87c;
+  --red: #e74c3c;
+  --blue: #7aa9c2;
+  --violet: #a98ce8;
+  --shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; min-height: 100%; overflow: hidden; }
+body {
+  margin: 0;
+  background: #14141f;
+  color: var(--text);
+  font: 13px/1.45 "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+button, select, input, textarea { font: inherit; }
+button {
+  border: 1px solid var(--line-strong);
+  background: rgba(247,244,236,0.05);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--gold); color: var(--paper); }
+button.primary { background: var(--gold); color: #17120a; border-color: var(--gold); font-weight: 750; }
+button.good { border-color: rgba(111,191,115,.55); background: rgba(111,191,115,.12); }
+button.danger { border-color: rgba(227,93,106,.55); background: rgba(227,93,106,.10); }
+input, select, textarea {
+  width: 100%;
+  background: #0f1214;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  padding: 8px;
+}
+textarea { min-height: 126px; resize: vertical; }
+label {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 10px 0 5px;
+}
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  color: var(--muted);
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 12px;
+}
+.app-shell {
+  height: 100vh;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.topbar {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(20, 20, 31, 0.98);
+  z-index: 5;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.panda-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--paper);
+  position: relative;
+  border: 1px solid rgba(247,244,236,.32);
+  box-shadow: inset 0 0 0 4px rgba(16,19,21,.16);
+}
+.panda-mark:before, .panda-mark:after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0d0f11;
+  top: 11px;
+}
+.panda-mark:before { left: 9px; }
+.panda-mark:after { right: 9px; }
+.brand h1 { margin: 0; font-size: 17px; line-height: 1.1; letter-spacing: 0; }
+.brand .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.top-select {
+  width: auto;
+  min-width: 150px;
+  max-width: 240px;
+  height: 36px;
+  padding: 6px 28px 6px 9px;
+  background: #0f1214;
+}
+.top-select.mailbox { min-width: 210px; }
+.live-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(247,244,236,.04);
+  white-space: nowrap;
+}
+.live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bamboo);
+  box-shadow: 0 0 0 0 rgba(111,191,115,.58);
+  animation: pulse 1.5s infinite;
+}
+.live-dot.warn { background: var(--gold); animation-name: pulseGold; }
+.live-dot.bad { background: var(--red); animation-name: pulseRed; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(111,191,115,.58); }
+  70% { box-shadow: 0 0 0 9px rgba(111,191,115,0); }
+  100% { box-shadow: 0 0 0 0 rgba(111,191,115,0); }
+}
+@keyframes pulseGold {
+  0% { box-shadow: 0 0 0 0 rgba(227,189,99,.62); }
+  70% { box-shadow: 0 0 0 9px rgba(227,189,99,0); }
+  100% { box-shadow: 0 0 0 0 rgba(227,189,99,0); }
+}
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 0 0 rgba(227,93,106,.62); }
+  70% { box-shadow: 0 0 0 9px rgba(227,93,106,0); }
+  100% { box-shadow: 0 0 0 0 rgba(227,93,106,0); }
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 300px minmax(560px, 1fr) 360px;
+  height: calc(100vh - 68px);
+  min-height: 0;
+  overflow: hidden;
+}
+.rail, .side {
+  background: #151526;
+  padding: 14px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+.rail { border-right: 1px solid var(--line); }
+.side { border-left: 1px solid var(--line); }
+.stage {
+  min-width: 0;
+  min-height: 0;
+  padding: 14px;
+  background: #14141f;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+.panel {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.panel-head {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-title {
+  color: var(--paper);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 800;
+  font-size: 11px;
+}
+.panel-body { padding: 12px; }
+.metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.metric-tile {
+  min-height: 78px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #111517;
+  display: grid;
+  align-content: space-between;
+}
+.metric-tile strong { font-size: 24px; line-height: 1; }
+.metric-tile span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.metric-tile.good strong { color: var(--bamboo-2); }
+.metric-tile.warn strong { color: var(--gold); }
+.metric-tile.bad strong { color: var(--red); }
+.agent-grid { display: grid; gap: 8px; }
+.agent-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px;
+  background: #111517;
+}
+.agent-card.needs_wake, .agent-card.needs_attention {
+  border-color: rgba(231,76,60,.58);
+  background: rgba(39,16,17,.58);
+}
+.agent-card.waiting {
+  border-color: rgba(232,168,124,.58);
+  background: rgba(42,31,22,.52);
+}
+.agent-card.idle {
+  border-color: rgba(136,136,136,.35);
+}
+.agent-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: #0f1214;
+  background: var(--paper);
+}
+.agent-card.codex .agent-avatar { background: var(--gold); }
+.agent-card.claude .agent-avatar { background: var(--coral); }
+.agent-card.cc .agent-avatar { background: var(--bamboo-2); }
+.agent-card.darrin .agent-avatar { background: var(--blue); }
+.agent-name { font-weight: 750; }
+.agent-detail { color: var(--muted); font-size: 12px; }
+.agent-focus {
+  margin-top: 5px;
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 650;
+}
+.agent-meta-row {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.agent-state {
+  margin-left: 7px;
+  color: var(--bamboo-2);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: .05em;
+}
+.agent-state.warn { color: var(--gold); }
+.agent-state.bad { color: var(--red); }
+.status-light {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--bamboo);
+  animation: pulse 1.7s infinite;
+}
+.status-light.warn { background: var(--gold); animation-name: pulseGold; }
+.status-light.bad { background: var(--red); animation-name: pulseRed; }
+.route-map {
+  min-height: 540px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(247,244,236,.09);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(232,168,124,.17), transparent 18%),
+    radial-gradient(circle at 50% 50%, transparent 0 22%, rgba(127,176,105,.10) 23% 23.5%, transparent 24% 40%, rgba(122,169,194,.08) 41% 41.5%, transparent 42%),
+    linear-gradient(rgba(247,244,236,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(247,244,236,.035) 1px, transparent 1px),
+    #10121d;
+  background-size: auto, auto, 28px 28px, 28px 28px, auto;
+}
+.route-map:before {
+  content: "";
+  position: absolute;
+  width: 72%;
+  aspect-ratio: 1;
+  left: 14%;
+  top: -32%;
+  border-radius: 50%;
+  background: conic-gradient(from 212deg, transparent 0 72%, rgba(127,176,105,.22) 76%, rgba(232,168,124,.38) 79%, transparent 84% 100%);
+  animation: radarSweep 8.5s linear infinite;
+  transform-origin: 50% 50%;
+}
+.route-map:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.035), transparent 18%, transparent 84%, rgba(0,0,0,.22));
+  pointer-events: none;
+}
+.route-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+.route-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 10 10;
+  opacity: .78;
+  animation: dashFlow 2.7s linear infinite;
+}
+.route-line.good { stroke: var(--bamboo-2); filter: drop-shadow(0 0 5px rgba(127,176,105,.42)); }
+.route-line.warn { stroke: var(--gold); filter: drop-shadow(0 0 5px rgba(232,168,124,.48)); }
+.route-line.bad { stroke: var(--red); filter: drop-shadow(0 0 6px rgba(231,76,60,.58)); }
+.packet {
+  position: absolute;
+  z-index: 4;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 0 12px rgba(232,168,124,.9);
+  offset-rotate: 0deg;
+  animation: packetRun 3.6s linear infinite;
+}
+.packet.one { offset-path: path("M 19 50 C 28 24, 43 23, 50 50"); animation-delay: 0s; }
+.packet.two { offset-path: path("M 50 50 C 59 75, 72 76, 82 51"); animation-delay: .85s; }
+.packet.three { offset-path: path("M 19 50 C 35 82, 66 82, 82 51"); animation-delay: 1.7s; background: var(--blue); }
+.route-node {
+  position: absolute;
+  z-index: 3;
+  width: clamp(126px, 28%, 220px);
+  min-height: 116px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 13px 12px;
+  background: rgba(17,21,23,.94);
+  box-shadow: 0 16px 30px rgba(0,0,0,.25), inset 0 0 28px rgba(247,244,236,.025);
+}
+.route-node .node-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.route-node .name { font-size: 14px; font-weight: 850; }
+.route-node .meta { color: var(--muted); margin-top: 5px; }
+.route-node .count { color: var(--gold); font-weight: 800; margin-top: 8px; }
+.route-node .node-stat {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.node-stat span {
+  border: 1px solid rgba(247,244,236,.10);
+  border-radius: 6px;
+  padding: 5px 6px;
+  color: var(--muted);
+  background: rgba(247,244,236,.035);
+}
+.node-stat strong { display: block; color: var(--paper); font-size: 14px; }
+.route-node.center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  border-color: rgba(232,168,124,.62);
+}
+.route-node.codex { left: 4%; top: 8%; border-color: rgba(232,168,124,.5); }
+.route-node.claude { right: 4%; top: 8%; border-color: rgba(232,168,124,.5); }
+.route-node.cc { right: 4%; bottom: 104px; border-color: rgba(127,176,105,.54); }
+.route-node.darrin { left: 4%; bottom: 104px; border-color: rgba(122,169,194,.54); }
+.node-ring {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 850;
+  color: #111517;
+  background: var(--gold);
+  box-shadow: 0 0 0 0 rgba(232,168,124,.45);
+  animation: nodePulse 2s ease-out infinite;
+}
+.route-node.cc .node-ring { background: var(--bamboo-2); }
+.route-node.darrin .node-ring { background: var(--blue); }
+.route-node.center .node-ring { margin: 0 auto 6px; background: var(--paper); }
+.route-node.warn { box-shadow: 0 0 0 1px rgba(232,168,124,.22), 0 0 30px rgba(232,168,124,.08); }
+.route-node.bad { box-shadow: 0 0 0 1px rgba(231,76,60,.3), 0 0 32px rgba(231,76,60,.12); }
+.ops-strip {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.ops-readout {
+  border: 1px solid rgba(247,244,236,.12);
+  border-radius: 7px;
+  padding: 7px 8px;
+  background: rgba(20,20,31,.82);
+}
+.ops-readout span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.ops-readout strong { color: var(--paper); font-size: 15px; }
+@keyframes radarSweep {
+  to { transform: rotate(360deg); }
+}
+@keyframes dashFlow {
+  to { stroke-dashoffset: -40; }
+}
+@keyframes packetRun {
+  from { offset-distance: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  to { offset-distance: 100%; opacity: 0; }
+}
+@keyframes nodePulse {
+  0% { box-shadow: 0 0 0 0 rgba(232,168,124,.45); }
+  72% { box-shadow: 0 0 0 10px rgba(232,168,124,0); }
+  100% { box-shadow: 0 0 0 0 rgba(232,168,124,0); }
+}
+.tabs {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.desktop-nav {
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(26,26,46,.72);
+}
+.desktop-nav .nav-control {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+}
+.desktop-nav label {
+  margin: 0;
+  display: inline;
+  white-space: nowrap;
+}
+.desktop-nav select {
+  width: auto;
+  min-width: 168px;
+  height: 35px;
+  padding: 6px 26px 6px 9px;
+}
+.tab {
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+.tab.active {
+  background: var(--paper);
+  color: #101315;
+  border-color: var(--paper);
+  font-weight: 750;
+}
+.pane { display: block; }
+.pane.hidden { display: none; }
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.search-box { max-width: 340px; }
+.list { display: grid; gap: 8px; }
+#activityFeed, #latestList, #watchList, #threadList, #archivedThreadList, #quarantineList,
+#decisionList, #decisionHistoryList, #validationActionableList, #validationInactiveList,
+#validationList, #diagnosticList, #routeTestList, #workList, #approvalList, #adapterList,
+#pathList, #mailboxMessageList {
+  max-height: min(520px, calc(100vh - 280px));
+  overflow: auto;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
+}
+#activityFeed { max-height: min(360px, calc(100vh - 490px)); }
+#mailboxMessageList { max-height: min(420px, calc(100vh - 430px)); }
+.item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #151a1d;
+  padding: 10px;
+}
+.item.unread {
+  border-color: rgba(227,189,99,.72);
+  border-left: 3px solid var(--gold);
+  background: #1e1c17;
+}
+.item.flash {
+  animation: itemFlash 1.1s ease-out;
+}
+@keyframes itemFlash {
+  0% { outline: 2px solid rgba(227,189,99,.9); }
+  100% { outline: 2px solid rgba(227,189,99,0); }
+}
+.item-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 750;
+}
+.watcher-alert {
+  border-color: rgba(232,168,124,.5);
+  background: linear-gradient(135deg, rgba(42,31,22,.72), rgba(17,21,23,.95));
+}
+.watcher-alert.critical {
+  border-color: rgba(231,76,60,.65);
+  background: linear-gradient(135deg, rgba(45,16,19,.82), rgba(17,21,23,.95));
+}
+.watcher-alert.high {
+  border-color: rgba(232,168,124,.7);
+}
+.wake-command {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid rgba(247,244,236,.12);
+  border-radius: 7px;
+  background: rgba(0,0,0,.22);
+  color: var(--paper);
+}
+.watcher-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.pill.good { color: var(--bamboo-2); border-color: rgba(111,191,115,.5); }
+.pill.warn { color: var(--gold); border-color: rgba(227,189,99,.5); }
+.pill.bad { color: var(--red); border-color: rgba(227,93,106,.5); }
+.badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 7px;
+  color: var(--paper);
+  background: #111517;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.badge.unread { color: #17120a; background: var(--gold); border-color: var(--gold); font-weight: 800; }
+.badge.high, .badge.urgent { color: #17120a; background: var(--coral); border-color: var(--coral); font-weight: 800; }
+.summary { color: var(--muted); margin-top: 7px; }
+.path {
+  color: #b9c5c1;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+  word-break: break-all;
+  margin-top: 7px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 9px 0 0;
+}
+.actions select { width: auto; max-width: 220px; padding: 7px; }
+.mailbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.mailbox-card {
+  min-height: 118px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px;
+  background: #151a1d;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 8px;
+}
+.mailbox-card:before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: rgba(136,136,136,.48);
+}
+.mailbox-card.hot:before { background: var(--gold); box-shadow: 0 0 18px rgba(232,168,124,.55); }
+.mailbox-card.clear:before { background: var(--bamboo); }
+.mailbox-card.active { border-color: var(--gold); background: #1e1c17; }
+.mailbox-card .count { font-size: 22px; color: var(--paper); font-weight: 850; }
+.mailbox-card .unread { color: var(--gold); }
+.mailbox-graph {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 10px;
+}
+.mailbox-meter {
+  height: 8px;
+  border: 1px solid rgba(247,244,236,.12);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0,0,0,.22);
+}
+.mailbox-meter-fill {
+  height: 100%;
+  min-width: 5%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--bamboo), var(--gold));
+  box-shadow: 0 0 12px rgba(232,168,124,.32);
+}
+.mailbox-stack {
+  display: flex;
+  align-items: end;
+  gap: 3px;
+  height: 30px;
+}
+.mailbox-stack span {
+  width: 5px;
+  min-height: 5px;
+  border-radius: 999px 999px 2px 2px;
+  background: rgba(224,221,213,.16);
+}
+.mailbox-stack span.hot { background: var(--gold); box-shadow: 0 0 8px rgba(232,168,124,.42); }
+.mailbox-stack span.live { background: var(--bamboo-2); }
+.traffic-ribbon {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.traffic-tile {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111517;
+  padding: 9px;
+}
+.traffic-tile span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.traffic-tile strong { color: var(--paper); font-size: 17px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.activity-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.activity-row:last-child { border-bottom: 0; }
+.activity-lamp {
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: pulse 1.8s infinite;
+}
+.activity-row:nth-child(3n) .activity-lamp { background: var(--gold); animation-name: pulseGold; }
+.activity-row:nth-child(4n) .activity-lamp { background: var(--bamboo); }
+.muted { color: var(--muted); }
+.good-text { color: var(--bamboo-2); }
+.warn-text { color: var(--gold); }
+.bad-text { color: var(--red); }
+.message-reader {
+  max-height: 420px;
+  overflow: auto;
+  background: #10101a;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+.hidden { display: none !important; }
+@media (max-width: 1180px) {
+  html, body { overflow: auto; }
+  .app-shell { height: auto; min-height: 100vh; }
+  .workspace { grid-template-columns: 1fr; }
+  .workspace { height: auto; overflow: visible; }
+  .rail, .stage, .side { overflow: visible; }
+  .rail, .side { border: 0; }
+  .two-col { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .topbar { height: auto; min-height: 68px; align-items: flex-start; flex-direction: column; padding: 12px; }
+  .top-actions { justify-content: flex-start; }
+  .route-map { min-height: 760px; }
+  .route-node { width: calc(50% - 22px); min-height: 118px; }
+  .route-node.codex { left: 12px; top: 18px; }
+  .route-node.claude { right: 12px; top: 18px; }
+  .route-node.center { top: 40%; width: min(220px, calc(100% - 28px)); }
+  .route-node.darrin { left: 12px; bottom: 170px; }
+  .route-node.cc { right: 12px; bottom: 170px; }
+  .ops-strip, .traffic-ribbon { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="panda-mark" aria-hidden="true"></div>
+      <div>
+        <h1>PANDA Agent Hub</h1>
+        <div class="sub" id="subtitle">Coordination cockpit loading...</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <select class="top-select" id="topViewSelect" title="View">
+        <option value="overview">Overview</option>
+        <option value="mailboxes">Mailboxes</option>
+        <option value="threads">Threads</option>
+        <option value="archives">Archives</option>
+        <option value="decisions">Darrin Queue</option>
+        <option value="validation">Validator</option>
+        <option value="diagnostics">Diagnostics</option>
+        <option value="work">Work</option>
+        <option value="safety">Safety</option>
+      </select>
+      <select class="top-select mailbox" id="topMailboxSelect" title="Mailbox">
+        <option value="all">All mailboxes</option>
+      </select>
+      <div class="live-pill"><span class="live-dot" id="globalDot"></span><span id="globalStatus">Connecting</span></div>
+      <button id="refresh">Refresh</button>
+      <button class="primary" id="composeJump">Compose</button>
+    </div>
+  </header>
+  <main class="workspace">
+    <aside class="rail">
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Live Board</div><span class="pill" id="updatedAt">--</span></div>
+        <div class="panel-body"><div class="metrics-grid" id="metrics"></div></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Agents</div><span class="pill" id="agentHealth">--</span></div>
+        <div class="panel-body"><div class="agent-grid" id="agentGrid"></div></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Activity</div><span class="pill" id="messageDelta">watching</span></div>
+        <div class="panel-body" id="activityFeed"></div>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <section class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Signal Map</div>
+          <span class="pill good" id="routeSummary">routes</span>
+        </div>
+        <div class="panel-body">
+          <div class="route-map" id="routeMap"></div>
+        </div>
+      </section>
+
+      <nav class="tabs desktop-nav">
+        <div class="nav-control">
+          <label for="viewSelect">View</label>
+          <select id="viewSelect">
+            <option value="overview">Overview</option>
+            <option value="mailboxes">Mailboxes</option>
+            <option value="threads">Threads</option>
+            <option value="archives">Archives</option>
+            <option value="decisions">Darrin Queue</option>
+            <option value="validation">Validator</option>
+            <option value="diagnostics">Diagnostics</option>
+            <option value="work">Work</option>
+            <option value="safety">Safety</option>
+          </select>
+        </div>
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="mailboxes">Mailboxes</button>
+        <button class="tab" data-tab="threads">Threads</button>
+        <button class="tab" data-tab="archives">Archives</button>
+        <button class="tab" data-tab="decisions">Darrin Queue</button>
+        <button class="tab" data-tab="validation">Validator</button>
+        <button class="tab" data-tab="diagnostics">Diagnostics</button>
+        <button class="tab" data-tab="work">Work</button>
+        <button class="tab" data-tab="safety">Safety</button>
+      </nav>
+
+      <div id="overview" class="pane">
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Latest Messages</div><button id="markAllRead">Mark All Read</button></div>
+            <div class="panel-body"><div class="list" id="latestList"></div></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Critical Watch</div><span class="pill warn">attention</span></div>
+            <div class="panel-body"><div class="list" id="watchList"></div></div>
+          </section>
+        </div>
+      </div>
+
+      <div id="mailboxes" class="pane hidden">
+        <div class="toolbar">
+          <input class="search-box" id="mailSearch" placeholder="Filter mailbox messages">
+          <select class="search-box" id="mailboxSelect"><option value="all">All mailboxes</option></select>
+          <span class="pill" id="selectedMailboxLabel">All mailboxes</span>
+        </div>
+        <div class="traffic-ribbon" id="trafficRibbon"></div>
+        <div class="mailbox-grid" id="mailboxCards"></div>
+        <section class="panel">
+          <div class="panel-head"><div class="panel-title">Mailbox Contents</div><span class="pill" id="mailboxCount">0</span></div>
+          <div class="panel-body"><div class="list" id="mailboxMessageList"></div></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div class="panel-title">Message Reader</div><span class="pill" id="readerPath">select a message</span></div>
+          <div class="panel-body"><pre class="message-reader" id="messageReader">Select Read on any mailbox or archive item.</pre></div>
+        </section>
+      </div>
+
+      <div id="threads" class="pane hidden">
+        <div class="list" id="threadList"></div>
+      </div>
+
+      <div id="archives" class="pane hidden">
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Archived Threads</div><span class="pill" id="archiveCount">0</span></div>
+            <div class="panel-body"><div class="list" id="archivedThreadList"></div></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Quarantine</div><span class="pill" id="quarantineCount">0</span></div>
+            <div class="panel-body"><div class="list" id="quarantineList"></div></div>
+          </section>
+        </div>
+      </div>
+
+      <div id="decisions" class="pane hidden">
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Open Decisions</div><span class="pill" id="decisionCount">0</span></div>
+            <div class="panel-body"><div class="list" id="decisionList"></div></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Resolved / Superseded</div><span class="pill" id="decisionHistoryCount">0</span></div>
+            <div class="panel-body"><div class="list" id="decisionHistoryList"></div></div>
+          </section>
+        </div>
+      </div>
+
+      <div id="validation" class="pane hidden">
+        <section class="panel">
+          <div class="panel-head"><div class="panel-title">Validation Summary</div><span class="pill" id="validationPill">--</span></div>
+          <div class="panel-body"><div id="validationSummary"></div></div>
+        </section>
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Actionable</div></div>
+            <div class="panel-body"><div class="list" id="validationActionableList"></div></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Inactive / Accepted</div></div>
+            <div class="panel-body"><div class="list" id="validationInactiveList"></div></div>
+          </section>
+        </div>
+        <section class="panel">
+          <div class="panel-head"><div class="panel-title">All Validation</div></div>
+          <div class="panel-body"><div class="list" id="validationList"></div></div>
+        </section>
+      </div>
+
+      <div id="diagnostics" class="pane hidden">
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Health Checks</div></div>
+            <div class="panel-body"><div class="list" id="diagnosticList"></div></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div class="panel-title">Route Tests</div></div>
+            <div class="panel-body"><div class="list" id="routeTestList"></div></div>
+          </section>
+        </div>
+      </div>
+
+      <div id="work" class="pane hidden"><div class="list" id="workList"></div></div>
+      <div id="safety" class="pane hidden">
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><div class="panel-title">Approvals</div></div><div class="panel-body"><div class="list" id="approvalList"></div></div></section>
+          <section class="panel"><div class="panel-head"><div class="panel-title">Adapters</div></div><div class="panel-body"><div class="list" id="adapterList"></div></div></section>
+        </div>
+        <section class="panel"><div class="panel-head"><div class="panel-title">Paths / Git</div></div><div class="panel-body"><div class="list" id="pathList"></div><pre id="gitStatus"></pre></div></section>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel" id="composePanel">
+        <div class="panel-head"><div class="panel-title">Compose</div><span class="pill">PAH write</span></div>
+        <div class="panel-body">
+          <label>Route</label>
+          <select id="route"><option value="codex_to_claude">Codex to Claude</option><option value="codex_to_claude_code">Codex to Claude Code</option></select>
+          <div class="path" id="routeDestination">Will write to: --</div>
+          <label>Status</label>
+          <select id="status"><option>Info</option><option>Response Requested</option><option>Decision Needed</option><option>Implementation Report</option></select>
+          <label>Subject</label><input id="subject" placeholder="Short topic">
+          <label>Thread ID</label><input id="threadId" placeholder="Optional, e.g. PAH-WEB-APP">
+          <label>Reply To</label><textarea id="replyTo" placeholder="Optional message id or source path"></textarea>
+          <label>Message</label><textarea id="body" placeholder="Write the coordination note"></textarea>
+          <div class="actions"><button class="primary" id="send">Send Message</button><button id="wakeLine">Copy CC Wake Line</button></div>
+          <pre id="sendResult"></pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Claude Code Wake</div><span class="pill warn">Darrin-gated</span></div>
+        <div class="panel-body">
+          <div class="summary" id="ccWakeState">Loading CC queue...</div>
+          <pre id="ccWakeLine">Read C:\panda-gallery\workflows\cc_mailbox\CC Inbox now. Darrin asks you to respond to the latest PAH/Codex message.</pre>
+          <div class="actions"><button id="copyWakeLine">Copy Wake Command</button></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Watcher / Wake</div><span class="pill" id="watcherPill">--</span></div>
+        <div class="panel-body">
+          <div class="summary" id="watcherPolicy">Loading watcher policy...</div>
+          <div class="list" id="watcherList"></div>
+          <pre id="watcherResult"></pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Tests</div><span class="pill">controlled</span></div>
+        <div class="panel-body">
+          <div class="actions"><button id="testSms">Test Notification</button><button id="testComm">Run Diagnostics</button></div>
+          <label>Route Test</label>
+          <select id="routeTestRoute"><option value="codex_to_claude">Codex to Claude</option><option value="codex_to_claude_code">Codex to Claude Code</option></select>
+          <div class="actions"><button id="createRouteTest">Create Test Ping</button></div>
+          <pre id="smsResult"></pre>
+          <pre id="commResult"></pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Work Item</div><span class="pill">dispatch</span></div>
+        <div class="panel-body">
+          <label>Owner</label>
+          <select id="workOwner"><option value="codex">Codex</option><option value="claude-desktop">Claude Desktop</option><option value="claude-code">Claude Code</option></select>
+          <label>Priority</label>
+          <select id="workPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select>
+          <label>Title</label><input id="workTitle" placeholder="Work item">
+          <label>Summary</label><textarea id="workSummary" placeholder="Scope, expected output, or blocker"></textarea>
+          <div class="actions"><button id="createWorkItem">Create Work Item</button></div>
+          <pre id="workResult"></pre>
+        </div>
+      </section>
+    </aside>
+  </main>
+</div>
+<script>
+const WRITE_TOKEN = "__WRITE_TOKEN__";
+let current = null;
+let selectedMailbox = "all";
+let lastMessageCount = null;
+let activeTab = localStorage.getItem("pah_tab") || "overview";
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+function asRows(value) { return Array.isArray(value) ? value : []; }
+function badgeClass(value) {
+  const text = String(value || "").toLowerCase();
+  if (["urgent", "high"].includes(text)) return "high";
+  if (text === "unread") return "unread";
+  return "";
+}
+function pillClass(value) {
+  const text = String(value || "").toLowerCase();
+  if (text.includes("pass") || text.includes("ok") || text.includes("received") || text.includes("working") || text.includes("closed")) return "good";
+  if (text.includes("pending") || text.includes("warn") || text.includes("open") || text.includes("waiting")) return "warn";
+  if (text.includes("fail") || text.includes("bad") || text.includes("invalid")) return "bad";
+  return "";
+}
+function encodedPath(path) { return encodeURIComponent(path || ""); }
+function payload(obj) { return encodeURIComponent(JSON.stringify(obj)); }
+async function post(path, body) {
+  const res = await fetch(path, {method:"POST", headers:{"Content-Type":"application/json", "X-Agent-Hub-Token": WRITE_TOKEN}, body: JSON.stringify(body || {})});
+  return await res.json();
+}
+async function load() {
+  try {
+    const res = await fetch("/api/status");
+    current = await res.json();
+    render(current);
+  } catch (error) {
+    document.getElementById("globalStatus").textContent = "Offline";
+    document.getElementById("globalDot").className = "live-dot bad";
+  }
+}
+function render(data) {
+  const ok = !!data.diagnostics?.ok;
+  const pendingRoutes = data.counts?.route_tests_pending || 0;
+  document.getElementById("globalStatus").textContent = ok ? (pendingRoutes ? "Live, waiting" : "Live") : "Needs check";
+  document.getElementById("globalDot").className = "live-dot " + (ok ? (pendingRoutes ? "warn" : "") : "bad");
+  document.getElementById("subtitle").textContent = `${data.counts.messages} messages · ${data.counts.threads} threads · ${data.generated_at}`;
+  document.getElementById("updatedAt").textContent = data.generated_at || "--";
+  const delta = lastMessageCount === null ? 0 : (data.counts.messages - lastMessageCount);
+  document.getElementById("messageDelta").textContent = delta > 0 ? `+${delta} new` : "watching";
+  lastMessageCount = data.counts.messages;
+
+  renderMetrics(data);
+  renderAgents(data);
+  renderRouteMap(data);
+  renderActivity(data);
+  renderOverview(data);
+  renderMailboxes(data);
+  renderThreads(data);
+  renderDecisions(data);
+  renderValidation(data);
+  renderDiagnostics(data);
+  renderWork(data);
+  renderSafety(data);
+  renderWakePanel(data);
+  renderWatcher(data);
+  updateRouteDestination();
+  activateTab(activeTab);
+}
+function renderMetrics(data) {
+  const rows = [
+    ["Messages", data.counts.messages, "good"],
+    ["Unread", data.counts.unread_messages, data.counts.unread_messages ? "warn" : "good"],
+    ["Threads", data.counts.threads, "good"],
+    ["Decisions", data.counts.decisions, data.counts.decisions ? "warn" : "good"],
+    ["Validation", data.counts.actionable_validation_issues, data.counts.actionable_validation_issues ? "warn" : "good"],
+    ["Route Wait", data.counts.route_tests_pending, data.counts.route_tests_pending ? "warn" : "good"]
+  ];
+  document.getElementById("metrics").innerHTML = rows.map(([label, value, tone]) => `<div class="metric-tile ${tone}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
+}
+function routeState(data, route) {
+  const test = asRows(data.route_tests?.tests).find(row => row.route === route);
+  return test ? test.state : (data.diagnostics?.ok ? "configured" : "unknown");
+}
+function mailboxCount(data, name) {
+  const box = asRows(data.mailboxes).find(row => row.name === name);
+  return box ? box.count : 0;
+}
+function mailbox(data, name) {
+  return asRows(data.mailboxes).find(row => row.name === name) || null;
+}
+function mailboxUnread(data, name) {
+  const box = mailbox(data, name);
+  return box ? box.unread || 0 : 0;
+}
+function routeTone(state) {
+  const text = String(state || "").toLowerCase();
+  if (text.includes("received") || text.includes("configured") || text.includes("ok")) return "good";
+  if (text.includes("fail") || text.includes("error") || text.includes("missing")) return "bad";
+  return "warn";
+}
+function agentTone(state) {
+  const text = String(state || "").toLowerCase();
+  if (text.includes("wake") || text.includes("attention")) return "bad";
+  if (text.includes("waiting") || text.includes("idle")) return "warn";
+  if (text.includes("active") || text.includes("recent")) return "good";
+  return "warn";
+}
+function agentClass(agentId) {
+  if (agentId === "claude-desktop") return "claude";
+  if (agentId === "claude-code") return "cc";
+  return agentId || "";
+}
+function ageText(minutes) {
+  if (minutes === null || minutes === undefined) return "no signal";
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  return `${Math.round(minutes / 60)}h ago`;
+}
+function statusByAgent(data, agentId) {
+  return asRows(data.agent_status).find(row => row.id === agentId) || null;
+}
+function displayState(state) {
+  return String(state || "unknown").replaceAll("_", " ");
+}
+function pct(value, max) {
+  if (!max) return 0;
+  return Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+}
+function renderAgents(data) {
+  const agents = asRows(data.agent_status);
+  const needs = agents.filter(a => ["needs_wake", "needs_attention", "waiting"].includes(a.state)).length;
+  document.getElementById("agentHealth").textContent = data.diagnostics?.ok ? (needs ? `${needs} waiting` : "online") : "check";
+  document.getElementById("agentGrid").innerHTML = agents.length ? agents.map(agent => {
+    const tone = agentTone(agent.state);
+    const focus = agent.current_work?.title || "No current mailbox task";
+    const role = agent.current_work?.role ? displayState(agent.current_work.role) : "derived status";
+    const detail = `${agent.waiting || 0} waiting · ${agent.unread || 0} unread · last ${ageText(agent.latest_age_minutes)}`;
+    return `<div class="agent-card ${agentClass(agent.id)} ${esc(agent.state)}">
+      <div class="agent-avatar">${esc(agent.initials)}</div>
+      <div>
+        <div class="agent-name">${esc(agent.label)}<span class="agent-state ${tone === "bad" ? "bad" : tone === "warn" ? "warn" : ""}">${esc(agent.state_label)}</span></div>
+        <div class="agent-detail">${esc(detail)}</div>
+        <div class="agent-focus">${esc(focus)}</div>
+        <div class="agent-meta-row">${esc(role)} · ${esc(agent.status_source || "mailbox")}</div>
+      </div>
+      <span class="status-light ${tone === "good" ? "" : tone}"></span>
+    </div>`;
+  }).join("") : `<div class="item muted">Agent status unavailable.</div>`;
+}
+function renderRouteMap(data) {
+  const claudeState = routeState(data, "codex_to_claude");
+  const ccState = routeState(data, "codex_to_claude_code");
+  const pending = data.counts.route_tests_pending || 0;
+  document.getElementById("routeSummary").textContent = pending ? `${pending} pending` : "all confirmed";
+  document.getElementById("routeSummary").className = `pill ${pending ? "warn" : "good"}`;
+  const codexStatus = statusByAgent(data, "codex");
+  const claudeStatus = statusByAgent(data, "claude-desktop");
+  const ccStatus = statusByAgent(data, "claude-code");
+  const darrinStatus = statusByAgent(data, "darrin");
+  const claudeTone = agentTone(claudeStatus?.state || claudeState);
+  const ccTone = agentTone(ccStatus?.state || ccState);
+  const pahTone = data.diagnostics?.ok ? "good" : "bad";
+  const darrinTone = agentTone(darrinStatus?.state || (data.counts.decisions ? "needs_attention" : "active"));
+  const codexTone = agentTone(codexStatus?.state || "active");
+  const codexInbox = mailboxUnread(data, "Claude -> Codex");
+  const claudeInbox = mailboxUnread(data, "Codex -> Claude");
+  const ccInbox = mailboxUnread(data, "To Claude Code");
+  const latest = asRows(data.latest)[0];
+  const routeLines = [
+    {path:"M 19 50 C 30 38, 40 38, 50 50", tone:pahTone, color:"#e8a87c", dur:"3.6s"},
+    {path:"M 50 50 C 60 30, 72 23, 82 24", tone:claudeTone, color:claudeTone === "good" ? "#9ccf8d" : "#e8a87c", dur:"4.1s"},
+    {path:"M 50 50 C 61 69, 72 77, 82 76", tone:ccTone, color:ccTone === "good" ? "#9ccf8d" : "#e8a87c", dur:"4.4s"},
+    {path:"M 18 76 C 31 75, 39 68, 50 50", tone:darrinTone, color:darrinTone === "good" ? "#7aa9c2" : "#e8a87c", dur:"5.1s"},
+    {path:"M 82 24 C 93 39, 94 61, 82 76", tone:"good", color:"#7aa9c2", dur:"4.8s"}
+  ];
+  const svg = routeLines.map((line, index) => `
+      <path class="route-line ${line.tone}" d="${line.path}"></path>
+      <circle r="1.45" fill="${line.color}" opacity=".95">
+        <animateMotion dur="${line.dur}" begin="${(index * .45).toFixed(2)}s" repeatCount="indefinite" path="${line.path}"></animateMotion>
+      </circle>`).join("");
+  document.getElementById("routeMap").innerHTML = `
+    <svg class="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${svg}</svg>
+    ${routeNode("codex", "Codex", "CX", compactWork(codexStatus), codexStatus?.state_label || "active", [["Inbox", codexInbox], ["Sent", mailboxCount(data, "Codex Sent")]], codexTone)}
+    ${routeNode("center", "PAH", "PH", "live file bridge", `${data.counts.messages} indexed`, [["Threads", data.counts.threads], ["Routes", pending ? pending : "green"]], pahTone)}
+    ${routeNode("claude", "Claude Desktop", "CL", compactWork(claudeStatus), claudeStatus?.state_label || displayState(claudeState), [["Unread", claudeInbox], ["Lane", mailboxCount(data, "Codex -> Claude")]], claudeTone)}
+    ${routeNode("cc", "Claude Code", "CC", compactWork(ccStatus), ccStatus?.state_label || displayState(ccState), [["Unread", ccInbox], ["Lane", mailboxCount(data, "To Claude Code")]], ccTone)}
+    ${routeNode("darrin", "Darrin", "DR", compactWork(darrinStatus), darrinStatus?.state_label || "clear", [["Decisions", data.counts.decisions], ["Latest", latest ? "live" : "--"]], darrinTone)}
+    <div class="ops-strip">
+      <div class="ops-readout"><span>Latest Track</span><strong>${esc(latest?.direction || "none")}</strong></div>
+      <div class="ops-readout"><span>Unread Load</span><strong>${esc(data.counts.unread_messages || 0)}</strong></div>
+      <div class="ops-readout"><span>Validation</span><strong>${esc(data.counts.actionable_validation_issues || 0)} active</strong></div>
+      <div class="ops-readout"><span>Bridge Mode</span><strong>${data.adapters?.enabled ? "adapter" : "file bridge"}</strong></div>
+    </div>
+  `;
+}
+function compactWork(agent) {
+  const title = agent?.current_work?.title || agent?.role || "No current task";
+  return title.length > 44 ? title.slice(0, 41) + "..." : title;
+}
+function routeNode(kind, name, initials, meta, count, stats, tone) {
+  return `<div class="route-node ${esc(kind)} ${esc(tone)}">
+    <div class="node-top"><div><div class="name">${esc(name)}</div><div class="meta">${esc(meta)}</div></div><div class="node-ring">${esc(initials)}</div></div>
+    <div class="count">${esc(count)}</div>
+    <div class="node-stat">${stats.map(([label, value]) => `<span>${esc(label)}<strong>${esc(value)}</strong></span>`).join("")}</div>
+  </div>`;
+}
+function renderActivity(data) {
+  const rows = asRows(data.latest).slice(0, 10);
+  document.getElementById("activityFeed").innerHTML = rows.length ? rows.map(m => `
+    <div class="activity-row">
+      <span class="activity-lamp"></span>
+      <div><strong>${esc(m.direction)}</strong><div class="muted">${esc(m.title)}</div><div class="path">${esc(m.modified)}</div></div>
+    </div>`).join("") : `<div class="muted">No activity.</div>`;
+}
+function renderOverview(data) {
+  list("latestList", asRows(data.latest).slice(0, 16), messageItem);
+  const watch = [
+    ...asRows(data.decisions).slice(0, 4).map(d => ({kind:"decision", row:d})),
+    ...asRows(data.validation_actionable).slice(0, 4).map(v => ({kind:"validation", row:v})),
+    ...asRows(data.route_tests?.tests).filter(t => t.state !== "received_reply").map(t => ({kind:"route", row:t}))
+  ];
+  list("watchList", watch, entry => {
+    if (entry.kind === "decision") return decisionItem(entry.row);
+    if (entry.kind === "validation") return validationItem(entry.row);
+    return item(entry.row.test_id, entry.row.state, `${entry.row.from} to ${entry.row.to}`, entry.row.message_path);
+  });
+}
+function renderMailboxes(data) {
+  const boxes = asRows(data.mailboxes);
+  const allCount = boxes.reduce((sum, box) => sum + box.count, 0);
+  const allUnread = boxes.reduce((sum, box) => sum + box.unread, 0);
+  const cards = [{name:"all", count:allCount, unread:allUnread, latest_title:"All indexed mailbox lanes"}, ...boxes];
+  const maxCount = Math.max(1, ...cards.map(box => box.count || 0));
+  syncMailboxSelectors(cards);
+  document.getElementById("trafficRibbon").innerHTML = [
+    ["All Traffic", allCount, `${allUnread} unread`],
+    ["Claude Queue", mailboxCount(data, "Codex -> Claude"), `${mailboxUnread(data, "Codex -> Claude")} unread`],
+    ["CC Queue", mailboxCount(data, "To Claude Code"), `${mailboxUnread(data, "To Claude Code")} unread`],
+    ["Codex Inbox", mailboxCount(data, "Claude -> Codex"), `${mailboxUnread(data, "Claude -> Codex")} unread`]
+  ].map(([label, value, detail]) => `<div class="traffic-tile"><span>${esc(label)}</span><strong>${esc(value)}</strong><div class="summary">${esc(detail)}</div></div>`).join("");
+  document.getElementById("mailboxCards").innerHTML = cards.map(box => mailboxCard(box, maxCount)).join("");
+  const query = (document.getElementById("mailSearch")?.value || "").toLowerCase();
+  let rows = [];
+  if (selectedMailbox === "all") rows = boxes.flatMap(box => box.messages || []);
+  else rows = (boxes.find(box => box.name === selectedMailbox)?.messages || []);
+  rows = rows.filter(m => !query || `${m.title} ${m.summary} ${m.path} ${m.direction}`.toLowerCase().includes(query));
+  rows.sort((a, b) => String(b.modified).localeCompare(String(a.modified)));
+  document.getElementById("selectedMailboxLabel").textContent = selectedMailbox === "all" ? "All mailboxes" : selectedMailbox;
+  document.getElementById("mailboxCount").textContent = rows.length;
+  list("mailboxMessageList", rows.slice(0, 120), messageItem);
+}
+function syncMailboxSelectors(cards) {
+  const options = cards.map(box => {
+    const label = box.name === "all" ? "All mailboxes" : box.name;
+    const count = box.count || 0;
+    const unread = box.unread || 0;
+    return `<option value="${esc(box.name)}">${esc(label)} (${count}/${unread})</option>`;
+  }).join("");
+  ["mailboxSelect", "topMailboxSelect"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = options;
+    el.value = cards.some(box => box.name === selectedMailbox) ? selectedMailbox : "all";
+  });
+}
+function mailboxCard(box, maxCount) {
+  const count = Number(box.count || 0);
+  const unread = Number(box.unread || 0);
+  const fill = pct(count, maxCount);
+  const unreadFill = pct(unread, Math.max(1, count));
+  const lit = Math.max(1, Math.ceil((fill / 100) * 8));
+  const hotBars = Math.max(1, Math.ceil((unreadFill / 100) * 8));
+  const stack = Array.from({length:8}, (_, index) => {
+    const active = index < lit;
+    const hot = unread && index < hotBars;
+    const height = 7 + Math.round(((index + 1) / 8) * 22);
+    return `<span class="${hot ? "hot" : active ? "live" : ""}" style="height:${height}px"></span>`;
+  }).join("");
+  return `<div class="mailbox-card ${selectedMailbox === box.name ? "active" : ""} ${unread ? "hot" : "clear"}" onclick="selectMailbox('${esc(box.name)}')">
+    <div class="item-title"><span>${esc(box.name === "all" ? "All Mailboxes" : box.name)}</span><span class="pill ${unread ? "warn" : "good"}">${esc(unread)} unread</span></div>
+    <div class="mailbox-graph">
+      <div>
+        <div class="count">${esc(count)}</div>
+        <div class="mailbox-meter"><div class="mailbox-meter-fill" style="width:${fill}%"></div></div>
+      </div>
+      <div class="mailbox-stack" aria-hidden="true">${stack}</div>
+    </div>
+    <div class="summary">${esc(box.latest_title || "")}</div>
+  </div>`;
+}
+function selectMailbox(name) {
+  selectedMailbox = name;
+  document.getElementById("mailboxSelect").value = selectedMailbox;
+  document.getElementById("topMailboxSelect").value = selectedMailbox;
+  renderMailboxes(current);
+}
+function renderThreads(data) {
+  list("threadList", asRows(data.threads), threadItem);
+  document.getElementById("archiveCount").textContent = asRows(data.archived_threads).length;
+  list("archivedThreadList", asRows(data.archived_threads), threadItem);
+}
+function renderDecisions(data) {
+  document.getElementById("decisionCount").textContent = asRows(data.decisions).length;
+  document.getElementById("decisionHistoryCount").textContent = asRows(data.decision_history).length;
+  list("decisionList", asRows(data.decisions), decisionItem);
+  list("decisionHistoryList", asRows(data.decision_history), d => item(d.title, d.decision_state || "inactive", `${d.state_note || ""} ${d.summary || ""}`, d.path));
+}
+function renderValidation(data) {
+  document.getElementById("validationPill").textContent = `${data.validation_summary?.actionable || 0} actionable`;
+  document.getElementById("validationSummary").innerHTML = validationSummaryBlock(data.validation_summary || {});
+  list("validationActionableList", asRows(data.validation_actionable), validationItem);
+  list("validationInactiveList", asRows(data.validation_inactive), v => item(v.message, v.validation_state || "inactive", `${v.state_note || ""} ${v.title || ""}`, v.path));
+  list("validationList", asRows(data.validation), v => item(v.message, `${v.level} · ${v.category}`, v.title, v.path));
+}
+function renderDiagnostics(data) {
+  list("diagnosticList", asRows(data.diagnostics?.checks), d => item(d.name, d.ok ? "PASS" : "CHECK", d.detail, data.diagnostics.report_path || ""));
+  list("routeTestList", asRows(data.route_tests?.tests), t => item(t.test_id, t.state, `${t.from} to ${t.to} · ${t.created_at}${t.reply_seen_at ? " · replied " + t.reply_seen_at : ""}`, t.reply_path || t.message_path));
+}
+function renderWork(data) {
+  list("workList", asRows(data.work_board?.items), workItem);
+}
+function renderSafety(data) {
+  const approvals = data.approvals || {};
+  list("approvalList", [
+    {title:"Approval records", pill:approvals.records, summary:`active ${approvals.active}, invalid ${approvals.invalid}, revoked ${approvals.revoked}, expired ${approvals.expired}, consumed ${approvals.consumed}`, path:approvals.records_path},
+    {title:"Protected-action enforcement", pill:approvals.enforcement || "unknown", summary:asRows(approvals.protected_action_types).join(", "), path:""},
+    {title:"Strict MCP config", pill:approvals.canonical_mcp_config_hash ? "pinned" : "missing", summary:asRows(approvals.headless_mcp_required_fields).join(", "), path:approvals.canonical_mcp_config_path || ""},
+    {title:"Headless command contract", pill:"disabled", summary:asRows(approvals.headless_command_required_fields).join(", "), path:""}
+  ], a => item(a.title, a.pill, a.summary, a.path));
+  list("adapterList", asRows(data.adapters?.adapters), a => item(a.display_name, a.enabled ? "ENABLED" : "DISABLED", `${a.safety_status} · ${a.notes}`, a.adapter_id));
+  document.getElementById("quarantineCount").textContent = data.quarantine?.messages || 0;
+  const quarantineRows = [
+    {title:"Quarantine", pill:data.quarantine?.automatic_moves ? "AUTO" : "EXPLICIT", summary:`${data.quarantine?.messages || 0} quarantined messages, ${data.quarantine?.tombstones || 0} tombstones. ${data.quarantine?.detail || ""}`, path:data.quarantine?.quarantine_dir},
+    ...asRows(data.quarantine?.recent).map(r => ({title:r.original_name || "Tombstone", pill:r.reason || "quarantined", summary:`Moved ${r.moved_at || ""}`, path:r.tombstone_path || r.quarantine_path}))
+  ];
+  list("quarantineList", quarantineRows, q => item(q.title, q.pill, q.summary, q.path));
+  list("pathList", [
+    {title:"CODEX PG", pill:"root", summary:data.project_root, path:data.project_root},
+    {title:"Mailbox", pill:"root", summary:data.mailbox_root, path:data.mailbox_root},
+    {title:"Panda Gallery", pill:"root", summary:data.panda_gallery_root, path:data.panda_gallery_root},
+    {title:"Decision queue", pill:"file", summary:data.decision_queue_path, path:data.decision_queue_path}
+  ], p => item(p.title, p.pill, p.summary, p.path));
+  document.getElementById("gitStatus").textContent = data.git?.text || "No git status available";
+}
+function renderWakePanel(data) {
+  const ccBox = asRows(data.mailboxes).find(box => box.name === "To Claude Code");
+  const latest = ccBox?.messages?.[0];
+  const line = latest
+    ? `Read ${latest.path} and respond to Darrin's PAH/Codex request.`
+    : "Read C:\\panda-gallery\\workflows\\cc_mailbox\\CC Inbox now. Darrin asks you to respond to the latest PAH/Codex message.";
+  document.getElementById("ccWakeState").textContent = ccBox
+    ? `${ccBox.unread} unread / ${ccBox.count} total in the canonical CC inbox lane. Latest: ${latest?.title || "none"}`
+    : "Canonical CC inbox lane is not currently indexed.";
+  document.getElementById("ccWakeLine").textContent = line;
+}
+function renderWatcher(data) {
+  const watcher = data.watcher || {};
+  const counts = watcher.counts || {};
+  const active = counts.active_alerts || 0;
+  const pill = document.getElementById("watcherPill");
+  pill.textContent = active ? `${active} active` : "clear";
+  pill.className = `pill ${active ? (counts.needs_wake ? "bad" : "warn") : "good"}`;
+  document.getElementById("watcherPolicy").textContent = watcher.policy || "Watcher is waiting for PAH status.";
+  const alerts = asRows(watcher.alerts).filter(alert => alert.active).slice(0, 8);
+  list("watcherList", alerts, watcherItem);
+}
+function watcherItem(alert) {
+  const encoded = payload({fingerprint: alert.fingerprint, prompt: alert.wake_prompt});
+  const fp = encodedPath(alert.fingerprint);
+  const path = alert.path || "";
+  const severity = String(alert.severity || "normal").toLowerCase();
+  return `<div class="item watcher-alert ${esc(severity)}">
+    <div class="item-title"><span>${esc(alert.title)}</span><span class="pill ${severity === "critical" ? "bad" : severity === "high" ? "warn" : ""}">${esc(alert.state_label || alert.state)}</span></div>
+    <div class="summary">${esc(alert.reason || "")}</div>
+    <pre class="wake-command">${esc(alert.wake_prompt || "")}</pre>
+    <div class="watcher-meta">
+      <span class="pill">${esc(alert.agent_label || alert.agent)}</span>
+      <span class="pill">${esc(ageText(alert.age_minutes))}</span>
+      ${alert.acknowledged ? `<span class="pill good">acked</span>` : ""}
+      ${alert.copied_at ? `<span class="pill good">copied</span>` : ""}
+    </div>
+    ${path ? `<div class="path">${esc(path)}</div>` : ""}
+    <div class="actions">
+      <button class="primary" onclick="copyWatcherPrompt('${encoded}')">Copy Prompt</button>
+      <button onclick="watcherAction('${fp}', 'ack')">Ack</button>
+      <button onclick="watcherAction('${fp}', 'snooze', 15)">Snooze 15m</button>
+      ${path ? readButton(path) + openButton(path) : ""}
+    </div>
+  </div>`;
+}
+function routeDestination(routeValue) {
+  const routeName = routeValue || document.getElementById("route").value;
+  if (routeName === "codex_to_claude_code") return "C:\\panda-gallery\\workflows\\cc_mailbox\\CC Inbox\\";
+  return `${current?.mailbox_root || "C:\\CODEX PG\\CODEX Claude Codex Mailbox"}\\CLAUDE Inbox\\`;
+}
+function updateRouteDestination() {
+  const path = routeDestination();
+  document.getElementById("routeDestination").textContent = `Will write to: ${path}`;
+}
+function list(id, rows, fn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = rows.length ? rows.map(fn).join("") : `<div class="item muted">Nothing to show.</div>`;
+}
+function item(title, pill, summary, path) {
+  return `<div class="item"><div class="item-title"><span>${esc(title)}</span><span class="pill ${pillClass(pill)}">${esc(pill)}</span></div><div class="summary">${esc(summary || "")}</div>${path ? `<div class="path">${esc(path)}</div><div class="actions">${readButton(path)}${openButton(path)}</div>` : ""}</div>`;
+}
+function badgeBlock(row) {
+  return asRows(row.status_badges).length ? `<div class="badges">${asRows(row.status_badges).map(b => `<span class="badge ${badgeClass(b)}">${esc(b)}</span>`).join("")}</div>` : "";
+}
+function openButton(path) {
+  return `<button onclick="openPath('${encodedPath(path)}')">Open</button>`;
+}
+function readButton(path) {
+  return `<button onclick="readMessage('${encodedPath(path)}')">Read</button>`;
+}
+function quarantineReasonSelect(defaultReason) {
+  const reasons = current?.quarantine?.reason_codes || ["schema_invalid"];
+  return `<select aria-label="Quarantine reason">${reasons.map(reason => `<option value="${esc(reason)}" ${reason === defaultReason ? "selected" : ""}>${esc(reason)}</option>`).join("")}</select>`;
+}
+function quarantineControls(payloadEncoded, defaultReason) {
+  return `${quarantineReasonSelect(defaultReason || "schema_invalid")}<button class="danger" onclick="quarantineMessage('${payloadEncoded}', this.previousElementSibling.value)">Quarantine</button>`;
+}
+function messageItem(m) {
+  const msgPayload = payload({path:m.path});
+  const readAction = m.unread ? `<button onclick="setReadState('${msgPayload}','read')">Mark Read</button>` : `<button onclick="setReadState('${msgPayload}','unread')">Mark Unread</button>`;
+  const quarantineAction = m.quarantine_allowed ? quarantineControls(msgPayload, m.quarantine_reason) : "";
+  return `<div class="item ${m.unread ? "unread" : ""}">
+    <div class="item-title"><span>${esc(m.title)}</span><span class="pill ${pillClass(m.status || m.direction)}">${esc(m.status || m.direction)}</span></div>
+    ${badgeBlock(m)}
+    <div class="summary">${esc(m.summary || "")}</div>
+    <div class="path">${esc(m.path || "")}</div>
+    <div class="actions">${readAction}${readButton(m.path)}${openButton(m.path)}${quarantineAction}</div>
+  </div>`;
+}
+function threadItem(t) {
+  const threadPayload = payload({thread_id:t.thread_id});
+  const action = t.archived ? `<button onclick="setThreadArchiveState('${threadPayload}','active')">Unarchive</button>` : `<button onclick="setThreadArchiveState('${threadPayload}','archived')">Archive</button>`;
+  return `<div class="item ${t.unread ? "unread" : ""}">
+    <div class="item-title"><span>${esc(t.thread_id)}</span><span class="pill ${pillClass(t.status)}">${esc(t.status)}${t.unread ? " · unread " + esc(t.unread) : ""}</span></div>
+    ${badgeBlock(t)}
+    <div class="summary">${esc(t.summary || "")}</div>
+    <div class="path">${esc(t.latest_path || "")}</div>
+    <div class="actions">${action}${t.latest_path ? readButton(t.latest_path) + openButton(t.latest_path) : ""}</div>
+  </div>`;
+}
+function decisionItem(d) {
+  return `<div class="item">
+    <div class="item-title"><span>${esc(d.title)}</span><span class="pill warn">${esc(d.status || "Decision")}</span></div>
+    <div class="summary">${esc(d.summary || "")}</div>
+    <div class="path">${esc(d.path || "")}</div>
+    <div class="actions"><button onclick="setDecisionState('${encodedPath(d.path)}','resolved')">Resolved</button><button onclick="setDecisionState('${encodedPath(d.path)}','superseded')">Superseded</button><button onclick="setDecisionState('${encodedPath(d.path)}','dismissed')">Dismiss</button>${readButton(d.path)}${openButton(d.path)}</div>
+  </div>`;
+}
+function validationItem(v) {
+  const findingPayload = payload({fingerprint:v.fingerprint, path:v.path, category:v.category, message:v.message, title:v.title});
+  const pathPayload = payload({path:v.path});
+  const quarantineAction = v.quarantine_allowed ? quarantineControls(pathPayload, v.quarantine_reason) : "";
+  return `<div class="item">
+    <div class="item-title"><span>${esc(v.message)}</span><span class="pill ${pillClass(v.level)}">${esc(v.level)} · ${esc(v.category)}</span></div>
+    <div class="summary">${esc(v.title || "")}</div>
+    <div class="path">${esc(v.path || "")}</div>
+    <div class="actions"><button onclick="setValidationState('${findingPayload}','resolved')">Resolved</button><button onclick="setValidationState('${findingPayload}','accepted_legacy')">Accept Legacy</button><button onclick="setValidationState('${findingPayload}','dismissed')">Dismiss</button>${readButton(v.path)}${openButton(v.path)}${quarantineAction}</div>
+  </div>`;
+}
+function workItem(w) {
+  const itemPayload = payload({item_id:w.item_id});
+  const dispatchPath = w.dispatch?.path || "";
+  const dispatchText = dispatchPath ? `Dispatch: ${dispatchPath}` : (w.dispatch?.note || "");
+  const replyText = w.last_reply_path ? `Reply: ${w.last_reply_path} · ${w.last_reply_seen_at || ""}` : "";
+  return `<div class="item">
+    <div class="item-title"><span>${esc(w.title)}</span><span class="pill ${pillClass(w.state)}">${esc(w.state)} · ${esc(w.owner)}</span></div>
+    <div class="summary">${esc(w.summary || "")}</div>
+    <div class="path">${esc(w.priority)} · ${esc(w.source || w.item_id)}${dispatchText ? "<br>" + esc(dispatchText) : ""}${replyText ? "<br>" + esc(replyText) : ""}</div>
+    <div class="actions"><button onclick="dispatchWorkItem('${itemPayload}')">Dispatch</button><button onclick="setWorkState('${itemPayload}','in_progress')">Start</button><button onclick="setWorkState('${itemPayload}','review')">Review</button><button onclick="setWorkState('${itemPayload}','complete')">Complete</button><button onclick="setWorkState('${itemPayload}','blocked')">Blocked</button></div>
+  </div>`;
+}
+function validationSummaryBlock(v) {
+  const cats = Object.entries(v.by_category || {}).map(([k,val]) => `${esc(k)} ${val}`).join(" · ");
+  return `<div class="metrics-grid">
+    <div class="metric-tile ${v.actionable ? "warn" : "good"}"><span>Actionable</span><strong>${esc(v.actionable || 0)}</strong></div>
+    <div class="metric-tile"><span>Legacy/info</span><strong>${esc(v.informational_or_legacy || 0)}</strong></div>
+  </div><div class="summary">${cats || "No categories"}</div>`;
+}
+async function openPath(pathEncoded) {
+  const json = await (await fetch(`/api/open?path=${pathEncoded}`)).json();
+  if (!json.ok) alert(json.error || "Open failed");
+}
+async function readMessage(pathEncoded) {
+  const json = await (await fetch(`/api/message?path=${pathEncoded}`)).json();
+  if (!json.ok) {
+    alert(json.error || "Read failed");
+    return;
+  }
+  activateTab("mailboxes");
+  document.getElementById("readerPath").textContent = json.path;
+  document.getElementById("messageReader").textContent = json.content || "";
+}
+function activateTab(tab) {
+  if (!document.getElementById(tab)) tab = "overview";
+  activeTab = tab;
+  localStorage.setItem("pah_tab", tab);
+  document.querySelectorAll(".tab").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tab));
+  document.querySelectorAll(".pane").forEach(pane => pane.classList.toggle("hidden", pane.id !== tab));
+  ["topViewSelect", "viewSelect"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = tab;
+  });
+}
+document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
+document.getElementById("refresh").onclick = load;
+document.getElementById("route").addEventListener("change", updateRouteDestination);
+document.getElementById("topViewSelect").addEventListener("change", event => activateTab(event.target.value));
+document.getElementById("viewSelect").addEventListener("change", event => activateTab(event.target.value));
+document.getElementById("topMailboxSelect").addEventListener("change", event => {
+  selectedMailbox = event.target.value;
+  activateTab("mailboxes");
+  renderMailboxes(current);
+});
+document.getElementById("mailboxSelect").addEventListener("change", event => selectMailbox(event.target.value));
+document.getElementById("composeJump").onclick = () => {
+  document.getElementById("subject").focus();
+};
+document.getElementById("mailSearch").addEventListener("input", () => renderMailboxes(current));
+document.getElementById("markAllRead").onclick = async () => {
+  const json = await post("/api/mark-all-read", {actor:"darrin_or_codex"});
+  if (!json.ok) alert(json.error || "Mark all read failed");
+  await load();
+};
+document.getElementById("send").onclick = async () => {
+  const request = { route: route.value, status: status.value, subject: subject.value, thread_id: threadId.value, reply_to: replyTo.value, body: body.value };
+  const json = await post("/api/send", request);
+  sendResult.textContent = JSON.stringify(json, null, 2);
+  if (json.ok) {
+    if (route.value === "codex_to_claude_code") sendResult.textContent += `\n\nWake line:\nRead ${json.path} and respond to Darrin's PAH/Codex request.`;
+    subject.value = "";
+    body.value = "";
+    replyTo.value = "";
+    await load();
+  }
+};
+document.getElementById("wakeLine").onclick = async () => {
+  const line = "Read C:\\panda-gallery\\workflows\\cc_mailbox\\CC Inbox now. Darrin asks you to respond to the latest PAH/Codex message.";
+  try { await navigator.clipboard.writeText(line); sendResult.textContent = "Copied CC wake line:\\n" + line; }
+  catch { sendResult.textContent = line; }
+};
+document.getElementById("copyWakeLine").onclick = async () => {
+  const line = document.getElementById("ccWakeLine").textContent;
+  try { await navigator.clipboard.writeText(line); }
+  catch {}
+};
+async function copyWatcherPrompt(encoded) {
+  const item = JSON.parse(decodeURIComponent(encoded));
+  try { await navigator.clipboard.writeText(item.prompt || ""); }
+  catch {}
+  const json = await post("/api/watcher-alert", {fingerprint:item.fingerprint, action:"copy", actor:"darrin_or_codex"});
+  watcherResult.textContent = json.ok ? "Copied watcher wake prompt." : (json.error || "Watcher copy log failed");
+  await load();
+}
+async function watcherAction(fingerprintEncoded, action, minutes) {
+  const fingerprint = decodeURIComponent(fingerprintEncoded);
+  const json = await post("/api/watcher-alert", {fingerprint, action, minutes, actor:"darrin_or_codex"});
+  watcherResult.textContent = JSON.stringify(json, null, 2);
+  if (!json.ok) alert(json.error || "Watcher action failed");
+  await load();
+}
+document.getElementById("testSms").onclick = async () => {
+  const json = await post("/api/test-notification", {});
+  smsResult.textContent = JSON.stringify(json, null, 2);
+  await load();
+};
+document.getElementById("testComm").onclick = async () => {
+  const json = await post("/api/run-diagnostics", {});
+  commResult.textContent = JSON.stringify(json, null, 2);
+  await load();
+};
+document.getElementById("createRouteTest").onclick = async () => {
+  const json = await post("/api/create-route-test", {route: routeTestRoute.value, note:"Created from PAH dashboard."});
+  commResult.textContent = JSON.stringify(json, null, 2);
+  await load();
+};
+document.getElementById("createWorkItem").onclick = async () => {
+  const json = await post("/api/work-item", {title:workTitle.value, owner:workOwner.value, priority:workPriority.value, summary:workSummary.value});
+  workResult.textContent = JSON.stringify(json, null, 2);
+  if (json.ok) { workTitle.value = ""; workSummary.value = ""; await load(); }
+};
+async function setWorkState(payloadEncoded, state) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  const json = await post("/api/work-item", {...item, state});
+  if (!json.ok) alert(json.error || "Work item update failed");
+  await load();
+}
+async function dispatchWorkItem(payloadEncoded) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  const json = await post("/api/dispatch-work-item", item);
+  if (!json.ok) alert(json.error || "Work item dispatch failed");
+  await load();
+}
+async function setDecisionState(pathEncoded, state) {
+  const path = decodeURIComponent(pathEncoded);
+  const note = state === "resolved" ? "Marked resolved from PAH dashboard." : state === "superseded" ? "Marked superseded from PAH dashboard." : "Dismissed from PAH dashboard.";
+  const json = await post("/api/decision-state", {path, state, note, actor:"darrin_or_codex"});
+  if (!json.ok) alert(json.error || "Decision update failed");
+  await load();
+}
+async function setValidationState(payloadEncoded, state) {
+  const finding = JSON.parse(decodeURIComponent(payloadEncoded));
+  const note = state === "accepted_legacy" ? "Accepted as legacy mailbox history from PAH dashboard." : state === "resolved" ? "Marked resolved from PAH dashboard." : "Dismissed from PAH dashboard.";
+  const json = await post("/api/validation-state", {...finding, state, note, actor:"darrin_or_codex"});
+  if (!json.ok) alert(json.error || "Validation update failed");
+  await load();
+}
+async function setReadState(payloadEncoded, state) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  const json = await post("/api/message-read-state", {...item, state, actor:"darrin_or_codex"});
+  if (!json.ok) alert(json.error || "Read-state update failed");
+  await load();
+}
+async function quarantineMessage(payloadEncoded, reason) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  if (!confirm("Move this mailbox message to PAH Quarantine and write a tombstone?")) return;
+  const json = await post("/api/quarantine-message", {...item, reason, confirmed:true, actor:"darrin_or_codex"});
+  if (!json.ok) alert(json.error || "Quarantine failed");
+  await load();
+}
+async function setThreadArchiveState(payloadEncoded, state) {
+  const item = JSON.parse(decodeURIComponent(payloadEncoded));
+  const reason = state === "archived" ? "Archived from PAH dashboard." : "Unarchived from PAH dashboard.";
+  const json = await post("/api/thread-archive-state", {...item, state, reason, actor:"darrin_or_codex"});
+  if (!json.ok) alert(json.error || "Thread archive update failed");
+  await load();
+}
+activateTab(activeTab);
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>

@@ -106,9 +106,14 @@ NOTIFICATION_CONFIG_TEMPLATE_PATH = CONFIG_DIR / "CODEX_notification_config.temp
 NOTIFICATION_CONFIG_LOCAL_PATH = CONFIG_DIR / "CODEX_notification_config.local.json"
 NOTIFICATION_STATE_PATH = NOTIFICATIONS_DIR / "CODEX_notification_state.local.json"
 NOTIFICATION_LOG_PATH = NOTIFICATIONS_DIR / "CODEX_notification_log.jsonl"
+WATCHER_STATE_PATH = HUB_ROOT / "CODEX state" / "CODEX_watcher_state.local.json"
+WATCHER_EVENT_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_watcher_events.jsonl"
+UI_PATH = HUB_ROOT / "CODEX_agent_hub_ui.html"
 WRITE_TOKEN = secrets.token_urlsafe(32)
 ALLOW_SIMULATED_INBOUND = False
 NOTIFICATION_LOCK = threading.Lock()
+WATCHER_LOCK = threading.Lock()
+WATCHER_SNOOZE_DEFAULT_MINUTES = 15
 
 IMPORTANT_STATUSES = {"Decision Needed", "Response Requested", "Implementation Report"}
 IMPORTANT_TYPES = {"dispatch", "complete", "decision", "blocker", "response-request", "implementation"}
@@ -1219,6 +1224,8 @@ def state() -> dict[str, Any]:
     adapters = adapter_status()
     quarantine = quarantine_status()
     decision_state = decision_state_summary()
+    agent_status = build_agent_status(messages, read_state_data, work_board, decisions)
+    watcher = build_watcher_status(agent_status, route_tests)
     return {
         "project_root": str(PROJECT_ROOT),
         "mailbox_root": str(MAILBOX_ROOT),
@@ -1242,6 +1249,9 @@ def state() -> dict[str, Any]:
             "inactive_decisions": max(0, len(all_decisions) - len(decisions)),
         },
         "latest": [message_to_json(msg, read_state_data) for msg in messages[:40]],
+        "mailboxes": build_mailbox_overview(messages, read_state_data),
+        "agent_status": agent_status,
+        "watcher": watcher,
         "threads": active_threads[:80],
         "archived_threads": archived_threads[:80],
         "decisions": decisions,
@@ -1290,6 +1300,359 @@ def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None)
         "quarantine_reason": default_quarantine_reason("schema", msg.summary or msg.title),
         "summary": msg.summary or msg.body_preview,
     }
+
+
+def build_mailbox_overview(messages: list[Message], read_state_data: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    groups: dict[str, dict[str, Any]] = {}
+    for msg in messages:
+        row = groups.setdefault(
+            msg.direction,
+            {
+                "name": msg.direction,
+                "count": 0,
+                "unread": 0,
+                "latest_modified": "",
+                "latest_title": "",
+                "messages": [],
+            },
+        )
+        item = message_to_json(msg, read_state_data)
+        row["count"] += 1
+        if item["unread"]:
+            row["unread"] += 1
+        if not row["latest_modified"]:
+            row["latest_modified"] = item["modified"]
+            row["latest_title"] = item["title"]
+        if len(row["messages"]) < 80:
+            row["messages"].append(item)
+    return sorted(groups.values(), key=lambda row: row["latest_modified"], reverse=True)
+
+
+def build_agent_status(
+    messages: list[Message],
+    read_state_data: dict[str, Any] | None,
+    work_board: dict[str, Any],
+    decisions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    now = datetime.now().timestamp()
+    active_work_states = {"todo", "in_progress", "review", "blocked"}
+    agent_rows = [
+        {"id": "codex", "label": "Codex", "initials": "CX", "role": "builder / sender"},
+        {"id": "claude-desktop", "label": "Claude Desktop", "initials": "CL", "role": "planner / reviewer"},
+        {"id": "claude-code", "label": "Claude Code", "initials": "CC", "role": "native mailbox worker"},
+        {"id": "darrin", "label": "Darrin", "initials": "DR", "role": "human approval / wake bridge"},
+    ]
+
+    def compact_message(msg: Message | None, role: str = "") -> dict[str, Any] | None:
+        if msg is None:
+            return None
+        return {
+            "role": role,
+            "title": msg.title,
+            "thread_id": msg.thread_id or msg.stable_thread,
+            "path": str(msg.path),
+            "direction": msg.direction,
+            "modified": datetime.fromtimestamp(msg.modified).isoformat(timespec="seconds"),
+            "age_minutes": max(0, round((now - msg.modified) / 60)),
+            "status": msg.status,
+            "thread_status": msg.thread_status,
+            "priority": msg.priority,
+            "type": msg.message_type,
+        }
+
+    rows: list[dict[str, Any]] = []
+    work_items = [
+        item for item in work_board.get("items", []) if str(item.get("state", "")).lower() in active_work_states
+    ]
+    for agent in agent_rows:
+        agent_id = agent["id"]
+        if agent_id == "darrin":
+            inbound = [msg for msg in messages if msg.is_waiting_on_darrin]
+            outbound: list[Message] = []
+            waiting_messages = inbound
+            agent_work = decisions[:4]
+        else:
+            inbound = [msg for msg in messages if msg.to_agent == agent_id]
+            outbound = [msg for msg in messages if msg.from_agent == agent_id]
+            waiting_messages = [
+                msg
+                for msg in inbound
+                if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
+                or msg.thread_status.lower() in {"waiting_on_agent", "waiting_on_darrin"}
+                or msg.status.lower() in {"open", "blocked"}
+                or msg.message_type.lower() in {"response_request", "dispatch", "decision_request"}
+            ]
+            agent_work = [item for item in work_items if str(item.get("owner", "")) == agent_id]
+
+        latest_inbound = inbound[0] if inbound else None
+        latest_outbound = outbound[0] if outbound else None
+        latest_activity = max([msg.modified for msg in inbound + outbound], default=0)
+        latest_age = max(0, round((now - latest_activity) / 60)) if latest_activity else None
+
+        current_work: dict[str, Any] | None = None
+        if agent_work:
+            item = agent_work[0]
+            current_work = {
+                "role": "work_item",
+                "title": str(item.get("title", "Work item")),
+                "thread_id": str(item.get("item_id", "")),
+                "path": str(item.get("dispatch", {}).get("path", "")),
+                "direction": "PAH Work Board",
+                "modified": str(item.get("updated_at", "")),
+                "age_minutes": latest_age,
+                "status": str(item.get("state", "")),
+                "thread_status": str(item.get("state", "")),
+                "priority": str(item.get("priority", "")),
+                "type": "work_item",
+                "summary": str(item.get("summary", "")),
+            }
+        elif waiting_messages:
+            current_work = compact_message(waiting_messages[0], "waiting_for_agent")
+        elif latest_outbound and (not latest_inbound or latest_outbound.modified >= latest_inbound.modified):
+            current_work = compact_message(latest_outbound, "latest_output")
+        else:
+            current_work = compact_message(latest_inbound, "latest_input")
+
+        unread = sum(
+            1
+            for msg in inbound
+            if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
+        )
+        urgent_waiting = [
+            msg
+            for msg in waiting_messages
+            if msg.priority.lower() in {"high", "urgent"} or msg.thread_status.lower() == "waiting_on_agent"
+        ]
+
+        if agent_id == "darrin" and decisions:
+            state = "needs_attention"
+        elif urgent_waiting:
+            state = "needs_wake" if agent_id == "claude-code" else "waiting"
+        elif waiting_messages:
+            state = "waiting"
+        elif latest_age is None:
+            state = "unknown"
+        elif latest_age <= 10:
+            state = "active"
+        elif latest_age <= 45:
+            state = "recent"
+        else:
+            state = "idle"
+
+        rows.append(
+            {
+                **agent,
+                "state": state,
+                "state_label": state.replace("_", " "),
+                "inbound": len(inbound),
+                "outbound": len(outbound),
+                "unread": unread,
+                "waiting": len(waiting_messages),
+                "latest_age_minutes": latest_age,
+                "latest_inbound": compact_message(latest_inbound, "latest_input"),
+                "latest_outbound": compact_message(latest_outbound, "latest_output"),
+                "current_work": current_work,
+                "status_source": "mailbox_derived",
+                "status_note": "Derived from mailbox/work-board activity; it is not direct process presence.",
+            }
+        )
+    return rows
+
+
+def load_watcher_state() -> dict[str, Any]:
+    return read_json(WATCHER_STATE_PATH, {"acknowledged": {}, "snoozed": {}, "copied": {}})
+
+
+def write_watcher_state(state_data: dict[str, Any]) -> None:
+    write_json(WATCHER_STATE_PATH, state_data)
+
+
+def append_watcher_event(event: dict[str, Any]) -> None:
+    WATCHER_EVENT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"time": datetime.now().isoformat(timespec="seconds"), **event}
+    atomic_append_text(WATCHER_EVENT_LOG_PATH, json.dumps(payload, sort_keys=True) + "\n")
+
+
+def recent_watcher_events(limit: int = 50) -> list[dict[str, Any]]:
+    if not WATCHER_EVENT_LOG_PATH.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    for line in read_text(WATCHER_EVENT_LOG_PATH).splitlines()[-limit:]:
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            events.append(payload)
+    return list(reversed(events))
+
+
+def watcher_default_path(agent_id: str) -> str:
+    if agent_id == "claude-code":
+        return str(CLAUDE_CODE_INBOX)
+    if agent_id == "claude-desktop":
+        return str(CLAUDE_INBOX)
+    if agent_id == "codex":
+        return str(CODEX_INBOX)
+    if agent_id == "darrin":
+        return str(DECISION_QUEUE_PATH)
+    return str(MAILBOX_ROOT)
+
+
+def watcher_fingerprint(agent: dict[str, Any], path_value: str) -> str:
+    work = agent.get("current_work") if isinstance(agent.get("current_work"), dict) else {}
+    parts = [
+        str(agent.get("id", "agent")),
+        str(agent.get("state", "unknown")),
+        str(work.get("thread_id", "")),
+        str(work.get("title", "")),
+        path_value,
+    ]
+    label = safe_slug(str(work.get("title") or agent.get("label") or "alert"))
+    return f"watcher-{label}-{content_hash('|'.join(parts))[:12]}"
+
+
+def watcher_wake_prompt(agent: dict[str, Any], path_value: str) -> str:
+    agent_id = str(agent.get("id", ""))
+    label = str(agent.get("label", "Agent"))
+    work = agent.get("current_work") if isinstance(agent.get("current_work"), dict) else {}
+    title = compact(str(work.get("title", "latest PAH mailbox item")), 120)
+    state = str(agent.get("state_label", agent.get("state", "waiting")))
+    if agent_id == "claude-code":
+        return (
+            f"Read {path_value or CLAUDE_CODE_INBOX} now. PAH shows Claude Code is {state} on: "
+            f"{title}. Reply through the PAH/CC mailbox when done."
+        )
+    if agent_id == "claude-desktop":
+        return (
+            f"Read {path_value or CLAUDE_INBOX} now. PAH shows Claude Desktop is {state} on: "
+            f"{title}. Reply through the PAH mailbox when done."
+        )
+    if agent_id == "codex":
+        return f"Read {path_value or CODEX_INBOX} now. PAH shows Codex has pending mailbox work: {title}."
+    if agent_id == "darrin":
+        return f"Review PAH decisions at {path_value or DECISION_QUEUE_PATH}. PAH shows Darrin attention is needed: {title}."
+    return f"Read {path_value or MAILBOX_ROOT} now. PAH shows {label} is {state} on: {title}."
+
+
+def build_watcher_status(
+    agent_status: list[dict[str, Any]],
+    route_tests: dict[str, Any],
+    state_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    state_data = state_data or load_watcher_state()
+    acknowledged = state_data.get("acknowledged", {}) if isinstance(state_data.get("acknowledged"), dict) else {}
+    snoozed = state_data.get("snoozed", {}) if isinstance(state_data.get("snoozed"), dict) else {}
+    copied = state_data.get("copied", {}) if isinstance(state_data.get("copied"), dict) else {}
+    now_epoch = time.time()
+    actionable_states = {"needs_wake", "needs_attention", "waiting"}
+    alerts: list[dict[str, Any]] = []
+
+    for agent in agent_status:
+        agent_state = str(agent.get("state", "unknown"))
+        if agent_state not in actionable_states:
+            continue
+        work = agent.get("current_work") if isinstance(agent.get("current_work"), dict) else {}
+        path_value = str(work.get("path") or watcher_default_path(str(agent.get("id", ""))))
+        fingerprint = watcher_fingerprint(agent, path_value)
+        snooze_record = snoozed.get(fingerprint, {}) if isinstance(snoozed.get(fingerprint), dict) else {}
+        snoozed_until_epoch = float(snooze_record.get("until_epoch") or 0)
+        acknowledged_record = acknowledged.get(fingerprint, {}) if isinstance(acknowledged.get(fingerprint), dict) else {}
+        copied_record = copied.get(fingerprint, {}) if isinstance(copied.get(fingerprint), dict) else {}
+        severity = "critical" if agent_state == "needs_wake" else "high" if agent_state == "needs_attention" else "normal"
+        alert = {
+            "fingerprint": fingerprint,
+            "agent": agent.get("id", ""),
+            "agent_label": agent.get("label", "Agent"),
+            "state": agent_state,
+            "state_label": agent.get("state_label", agent_state.replace("_", " ")),
+            "severity": severity,
+            "title": (
+                f"{agent.get('label', 'Agent')} needs a wake line"
+                if agent_state == "needs_wake"
+                else f"{agent.get('label', 'Agent')} needs attention"
+                if agent_state == "needs_attention"
+                else f"{agent.get('label', 'Agent')} has waiting mailbox work"
+            ),
+            "reason": compact(
+                f"{agent.get('waiting', 0)} waiting, {agent.get('unread', 0)} unread, "
+                f"latest activity {agent.get('latest_age_minutes', 'unknown')} minutes ago.",
+                180,
+            ),
+            "wake_prompt": watcher_wake_prompt(agent, path_value),
+            "path": path_value,
+            "thread_id": str(work.get("thread_id", "")),
+            "work_title": str(work.get("title", "")),
+            "age_minutes": agent.get("latest_age_minutes"),
+            "acknowledged": bool(acknowledged_record),
+            "acknowledged_at": acknowledged_record.get("time", ""),
+            "copied_at": copied_record.get("time", ""),
+            "snoozed": snoozed_until_epoch > now_epoch,
+            "snoozed_until": snooze_record.get("until", ""),
+            "active": snoozed_until_epoch <= now_epoch,
+            "source": "mailbox_agent_status",
+        }
+        alerts.append(alert)
+
+    route_waits = [
+        test
+        for test in route_tests.get("tests", [])
+        if str(test.get("state", "")).lower() not in {"received_reply", "ok", "passed"}
+    ]
+    alerts.sort(key=lambda row: (not row["active"], row["severity"] != "critical", row["agent_label"]))
+    active_alerts = [alert for alert in alerts if alert["active"]]
+    return {
+        "mode": "human_in_loop",
+        "direct_wake_supported": False,
+        "policy": "PAH can detect, notify, prepare wake prompts, and log actions. Darrin remains the wake bridge for CC/Claude UI focus.",
+        "state_path": str(WATCHER_STATE_PATH),
+        "event_log_path": str(WATCHER_EVENT_LOG_PATH),
+        "alerts": alerts,
+        "counts": {
+            "alerts": len(alerts),
+            "active_alerts": len(active_alerts),
+            "snoozed_alerts": sum(1 for alert in alerts if alert["snoozed"]),
+            "acknowledged_alerts": sum(1 for alert in alerts if alert["acknowledged"]),
+            "needs_wake": sum(1 for alert in active_alerts if alert["state"] == "needs_wake"),
+            "needs_attention": sum(1 for alert in active_alerts if alert["state"] == "needs_attention"),
+            "waiting": sum(1 for alert in active_alerts if alert["state"] == "waiting"),
+            "route_tests_waiting": len(route_waits),
+        },
+    }
+
+
+def record_watcher_action(payload: dict[str, Any]) -> dict[str, Any]:
+    fingerprint = str(payload.get("fingerprint", "")).strip()
+    action = str(payload.get("action", "")).strip().lower()
+    if not fingerprint:
+        raise ValueError("Watcher fingerprint is required.")
+    if action not in {"ack", "snooze", "copy"}:
+        raise ValueError("Watcher action must be ack, snooze, or copy.")
+    actor = str(payload.get("actor", "darrin_or_codex"))
+    now_iso = datetime.now().isoformat(timespec="seconds")
+    record: dict[str, Any] = {"time": now_iso, "actor": actor, "action": action}
+    with WATCHER_LOCK:
+        state_data = load_watcher_state()
+        state_data.setdefault("acknowledged", {})
+        state_data.setdefault("snoozed", {})
+        state_data.setdefault("copied", {})
+        if action == "ack":
+            state_data["acknowledged"][fingerprint] = record
+        elif action == "copy":
+            state_data["copied"][fingerprint] = record
+        elif action == "snooze":
+            minutes = max(1, min(480, int(payload.get("minutes") or WATCHER_SNOOZE_DEFAULT_MINUTES)))
+            until_epoch = time.time() + minutes * 60
+            record = {
+                **record,
+                "minutes": minutes,
+                "until_epoch": until_epoch,
+                "until": datetime.fromtimestamp(until_epoch).isoformat(timespec="seconds"),
+            }
+            state_data["snoozed"][fingerprint] = record
+        write_watcher_state(state_data)
+        append_watcher_event({"fingerprint": fingerprint, "record": record})
+    return record
 
 
 HTML_PAGE = r"""<!doctype html>
@@ -1613,6 +1976,8 @@ load(); setInterval(load, 8000);
 
 
 def html_page() -> str:
+    if UI_PATH.exists():
+        return read_text(UI_PATH).replace("__WRITE_TOKEN__", WRITE_TOKEN)
     return HTML_PAGE.replace("__WRITE_TOKEN__", WRITE_TOKEN)
 
 
@@ -1643,6 +2008,25 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/status":
             self.send_json(state())
+            return
+        if parsed.path == "/api/watcher/status":
+            self.send_json({"ok": True, **state()["watcher"]})
+            return
+        if parsed.path == "/api/watcher/events":
+            query = parse_qs(parsed.query)
+            limit = int(query.get("limit", ["50"])[0] or "50")
+            self.send_json({"ok": True, "events": recent_watcher_events(max(1, min(200, limit)))})
+            return
+        if parsed.path == "/api/message":
+            query = parse_qs(parsed.query)
+            target = Path(query.get("path", [""])[0])
+            allowed_roots = (PROJECT_ROOT, PANDA_GALLERY_ROOT)
+            if target.exists() and target.is_file() and any(
+                str(target).lower().startswith(str(root).lower()) for root in allowed_roots
+            ):
+                self.send_json({"ok": True, "path": str(target), "content": read_text(target)})
+            else:
+                self.send_json({"ok": False, "error": "Path not found or outside project"}, 404)
             return
         if parsed.path == "/api/open":
             query = parse_qs(parsed.query)
@@ -1677,6 +2061,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/thread-archive-state",
             "/api/work-item",
             "/api/dispatch-work-item",
+            "/api/watcher-alert",
         }:
             self.send_json({"ok": False, "error": "Not found"}, 404)
             return
@@ -1685,6 +2070,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         length = int(self.headers.get("Content-Length", "0"))
         payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
+        if parsed_path == "/api/watcher-alert":
+            try:
+                record = record_watcher_action(payload)
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, "record": record})
+            return
         if parsed_path == "/api/test-notification":
             try:
                 self.send_json({"ok": True, **run_notification_scan(manual_test=True)})

@@ -20,4 +20,5 @@ CODEX Agent Hub/CODEX approvals/*.local.jsonl
 CODEX Agent Hub/CODEX diagnostics/*.md
 CODEX Agent Hub/CODEX notifications/*.jsonl
 CODEX Agent Hub/CODEX notifications/*.local.json
+CODEX Agent Hub/CODEX logs/
 CODEX Agent Hub/CODEX state/
