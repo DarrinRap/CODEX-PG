@@ -444,6 +444,7 @@ Tray behavior:
 - polls `/api/tray-status` for compact health and attention state
 - updates tray tooltip and menu rows with unread, overdue, decision, and diagnostic counts
 - keeps routine tray balloons off by default
+- can dismiss the current alert state and drain old notification-log entries
 - can enable overdue-unread popups from the tray menu, with a 60-minute cooldown
 - can snooze overdue-unread popups for 2 hours
 - can enable or disable notification-log popups separately
@@ -608,6 +609,7 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Compact `/api/tray-status` endpoint
 - [x] Windows tray companion
 - [x] Tray overdue-unread balloon controls
+- [x] Tray current-alert dismiss action
 - [x] Tray notification-log popup controls
 - [x] Tray popup snooze and cooldown behavior
 - [x] Tray live status menu counts

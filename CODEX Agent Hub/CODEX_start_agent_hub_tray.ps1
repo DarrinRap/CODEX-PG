@@ -157,6 +157,30 @@ function Update-NotificationMenuText {
     $NotificationToggleItem.Text = 'Notification-log popups: Off'
 }
 
+function Set-NotificationPositionToEnd {
+    if (Test-Path -LiteralPath $NotificationLog) {
+        $script:NotificationPosition = (Get-Item -LiteralPath $NotificationLog).Length
+        return
+    }
+    $script:NotificationPosition = 0
+}
+
+function Dismiss-CurrentAlerts {
+    $status = Invoke-PahJson '/api/tray-status'
+    if ($null -ne $status) {
+        $stale = [int]$status.counts.stale_unread
+        $script:LastAlertKey = "$($status.level)|$stale"
+        $script:LastStaleUnread = $stale
+    }
+    $script:LastAlertAt = Get-Date
+    $script:AlertsEnabled = $false
+    $script:SnoozeUntil = [datetime]::MaxValue
+    $script:NotificationLogPopupsEnabled = $false
+    Set-NotificationPositionToEnd
+    Update-AlertMenuText
+    Update-NotificationMenuText
+}
+
 function Set-TrayMenuStatus {
     param($Status)
     if ($null -eq $Status) {
@@ -232,6 +256,9 @@ $OpenItem.Add_Click({ Start-Process $script:Url })
 
 $RefreshItem = $Menu.Items.Add('Refresh Status')
 $RefreshItem.Add_Click({ Update-TrayStatus })
+
+$DismissItem = $Menu.Items.Add('Dismiss current alerts')
+$DismissItem.Add_Click({ Dismiss-CurrentAlerts })
 
 $AlertsToggleItem = $Menu.Items.Add('Overdue popups: Off')
 $AlertsToggleItem.Add_Click({
@@ -311,9 +338,7 @@ $NotifyIcon.ContextMenuStrip = $Menu
 $NotifyIcon.Add_DoubleClick({ Start-Process $script:Url })
 $NotifyIcon.Text = 'PANDA Agent Hub'
 
-if (Test-Path -LiteralPath $NotificationLog) {
-    $script:NotificationPosition = (Get-Item -LiteralPath $NotificationLog).Length
-}
+Set-NotificationPositionToEnd
 
 $StatusTimer = New-Object System.Windows.Forms.Timer
 $StatusTimer.Interval = [Math]::Max(5, $PollSeconds) * 1000

@@ -26,6 +26,7 @@ Tray menu actions:
 
 - Open Dashboard
 - Refresh Status
+- Dismiss current alerts
 - Overdue popups: Off/On, with a 60-minute cooldown when enabled
 - Snooze overdue popups for 2 hours
 - Notification-log popups: Off/On
@@ -71,7 +72,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Git status panel for `C:\CODEX PG`.
 - Local notification subsystem for SMS-style alerts when Darrin attention is needed.
 - Windows tray companion with Open Dashboard, Refresh Status, live status counts, Open PAH Folder, Open Logs, startup shortcut install/remove, and Exit actions.
-- Optional tray balloon popups for overdue unread PAH messages and new PAH notification log entries while the tray launcher is running. Both are off by default; overdue popups use a cooldown so the same backlog does not nag repeatedly.
+- Optional tray balloon popups for overdue unread PAH messages and new PAH notification log entries while the tray launcher is running. Both are off by default; overdue popups use a cooldown so the same backlog does not nag repeatedly. `Dismiss current alerts` turns both popup classes off, records the current overdue state as seen, and drains the notification-log cursor so old entries cannot replay.
 - Communication diagnostics tab and endpoint for file-bridge readiness across Codex, Claude Desktop, and Claude Code.
 - Route-test pings for Codex to Claude and Codex to Claude Code. PAH writes a traceable diagnostic ping and watches `CODEX Inbox` for a matching reply.
 - Work Board for local parallel development coordination, with owner, priority, state, summary, and source fields.
