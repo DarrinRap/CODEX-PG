@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PANDA Agent Hub User Manual</title>
+  <style>
+    :root {
+      --bg: #121416;
+      --paper: #f6f1ec;
+      --ink: #202124;
+      --muted: #68625d;
+      --line: #d8ccc1;
+      --panel: #fffaf5;
+      --panel-2: #eee4dc;
+      --accent: #d9895b;
+      --accent-dark: #7d4228;
+      --green: #49795c;
+      --red: #9a4b43;
+      --blue: #466f8e;
+      --shadow: 0 18px 48px rgba(30, 24, 18, 0.14);
+      --mono: Consolas, "SFMono-Regular", "Courier New", monospace;
+      --sans: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(180deg, #efe6dd 0%, #fbf7f1 22%, #efe4da 100%);
+      font: 15px/1.55 var(--sans);
+    }
+    a { color: var(--accent-dark); }
+    .shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      padding: 28px 22px;
+      color: #f5eee7;
+      background: #181b1e;
+      border-right: 1px solid #34383c;
+      overflow: auto;
+    }
+    nav h1 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    nav p {
+      margin: 0 0 20px;
+      color: #b9afa6;
+      font-size: 13px;
+    }
+    nav a {
+      display: block;
+      padding: 8px 0;
+      color: #eaded3;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 14px;
+    }
+    nav a:hover { color: #ffffff; }
+    main {
+      padding: 34px clamp(24px, 4vw, 58px) 70px;
+      max-width: 1180px;
+    }
+    .hero {
+      padding: 34px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h2, h3, h4 { letter-spacing: 0; }
+    h2 {
+      margin: 38px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+      font-size: 26px;
+    }
+    h3 { margin: 24px 0 10px; font-size: 19px; }
+    h4 { margin: 18px 0 8px; font-size: 16px; }
+    .hero h2 {
+      margin: 0 0 12px;
+      padding: 0;
+      border: 0;
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.05;
+    }
+    .lead {
+      max-width: 780px;
+      color: #4d4742;
+      font-size: 18px;
+    }
+    .note {
+      padding: 14px 16px;
+      background: #fff6e8;
+      border: 1px solid #ead3b8;
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+    }
+    .danger {
+      background: #fff1ef;
+      border-color: #e4b8b0;
+      border-left-color: var(--red);
+    }
+    .success {
+      background: #f0f7f1;
+      border-color: #bcd5c4;
+      border-left-color: var(--green);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .grid3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .card {
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(44, 35, 27, 0.08);
+    }
+    .card h3, .card h4 { margin-top: 0; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 9px;
+      color: #3b2920;
+      background: #f2d6c0;
+      border: 1px solid #e0b794;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    code, pre {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    code {
+      padding: 1px 5px;
+      background: #efe4da;
+      border-radius: 4px;
+    }
+    pre {
+      overflow: auto;
+      padding: 14px;
+      color: #f6efe8;
+      background: #171a1d;
+      border: 1px solid #30353a;
+      border-radius: 7px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+    }
+    th {
+      color: #3d342d;
+      background: #eaded2;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    ul, ol { padding-left: 22px; }
+    li { margin: 5px 0; }
+    .mock {
+      overflow: hidden;
+      margin: 18px 0;
+      border: 1px solid #2d3338;
+      border-radius: 8px;
+      background: #151719;
+      box-shadow: var(--shadow);
+    }
+    .mock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      color: #f4ede6;
+      background: #101214;
+      border-bottom: 1px solid #343a40;
+      font-size: 13px;
+    }
+    .mock-body {
+      display: grid;
+      grid-template-columns: 190px 1fr 230px;
+      min-height: 260px;
+      color: #e8eaec;
+    }
+    .mock-left, .mock-right {
+      padding: 12px;
+      background: #171a1d;
+    }
+    .mock-left { border-right: 1px solid #343a40; }
+    .mock-right { border-left: 1px solid #343a40; }
+    .mock-center { padding: 12px; background: #151719; }
+    .mock-card {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #1d2023;
+      border: 1px solid #343a40;
+      border-radius: 7px;
+    }
+    .mock-card strong { display: block; color: #fff5ec; }
+    .mock-muted { color: #9ca4aa; font-size: 12px; }
+    .mock-pill {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 7px;
+      color: #20140f;
+      background: #e8a87c;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .button {
+      display: inline-block;
+      padding: 7px 10px;
+      color: #20140f;
+      background: #e8a87c;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .button.secondary {
+      color: #e8eaec;
+      background: transparent;
+      border: 1px solid #343a40;
+    }
+    .diagram {
+      width: 100%;
+      min-height: 220px;
+      margin: 14px 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .caption {
+      margin-top: -6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .task {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+      margin: 12px 0;
+      padding: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+    .num {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      color: #fffaf5;
+      background: var(--accent-dark);
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .small { color: var(--muted); font-size: 13px; }
+    .kbd {
+      padding: 1px 6px;
+      background: #fffaf5;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    footer {
+      margin-top: 44px;
+      padding-top: 18px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      nav { position: relative; height: auto; }
+      .grid, .grid3 { grid-template-columns: 1fr; }
+      .mock-body { grid-template-columns: 1fr; }
+      .mock-left, .mock-right { border: 0; border-bottom: 1px solid #343a40; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav>
+      <h1>PAH Manual</h1>
+      <p>PANDA Agent Hub user guide</p>
+      <a href="#start">Quick Start</a>
+      <a href="#model">Mental Model</a>
+      <a href="#dashboard">Dashboard Tour</a>
+      <a href="#daily">Daily Workflow</a>
+      <a href="#messages">Messages</a>
+      <a href="#decisions">Darrin Queue</a>
+      <a href="#validation">Validation</a>
+      <a href="#work">Work Board</a>
+      <a href="#diagnostics">Diagnostics</a>
+      <a href="#notifications">Notifications</a>
+      <a href="#safety">Safety</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+      <a href="#glossary">Glossary</a>
+    </nav>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">PANDA Agent Hub</p>
+        <h2>User Manual</h2>
+        <p class="lead">
+          PAH is the local cockpit for coordinating Codex, Claude Desktop, Claude Code, and Darrin through shared mailbox files under <code>C:\CODEX PG</code>.
+          This guide explains what it does, how to use each feature, and where the safety boundaries are.
+        </p>
+        <p class="note">
+          PAH is local-first and file-based. It does not call OpenAI, Anthropic, Claude Code headless, SMS providers, paid APIs, or Panda Gallery runtime code by itself.
+        </p>
+      </section>
+
+      <section id="start">
+        <h2>Quick Start</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Start PAH</h3>
+            <p>From PowerShell, run the regular launcher:</p>
+            <pre>&amp; "C:\CODEX PG\CODEX Agent Hub\CODEX_start_agent_hub.ps1"</pre>
+            <p>Or use the tray launcher when you want dashboard and log shortcuts:</p>
+            <pre>&amp; "C:\CODEX PG\CODEX Agent Hub\CODEX_start_agent_hub_tray.ps1"</pre>
+          </div>
+          <div class="card">
+            <h3>Open Dashboard</h3>
+            <p>Default browser URL:</p>
+            <pre>http://127.0.0.1:8765</pre>
+            <p>If port <code>8765</code> is busy, PAH chooses another local port and prints it in the terminal.</p>
+          </div>
+        </div>
+
+        <div class="task">
+          <div class="num">1</div>
+          <div><strong>Launch PAH.</strong> Use the script above or the tray launcher.</div>
+        </div>
+        <div class="task">
+          <div class="num">2</div>
+          <div><strong>Read the left metrics.</strong> Check messages, unread messages, decisions, validation issues, and adapter status.</div>
+        </div>
+        <div class="task">
+          <div class="num">3</div>
+          <div><strong>Use the center tabs.</strong> Latest, Threads, Darrin Queue, Validator, Diagnostics, Work, and Safety are your main operating views.</div>
+        </div>
+        <div class="task">
+          <div class="num">4</div>
+          <div><strong>Compose from the right panel.</strong> Send file-bridge messages to Claude Desktop or Claude Code without launching live adapters.</div>
+        </div>
+      </section>
+
+      <section id="model">
+        <h2>Mental Model</h2>
+        <p>Think of PAH as a control room over a set of folders. Agents communicate by writing Markdown files into inboxes. PAH reads those files, validates them, groups them into threads, and exposes safe actions in one dashboard.</p>
+
+        <svg class="diagram" viewBox="0 0 920 260" role="img" aria-label="PAH file bridge diagram">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#7d4228"></path>
+            </marker>
+          </defs>
+          <rect x="20" y="35" width="160" height="72" rx="8" fill="#fffaf5" stroke="#d8ccc1"></rect>
+          <text x="100" y="65" text-anchor="middle" font-size="15" font-weight="700">Codex</text>
+          <text x="100" y="88" text-anchor="middle" font-size="12" fill="#68625d">writes messages</text>
+
+          <rect x="20" y="150" width="160" height="72" rx="8" fill="#fffaf5" stroke="#d8ccc1"></rect>
+          <text x="100" y="180" text-anchor="middle" font-size="15" font-weight="700">Claude / CC</text>
+          <text x="100" y="203" text-anchor="middle" font-size="12" fill="#68625d">reads and replies</text>
+
+          <rect x="300" y="70" width="240" height="120" rx="8" fill="#f2d6c0" stroke="#d9895b"></rect>
+          <text x="420" y="105" text-anchor="middle" font-size="17" font-weight="700">Shared Mailbox</text>
+          <text x="420" y="132" text-anchor="middle" font-size="12" fill="#5d4030">CODEX Inbox / CLAUDE Inbox</text>
+          <text x="420" y="152" text-anchor="middle" font-size="12" fill="#5d4030">Sent folders / Ledger / Quarantine</text>
+
+          <rect x="690" y="70" width="190" height="120" rx="8" fill="#fffaf5" stroke="#d8ccc1"></rect>
+          <text x="785" y="104" text-anchor="middle" font-size="17" font-weight="700">PAH Dashboard</text>
+          <text x="785" y="132" text-anchor="middle" font-size="12" fill="#68625d">reads, validates, displays</text>
+          <text x="785" y="152" text-anchor="middle" font-size="12" fill="#68625d">writes only safe mailbox actions</text>
+
+          <line x1="180" y1="72" x2="300" y2="105" stroke="#7d4228" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="180" y1="186" x2="300" y2="155" stroke="#7d4228" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="540" y1="130" x2="690" y2="130" stroke="#7d4228" stroke-width="2" marker-end="url(#arrow)"></line>
+        </svg>
+        <p class="caption">Graphic snippet: PAH sits over mailbox files. It is a cockpit, not a live agent executor.</p>
+
+        <div class="grid3">
+          <div class="card">
+            <h3>File Bridge</h3>
+            <p>Messages are Markdown files. PAH reads and writes files in the shared mailbox.</p>
+          </div>
+          <div class="card">
+            <h3>Safety Gate</h3>
+            <p>PAH validates identity, source folders, approval records, and protected action boundaries.</p>
+          </div>
+          <div class="card">
+            <h3>Dashboard</h3>
+            <p>The browser UI helps you scan state, send coordination messages, and spot problems quickly.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="dashboard">
+        <h2>Dashboard Tour</h2>
+        <p>The PAH dashboard has three zones: left status rail, center work area, and right action rail.</p>
+
+        <div class="mock" aria-label="PAH dashboard layout mockup">
+          <div class="mock-header">
+            <strong>PANDA Agent Hub</strong>
+            <span><span class="button secondary">Refresh</span> <span class="button">Compose</span></span>
+          </div>
+          <div class="mock-body">
+            <div class="mock-left">
+              <div class="mock-card"><strong>Dashboard</strong><span class="mock-muted">messages, threads, decisions</span></div>
+              <div class="mock-card"><strong>Notifications</strong><span class="mock-muted">provider and last send</span></div>
+              <div class="mock-card"><strong>Git</strong><span class="mock-muted">branch and status</span></div>
+            </div>
+            <div class="mock-center">
+              <div class="button-row">
+                <span class="button">Latest</span>
+                <span class="button secondary">Threads</span>
+                <span class="button secondary">Darrin Queue</span>
+                <span class="button secondary">Validator</span>
+                <span class="button secondary">Safety</span>
+              </div>
+              <div class="mock-card"><strong>Latest message</strong><span class="mock-muted">badges, summary, path, quarantine controls when applicable</span><br><span class="mock-pill">UNREAD</span></div>
+              <div class="mock-card"><strong>Thread row</strong><span class="mock-muted">grouped by Thread-ID, Reply-To, or Message-ID</span></div>
+            </div>
+            <div class="mock-right">
+              <div class="mock-card"><strong>Compose</strong><span class="mock-muted">route, subject, thread, reply-to, body</span></div>
+              <div class="mock-card"><strong>Communication Test</strong><span class="mock-muted">diagnostics and route pings</span></div>
+              <div class="mock-card"><strong>Work Item</strong><span class="mock-muted">create and dispatch local work</span></div>
+            </div>
+          </div>
+        </div>
+
+        <table>
+          <thead><tr><th>Area</th><th>What it shows</th><th>How to use it</th></tr></thead>
+          <tbody>
+            <tr><td>Left rail</td><td>Metrics, notifications, Git status, paths.</td><td>Start here. If counts look odd, open the related center tab.</td></tr>
+            <tr><td>Center tabs</td><td>Main operational views.</td><td>Use these to read messages, inspect threads, validate, run diagnostics, and review safety state.</td></tr>
+            <tr><td>Right rail</td><td>Compose, notification test, route tests, work item creation.</td><td>Use it when you want PAH to create a mailbox message or local coordination item.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="daily">
+        <h2>Daily Workflow</h2>
+        <h3>Morning or Session Start</h3>
+        <ol>
+          <li>Launch PAH.</li>
+          <li>Open the dashboard URL.</li>
+          <li>Check <strong>unread messages</strong>, <strong>Darrin Queue</strong>, and <strong>actionable validation issues</strong>.</li>
+          <li>Run <strong>Diagnostics</strong> if you are unsure the file bridge is healthy.</li>
+          <li>Use <strong>Latest</strong> or <strong>Threads</strong> to decide what needs attention first.</li>
+        </ol>
+
+        <h3>When You Need Claude or Claude Code</h3>
+        <ol>
+          <li>Use <strong>Compose</strong> on the right side.</li>
+          <li>Choose <code>Codex to Claude</code> or <code>Codex to Claude Code</code>.</li>
+          <li>Set a short subject, optional thread ID, optional reply-to reference, and the message body.</li>
+          <li>Send the message. PAH writes a Markdown file into the target inbox.</li>
+          <li>Refresh later and look for a reply in <strong>Latest</strong> or the relevant thread.</li>
+        </ol>
+
+        <h3>When Something Looks Wrong</h3>
+        <ol>
+          <li>Open the <strong>Validator</strong> tab.</li>
+          <li>Look at actionable issues first.</li>
+          <li>Use quarantine only for mailbox messages that are malformed, spoofed, unsafe, or flooded.</li>
+          <li>Open <strong>Safety</strong> if the issue involves approvals, adapters, quarantine, or protected action boundaries.</li>
+        </ol>
+      </section>
+
+      <section id="messages">
+        <h2>Messages and Threads</h2>
+        <p>PAH reads the active mailbox folders and shows messages in a normalized shape. New PAH-composed messages use schema v1 frontmatter. Older legacy messages are still read where possible.</p>
+
+        <div class="grid">
+          <div class="card">
+            <h3>Latest</h3>
+            <p>Best for scanning the newest traffic. Each row can show badges such as unread, decision, important, or validation-related status.</p>
+          </div>
+          <div class="card">
+            <h3>Threads</h3>
+            <p>Best for following a conversation. PAH groups by <code>Thread-ID</code> first, then falls back to reply and message IDs.</p>
+          </div>
+        </div>
+
+        <h3>Status Badges</h3>
+        <table>
+          <thead><tr><th>Badge</th><th>Meaning</th><th>What to do</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill">unread</span></td><td>The message has not been marked read, or its content changed since it was read.</td><td>Open it and decide if it matters.</td></tr>
+            <tr><td><span class="pill">decision</span></td><td>The message may need Darrin attention.</td><td>Check the Darrin Queue.</td></tr>
+            <tr><td><span class="pill">validation</span></td><td>PAH found a schema, provenance, spoofing, or safety issue.</td><td>Open Validator.</td></tr>
+            <tr><td><span class="pill">archived</span></td><td>The thread was locally hidden from active thread view.</td><td>It will reappear if newer activity arrives.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Message Lifecycle</h3>
+        <svg class="diagram" viewBox="0 0 920 230" role="img" aria-label="Message lifecycle">
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#7d4228"></path>
+            </marker>
+          </defs>
+          <g fill="#fffaf5" stroke="#d8ccc1">
+            <rect x="35" y="70" width="150" height="70" rx="8"></rect>
+            <rect x="235" y="70" width="150" height="70" rx="8"></rect>
+            <rect x="435" y="70" width="150" height="70" rx="8"></rect>
+            <rect x="635" y="70" width="150" height="70" rx="8"></rect>
+          </g>
+          <text x="110" y="100" text-anchor="middle" font-size="14" font-weight="700">Markdown file</text>
+          <text x="110" y="120" text-anchor="middle" font-size="12" fill="#68625d">lands in inbox</text>
+          <text x="310" y="100" text-anchor="middle" font-size="14" font-weight="700">Parse</text>
+          <text x="310" y="120" text-anchor="middle" font-size="12" fill="#68625d">metadata and body</text>
+          <text x="510" y="100" text-anchor="middle" font-size="14" font-weight="700">Validate</text>
+          <text x="510" y="120" text-anchor="middle" font-size="12" fill="#68625d">schema and safety</text>
+          <text x="710" y="100" text-anchor="middle" font-size="14" font-weight="700">Display</text>
+          <text x="710" y="120" text-anchor="middle" font-size="12" fill="#68625d">latest and threads</text>
+          <line x1="185" y1="105" x2="235" y2="105" stroke="#7d4228" stroke-width="2" marker-end="url(#arrow2)"></line>
+          <line x1="385" y1="105" x2="435" y2="105" stroke="#7d4228" stroke-width="2" marker-end="url(#arrow2)"></line>
+          <line x1="585" y1="105" x2="635" y2="105" stroke="#7d4228" stroke-width="2" marker-end="url(#arrow2)"></line>
+        </svg>
+      </section>
+
+      <section id="decisions">
+        <h2>Darrin Queue</h2>
+        <p>The Darrin Queue is PAH's high-signal attention list. It is generated from message metadata and saved at:</p>
+        <pre>C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_DARRIN_DECISIONS_NEEDED.md</pre>
+
+        <h3>What Adds an Item</h3>
+        <ul>
+          <li><code>requires_darrin_decision: true</code></li>
+          <li><code>thread_status: waiting_on_darrin</code></li>
+          <li><code>action_owner: darrin</code></li>
+          <li><code>priority: urgent</code></li>
+          <li>Any <code>approval_boundary</code> containing <code>_requires_darrin</code></li>
+        </ul>
+
+        <h3>How to Use It</h3>
+        <ol>
+          <li>Open <strong>Darrin Queue</strong>.</li>
+          <li>Read active items first.</li>
+          <li>Resolve, supersede, or dismiss stale local queue items when appropriate.</li>
+          <li>Remember: changing queue state does not edit the original mailbox message.</li>
+        </ol>
+      </section>
+
+      <section id="validation">
+        <h2>Validator and Quarantine</h2>
+        <p>The Validator tab separates actionable problems from old or accepted legacy noise. It helps you catch mailbox poisoning, source spoofing, duplicate IDs, schema drift, and unsafe boundaries.</p>
+
+        <div class="grid">
+          <div class="card">
+            <h3>Actionable Validation</h3>
+            <p>Items that can affect current coordination. Look here first.</p>
+          </div>
+          <div class="card">
+            <h3>Inactive Validation</h3>
+            <p>Accepted legacy, resolved, or dismissed findings. These remain visible for context.</p>
+          </div>
+        </div>
+
+        <h3>Quarantine Rules</h3>
+        <p>PAH never auto-quarantines during refresh. Quarantine is explicit and requires confirmation. Use it for files that should not remain active in the mailbox.</p>
+        <table>
+          <thead><tr><th>Reason code</th><th>Use when</th></tr></thead>
+          <tbody>
+            <tr><td><code>schema_invalid</code></td><td>Message frontmatter or schema is invalid.</td></tr>
+            <tr><td><code>missing_required_field</code></td><td>A schema v1 message lacks required metadata.</td></tr>
+            <tr><td><code>malformed_yaml_frontmatter</code></td><td>Frontmatter cannot be parsed reliably.</td></tr>
+            <tr><td><code>parse_error</code></td><td>PAH cannot safely parse the message.</td></tr>
+            <tr><td><code>duplicate_id_hash_mismatch</code></td><td>Same ID appears with different content.</td></tr>
+            <tr><td><code>unknown_participant</code></td><td>Message claims an unknown sender or recipient.</td></tr>
+            <tr><td><code>unsafe_boundary</code></td><td>Message crosses a protected boundary incorrectly.</td></tr>
+            <tr><td><code>spoofing_attempt</code></td><td>Sender or recipient does not match the source folder lane.</td></tr>
+            <tr><td><code>flood_threshold_exceeded</code></td><td>A thread floods the mailbox beyond the safe threshold.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="work">
+        <h2>Work Board</h2>
+        <p>The Work Board is local coordination state for tasks assigned to Codex, Claude Desktop, or Claude Code. It does not launch agents by itself.</p>
+
+        <h3>Create a Work Item</h3>
+        <ol>
+          <li>Use the <strong>Work Item</strong> card on the right rail.</li>
+          <li>Choose owner, priority, title, and summary.</li>
+          <li>Click <strong>Create Work Item</strong>.</li>
+        </ol>
+
+        <h3>Dispatch a Work Item</h3>
+        <ol>
+          <li>Open the <strong>Work</strong> tab.</li>
+          <li>Dispatch the item to Claude Desktop or Claude Code.</li>
+          <li>PAH writes a schema v1 mailbox message and marks the item <code>in_progress</code>.</li>
+          <li>When a reply references the work item ID or dispatch message ID, PAH moves it to <code>review</code>.</li>
+        </ol>
+
+        <p class="small">State file: <code>C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_work_items.local.json</code></p>
+      </section>
+
+      <section id="diagnostics">
+        <h2>Diagnostics and Route Tests</h2>
+        <p>Diagnostics are file-bridge only. They verify readiness without launching live adapters or calling paid services.</p>
+
+        <h3>Run Diagnostics</h3>
+        <ol>
+          <li>Open the <strong>Diagnostics</strong> tab or use the <strong>Communication Test</strong> card.</li>
+          <li>Click <strong>Run Diagnostics</strong>.</li>
+          <li>Confirm participants, routes, inboxes, and disabled adapter state pass.</li>
+        </ol>
+
+        <h3>Create a Route Test Ping</h3>
+        <ol>
+          <li>Select <code>Codex to Claude</code> or <code>Codex to Claude Code</code>.</li>
+          <li>Click <strong>Create Test Ping</strong>.</li>
+          <li>PAH writes a diagnostic message into the target inbox.</li>
+          <li>The test passes when PAH later sees a matching reply in <code>CODEX Inbox</code>.</li>
+        </ol>
+      </section>
+
+      <section id="notifications">
+        <h2>Notifications</h2>
+        <p>PAH can notify your phone or a relay provider when attention events appear, but live sending is off until local config is enabled.</p>
+
+        <h3>Configuration File</h3>
+        <p>Copy the template:</p>
+        <pre>C:\CODEX PG\CODEX Agent Hub\CODEX config\CODEX_notification_config.template.json</pre>
+        <p>To this ignored local file:</p>
+        <pre>C:\CODEX PG\CODEX Agent Hub\CODEX config\CODEX_notification_config.local.json</pre>
+
+        <h3>Providers</h3>
+        <table>
+          <thead><tr><th>Provider</th><th>Use</th></tr></thead>
+          <tbody>
+            <tr><td><code>log_only</code></td><td>Records notification attempts without sending anything.</td></tr>
+            <tr><td><code>twilio</code></td><td>Sends SMS through Twilio after credentials are configured.</td></tr>
+            <tr><td><code>email_to_sms</code></td><td>Sends through SMTP to a carrier gateway.</td></tr>
+            <tr><td><code>webhook</code></td><td>Posts JSON to a notification relay you control.</td></tr>
+          </tbody>
+        </table>
+
+        <p class="danger note">Live SMS/email sending remains a protected action. Do not enable external sending casually.</p>
+      </section>
+
+      <section id="safety">
+        <h2>Safety Boundary</h2>
+        <p>PAH's most important job is to coordinate without accidentally authorizing dangerous work.</p>
+
+        <svg class="diagram" viewBox="0 0 920 280" role="img" aria-label="PAH safety layers">
+          <g fill="#fffaf5" stroke="#d8ccc1">
+            <rect x="70" y="40" width="780" height="45" rx="8"></rect>
+            <rect x="115" y="95" width="690" height="45" rx="8"></rect>
+            <rect x="160" y="150" width="600" height="45" rx="8"></rect>
+            <rect x="205" y="205" width="510" height="45" rx="8"></rect>
+          </g>
+          <text x="460" y="68" text-anchor="middle" font-size="15" font-weight="700">Mailbox messages are coordination only</text>
+          <text x="460" y="123" text-anchor="middle" font-size="15" font-weight="700">Protected actions require Darrin approval records</text>
+          <text x="460" y="178" text-anchor="middle" font-size="15" font-weight="700">Approval records are hash-bound and non-chainable</text>
+          <text x="460" y="233" text-anchor="middle" font-size="15" font-weight="700">Live adapters remain disabled by default</text>
+        </svg>
+        <p class="caption">Graphic snippet: PAH safety is layered. A mailbox message is never enough to authorize protected execution.</p>
+
+        <h3>Protected Actions</h3>
+        <ul>
+          <li>Panda Gallery writes</li>
+          <li>Destructive filesystem actions</li>
+          <li>Git commits and pushes</li>
+          <li>Package installs</li>
+          <li>External API calls</li>
+          <li>SMS or email sends</li>
+          <li>Live headless agent runs</li>
+          <li>Paid provider setup</li>
+          <li>Approval-record mutations</li>
+        </ul>
+
+        <h3>Approval Records</h3>
+        <p>Approval records live at:</p>
+        <pre>C:\CODEX PG\CODEX Agent Hub\CODEX approvals\CODEX_approval_records.local.jsonl</pre>
+        <p>They must be exact-path, hash-bound, non-expired, non-revoked, non-consumed, and traceable to an explicit Darrin <code>decision_record</code> addressed to <code>pah</code>.</p>
+
+        <h3>Headless Adapters</h3>
+        <p>Headless execution remains disabled. PAH has a command contract and MCP config pinning in place for future work, but it does not launch Claude Code headless today.</p>
+      </section>
+
+      <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <table>
+          <thead><tr><th>Problem</th><th>Likely cause</th><th>What to do</th></tr></thead>
+          <tbody>
+            <tr><td>Dashboard will not open at port 8765</td><td>Port is busy or server did not start.</td><td>Check the terminal for the actual URL. PAH picks a free port when needed.</td></tr>
+            <tr><td>Messages are not appearing</td><td>Agent has not written to the shared mailbox, or path access is missing.</td><td>Run Diagnostics. Check the mailbox folder directly.</td></tr>
+            <tr><td>Route test stays pending</td><td>The target agent has not replied with matching thread/test references.</td><td>Ask the agent to read the inbox and reply with the test ID or Reply-To.</td></tr>
+            <tr><td>Validation count is high</td><td>Legacy messages, missing ledger entries, or real schema issues.</td><td>Use Actionable Validation first. Accept old legacy findings only after review.</td></tr>
+            <tr><td>Notification test fails</td><td>Provider is disabled or missing config.</td><td>Use <code>log_only</code> first. Confirm local config exists and secrets are local-only.</td></tr>
+            <tr><td>Safety tab shows invalid approval records</td><td>Record expired, was consumed, has bad hash, or lacks required fields.</td><td>Treat as denied. Create a fresh explicit Darrin decision record if approval is still needed.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="glossary">
+        <h2>Glossary</h2>
+        <table>
+          <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>PAH</td><td>PANDA Agent Hub, the local dashboard and safety cockpit.</td></tr>
+            <tr><td>Mailbox</td><td>The shared folder system under <code>C:\CODEX PG\CODEX Claude Codex Mailbox</code>.</td></tr>
+            <tr><td>File bridge</td><td>Asynchronous coordination by writing and reading Markdown files.</td></tr>
+            <tr><td>Darrin Queue</td><td>Generated list of items that need Darrin attention.</td></tr>
+            <tr><td>Quarantine</td><td>Explicit move of unsafe or invalid mailbox messages into a quarantine folder with tombstone records.</td></tr>
+            <tr><td>Backpressure</td><td>Flood protection for threads with too many messages in a short time or too many visible messages.</td></tr>
+            <tr><td>Approval record</td><td>Local ignored JSONL record authorizing a specific protected action under strict hash and scope checks.</td></tr>
+            <tr><td>Live adapter</td><td>A future integration that could launch an agent or call an API. These are disabled by default.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer>
+        <p>Generated for local use under <code>C:\CODEX PG</code>. This manual describes the PAH build after the hardening milestone ending at commit <code>6239879</code>.</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
