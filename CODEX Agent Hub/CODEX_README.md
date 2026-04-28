@@ -20,6 +20,14 @@ Windows tray launcher:
 & "C:\CODEX PG\CODEX Agent Hub\CODEX_start_agent_hub_tray.ps1"
 ```
 
+Visible dashboard launcher for desktop/taskbar shortcuts:
+
+```powershell
+& "C:\CODEX PG\CODEX Agent Hub\CODEX_launch_agent_hub_dashboard.ps1"
+```
+
+The dashboard launcher starts or reuses PAH and then opens `http://127.0.0.1:8765/` in the default browser. Use this for the desktop shortcut named `PANDA Agent Hub.lnk` when you want double-click to visibly open the app.
+
 The tray launcher reuses an already-running local PAH server when possible. If PAH is not running, it starts the server hidden, polls `/api/tray-status`, and updates the tray tooltip/menu with unread, overdue, decision, and diagnostic counts. Routine tray balloons are quiet by default; overdue-message and notification-log popups can be enabled from the tray menu when you want them.
 
 Tray menu actions:
