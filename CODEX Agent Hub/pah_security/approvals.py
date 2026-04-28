@@ -20,12 +20,18 @@ APPROVAL_REQUIRED_FIELDS = {
     "scope",
     "exact_paths",
     "command_or_provider",
+    "command_preview",
     "budget",
     "expires_at",
     "one_time_use",
     "approver",
     "revoked",
     "request_hash",
+    "command_hash",
+    "approved_by",
+    "approved_at",
+    "approval_hash",
+    "record_hash",
     "source_message_id",
     "source_message_type",
     "source_message_from",
@@ -53,6 +59,7 @@ HEADLESS_MCP_REQUIRED_FIELDS = {
     "mcp_config_path",
     "mcp_config_expected_hash",
 }
+APPROVAL_MUTABLE_AFTER_APPROVAL_FIELDS = {"consumed_at", "revoked_at", "revoke_reason"}
 MCP_READONLY_CONFIG_PATH = CONFIG_DIR / "CODEX_pah_mcp_readonly.json"
 ACTION_SCOPE_BY_TYPE = {
     "approval_record_create": APPROVAL_RECORD_SCOPE,
@@ -78,6 +85,7 @@ def canonical_request_hash(scope: str, exact_paths: list[str], command_or_provid
             "budget": budget,
         },
         sort_keys=True,
+        separators=(",", ":"),
     )
     return content_hash(payload)
 
@@ -88,6 +96,33 @@ def command_hash(command_preview: str) -> str:
 
 def approval_hash(request_hash: str, command_hash_value: str, approved_by: str, approved_at: str) -> str:
     return content_hash(f"{normalize_hash(request_hash)}{normalize_hash(command_hash_value)}{approved_by}{approved_at}")
+
+
+def canonical_decision_request_hash(message_text: str) -> str:
+    return content_hash(message_text)
+
+
+def approval_record_hash(record: dict[str, Any]) -> str:
+    immutable_record = {
+        key: value
+        for key, value in record.items()
+        if key != "record_hash" and key not in APPROVAL_MUTABLE_AFTER_APPROVAL_FIELDS
+    }
+    payload = json.dumps(immutable_record, sort_keys=True, separators=(",", ":"))
+    return content_hash(payload)
+
+
+def bind_approval_record_hashes(record: dict[str, Any]) -> dict[str, Any]:
+    bound = dict(record)
+    bound["command_hash"] = command_hash(str(bound.get("command_preview", "")))
+    bound["approval_hash"] = approval_hash(
+        str(bound.get("request_hash", "")),
+        str(bound.get("command_hash", "")),
+        str(bound.get("approved_by", "")),
+        str(bound.get("approved_at", "")),
+    )
+    bound["record_hash"] = approval_record_hash(bound)
+    return bound
 
 
 def normalize_hash(value: Any) -> str:
@@ -143,6 +178,30 @@ def validate_headless_mcp_config(record: dict[str, Any]) -> list[str]:
         canonical_mcp_config_hash(),
     ):
         errors.append("mcp_config_expected_hash does not match canonical PAH read-only MCP config")
+    return errors
+
+
+def validate_approval_hash_binding(record: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if "approved_by" in record and "approver" in record:
+        if str(record.get("approved_by", "")).strip().lower() != str(record.get("approver", "")).strip().lower():
+            errors.append("approved_by must match approver")
+    if "command_hash" in record and "command_preview" in record:
+        if not hash_matches(record.get("command_hash"), command_hash(str(record.get("command_preview", "")))):
+            errors.append("command_hash does not match command_preview")
+    if {"approval_hash", "request_hash", "command_hash", "approved_by", "approved_at"}.issubset(record):
+        expected_approval_hash = approval_hash(
+            str(record.get("request_hash", "")),
+            str(record.get("command_hash", "")),
+            str(record.get("approved_by", "")),
+            str(record.get("approved_at", "")),
+        )
+        if not hash_matches(record.get("approval_hash"), expected_approval_hash):
+            errors.append("approval_hash does not match approval record binding")
+    if "record_hash" in record:
+        expected_record_hash = approval_record_hash(record)
+        if not hash_matches(record.get("record_hash"), expected_record_hash):
+            errors.append("record_hash does not match immutable approval record fields")
     return errors
 
 
@@ -208,18 +267,7 @@ def validate_approval_record(record: dict[str, Any]) -> list[str]:
         errors.append("one_time_use must be a boolean")
     if "exact_paths" in record and not isinstance(record.get("exact_paths"), list):
         errors.append("exact_paths must be a list")
-    if "command_hash" in record and "command_preview" in record:
-        if not hash_matches(record.get("command_hash"), command_hash(str(record.get("command_preview", "")))):
-            errors.append("command_hash does not match command_preview")
-    if {"approval_hash", "request_hash", "command_hash", "approved_by", "approved_at"}.issubset(record):
-        expected_approval_hash = approval_hash(
-            str(record.get("request_hash", "")),
-            str(record.get("command_hash", "")),
-            str(record.get("approved_by", "")),
-            str(record.get("approved_at", "")),
-        )
-        if not hash_matches(record.get("approval_hash"), expected_approval_hash):
-            errors.append("approval_hash does not match approval record binding")
+    errors.extend(validate_approval_hash_binding(record))
     if "expires_at" in record:
         expiry = parse_expiry(record.get("expires_at"))
         if not expiry:
@@ -260,6 +308,7 @@ def approval_status(path: Path = APPROVAL_RECORDS_PATH) -> dict[str, Any]:
         "required_fields": sorted(APPROVAL_REQUIRED_FIELDS),
         "headless_command_required_fields": sorted(HEADLESS_COMMAND_REQUIRED_FIELDS),
         "headless_mcp_required_fields": sorted(HEADLESS_MCP_REQUIRED_FIELDS),
+        "approval_mutable_after_approval_fields": sorted(APPROVAL_MUTABLE_AFTER_APPROVAL_FIELDS),
         "canonical_mcp_config_path": str(MCP_READONLY_CONFIG_PATH),
         "canonical_mcp_config_hash": canonical_mcp_config_hash() if MCP_READONLY_CONFIG_PATH.exists() else "",
         "protected_action_types": sorted(PROTECTED_ACTION_TYPES),

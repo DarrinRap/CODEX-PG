@@ -60,7 +60,7 @@ If that port is busy, the app picks a free local port and prints it.
 - Work Board for local parallel development coordination, with owner, priority, state, summary, and source fields.
 - Work item dispatch from PAH into Claude Desktop or Claude Code mailbox routes, with dispatch metadata linked back to the work item.
 - Safety tab showing protected-action approval record status, disabled live-adapter registry, quarantine/tombstone status, and recent quarantine records.
-- Protected-action approval enforcement helpers for exact-path, hash-bound approval checks. Expired, revoked, consumed, command-changed, chained, MCP-config-mismatched, and non-canonical headless-command records cannot authorize protected actions.
+- Protected-action approval enforcement helpers for exact-path, hash-bound approval checks. Expired, revoked, consumed, command-changed, approval-record-edited, chained, MCP-config-mismatched, and non-canonical headless-command records cannot authorize protected actions.
 - Explicit quarantine API and dashboard actions for mailbox messages. The dashboard uses a reason-code menu plus confirmation; the API requires the local write token and `confirmed: true`. PAH never auto-quarantines during refresh.
 - Source-folder spoofing detection for mailbox messages. PAH cross-checks the parsed sender/recipient against the lane a file arrived through and flags mismatches as actionable `spoofing_attempt` quarantine candidates.
 - Cross-check auto-resolution safety rule. PAH does not use an undefined parent-thread risk field; auto-resolution is allowed only when `disagrees_with` is empty, every `caught_by_one` item is explicitly `risk=low`, and no involved approval boundary requires Darrin.
@@ -179,6 +179,8 @@ They are local/ignored records and must include scope, exact paths, command/prov
 
 PAH classifies Panda Gallery writes, destructive filesystem actions, git commits/pushes, package installs, external API calls, SMS/email sends, live headless agent runs, paid provider setup, and approval-record mutations as protected. A protected action is allowed only when an active approval record matches the exact scope, paths, command/provider, budget, and request hash. One-time approvals become unusable after consumption.
 
+Approval hash semantics are SHA-256 based and fail closed. `request_hash` binds the approved request payload as compact sorted JSON, `command_hash` is SHA-256 of `command_preview` verbatim, and `approval_hash` is SHA-256 of `request_hash + command_hash + approved_by + approved_at`. PAH also stores `record_hash`, a SHA-256 hash of the immutable approval-record fields, so edits to fields such as `expires_at`, scope, paths, command/provider, or budget invalidate the record. Only `consumed_at`, `revoked_at`, and `revoke_reason` may be added after approval without breaking `record_hash`.
+
 Approval records are non-chainable. They must cite an explicit Darrin `decision_record` message addressed to `pah`; headless output, cross-check synthesis, and agent-authored follow-up messages may request approval but cannot create a valid approval record. Approval records also cannot authorize writes to the approval-record ledger itself.
 
 Headless approval records are pinned to the canonical PAH read-only MCP config:
@@ -250,7 +252,7 @@ python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
 ```
 
 These tests cover schema roundtrip, Darrin decision gating, Claude Code routing, Panda Gallery path classification, and communication diagnostics.
-They also cover current mailbox schema aliases, standalone validation, source-folder spoofing checks, cross-check auto-resolution gates, non-chainable approval records, strict MCP config enforcement, headless command contracts, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
+They also cover current mailbox schema aliases, standalone validation, source-folder spoofing checks, cross-check auto-resolution gates, approval hash semantics, non-chainable approval records, strict MCP config enforcement, headless command contracts, quarantine reason codes, quarantine moves with tombstones, backpressure detection, and processed-message idempotency sidecars.
 Read/unread and closed-thread archive state are covered as well, including changed-content-becomes-unread and new-activity-reopens-archived-thread rules.
 
 Validate one or more PAH mailbox messages directly:

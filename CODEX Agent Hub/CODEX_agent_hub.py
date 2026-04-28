@@ -1418,6 +1418,7 @@ function render(data) {
     {title:'Protected-action enforcement', pill:data.approvals.enforcement || 'unknown', summary:(data.approvals.protected_action_types || []).join(', '), path:''},
     {title:'Strict MCP config', pill:data.approvals.canonical_mcp_config_hash ? 'pinned' : 'missing', summary:(data.approvals.headless_mcp_required_fields || []).join(', '), path:data.approvals.canonical_mcp_config_path || ''},
     {title:'Headless command contract', pill:'disabled', summary:(data.approvals.headless_command_required_fields || []).join(', '), path:''},
+    {title:'Approval hash mutability', pill:'locked', summary:`mutable after approval: ${(data.approvals.approval_mutable_after_approval_fields || []).join(', ')}`, path:''},
     {title:'Required fields', pill:'schema', summary:data.approvals.required_fields.join(', '), path:''}
   ], a => item(a.title, a.pill, a.summary, a.path));
   list('adapterList', data.adapters.adapters, a => item(a.display_name, a.enabled ? 'ENABLED' : 'DISABLED', `${a.safety_status} · ${a.notes}`, a.adapter_id));

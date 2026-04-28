@@ -44,9 +44,12 @@ from pah_diagnostics.route_tests import route_test_status, save_route_test_state
 from pah_mailbox.quarantine import quarantine_message, validate_quarantine_candidate, validate_quarantine_reason
 from pah_security.approvals import (
     MCP_READONLY_CONFIG_PATH,
+    approval_record_hash,
     approval_check,
+    bind_approval_record_hashes,
     canonical_request_hash,
     canonical_mcp_config_hash,
+    command_hash,
     enforce_protected_action,
     mark_approval_consumed,
     validate_approval_record,
@@ -66,6 +69,16 @@ def darrin_decision_source(message_id: str = "DARRIN-DECISION-TEST-001") -> dict
         "source_message_from": "darrin",
         "source_message_to": "pah",
     }
+
+
+def stamp_approval_record(record: dict[str, object], approved_at: str = "2026-04-27T02:00:00-07:00") -> dict[str, object]:
+    return bind_approval_record_hashes(
+        {
+            **record,
+            "approved_by": "Darrin",
+            "approved_at": approved_at,
+        }
+    )
 
 
 def headless_approval_record(message_id: str = "DARRIN-DECISION-HEADLESS-001") -> dict[str, object]:
@@ -100,7 +113,7 @@ def headless_approval_record(message_id: str = "DARRIN-DECISION-HEADLESS-001") -
     record["command_or_provider"] = command
     record["command_preview"] = command
     record["request_hash"] = canonical_request_hash(scope, [], command, "0")
-    return record
+    return stamp_approval_record(record)
 
 
 def test_schema_roundtrip() -> None:
@@ -419,11 +432,13 @@ def test_safety_surfaces() -> None:
         "0",
     )
     errors = validate_approval_record(
-        {
+        stamp_approval_record(
+            {
             "approval_id": "APPROVAL-TEST-001",
             "scope": "protected_action_requires_darrin",
             "exact_paths": ["C:/CODEX PG/example.txt"],
             "command_or_provider": "example-command",
+            "command_preview": "example-command",
             "budget": "0",
             "expires_at": "2099-01-01T00:00:00+00:00",
             "one_time_use": True,
@@ -431,15 +446,18 @@ def test_safety_surfaces() -> None:
             "revoked": False,
             "request_hash": request_hash,
             **darrin_decision_source(),
-        }
+            }
+        )
     )
     assert_true(not errors, "valid approval record should pass")
     chained_errors = validate_approval_record(
-        {
+        stamp_approval_record(
+            {
             "approval_id": "APPROVAL-CHAINED-001",
             "scope": "git_commit_requires_darrin",
             "exact_paths": ["C:/CODEX PG/example.txt"],
             "command_or_provider": "example-command",
+            "command_preview": "example-command",
             "budget": "0",
             "expires_at": "2099-01-01T00:00:00+00:00",
             "one_time_use": True,
@@ -450,7 +468,8 @@ def test_safety_surfaces() -> None:
             "source_message_type": "cross_check",
             "source_message_from": "codex",
             "source_message_to": "pah",
-        }
+            }
+        )
     )
     assert_true(any("decision_record" in error for error in chained_errors), "chained approval source is rejected")
     adapters = adapter_status()
@@ -523,11 +542,13 @@ def test_approval_enforcement() -> None:
         request_hash = canonical_request_hash(scope, [target_path], command, "0")
         approvals_path.write_text(
             json.dumps(
-                {
+                stamp_approval_record(
+                    {
                     "approval_id": "APPROVAL-ENFORCE-001",
                     "scope": scope,
                     "exact_paths": [target_path],
                     "command_or_provider": command,
+                    "command_preview": command,
                     "budget": "0",
                     "expires_at": "2099-01-01T00:00:00+00:00",
                     "one_time_use": True,
@@ -535,7 +556,8 @@ def test_approval_enforcement() -> None:
                     "revoked": False,
                     "request_hash": request_hash,
                     **darrin_decision_source("DARRIN-DECISION-ENFORCE-001"),
-                },
+                    }
+                ),
                 sort_keys=True,
             )
             + "\n",
@@ -568,6 +590,66 @@ def test_approval_enforcement() -> None:
         mark_approval_consumed("APPROVAL-ENFORCE-001", consumed_at="2099-01-01T00:00:00+00:00", path=approvals_path)
         consumed = approval_check("git_commit", [target_path], command, "0", path=approvals_path)
         assert_true(not consumed["allowed"], "consumed one-time approval cannot be reused")
+
+
+def test_approval_hash_semantics() -> None:
+    target_path = "C:/CODEX PG/example.txt"
+    command = "git commit -m hash-semantics"
+    scope = "git_commit_requires_darrin"
+    request_hash = canonical_request_hash(scope, [target_path], command, "0")
+    record = stamp_approval_record(
+        {
+            "approval_id": "APPROVAL-HASH-001",
+            "scope": scope,
+            "exact_paths": [target_path],
+            "command_or_provider": command,
+            "command_preview": command,
+            "budget": "0",
+            "expires_at": "2099-01-01T00:00:00+00:00",
+            "one_time_use": True,
+            "approver": "Darrin",
+            "revoked": False,
+            "request_hash": request_hash,
+            **darrin_decision_source("DARRIN-DECISION-HASH-001"),
+        }
+    )
+    errors = validate_approval_record(record)
+    assert_true(not errors, "hash-bound approval record validates")
+    assert_true(record["command_hash"] == command_hash(command), "command_hash binds command_preview")
+    assert_true(record["record_hash"] == approval_record_hash(record), "record_hash binds immutable fields")
+
+    changed_command = dict(record, command_preview="git commit -m changed")
+    changed_command_errors = validate_approval_record(changed_command)
+    assert_true(
+        any("command_hash does not match" in error for error in changed_command_errors),
+        "changed command_preview invalidates command_hash",
+    )
+
+    changed_expiry = dict(record, expires_at="2099-02-01T00:00:00+00:00")
+    changed_expiry_errors = validate_approval_record(changed_expiry)
+    assert_true(
+        any("record_hash does not match" in error for error in changed_expiry_errors),
+        "editing immutable approval fields invalidates record_hash",
+    )
+
+    changed_approver = dict(record, approved_by="Codex")
+    changed_approver_errors = validate_approval_record(changed_approver)
+    assert_true(
+        any("approved_by must match approver" in error for error in changed_approver_errors),
+        "approved_by must match approver",
+    )
+
+    mutable_update = dict(
+        record,
+        consumed_at="2099-01-01T00:00:00+00:00",
+        revoked_at="2099-01-01T00:01:00+00:00",
+        revoke_reason="smoke test",
+    )
+    mutable_errors = validate_approval_record(mutable_update)
+    assert_true(
+        not any("record_hash does not match" in error for error in mutable_errors),
+        "allowed mutable fields do not invalidate record_hash",
+    )
 
 
 def test_strict_mcp_config_enforcement() -> None:
@@ -909,6 +991,7 @@ def main() -> None:
     test_safety_surfaces()
     test_quarantine_move_writes_tombstone()
     test_approval_enforcement()
+    test_approval_hash_semantics()
     test_strict_mcp_config_enforcement()
     test_headless_command_contract()
     test_backpressure_detection()
