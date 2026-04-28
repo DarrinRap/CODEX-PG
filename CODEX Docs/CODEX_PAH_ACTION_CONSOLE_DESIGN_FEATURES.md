@@ -159,6 +159,8 @@ Mini pills summarize urgent work by target:
 
 This prevents Darrin from having to scan every row just to understand which AI is behind.
 
+The target mini pills are clickable. Selecting a pill filters the wake-up queue to that AI, and a Clear Agent button returns the queue to all overdue wake-ups.
+
 ### Three-step guide
 
 The visible guide is:
@@ -175,6 +177,7 @@ The queue has three primary filters:
 
 - Wake-ups
 - Decisions
+- Diagnostics
 - All
 
 ### Wake-ups
@@ -190,6 +193,17 @@ This filter isolates items that require Darrin decision or review. It prevents a
 ### All
 
 This shows the complete action queue for broader review.
+
+### Diagnostics
+
+This view transforms route, diagnostics, and git health into queue-style review items. It answers:
+
+- are mailboxes being checked?
+- is the watcher held?
+- are diagnostics quiet?
+- is git clean?
+
+Diagnostic items are read-only and carry no wake line.
 
 ## Wake-up Detection
 
@@ -461,8 +475,10 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Start Here guidance card
 - [x] Three-step Pick -> Copy -> Paste workflow
 - [x] Wake-up breakdown by target AI
+- [x] Clickable agent-specific wake-up filters
 - [x] Wake-ups filter
 - [x] Decisions filter
+- [x] Diagnostics filter
 - [x] All actions filter
 - [x] Oldest-overdue-first wake sorting
 - [x] Human-readable overdue ages
@@ -472,6 +488,7 @@ C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py
 - [x] Per-item usage instructions
 - [x] Mailbox check times
 - [x] Route status and hold reason display
+- [x] Diagnostic route/git/check suite view
 - [x] Summary metrics
 - [x] Quiet diagnostics footer
 - [x] Read-only compose/send safety
@@ -491,11 +508,7 @@ No overdue wake-ups. All agents are caught up.
 
 Include the last mailbox check time in the same empty state.
 
-### 2. Agent-Specific Queue Filter
-
-Allow clicking a mini pill such as `8 claude-code` to filter the queue to that agent.
-
-### 3. Read/Unread UX Clarification
+### 2. Read/Unread UX Clarification
 
 Separate "unread" from "unseen" semantics if PAH later distinguishes:
 
@@ -503,7 +516,7 @@ Separate "unread" from "unseen" semantics if PAH later distinguishes:
 - notification seen state
 - action handled state
 
-### 4. Decision Review Panel
+### 3. Decision Review Panel
 
 Decision items should eventually render structured scope text first:
 
@@ -513,11 +526,11 @@ Decision items should eventually render structured scope text first:
 - will not do
 - confirmation requirement
 
-### 5. Safer Mark Read
+### 4. Safer Mark Read
 
 Keep the write-token/origin guard, but make UI failures visible if Mark Read is rejected.
 
-### 6. Route Health Detail Drawer
+### 5. Route Health Detail Drawer
 
 Add a small route detail view that expands from Mailbox Checks:
 
@@ -528,7 +541,7 @@ Add a small route detail view that expands from Mailbox Checks:
 - hold reason
 - latest error
 
-### 7. Schema Cleanup From CC Review
+### 6. Schema Cleanup From CC Review
 
 Address remaining CC schema review items:
 

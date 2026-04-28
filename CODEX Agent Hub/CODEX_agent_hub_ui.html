@@ -185,6 +185,13 @@ button[disabled] { opacity: .48; cursor: default; }
   padding: 2px 8px;
   font-size: 11px;
 }
+button.mini-pill { cursor: pointer; }
+button.mini-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+button.mini-pill.active strong { color: var(--accent-ink); }
 .mini-pill strong { color: var(--text); margin-right: 4px; }
 .guide-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .guide-step {
@@ -202,6 +209,7 @@ button[disabled] { opacity: .48; cursor: default; }
   align-items: center;
   padding: 10px 12px 0;
 }
+.filter-row .spacer { flex: 1; }
 .filter-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
 button.filter {
   min-height: 28px;
@@ -252,6 +260,8 @@ button.filter.active {
 .action-title { font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action-summary { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action-help { color: var(--quiet); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action.ok { border-color: rgba(127, 176, 105, .38); }
+.action.err { border-color: rgba(231, 76, 60, .56); }
 .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag {
   min-height: 22px;
@@ -420,7 +430,10 @@ button.filter.active {
         <span class="filter-label">Show</span>
         <button class="filter active" data-filter="wake">Wake-ups</button>
         <button class="filter" data-filter="decision">Decisions</button>
+        <button class="filter" data-filter="diagnostics">Diagnostics</button>
         <button class="filter" data-filter="all">All</button>
+        <span class="spacer"></span>
+        <button class="filter" id="clearAgentFilter" hidden>Clear agent</button>
       </div>
       <div class="scroll">
         <div class="action-list" id="actionList"></div>
@@ -473,6 +486,7 @@ button.filter.active {
 let cockpit = null;
 let selected = null;
 let queueFilter = 'wake';
+let agentFilter = '';
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -501,6 +515,52 @@ function itemAgeSeconds(item) {
 function itemTarget(item) {
   return String(item?.primary_action || '').replace(/^Wake\s+/i, '') || 'unknown';
 }
+function diagnosticItems() {
+  const routes = (cockpit?.routes || []).map(route => ({
+    id: `diag-route-${route.id}`,
+    kind: 'diagnostic',
+    severity: route.status === 'pass' ? 'ok' : route.status === 'held' ? 'warn' : 'err',
+    title: `${route.name}: ${route.status}`,
+    summary: route.hold_reason || `Last checked ${fmtTime(route.last_check_iso)}.`,
+    primary_action: route.status === 'held' ? 'Review hold' : 'Review route',
+    secondary_action: route.latency_ms ? `${route.latency_ms}ms` : 'No write',
+    thread_id: route.id,
+    message_path: '',
+    wake_line: '',
+    diagnostic: route,
+  }));
+  const diagnostics = cockpit?.diagnostics || {};
+  const git = cockpit?.git || {};
+  return [
+    ...routes,
+    {
+      id: 'diag-suite',
+      kind: 'diagnostic',
+      severity: diagnostics.checks_fail ? 'err' : diagnostics.checks_warn ? 'warn' : 'ok',
+      title: 'Diagnostic suite',
+      summary: `${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass. ${diagnostics.actionable_validation_issues || 0} validation issue${diagnostics.actionable_validation_issues === 1 ? '' : 's'} to triage.`,
+      primary_action: 'Review diagnostics',
+      secondary_action: diagnostics.last_run_iso ? `Last run ${fmtTime(diagnostics.last_run_iso)}` : 'No run time',
+      thread_id: 'diagnostics',
+      message_path: '',
+      wake_line: '',
+      diagnostic: diagnostics,
+    },
+    {
+      id: 'diag-git',
+      kind: 'diagnostic',
+      severity: git.clean ? 'ok' : 'warn',
+      title: git.clean ? 'Git working tree clean' : 'Git working tree has untracked changes',
+      summary: git.clean ? `${git.branch || 'main'} is clean.` : 'Mailbox messages or local files are present outside the latest commit.',
+      primary_action: 'Review git status',
+      secondary_action: git.branch || 'main',
+      thread_id: 'git',
+      message_path: '',
+      wake_line: '',
+      diagnostic: git,
+    },
+  ];
+}
 function humanSummary(item) {
   if (!item) return '';
   const age = itemAgeSeconds(item);
@@ -509,14 +569,22 @@ function humanSummary(item) {
   return item.summary || '';
 }
 function filteredQueue() {
-  const queue = cockpit?.action_queue || [];
+  const queue = queueFilter === 'diagnostics' ? diagnosticItems() : cockpit?.action_queue || [];
   let visible = queue;
   if (queueFilter === 'decision') visible = queue.filter(item => item.kind === 'decision');
   else if (queueFilter === 'wake') visible = queue.filter(item => item.kind === 'wake');
+  if (agentFilter) visible = visible.filter(item => itemTarget(item) === agentFilter);
   return [...visible].sort((a, b) => {
     if (a.kind === 'wake' || b.kind === 'wake') return itemAgeSeconds(b) - itemAgeSeconds(a);
+    if (a.kind === 'diagnostic' || b.kind === 'diagnostic') return severityRank(b.severity) - severityRank(a.severity);
     return String(a.title || '').localeCompare(String(b.title || ''));
   });
+}
+function severityRank(value) {
+  if (value === 'err') return 3;
+  if (value === 'warn') return 2;
+  if (value === 'ok') return 1;
+  return 0;
 }
 function statusClass(value) {
   const text = String(value || '').toLowerCase();
@@ -528,6 +596,7 @@ function statusClass(value) {
 function kindClass(kind) {
   if (kind === 'wake') return 'wake';
   if (kind === 'decision') return 'decision';
+  if (kind === 'diagnostic') return 'unread';
   return 'unread';
 }
 function setHTML(id, html) {
@@ -547,7 +616,9 @@ function render() {
   const visibleQueue = filteredQueue();
   const stale = counts.stale_unread || 0;
   const decisions = counts.decisions_needed || 0;
-  const systemText = stale
+  const systemText = queueFilter === 'diagnostics'
+    ? 'Diagnostics view'
+    : stale
     ? `${stale} message${stale === 1 ? '' : 's'} need wake-up`
     : decisions
       ? `${decisions} decision${decisions === 1 ? '' : 's'} waiting`
@@ -569,12 +640,20 @@ function renderGuide(stale, decisions) {
   const wakeItems = (cockpit.action_queue || []).filter(item => item.kind === 'wake');
   const oldest = wakeItems.reduce((max, item) => Math.max(max, itemAgeSeconds(item)), 0);
   const threshold = cockpit.cockpit_state?.stale_unread_threshold_seconds || 60;
-  const title = stale
+  const title = queueFilter === 'diagnostics'
+    ? 'Diagnostics show route, watcher, git, and validation health'
+    : agentFilter
+      ? `Showing wake-ups for ${agentFilter}`
+    : stale
     ? `${stale} overdue message${stale === 1 ? '' : 's'} need wake-up`
     : decisions
       ? `${decisions} decision${decisions === 1 ? '' : 's'} need Darrin`
       : 'Nothing urgent right now';
-  const copy = stale
+  const copy = queueFilter === 'diagnostics'
+    ? 'Use this view to answer: are the mailboxes checked, is the watcher held, are diagnostics quiet, and is git clean?'
+    : agentFilter
+      ? 'Clear the agent filter to return to all overdue wake-ups.'
+    : stale
     ? `Oldest first. A wake-up is unread for ${fmtAge(threshold)} or longer. The selected item gives you the exact line to paste into the right AI.${oldest ? ` Oldest is ${fmtAge(oldest)} overdue.` : ''}`
     : decisions
       ? 'Switch to Darrin decisions to review what needs approval or deferral.'
@@ -591,14 +670,26 @@ function renderGuideBreakdown(wakeItems, decisions) {
   });
   const pills = Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
-    .map(([target, count]) => `<span class="mini-pill"><strong>${esc(count)}</strong>${esc(target)}</span>`);
+    .map(([target, count]) => `<button class="mini-pill ${target === agentFilter ? 'active' : ''}" data-agent="${esc(target)}"><strong>${esc(count)}</strong>${esc(target)}</button>`);
   if (decisions) pills.push(`<span class="mini-pill"><strong>${esc(decisions)}</strong>Darrin decision${decisions === 1 ? '' : 's'}</span>`);
   setHTML('guideBreakdown', pills.length ? pills.join('') : '<span class="mini-pill">No overdue wake-ups</span>');
+  document.querySelectorAll('button.mini-pill[data-agent]').forEach(button => {
+    button.addEventListener('click', () => {
+      agentFilter = button.dataset.agent || '';
+      queueFilter = 'wake';
+      const visible = filteredQueue();
+      selected = visible[0] || null;
+      render();
+    });
+  });
 }
 function renderFilters() {
   document.querySelectorAll('button.filter').forEach(button => {
     button.classList.toggle('active', button.dataset.filter === queueFilter);
   });
+  const clear = document.getElementById('clearAgentFilter');
+  clear.hidden = !agentFilter;
+  clear.textContent = agentFilter ? `Clear ${agentFilter}` : 'Clear agent';
 }
 function renderAgents(agents) {
   document.getElementById('agentCount').textContent = agents.length;
@@ -627,9 +718,11 @@ function renderSummary(counts, diagnostics) {
 function renderQueue(queue) {
   if (!queue.length) {
     const message = queueFilter === 'wake'
-      ? 'No overdue wake-ups in this view.'
+      ? agentFilter ? `No overdue wake-ups for ${agentFilter}.` : 'No overdue wake-ups in this view.'
       : queueFilter === 'decision'
         ? 'No Darrin decisions in this view.'
+        : queueFilter === 'diagnostics'
+          ? 'No diagnostics available.'
         : 'Nothing needs action right now.';
     setHTML('actionList', `<div class="empty">${esc(message)}</div>`);
     return;
@@ -655,12 +748,14 @@ function renderDetail(item) {
   document.getElementById('selectedKind').className = `tag ${kindClass(kind)}`;
   document.getElementById('detailTitle').textContent = item?.title || 'No item selected';
   document.getElementById('detailSummary').textContent = humanSummary(item) || 'No current action is required.';
-  const facts = [
-    ['Primary action', item?.primary_action || 'None'],
-    ['Secondary action', item?.secondary_action || 'None'],
-    ['Thread', item?.thread_id || 'None'],
-    ['Writes', 'None from this screen'],
-  ];
+  const facts = item?.kind === 'diagnostic'
+    ? diagnosticFacts(item)
+    : [
+        ['Primary action', item?.primary_action || 'None'],
+        ['Secondary action', item?.secondary_action || 'None'],
+        ['Thread', item?.thread_id || 'None'],
+        ['State', item?.kind === 'wake' ? 'Wake line ready' : 'Not handled here'],
+      ];
   setHTML('factGrid', facts.map(([label, value]) => `
     <div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value" title="${esc(value)}">${esc(value)}</div></div>
   `).join(''));
@@ -672,7 +767,13 @@ function renderDetail(item) {
 }
 function renderHow(item) {
   const target = itemTarget(item) || 'the named AI';
-  const lines = item?.kind === 'wake'
+  const lines = item?.kind === 'diagnostic'
+    ? [
+        'Use diagnostics to confirm the system is healthy before acting.',
+        'Held routes are expected when waiting for explicit permission.',
+        'Untracked mailbox messages are normal until they are read or archived.'
+      ]
+    : item?.kind === 'wake'
     ? [
         `Open or switch to ${target}.`,
         'Click Copy wake line.',
@@ -691,6 +792,34 @@ function renderHow(item) {
           'Refresh after any AI replies.'
         ];
   setHTML('howList', lines.map(line => `<li>${esc(line)}</li>`).join(''));
+}
+function diagnosticFacts(item) {
+  const d = item?.diagnostic || {};
+  if (item?.id?.startsWith('diag-route-')) {
+    return [
+      ['Status', d.status || 'unknown'],
+      ['Last check', fmtTime(d.last_check_iso)],
+      ['Latency', `${d.latency_ms ?? 0}ms`],
+      ['Writes', 'None from this screen'],
+    ];
+  }
+  if (item?.id === 'diag-suite') {
+    return [
+      ['Checks', `${d.checks_pass || 0}/${d.checks_total || 0} pass`],
+      ['Warnings', d.checks_warn || 0],
+      ['Failures', d.checks_fail || 0],
+      ['Last run', fmtTime(d.last_run_iso)],
+    ];
+  }
+  if (item?.id === 'diag-git') {
+    return [
+      ['Branch', d.branch || 'main'],
+      ['Tracking', d.tracking || 'origin/main'],
+      ['Clean', d.clean ? 'Yes' : 'No'],
+      ['Writes', 'None from this screen'],
+    ];
+  }
+  return [['Status', 'Unknown'], ['Writes', 'None from this screen']];
 }
 function renderRoutes(routes) {
   if (!routes.length) {
@@ -723,10 +852,17 @@ document.getElementById('refresh').addEventListener('click', loadCockpit);
 document.querySelectorAll('button.filter').forEach(button => {
   button.addEventListener('click', () => {
     queueFilter = button.dataset.filter || 'wake';
+    if (queueFilter !== 'wake') agentFilter = '';
     const visible = filteredQueue();
     if (!visible.some(item => item.id === selected?.id)) selected = visible[0] || null;
     render();
   });
+});
+document.getElementById('clearAgentFilter').addEventListener('click', () => {
+  agentFilter = '';
+  const visible = filteredQueue();
+  selected = visible[0] || null;
+  render();
 });
 document.getElementById('copyWake').addEventListener('click', async () => {
   const text = document.getElementById('wakeLine').textContent || '';
