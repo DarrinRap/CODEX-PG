@@ -6,23 +6,25 @@
 <title>PANDA Agent Hub</title>
 <style>
 :root {
-  --canvas: #14141f;
-  --panel: #1a1a2e;
-  --panel-2: #202038;
-  --field: #10111b;
-  --border: #2a2a3e;
-  --text: #e0ddd5;
-  --muted: #aaa59b;
-  --quiet: #888888;
-  --accent: #e8a87c;
-  --accent-ink: #24150e;
-  --ok: #7fb069;
-  --warn: #d7b86b;
-  --err: #e74c3c;
-  --focus: rgba(232, 168, 124, .42);
+  --canvas: #f1eee4;
+  --panel: #fffdf7;
+  --panel-2: #ebe5d7;
+  --field: #ffffff;
+  --border: #d7d0c0;
+  --text: #181b18;
+  --muted: #5d6258;
+  --quiet: #7d8375;
+  --accent: #4f7d42;
+  --accent-ink: #fffdf7;
+  --ok: #2f7d4a;
+  --warn: #b97818;
+  --err: #b64b3f;
+  --ink: #161a16;
+  --bamboo: #5e8f43;
+  --focus: rgba(79, 125, 66, .34);
 }
 * { box-sizing: border-box; }
-html, body { min-height: 100%; overflow: auto; }
+html, body { width: 100%; height: 100%; min-height: 100%; overflow: hidden; }
 body {
   margin: 0;
   background: var(--canvas);
@@ -35,10 +37,11 @@ button {
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(224, 221, 213, .05);
+  background: var(--field);
   color: var(--text);
   padding: 0 12px;
   cursor: pointer;
+  box-shadow: 0 1px 0 rgba(24, 27, 24, .08);
 }
 button.primary {
   background: var(--accent);
@@ -46,13 +49,18 @@ button.primary {
   color: var(--accent-ink);
   font-weight: 800;
 }
-button.secondary { background: transparent; color: var(--muted); }
-button.danger { background: rgba(231, 76, 60, .10); border-color: rgba(231, 76, 60, .56); color: #f1b0aa; }
+button.secondary { background: #f8f6ef; color: var(--muted); }
+button.danger { background: #fff5f2; border-color: rgba(182, 75, 63, .58); color: var(--err); }
 button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 button[disabled] { opacity: .48; cursor: default; }
+.top-actions #shortcutHelp,
+.top-actions button[disabled] {
+  display: none;
+}
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
   min-width: 0;
   display: grid;
   grid-template-rows: 64px 1fr 44px;
@@ -64,7 +72,8 @@ button[disabled] { opacity: .48; cursor: default; }
   gap: 18px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border);
-  background: #151526;
+  background: var(--ink);
+  color: #fffdf7;
 }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .mark {
@@ -96,12 +105,29 @@ button[disabled] { opacity: .48; cursor: default; }
   text-overflow: ellipsis;
 }
 .meta { color: var(--quiet); font-size: 12px; }
+.topbar .status-line,
+.topbar .meta,
+.topbar .brand-sub {
+  color: #d9d2c2;
+}
+.topbar .system-state {
+  color: #fffdf7;
+}
 .top-actions { display: flex; gap: 8px; align-items: center; }
+.top-actions select {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fffdf7;
+  color: var(--text);
+  padding: 0 9px;
+  font: inherit;
+}
 .toggle {
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(224, 221, 213, .05);
+  background: #fffdf7;
   color: var(--muted);
   padding: 0 10px;
   display: inline-flex;
@@ -115,10 +141,10 @@ button[disabled] { opacity: .48; cursor: default; }
 .main {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   gap: 12px;
   padding: 12px;
-  overflow: auto;
+  overflow: hidden;
 }
 .panel {
   min-width: 0;
@@ -141,7 +167,31 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 .panel-title { font-size: 12px; font-weight: 900; color: var(--muted); text-transform: uppercase; }
 .count { color: var(--text); font-weight: 900; }
-.scroll { min-height: 0; overflow: auto; }
+.scroll {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+.scroll::-webkit-scrollbar,
+.message-preview-body::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.scroll::-webkit-scrollbar-track,
+.message-preview-body::-webkit-scrollbar-track {
+  background: #e6dfcf;
+  border-left: 1px solid var(--border);
+}
+.scroll::-webkit-scrollbar-thumb,
+.message-preview-body::-webkit-scrollbar-thumb {
+  background: #9aa58d;
+  border: 3px solid #e6dfcf;
+  border-radius: 999px;
+}
+.scroll::-webkit-scrollbar-thumb:hover,
+.message-preview-body::-webkit-scrollbar-thumb:hover {
+  background: var(--bamboo);
+}
 
 .agents { padding: 8px; display: grid; gap: 8px; align-content: start; }
 .agent {
@@ -150,7 +200,7 @@ button[disabled] { opacity: .48; cursor: default; }
   text-align: left;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: #161624;
+  background: var(--field);
   padding: 10px;
   display: grid;
   grid-template-columns: 34px 1fr;
@@ -158,15 +208,15 @@ button[disabled] { opacity: .48; cursor: default; }
   cursor: pointer;
 }
 .agent:hover {
-  border-color: rgba(232, 168, 124, .48);
-  background: #1a1a2b;
+  border-color: rgba(79, 125, 66, .48);
+  background: #f8f6ef;
 }
 .agent:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .agent.selected {
-  border-color: rgba(232, 168, 124, .8);
+  border-color: rgba(79, 125, 66, .8);
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .avatar {
@@ -188,15 +238,22 @@ button[disabled] { opacity: .48; cursor: default; }
 .dot.warn { background: var(--warn); }
 .dot.err { background: var(--err); }
 .dot.active { background: var(--accent); }
+.dot.pulse { animation: pah-pulse 1.5s ease-in-out infinite; }
+@keyframes pah-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) {
+  .dot.pulse { animation: none; }
+}
 
+.participants-panel { display: grid; }
 .queue-panel { grid-template-rows: auto auto auto auto auto auto 1fr; }
+.queue-panel > .panel-head .count { display: none; }
 .guide-card {
   margin: 8px 12px 0;
-  border: 1px solid rgba(224, 221, 213, .12);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgba(16, 17, 27, .50);
+  background: #f8f6ef;
   padding: 9px;
-  display: grid;
+  display: none;
   gap: 7px;
 }
 .guide-title { font-size: 13px; font-weight: 900; color: var(--text); }
@@ -210,10 +267,10 @@ button[disabled] { opacity: .48; cursor: default; }
   min-height: 22px;
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(224, 221, 213, .14);
+  border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--muted);
-  background: rgba(16, 17, 27, .72);
+  background: var(--field);
   padding: 2px 8px;
   font-size: 11px;
 }
@@ -226,11 +283,16 @@ button.mini-pill.active {
 button.mini-pill.active strong { color: var(--accent-ink); }
 .mini-pill strong { color: var(--text); margin-right: 4px; }
 .guide-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.guide-breakdown,
+.guide-steps,
+.summary-strip {
+  display: none !important;
+}
 .guide-step {
   min-width: 0;
-  border: 1px solid rgba(224, 221, 213, .12);
+  border: 1px solid var(--border);
   border-radius: 7px;
-  background: rgba(16, 17, 27, .68);
+  background: var(--field);
   padding: 7px 8px;
 }
 .guide-step strong { display: block; color: var(--accent); font-size: 11px; text-transform: uppercase; }
@@ -246,15 +308,15 @@ button.mini-pill.active strong { color: var(--accent-ink); }
   min-height: 58px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: #161624;
+  background: var(--field);
   color: var(--text);
   padding: 8px;
   display: grid;
   gap: 3px;
   text-align: left;
 }
-.inbox-card:hover { border-color: rgba(232, 168, 124, .48); background: #1a1a2b; }
-.inbox-card.active { border-color: rgba(232, 168, 124, .8); box-shadow: inset 3px 0 0 var(--accent); }
+.inbox-card:hover { border-color: rgba(79, 125, 66, .48); background: #f8f6ef; }
+.inbox-card.active { border-color: rgba(79, 125, 66, .8); box-shadow: inset 3px 0 0 var(--accent); }
 .inbox-card.waiting { border-color: rgba(215, 184, 107, .56); }
 .inbox-card.attention { border-color: rgba(231, 76, 60, .62); }
 .inbox-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
@@ -266,9 +328,15 @@ button.mini-pill.active strong { color: var(--accent-ink); }
   gap: 8px;
   align-items: center;
   padding: 10px 12px 0;
+  flex-wrap: wrap;
 }
 .filter-row .spacer { flex: 1; }
-.filter-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.filter-label {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
 .queue-search {
   width: min(190px, 26vw);
   min-height: 28px;
@@ -283,11 +351,12 @@ button.mini-pill.active strong { color: var(--accent-ink); }
 .queue-search::placeholder { color: var(--quiet); }
 .queue-search:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
 button.filter {
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
   color: var(--muted);
   white-space: nowrap;
+  background: #f8f6ef;
 }
 button.filter.active {
   background: var(--accent);
@@ -307,32 +376,32 @@ button.filter.active {
   min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: #161624;
+  background: #fffdf7;
   padding: 8px 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.summary:hover { border-color: rgba(232, 168, 124, .48); background: #1a1a2b; }
-.summary.active { border-color: rgba(232, 168, 124, .8); box-shadow: inset 3px 0 0 var(--accent); }
+.summary:hover { border-color: rgba(79, 125, 66, .48); background: #f8f6ef; }
+.summary.active { border-color: rgba(79, 125, 66, .8); box-shadow: inset 4px 0 0 var(--accent); }
 .summary strong { display: block; min-width: 30px; font-size: 20px; line-height: 1; }
 .summary span { color: var(--muted); font-size: 11px; line-height: 1.2; }
-.summary.warn { border-color: rgba(215, 184, 107, .56); }
-.summary.err { border-color: rgba(231, 76, 60, .62); }
-.summary.warn.active, .summary.err.active { border-color: rgba(232, 168, 124, .8); }
+.summary.warn { border-color: rgba(185, 120, 24, .56); }
+.summary.err { border-color: rgba(182, 75, 63, .62); }
+.summary.warn.active, .summary.err.active { border-color: rgba(79, 125, 66, .8); }
 .notice {
   margin: 10px 12px 0;
-  border: 1px solid rgba(231, 76, 60, .56);
+  border: 1px solid rgba(182, 75, 63, .56);
   border-radius: 7px;
-  background: rgba(231, 76, 60, .10);
+  background: #fff5f2;
   color: var(--text);
   padding: 9px 10px;
   font-size: 12px;
 }
 .notice.ok {
-  border-color: rgba(127, 176, 105, .45);
-  background: rgba(127, 176, 105, .10);
+  border-color: rgba(47, 125, 74, .45);
+  background: #e9f3e2;
 }
 .notice[hidden] { display: none; }
 
@@ -342,56 +411,76 @@ button.filter.active {
   text-align: left;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #171727;
+  background: #fffdf7;
   color: var(--text);
   padding: 12px;
   display: grid;
   gap: 8px;
 }
-.action.selected { border-color: rgba(232, 168, 124, .8); box-shadow: inset 3px 0 0 var(--accent); }
-.action.warn { border-color: rgba(215, 184, 107, .56); }
+.action.selected { border-color: rgba(79, 125, 66, .8); box-shadow: inset 4px 0 0 var(--accent); }
+.action.warn { border-color: rgba(185, 120, 24, .56); }
 .action-title { font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action-summary { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action-help { color: var(--quiet); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.action.ok { border-color: rgba(127, 176, 105, .38); }
-.action.err { border-color: rgba(231, 76, 60, .56); }
+.action.ok { border-color: rgba(47, 125, 74, .38); }
+.action.err { border-color: rgba(182, 75, 63, .56); }
 .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag {
   min-height: 22px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  border: 0;
+  border-radius: 4px;
   padding: 2px 8px;
-  color: var(--muted);
+  color: var(--quiet);
+  background: #eee8da;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
 }
-.tag.wake { border-color: rgba(215, 184, 107, .75); color: #ecd9a4; }
-.tag.decision { border-color: rgba(232, 168, 124, .6); color: #f0bf9d; }
-.tag.unread { border-color: rgba(224, 221, 213, .22); color: var(--text); }
-.tag.local { border-color: rgba(127, 176, 105, .45); color: var(--ok); }
-.tag.snoozed { border-color: rgba(155, 127, 176, .6); color: #cfb8e8; }
+.tag.wake { background: #fff1cf; color: #855a10; }
+.tag.decision { background: #e8f1df; color: #355f2b; }
+.tag.unread { background: #e9ece3; color: var(--text); }
+.tag.local { background: #e4f1dd; color: var(--ok); }
+.tag.snoozed { background: #ece7f2; color: #665178; }
 .empty {
   padding: 28px;
   color: var(--muted);
   text-align: center;
 }
 
-.detail-panel { grid-template-rows: auto 1fr auto; }
-.detail-body { padding: 14px; display: grid; gap: 12px; align-content: start; }
-.detail-title { font-size: 20px; line-height: 1.15; font-weight: 900; }
-.detail-summary { color: var(--muted); }
-.message-preview {
+.detail-panel { grid-template-rows: auto auto 1fr; }
+.detail-body { padding: 10px; display: grid; gap: 8px; align-content: start; }
+.detail-title { font-size: 18px; line-height: 1.15; font-weight: 900; }
+.detail-summary { color: var(--muted); font-size: 12px; }
+.detail-section {
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: #10111b;
+  background: var(--panel);
+  overflow: hidden;
+}
+.detail-section > summary {
+  min-height: 32px;
+  padding: 7px 9px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.detail-section > summary:hover { background: #f8f6ef; }
+.detail-section[open] > summary { border-bottom: 1px solid var(--border); }
+.detail-section-content { padding: 9px; display: grid; gap: 8px; min-width: 0; }
+.message-preview {
+  border: 0;
+  border-radius: 0;
+  background: var(--field);
   display: grid;
   min-height: 0;
   overflow: hidden;
 }
 .message-preview-head {
   min-height: 30px;
-  border-bottom: 1px solid rgba(224, 221, 213, .08);
+  border-bottom: 1px solid var(--border);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -403,7 +492,7 @@ button.filter.active {
   text-transform: uppercase;
 }
 .message-preview-body {
-  max-height: 180px;
+  max-height: 126px;
   overflow: auto;
   color: var(--muted);
   padding: 9px;
@@ -415,21 +504,21 @@ button.filter.active {
 .fact {
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: #161624;
+  background: var(--field);
   padding: 9px;
   min-width: 0;
 }
 .fact-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
 .fact-value { margin-top: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wake-box {
-  border: 1px solid rgba(215, 184, 107, .45);
-  border-radius: 7px;
+  border: 0;
+  border-radius: 0;
   background: rgba(215, 184, 107, .07);
   padding: 10px;
   display: grid;
   gap: 8px;
 }
-.wake-label { color: #ecd9a4; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.wake-label { color: #855a10; font-size: 12px; font-weight: 900; text-transform: uppercase; }
 .wake-line {
   min-height: 54px;
   border: 1px solid var(--border);
@@ -440,10 +529,10 @@ button.filter.active {
   font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
 }
 .how-box, .checks-box, .session-box, .scope-box {
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: #161624;
-  padding: 10px;
+  border: 0;
+  border-radius: 0;
+  background: var(--panel);
+  padding: 0;
   display: grid;
   gap: 8px;
 }
@@ -457,7 +546,7 @@ button.filter.active {
   grid-template-columns: 96px 1fr;
   gap: 8px;
   padding-top: 6px;
-  border-top: 1px solid rgba(224, 221, 213, .08);
+  border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 12px;
 }
@@ -476,7 +565,7 @@ button.filter.active {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 8px;
-  border-top: 1px solid rgba(224, 221, 213, .08);
+  border-top: 1px solid var(--border);
   padding-top: 6px;
 }
 .activity-row:first-child { border-top: 0; padding-top: 0; }
@@ -487,7 +576,7 @@ button.filter.active {
   grid-template-columns: 1fr auto;
   gap: 10px;
   padding: 7px 0;
-  border-top: 1px solid rgba(224, 221, 213, .08);
+  border-top: 1px solid var(--border);
 }
 .route-row:first-of-type { border-top: 0; }
 .route-name { min-width: 0; color: var(--text); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -497,17 +586,26 @@ button.filter.active {
 .route-status.warn { color: var(--warn); }
 .route-status.err { color: var(--err); }
 .detail-actions {
-  border-top: 1px solid var(--border);
-  padding: 10px;
-  display: flex;
-  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  justify-content: flex-end;
+  align-items: stretch;
+}
+.detail-actions button {
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.detail-actions button.danger,
+.detail-actions button.primary {
+  font-weight: 900;
 }
 .detail-actions button[hidden] { display: none; }
 .footer {
   border-top: 1px solid var(--border);
-  background: #151526;
+  background: var(--ink);
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
@@ -517,7 +615,7 @@ button.filter.active {
   font-size: 12px;
 }
 .diag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.footer strong { color: var(--muted); }
+.footer strong { color: #fffdf7; }
 .quiet-home {
   display: none;
   min-height: 460px;
@@ -563,12 +661,17 @@ button.filter.active {
   gap: 14px;
   margin: 8px 0 2px;
 }
+.mailbox-grid-main {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 4px;
+  gap: 4px;
+}
 .mailbox-card {
   min-height: 214px;
   padding: 14px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #191929;
+  background: #fffdf7;
   color: var(--text);
   display: grid;
   grid-template-rows: 88px auto auto auto;
@@ -576,70 +679,48 @@ button.filter.active {
   gap: 8px;
 }
 .mailbox-card:hover {
-  border-color: rgba(232, 168, 124, .56);
-  background: #1e1e31;
+  border-color: rgba(79, 125, 66, .56);
+  background: #f8f6ef;
 }
 .mailbox-card.hot {
-  border-color: rgba(215, 184, 107, .72);
-  box-shadow: inset 0 -3px 0 rgba(215, 184, 107, .72);
+  border-color: rgba(185, 120, 24, .72);
+  box-shadow: inset 0 -3px 0 rgba(185, 120, 24, .72);
+}
+.mailbox-card.waiting {
+  border-color: rgba(79, 125, 66, .46);
+  box-shadow: inset 0 -3px 0 rgba(79, 125, 66, .38);
 }
 .mailbox-graphic {
   position: relative;
-  width: 92px;
-  height: 82px;
+  width: 24px;
+  height: 17px;
+  border: 2px solid var(--bamboo);
+  border-radius: 4px;
+  background: #f8f6ef;
+  overflow: hidden;
 }
-.mailbox-box {
-  position: absolute;
-  left: 10px;
-  top: 18px;
-  width: 66px;
-  height: 44px;
-  border: 3px solid #d9c8a6;
-  border-radius: 26px 26px 8px 8px;
-  background: linear-gradient(180deg, #e8a87c 0%, #b9694f 100%);
-  box-shadow: inset 0 -8px 0 rgba(36, 21, 14, .22);
-}
-.mailbox-door {
-  position: absolute;
-  left: 28px;
-  top: 38px;
-  width: 28px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(36, 21, 14, .62);
-}
-.mailbox-flag {
-  position: absolute;
-  right: 2px;
-  top: 20px;
-  width: 26px;
-  height: 18px;
-  border-radius: 3px;
-  background: var(--warn);
-  transform-origin: left center;
-}
-.mailbox-flag::before {
+.mailbox-graphic::before,
+.mailbox-graphic::after {
   content: "";
   position: absolute;
-  left: -4px;
-  top: 0;
-  width: 4px;
-  height: 38px;
-  border-radius: 999px;
-  background: #d9c8a6;
+  top: 2px;
+  width: 15px;
+  height: 15px;
+  border-top: 2px solid var(--bamboo);
 }
-.mailbox-card.clear .mailbox-flag {
-  transform: rotate(90deg);
-  background: var(--quiet);
+.mailbox-graphic::before {
+  left: -3px;
+  transform: rotate(35deg);
 }
+.mailbox-graphic::after {
+  right: -3px;
+  transform: rotate(-35deg);
+}
+.mailbox-box,
+.mailbox-door,
+.mailbox-flag,
 .mailbox-post {
-  position: absolute;
-  left: 39px;
-  top: 62px;
-  width: 12px;
-  height: 20px;
-  border-radius: 3px 3px 0 0;
-  background: #d9c8a6;
+  display: none;
 }
 .mailbox-number {
   font-size: 42px;
@@ -655,6 +736,46 @@ button.filter.active {
   font-size: 12px;
   min-height: 16px;
 }
+.mailbox-grid-main .mailbox-card {
+  min-height: 42px;
+  padding: 4px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  justify-items: start;
+  align-items: center;
+  gap: 0 4px;
+}
+.mailbox-grid-main .mailbox-graphic {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 18px;
+  height: 14px;
+  transform: none;
+}
+.mailbox-grid-main .mailbox-number {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 20px;
+  line-height: 1;
+  min-width: 1ch;
+  text-align: left;
+}
+.mailbox-grid-main .mailbox-label {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 10px;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mailbox-grid-main .mailbox-note {
+  display: none;
+}
+.inbox-strip {
+  display: none;
+}
 body.quiet-mode .app { grid-template-rows: auto 1fr; }
 body.quiet-mode .main {
   grid-template-columns: minmax(0, 760px);
@@ -666,6 +787,7 @@ body.quiet-mode .main > .panel:first-child,
 body.quiet-mode .detail-panel,
 body.quiet-mode .queue-panel > .panel-head,
 body.quiet-mode .inbox-strip,
+body.quiet-mode .mailbox-grid-main,
 body.quiet-mode .guide-card,
 body.quiet-mode .summary-strip,
 body.quiet-mode .filter-row,
@@ -691,8 +813,12 @@ body.quiet-mode .top-actions button[disabled] {
   .topbar { grid-template-columns: 1fr; align-items: start; gap: 8px; padding: 10px 12px; }
   .status-line { flex-wrap: wrap; white-space: normal; }
   .top-actions { flex-wrap: wrap; }
-  .main { grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); overflow: visible; }
-  .detail-panel { grid-column: 1 / -1; min-height: 360px; }
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 34%);
+    overflow: hidden;
+  }
+  .detail-panel { grid-column: 1 / -1; min-height: 0; }
   .summary-strip { grid-template-columns: 1fr; }
   .guide-steps { grid-template-columns: 1fr; }
   .summary { min-height: 40px; }
@@ -701,22 +827,46 @@ body.quiet-mode .top-actions button[disabled] {
 }
 @media (max-width: 720px) {
   .app, .topbar, .main, .footer { width: 100%; max-width: 100vw; min-width: 0; }
-  .main { grid-template-columns: minmax(0, 1fr); padding: 8px; gap: 8px; }
-  .panel { width: 100%; min-width: 0; min-height: 260px; }
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 32%);
+    padding: 8px;
+    gap: 8px;
+  }
+  .queue-panel { order: -2; }
+  .participants-panel { order: -1; max-height: 260px; }
+  .detail-panel { order: 3; }
+  .panel { width: 100%; min-width: 0; min-height: 0; }
   .brand, .status-line, .top-actions, .diag, .footer strong { min-width: 0; max-width: 100%; }
   .top-actions > * { flex: 1 1 auto; }
   .inbox-strip, .summary-strip, .guide-steps { grid-template-columns: minmax(0, 1fr); }
   .filter-row, .detail-actions { flex-wrap: wrap; }
-  .queue-search { width: 100%; min-width: 0; }
+  .queue-search { display: none; }
+  .filter-row .toggle { display: none; }
   .footer { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 44px; padding: 8px 12px; }
   .footer strong { overflow-wrap: anywhere; white-space: normal; }
-  .mailbox-grid { grid-template-columns: minmax(0, 1fr); }
-  .mailbox-card { min-height: 176px; grid-template-rows: 72px auto auto auto; }
-  .mailbox-graphic { transform: scale(.84); transform-origin: top center; }
+  .mailbox-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mailbox-grid-main { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mailbox-card { min-height: 96px; grid-template-rows: 44px auto auto; }
+  .mailbox-graphic { transform: scale(.54); transform-origin: top center; }
+  .mailbox-grid-main .mailbox-card {
+    min-height: 40px;
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+  .mailbox-grid-main .mailbox-graphic {
+    width: 18px;
+    height: 14px;
+    transform: none;
+  }
+  .mailbox-grid-main .mailbox-number { font-size: 18px; }
+  .mailbox-grid-main .mailbox-label { font-size: 9px; }
+}
+@media (max-width: 420px) {
+  .mailbox-grid:not(.mailbox-grid-main) { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-height: 720px) {
-  .app { grid-template-rows: 54px 1fr 38px; min-height: 580px; }
-  .topbar { padding: 0 14px; }
+  .app { grid-template-rows: auto 1fr 38px; min-height: 0; }
+  .topbar { padding: 8px 14px; }
   .main { padding: 10px; gap: 10px; }
   .guide-card { margin-top: 6px; }
   .summary { min-height: 38px; }
@@ -732,7 +882,7 @@ body.quiet-mode .top-actions button[disabled] {
       <div class="mark">P</div>
       <div>
         <div class="brand-title">PANDA Agent Hub</div>
-        <div class="brand-sub">Action console</div>
+        <div class="brand-sub">Mailroom</div>
       </div>
     </div>
     <div class="status-line">
@@ -742,6 +892,13 @@ body.quiet-mode .top-actions button[disabled] {
     <div class="top-actions">
       <label class="toggle"><input type="checkbox" id="autoRefresh"> Auto refresh</label>
       <button id="refresh">Refresh</button>
+      <select id="cleanupMailbox" aria-label="Inbox to clean">
+        <option value="all">All inboxes</option>
+        <option value="codex">Codex inbox</option>
+        <option value="claude-desktop">Claude inbox</option>
+        <option value="claude-code">CC inbox</option>
+      </select>
+      <button id="cleanupInboxes">Clean inboxes</button>
       <button id="archiveRead">Archive read</button>
       <button id="shortcutHelp">Shortcuts</button>
       <button disabled>Compose</button>
@@ -749,7 +906,7 @@ body.quiet-mode .top-actions button[disabled] {
   </header>
 
   <main class="main">
-    <section class="panel">
+    <section class="panel participants-panel">
       <div class="panel-head">
         <div class="panel-title">Participants</div>
         <div class="count" id="agentCount">0</div>
@@ -761,15 +918,15 @@ body.quiet-mode .top-actions button[disabled] {
 
     <section class="panel queue-panel">
       <div class="panel-head">
-        <div class="panel-title">Open Threads</div>
+        <div class="panel-title">Mailboxes</div>
         <div class="count" id="queueCount">0</div>
       </div>
       <div class="quiet-home" id="quietHome">
         <div class="quiet-card">
-          <div class="quiet-kicker">Unread mailbox watch</div>
+          <div class="quiet-kicker">Thread mailroom</div>
           <h1 class="quiet-title">Mailboxes</h1>
-          <p class="quiet-copy">Unread messages waiting in each inbox.</p>
-          <div class="mailbox-grid" id="mailboxGrid"></div>
+          <p class="quiet-copy">Open threads waiting in each mailbox.</p>
+          <div class="mailbox-grid" data-mailbox-grid></div>
           <div class="quiet-actions">
             <button id="quietAgents">Open on agents <strong id="quietAgentsCount">0</strong></button>
             <button id="quietBrowse">Browse all</button>
@@ -793,18 +950,20 @@ body.quiet-mode .top-actions button[disabled] {
       <div class="summary-strip" id="summaryStrip"></div>
       <div class="notice" id="notice" hidden></div>
       <div class="filter-row">
-        <span class="filter-label">Show</span>
-        <button class="filter active" data-filter="you">Open on you</button>
-        <button class="filter" data-filter="agents">Open on agents</button>
-        <button class="filter" data-filter="diagnostics">Diagnostics</button>
-        <button class="filter" data-filter="all">Browse all</button>
+        <span class="filter-label">View</span>
+        <button class="filter active" data-filter="you" title="Show threads waiting on you">My threads</button>
+        <button class="filter" data-filter="agents" title="Show threads waiting on the AIs">AI backlog</button>
+        <button class="filter" data-filter="diagnostics" title="Show mailbox and health checks">Diagnostics</button>
+        <button class="filter" data-filter="all" title="Show the full thread list">All threads</button>
         <span class="spacer"></span>
         <input class="queue-search" id="queueSearch" placeholder="Find in queue" aria-label="Find in current queue">
         <label class="toggle"><input type="checkbox" id="showSnoozed"> Snoozed</label>
         <button class="filter" id="clearAgentFilter" hidden>Clear agent</button>
+        <button class="danger" id="clearDiagnostics" hidden>Clear diagnostics</button>
         <button class="secondary" id="dismissVisible">Dismiss visible</button>
         <button class="danger" id="deleteVisible">Delete visible</button>
       </div>
+      <div class="mailbox-grid mailbox-grid-main" data-mailbox-grid></div>
       <div class="scroll">
         <div class="action-list" id="actionList"></div>
       </div>
@@ -815,49 +974,9 @@ body.quiet-mode .top-actions button[disabled] {
         <div class="panel-title">Action Detail</div>
         <span class="tag" id="selectedKind">none</span>
       </div>
-      <div class="scroll">
-          <div class="detail-body">
-          <div class="detail-title" id="detailTitle">No item selected</div>
-          <div class="detail-summary" id="detailSummary">The queue is loading.</div>
-          <div class="message-preview">
-            <div class="message-preview-head"><span>Message preview</span><span id="messagePreviewMeta">none</span></div>
-            <div class="message-preview-body message-preview-empty" id="messagePreview">Select an alert to preview its message here.</div>
-          </div>
-          <div class="fact-grid" id="factGrid"></div>
-          <div class="scope-box" id="scopeBox" hidden></div>
-          <div class="wake-box">
-            <div class="wake-label">Wake line</div>
-            <div class="wake-line" id="wakeLine">No wake needed.</div>
-          </div>
-          <div class="how-box">
-            <div class="how-title">How to use this item</div>
-            <ol class="how-list" id="howList">
-              <li>Select an action from the queue.</li>
-              <li>Copy the wake line when one is available.</li>
-              <li>Paste it into the correct AI window.</li>
-            </ol>
-          </div>
-          <div class="session-box">
-            <div class="session-title">Session handling</div>
-            <div class="session-copy" id="sessionCopy">No local handling state yet.</div>
-          <div class="session-actions">
-              <button id="stateAck">Ack</button>
-              <button id="stateCopied">Copied</button>
-              <button id="stateWaiting">Waiting</button>
-              <button id="stateHandled">Handled</button>
-            </div>
-          </div>
-          <div class="session-box">
-            <div class="session-title">Recent actions</div>
-            <div class="activity-list" id="activityList"></div>
-          </div>
-          <div class="checks-box">
-            <div class="checks-title">Mailbox checks</div>
-            <div id="routeChecks"></div>
-          </div>
-        </div>
-      </div>
       <div class="detail-actions">
+        <button class="danger" id="deleteAlert">Delete alert</button>
+        <button class="primary" id="copyWake">Copy wake line</button>
         <button class="secondary" id="openMessage">Open message</button>
         <button class="secondary" id="openFolder">Open folder</button>
         <button class="secondary" id="copyPath">Copy path</button>
@@ -867,8 +986,66 @@ body.quiet-mode .top-actions button[disabled] {
         <button class="secondary" id="resolveDecision">Resolve decision</button>
         <button class="secondary" id="dismissDecision">Dismiss decision</button>
         <button class="secondary" id="runDiagnostics">Run diagnostics</button>
-        <button class="danger" id="deleteAlert">Delete alert</button>
-        <button class="primary" id="copyWake">Copy wake line</button>
+      </div>
+      <div class="scroll">
+          <div class="detail-body">
+          <div class="detail-title" id="detailTitle">No item selected</div>
+          <div class="detail-summary" id="detailSummary">The queue is loading.</div>
+          <details class="detail-section" open>
+            <summary>Message preview</summary>
+            <div class="message-preview">
+              <div class="message-preview-head"><span>Preview</span><span id="messagePreviewMeta">none</span></div>
+              <div class="message-preview-body message-preview-empty" id="messagePreview">Select an alert to preview its message here.</div>
+            </div>
+          </details>
+          <details class="detail-section" open>
+            <summary>Facts</summary>
+            <div class="detail-section-content">
+              <div class="fact-grid" id="factGrid"></div>
+            </div>
+          </details>
+          <div class="scope-box" id="scopeBox" hidden></div>
+          <details class="detail-section" open>
+            <summary>Wake line</summary>
+            <div class="wake-box">
+              <div class="wake-line" id="wakeLine">No wake needed.</div>
+            </div>
+          </details>
+          <details class="detail-section">
+            <summary>How</summary>
+            <div class="detail-section-content how-box">
+              <ol class="how-list" id="howList">
+                <li>Select an action from the queue.</li>
+                <li>Copy the wake line when one is available.</li>
+                <li>Paste it into the correct AI window.</li>
+              </ol>
+            </div>
+          </details>
+          <details class="detail-section">
+            <summary>Session</summary>
+            <div class="detail-section-content session-box">
+              <div class="session-copy" id="sessionCopy">No local handling state yet.</div>
+              <div class="session-actions">
+                <button id="stateAck">Ack</button>
+                <button id="stateCopied">Copied</button>
+                <button id="stateWaiting">Waiting</button>
+                <button id="stateHandled">Handled</button>
+              </div>
+            </div>
+          </details>
+          <details class="detail-section">
+            <summary>Recent</summary>
+            <div class="detail-section-content session-box">
+              <div class="activity-list" id="activityList"></div>
+            </div>
+          </details>
+          <details class="detail-section">
+            <summary>Checks</summary>
+            <div class="detail-section-content checks-box">
+              <div id="routeChecks"></div>
+            </div>
+          </details>
+        </div>
       </div>
     </section>
   </main>
@@ -880,7 +1057,7 @@ body.quiet-mode .top-actions button[disabled] {
 </div>
 
 <script>
-const WRITE_TOKEN = "__WRITE_TOKEN__";
+const WRITE_TOKEN = "";
 let cockpit = null;
 let selected = null;
 let queueFilter = 'you';
@@ -940,6 +1117,14 @@ function agentName(agentId) {
   const agent = (cockpit?.agents || []).find(candidate => candidate.id === agentId);
   return agent?.display_name || agentId || 'agent';
 }
+function mailboxName(agentId) {
+  return {
+    'darrin': 'Me',
+    'codex': 'Codex',
+    'claude-desktop': 'Claude',
+    'claude-code': 'CC',
+  }[agentId] || agentName(agentId);
+}
 function selectedAgent() {
   if (!selectedAgentId) return null;
   return (cockpit?.agents || []).find(agent => agent.id === selectedAgentId) || null;
@@ -998,7 +1183,7 @@ function focusPanel(filter) {
 async function postJson(path, body) {
   const res = await fetch(path, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN},
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body || {})
   });
   const payload = await res.json().catch(() => ({}));
@@ -1086,7 +1271,7 @@ function configureDetailActions(item, wakeText = '') {
   setDetailAction('copyPath', hasMessage, !hasMessage);
   setDetailAction('snoozeAlert', Boolean(item?.id) && !isDiagnostic && !isSnoozed, !item?.id);
   setDetailAction('unsnoozeAlert', isSnoozed, !isSnoozed);
-  setDetailAction('markRead', isWake && hasMessage, !hasMessage);
+  setDetailAction('markRead', false, true);
   setDetailAction('resolveDecision', isDecision && hasMessage, !hasMessage);
   setDetailAction('dismissDecision', isDecision && hasMessage, !hasMessage);
   setDetailAction('runDiagnostics', isDiagnostic || queueFilter === 'diagnostics', false);
@@ -1094,6 +1279,8 @@ function configureDetailActions(item, wakeText = '') {
   setDetailAction('copyWake', isWake && hasWake, !hasWake);
 }
 function diagnosticItems() {
+  const diagnostics = cockpit?.diagnostics || {};
+  if (prefs.clearedDiagnosticsSignature && prefs.clearedDiagnosticsSignature === diagnosticsSignature()) return [];
   const routes = (cockpit?.routes || []).map(route => ({
     id: `diag-route-${route.id}`,
     kind: 'diagnostic',
@@ -1107,7 +1294,6 @@ function diagnosticItems() {
     wake_line: '',
     diagnostic: route,
   }));
-  const diagnostics = cockpit?.diagnostics || {};
   const git = cockpit?.git || {};
   const relay = diagnostics.relay_health || {};
   const relayCounts = relay.counts || {};
@@ -1155,6 +1341,24 @@ function diagnosticItems() {
     },
   ];
 }
+function diagnosticsSignature() {
+  const diagnostics = cockpit?.diagnostics || {};
+  const relay = diagnostics.relay_health || {};
+  const git = cockpit?.git || {};
+  const routeBits = (cockpit?.routes || [])
+    .map(route => `${route.id}:${route.status}:${route.hold_reason || ''}:${route.last_check_iso || ''}`)
+    .join('|');
+  return [
+    diagnostics.checks_total || 0,
+    diagnostics.checks_fail || 0,
+    diagnostics.checks_warn || 0,
+    diagnostics.actionable_validation_issues || 0,
+    diagnostics.last_run_iso || '',
+    relay.ok ? 'relay-ok' : relay.status_label || '',
+    git.clean ? 'git-clean' : git.status_label || '',
+    routeBits,
+  ].join('::');
+}
 function humanSummary(item) {
   if (!item) return '';
   const age = itemAgeSeconds(item);
@@ -1194,18 +1398,32 @@ function filteredQueue() {
     return (sourceOrder.get(a.id) ?? 9999) - (sourceOrder.get(b.id) ?? 9999);
   });
 }
+function ownerAliases(agentId) {
+  return {
+    'darrin': ['darrin'],
+    'codex': ['codex'],
+    'claude-desktop': ['claude_desktop', 'claude-desktop'],
+    'claude-code': ['claude_code', 'claude-code'],
+  }[agentId] || [agentId];
+}
+function openThreadsForMailbox(agentId) {
+  const focus = cockpit?.thread_focus || {};
+  if (agentId === 'darrin') return focus.open_on_darrin || [];
+  const aliases = new Set(ownerAliases(agentId));
+  return (focus.open_on_agent || []).filter(item => aliases.has(String(item.owner || '').toLowerCase()));
+}
 function mailboxQueue(agentId) {
   const id = agentId || 'darrin';
-  const items = cockpit?.mailbox_messages?.[id] || [];
+  const items = openThreadsForMailbox(id);
   return items.map(item => ({
-    id: item.message_id || item.path,
+    id: item.id || item.thread_id || item.message_path,
     kind: 'mailbox',
-    severity: item.unread ? 'warn' : 'ok',
-    title: item.title || item.name || 'Mailbox message',
+    severity: item.requires_darrin_decision ? 'warn' : 'ok',
+    title: item.title || 'Open thread',
     summary: item.summary || '',
     primary_action: 'Open message',
-    secondary_action: item.unread ? 'Unread' : 'Read',
-    message_path: item.path || item.message_path || '',
+    secondary_action: item.requires_darrin_decision ? 'Decision' : 'Open thread',
+    message_path: item.message_path || '',
     thread_id: item.thread_id || '',
     age_seconds: item.age_seconds || 0,
     agent_label: agentName(id),
@@ -1383,6 +1601,8 @@ function emptyCockpit() {
     },
     agents: [],
     action_queue: [],
+    thread_focus: {counts: {}, open_on_darrin: [], open_on_agent: [], parked: [], closed: [], all: []},
+    mailbox_messages: {},
     routes: [],
     diagnostics: {},
     git: {},
@@ -1397,18 +1617,16 @@ function render() {
   else if (!visibleQueue.some(item => item.id === selected?.id)) selected = visibleQueue[0];
   const openOnYou = counts.open_on_darrin || 0;
   const openOnAgents = counts.open_on_agent || 0;
-  const mailboxUnread = (cockpit.agents || []).reduce((total, agent) => total + Number(agent.unread_count || 0), 0);
-  const quietHome = queueFilter === 'you' && !openOnYou && !queueSearch.trim();
+  const mailboxText = openOnYou ? `${openOnYou} open on you` : 'All clear';
+  const quietHome = false;
   document.body.classList.toggle('quiet-mode', quietHome);
   const systemText = queueFilter === 'diagnostics'
     ? 'Diagnostics view'
     : queueFilter === 'mailbox'
-    ? `${agentName(selectedAgentId || 'darrin')} mailbox`
+    ? `${mailboxName(selectedAgentId || 'darrin')} mailbox`
     : quietHome
-    ? `${mailboxUnread} unread mailbox message${mailboxUnread === 1 ? '' : 's'}`
-    : openOnYou
-    ? `${openOnYou} thread${openOnYou === 1 ? '' : 's'} open on you`
-    : 'All clear';
+    ? mailboxText
+    : mailboxText;
   document.getElementById('systemState').textContent = systemText;
   document.getElementById('asOf').textContent = `as of ${fmtTime(state.as_of_iso || cockpit.generated_at)}`;
   document.getElementById('queueCount').textContent = visibleQueue.length;
@@ -1429,35 +1647,31 @@ function render() {
 }
 function renderGuide(openOnYou, openOnAgents) {
   const title = queueFilter === 'diagnostics'
-    ? 'Diagnostics show route, watcher, git, and validation health'
+    ? 'Diagnostics'
     : queueFilter === 'mailbox'
-      ? `${agentName(selectedAgentId || 'darrin')} mailbox`
+      ? `${mailboxName(selectedAgentId || 'darrin')} mailbox`
     : agentFilter
       ? `${agentName(agentFilter)} queue`
     : selectedAgentId === 'darrin'
-      ? 'Open on you'
+      ? 'Me'
     : queueFilter === 'agents'
-      ? `${openOnAgents} thread${openOnAgents === 1 ? '' : 's'} open on agents`
+      ? 'Agents'
     : queueFilter === 'all'
-      ? 'Browse all active threads'
-    : openOnYou
-      ? `${openOnYou} thread${openOnYou === 1 ? '' : 's'} open on you`
-      : 'All clear';
+      ? 'All messages'
+      : 'Choose a mailbox';
   const copy = queueFilter === 'diagnostics'
-    ? 'Check this when PAH feels off: mailbox routes, watcher hold state, diagnostics, and git health are all summarized here.'
+    ? 'Mailbox route and health checks.'
     : queueFilter === 'mailbox'
-      ? 'Unread messages currently waiting in this mailbox. Pick one to preview or open the source file.'
+      ? 'Open threads waiting here.'
     : agentFilter
-      ? 'This view is filtered to one participant. Pick a thread to inspect the source message.'
+      ? 'Messages filtered to one participant.'
     : selectedAgentId === 'darrin'
-      ? 'These are threads whose latest message appears to need Darrin. If this is empty, the dashboard should feel quiet.'
+      ? 'Messages waiting on you.'
     : queueFilter === 'agents'
-      ? 'These are threads where an AI appears to owe the next reply. This is useful context, not a demand on you.'
+      ? 'Messages waiting on the AIs.'
     : queueFilter === 'all'
-      ? 'Browse is for history and debugging. The front-page truth is still Open on you.'
-    : openOnYou
-      ? 'This list is computed from the latest message in each thread, not from old unread flags.'
-      : 'No thread currently appears to need Darrin. Browse and Diagnostics stay available when you want the machinery.';
+      ? 'History and debugging.'
+      : 'Numbers on the mailboxes are open threads.';
   document.getElementById('guideTitle').textContent = title;
   document.getElementById('guideCopy').textContent = copy;
   renderGuideBreakdown(openOnYou, openOnAgents);
@@ -1484,6 +1698,9 @@ function renderFilters() {
   const clear = document.getElementById('clearAgentFilter');
   clear.hidden = !agentFilter && !selectedAgentId;
   clear.textContent = selectedAgentId ? `Clear ${agentName(selectedAgentId)}` : 'Clear agent';
+  const clearDiagnostics = document.getElementById('clearDiagnostics');
+  clearDiagnostics.hidden = queueFilter !== 'diagnostics';
+  clearDiagnostics.disabled = queueFilter !== 'diagnostics';
   const search = document.getElementById('queueSearch');
   if (document.activeElement !== search) search.value = queueSearch;
   const showSnoozed = document.getElementById('showSnoozed');
@@ -1494,13 +1711,13 @@ function renderFilters() {
   const bulkDisabled = !visibleMessages.length || queueFilter === 'diagnostics';
   const dismissVisible = document.getElementById('dismissVisible');
   const deleteVisible = document.getElementById('deleteVisible');
-  dismissVisible.hidden = bulkDisabled;
+  dismissVisible.hidden = true;
   deleteVisible.hidden = bulkDisabled;
-  dismissVisible.disabled = bulkDisabled;
+  dismissVisible.disabled = true;
   deleteVisible.disabled = bulkDisabled;
-  dismissVisible.textContent = visibleMessages.length ? `Dismiss visible (${visibleMessages.length})` : 'Dismiss visible';
+  dismissVisible.textContent = 'Dismiss visible';
   deleteVisible.textContent = visibleMessages.length ? `Delete visible (${visibleMessages.length})` : 'Delete visible';
-  dismissVisible.hidden = queueFilter === 'you' || queueFilter === 'agents' || bulkDisabled;
+  dismissVisible.hidden = true;
   deleteVisible.hidden = queueFilter === 'you' || queueFilter === 'agents' || bulkDisabled;
 }
 function renderAgents(agents) {
@@ -1520,7 +1737,7 @@ function renderAgents(agents) {
     <button class="agent ${agent.id === selectedAgentId ? 'selected' : ''}" data-agent-id="${esc(agent.id)}" title="Show ${esc(agent.display_name)} details and actions">
       <div class="avatar">${esc(agent.code)}</div>
       <div>
-        <div class="agent-name"><span class="dot ${statusClass(agent.status)}"></span>${esc(agent.display_name)}</div>
+        <div class="agent-name"><span class="dot ${statusClass(agent.status)}${agent.pulse ? ' pulse' : ''}"></span>${esc(agent.display_name)}</div>
         <div class="agent-note" title="${esc(statusLabel)}">${esc(statusLabel)}</div>
       </div>
       <div class="agent-count">${esc(displayCount)} thread${Number(displayCount) === 1 ? '' : 's'}</div>
@@ -1560,36 +1777,35 @@ function renderInboxStatus(agents) {
   });
 }
 function renderMailboxGrid(agents) {
-  const byId = new Map((agents || []).map(agent => [agent.id, agent]));
   const rows = [
-    ['darrin', 'Darrin', 'you'],
-    ['codex', 'Codex', 'codex'],
-    ['claude-desktop', 'Claude', 'claude-desktop'],
-    ['claude-code', 'CC', 'claude-code'],
-  ].map(([id, label, target]) => {
-    const agent = byId.get(id) || {};
-    const unread = Number(agent.unread_count ?? agent.count_value ?? 0);
-    const inboxTotal = Number(agent.inbound_count || 0);
-    const note = unread ? `${unread} unread of ${inboxTotal || unread}` : 'clear';
-    return {id, label, target, unread, note};
+    ['darrin', 'Me', 'open on you'],
+    ['codex', 'Codex', 'AI backlog'],
+    ['claude-desktop', 'Claude', 'AI backlog'],
+    ['claude-code', 'CC', 'AI backlog'],
+  ].map(([id, label, noteText]) => {
+    const count = openThreadsForMailbox(id).length;
+    const note = count ? noteText : 'all clear';
+    const tone = id === 'darrin' && count ? 'hot' : count ? 'waiting' : 'clear';
+    return {id, label, count, note, tone};
   });
-  setHTML('mailboxGrid', rows.map(row => `
-    <button class="mailbox-card ${row.unread ? 'hot' : 'clear'}" data-mailbox-target="${esc(row.target)}" title="Show ${esc(row.label)} mailbox">
+  const html = rows.map(row => `
+    <button class="mailbox-card ${esc(row.tone)}" data-mailbox-target="${esc(row.id)}" title="Show ${esc(row.label)} mailbox">
       <div class="mailbox-graphic" aria-hidden="true">
         <div class="mailbox-box"><span class="mailbox-door"></span></div>
         <div class="mailbox-flag"></div>
         <div class="mailbox-post"></div>
       </div>
-      <div class="mailbox-number">${esc(row.unread)}</div>
+      <div class="mailbox-number">${esc(row.count)}</div>
       <div class="mailbox-label">${esc(row.label)}</div>
       <div class="mailbox-note">${esc(row.note)}</div>
     </button>
-  `).join(''));
+  `).join('');
+  document.querySelectorAll('[data-mailbox-grid]').forEach(grid => {
+    grid.innerHTML = html;
+  });
   document.querySelectorAll('button.mailbox-card[data-mailbox-target]').forEach(button => {
     button.addEventListener('click', () => {
-      const target = button.dataset.mailboxTarget || 'you';
-      if (target === 'you') focusPanel('you');
-      else focusAgent(target);
+      focusMailbox(button.dataset.mailboxTarget || 'darrin');
     });
   });
 }
@@ -1939,9 +2155,13 @@ function renderRoutes(routes) {
 function renderDiagnostics(diagnostics) {
   const warn = Number(diagnostics.checks_warn || 0);
   const fail = Number(diagnostics.checks_fail || 0);
+  const classifier = diagnostics.thread_classifier || {};
+  const missing = Number(classifier.missing_action_owner || 0) + Number(classifier.missing_thread_id || 0);
   const text = fail || warn
     ? `Diagnostics need review: ${fail} failed, ${warn} warning.`
-    : `Diagnostics quiet. ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass.`;
+    : missing
+      ? `Diagnostics quiet. Classifier metadata gaps: ${missing}.`
+      : `Diagnostics quiet. ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass.`;
   document.getElementById('diagnosticsLine').textContent = text;
 }
 document.getElementById('refresh').addEventListener('click', loadCockpit);
@@ -2062,14 +2282,7 @@ document.getElementById('unsnoozeAlert').addEventListener('click', () => {
 });
 document.getElementById('markRead').addEventListener('click', async () => {
   if (!selected?.message_path) return;
-  try {
-    await postJson('/api/message-read-state', {path: selected.message_path, state: 'read', actor: 'codex'});
-    recordActivity('Dismissed alert', selected);
-    setNotice('Alert dismissed and marked read.', 'ok');
-    await loadCockpit();
-  } catch (err) {
-    setNotice(`Dismiss alert was blocked: ${err.message || err}`);
-  }
+  setNotice('Legacy read-state dismiss is retired. PAH now moves threads by reply metadata and refresh.', 'ok');
 });
 document.getElementById('resolveDecision').addEventListener('click', async () => {
   if (selected?.kind !== 'decision' || !selected?.message_path) return;
@@ -2081,9 +2294,8 @@ document.getElementById('resolveDecision').addEventListener('click', async () =>
       actor: 'darrin_or_codex',
       title: selected.title || ''
     });
-    await postJson('/api/message-read-state', {path: selected.message_path, state: 'read', actor: 'codex'});
     recordActivity('Resolved decision', selected);
-    setNotice('Decision resolved and alert dismissed.', 'ok');
+    setNotice('Decision resolved.', 'ok');
     await loadCockpit();
   } catch (err) {
     setNotice(`Resolve decision was blocked: ${err.message || err}`);
@@ -2099,9 +2311,8 @@ document.getElementById('dismissDecision').addEventListener('click', async () =>
       actor: 'darrin_or_codex',
       title: selected.title || ''
     });
-    await postJson('/api/message-read-state', {path: selected.message_path, state: 'read', actor: 'codex'});
     recordActivity('Dismissed decision', selected);
-    setNotice('Decision dismissed and alert marked read.', 'ok');
+    setNotice('Decision dismissed.', 'ok');
     await loadCockpit();
   } catch (err) {
     setNotice(`Dismiss decision was blocked: ${err.message || err}`);
@@ -2121,29 +2332,7 @@ document.getElementById('deleteAlert').addEventListener('click', async () => {
   }
 });
 document.getElementById('dismissVisible').addEventListener('click', async () => {
-  const items = visibleMessageItems();
-  if (!items.length) return;
-  const ok = confirm(`Dismiss ${items.length} visible alert(s) by marking them read?`);
-  if (!ok) return;
-  try {
-    for (const item of items) {
-      await postJson('/api/message-read-state', {path: item.message_path, state: 'read', actor: 'codex'});
-      if (item.kind === 'decision') {
-        await postJson('/api/decision-state', {
-          path: item.message_path,
-          state: 'dismissed',
-          note: 'Bulk dismissed from PAH action console.',
-          actor: 'darrin_or_codex',
-          title: item.title || ''
-        });
-      }
-    }
-    recordActivity(`Dismissed ${items.length} visible alerts`, items[0], `${items.length}`);
-    setNotice(`Dismissed ${items.length} visible alert(s).`, 'ok');
-    await loadCockpit();
-  } catch (err) {
-    setNotice(`Dismiss visible was blocked: ${err.message || err}`);
-  }
+  setNotice('Legacy bulk read-state dismiss is retired. Use thread replies/decision state, then refresh.', 'ok');
 });
 document.getElementById('deleteVisible').addEventListener('click', async () => {
   const items = visibleMessageItems();
@@ -2163,6 +2352,8 @@ document.getElementById('deleteVisible').addEventListener('click', async () => {
 });
 document.getElementById('runDiagnostics').addEventListener('click', async () => {
   try {
+    prefs.clearedDiagnosticsSignature = '';
+    savePrefs();
     const payload = await postJson('/api/run-diagnostics', {});
     const fail = Number(payload.checks_fail || 0);
     const warn = Number(payload.checks_warn || 0);
@@ -2172,18 +2363,76 @@ document.getElementById('runDiagnostics').addEventListener('click', async () => 
     setNotice(`Run diagnostics was blocked: ${err.message || err}`);
   }
 });
-document.getElementById('archiveRead').addEventListener('click', async () => {
-  const ok = confirm('Move read CODEX Inbox messages to CODEX Archive? Unread messages and waiting-on-Darrin messages stay put.');
-  if (!ok) return;
+document.getElementById('clearDiagnostics').addEventListener('click', async () => {
   try {
-    const res = await fetch('/api/archive-read-codex-inbox', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-Agent-Hub-Token': WRITE_TOKEN},
-      body: JSON.stringify({actor: 'darrin_or_codex'})
-    });
-    const payload = await res.json().catch(() => ({}));
-    if (!res.ok || payload.ok === false) throw new Error(payload.error || `archive failed ${res.status}`);
-    setNotice(`Archived ${payload.count || 0} read CODEX Inbox message(s). Waiting-on-Darrin skipped: ${payload.skipped_waiting_on_darrin || 0}.`, 'ok');
+    const preview = await postJson('/api/clear-diagnostics', {dry_run: true, actor: 'darrin_or_codex'});
+    const count = Number(preview.count || 0);
+    const ok = confirm(`Clear diagnostics from this view and move ${count} saved diagnostic report file(s) to archive?`);
+    if (!ok) {
+      setNotice('Diagnostics clear canceled.', 'ok');
+      return;
+    }
+    const result = await postJson('/api/clear-diagnostics', {dry_run: false, actor: 'darrin_or_codex'});
+    prefs.clearedDiagnosticsSignature = diagnosticsSignature();
+    prefs.selectedId = '';
+    savePrefs();
+    selected = null;
+    setNotice(`Diagnostics cleared from this view. Archived ${result.count || 0} report file(s).`, 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Clear diagnostics was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('cleanupInboxes').addEventListener('click', async () => {
+  try {
+    const selector = document.getElementById('cleanupMailbox');
+    const mailbox = selector?.value || 'all';
+    const label = selector?.selectedOptions?.[0]?.textContent || 'selected inbox';
+    const preview = await postJson('/api/cleanup-inbox-accumulation', {mailbox, dry_run: true, actor: 'darrin_or_codex'});
+    const count = Number(preview.count || 0);
+    if (!count) {
+      setNotice(`Inbox cleanup found no messages in ${label}.`, 'ok');
+      return;
+    }
+    const ok = confirm(`Move ${count} message file(s) from ${label} to their archive folder(s)? This clears the selected live inbox view.`);
+    if (!ok) {
+      setNotice(`Inbox cleanup preview found ${count} item(s) in ${label}; no files moved.`, 'ok');
+      return;
+    }
+    const result = await postJson('/api/cleanup-inbox-accumulation', {mailbox, dry_run: false, actor: 'darrin_or_codex'});
+    setNotice(`Inbox cleanup moved ${result.count || 0} message file(s) from ${label} to archive.`, 'ok');
+    await loadCockpit();
+  } catch (err) {
+    setNotice(`Inbox cleanup was blocked: ${err.message || err}`);
+  }
+});
+document.getElementById('archiveRead').addEventListener('click', async () => {
+  try {
+    const preview = await postJson('/api/archive-read-codex-inbox', {dry_run: true, actor: 'darrin_or_codex'});
+    const count = Number(preview.count || 0);
+    const skipped = Number(preview.skipped_waiting_on_darrin || 0);
+    const pendingDispatch = Number(preview.skipped_pending_dispatch || 0);
+    const unstructured = Number(preview.skipped_unstructured || 0);
+    if (!count) {
+      const pieces = [];
+      if (skipped) pieces.push(`${skipped} Darrin-waiting`);
+      if (pendingDispatch) pieces.push(`${pendingDispatch} pending dispatch`);
+      if (unstructured) pieces.push(`${unstructured} unstructured`);
+      setNotice(pieces.length ? `No read mail archived. Skipped ${pieces.join(', ')} item(s).` : 'No read mail to archive.', 'ok');
+      return;
+    }
+    const skipText = [
+      skipped ? `${skipped} Darrin-waiting item(s)` : '',
+      pendingDispatch ? `${pendingDispatch} pending dispatch(es)` : '',
+      unstructured ? `${unstructured} unstructured item(s)` : ''
+    ].filter(Boolean).join(' and ');
+    const ok = confirm(`Archive ${count} read message file(s) from active mailbox views?${skipText ? ` ${skipText} will stay active.` : ''}`);
+    if (!ok) {
+      setNotice(`Archive read preview found ${count} item(s); no files moved.`, 'ok');
+      return;
+    }
+    const result = await postJson('/api/archive-read-codex-inbox', {dry_run: false, actor: 'darrin_or_codex'});
+    setNotice(`Archived ${result.count || 0} read message file(s).`, 'ok');
     await loadCockpit();
   } catch (err) {
     setNotice(`Archive read was blocked: ${err.message || err}`);

@@ -21,6 +21,7 @@ import time
 import webbrowser
 from dataclasses import dataclass, field
 from datetime import datetime
+from http.cookies import SimpleCookie
 from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -78,6 +79,7 @@ from pah_mailbox.atomic import atomic_append_text, atomic_write_text
 from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
 from pah_mailbox.idempotency import processed_message_event_status, record_processed_message_event
 from pah_mailbox.paths import (
+    CC_CLAUDE_INBOX,
     CLAUDE_CODE_INBOX,
     CLAUDE_CODE_INBOX_LEGACY,
     CLAUDE_INBOX,
@@ -114,6 +116,13 @@ WATCHER_EVENT_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_watcher_events.jsonl"
 UI_PATH = HUB_ROOT / "CODEX_agent_hub_ui.html"
 WRITE_TOKEN = secrets.token_urlsafe(32)
 ALLOW_SIMULATED_INBOUND = False
+LEGACY_MESSAGE_ENDPOINTS = {
+    "/api/send",
+    "/api/message-read-state",
+    "/api/mark-all-read",
+}
+MESSAGE_RETENTION_HOURS = 36
+TIMESTAMPED_MESSAGE_RE = re.compile(r"^20\d{6}.*\.md$", re.IGNORECASE)
 NOTIFICATION_LOCK = threading.Lock()
 WATCHER_LOCK = threading.Lock()
 WATCHER_SNOOZE_DEFAULT_MINUTES = 15
@@ -121,6 +130,18 @@ STALE_UNREAD_SECONDS = 60
 
 IMPORTANT_STATUSES = {"Decision Needed", "Response Requested", "Implementation Report"}
 IMPORTANT_TYPES = {"dispatch", "complete", "decision", "blocker", "response-request", "implementation"}
+DISPATCH_MESSAGE_TYPES = {"dispatch", "task", "build_go", "build-go"}
+COMPLETION_EVIDENCE_TYPES = {
+    "implementation_report",
+    "implementation-report",
+    "impl_report",
+    "impl-report",
+    "completion",
+    "complete",
+    "completed",
+    "report",
+}
+COMPLETION_EVIDENCE_STATUSES = {"complete", "completed", "shipped", "review_complete", "closed"}
 SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
     "Claude -> Codex": ({"claude-desktop", "claude-code"}, {"codex"}),
     "Codex -> Claude": ({"codex"}, {"claude-desktop"}),
@@ -132,6 +153,28 @@ SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
     "Codex -> Claude Code (legacy)": ({"codex"}, {"claude-code"}),
     "Codex Sent": ({"codex"}, {"claude-desktop", "claude-code"}),
     "Claude Sent": ({"claude-desktop", "claude-code"}, {"codex"}),
+}
+
+AGENT_INBOX_DIRS: dict[str, tuple[Path, ...]] = {
+    "codex": (CODEX_INBOX,),
+    "claude-desktop": (CLAUDE_INBOX, CC_CLAUDE_INBOX),
+    "claude-code": (CLAUDE_CODE_INBOX, CLAUDE_CODE_INBOX_LEGACY),
+}
+ALL_AGENT_INBOX_DIRS = tuple(dict.fromkeys(path for paths in AGENT_INBOX_DIRS.values() for path in paths))
+CLEANUP_MAILBOX_TARGETS: dict[str, tuple[Path, ...]] = {
+    "all": ALL_AGENT_INBOX_DIRS,
+    "codex": (CODEX_INBOX,),
+    "claude-desktop": (CLAUDE_INBOX, CC_CLAUDE_INBOX),
+    "claude-code": (CLAUDE_CODE_INBOX, CLAUDE_CODE_INBOX_LEGACY),
+}
+CLEANUP_ARCHIVE_ROOTS: dict[Path, Path] = {
+    CODEX_INBOX: CODEX_ARCHIVE / "Inbox Cleanup",
+    CLAUDE_INBOX: MAILBOX_ROOT / "CLAUDE Archive" / "Inbox Cleanup",
+    CLAUDE_CODE_INBOX: (CC_MAILBOX_ROOT / "CC Archive" / "Inbox Cleanup")
+    if CLAUDE_CODE_INBOX == CC_MAILBOX_ROOT / "CC Inbox"
+    else (MAILBOX_ROOT / "CODEX_CLAUDE_CODE Archive" / "Inbox Cleanup"),
+    CLAUDE_CODE_INBOX_LEGACY: MAILBOX_ROOT / "CODEX Claude Code Archive" / "Inbox Cleanup",
+    CC_CLAUDE_INBOX: CC_MAILBOX_ROOT / "CLAUDE Archive" / "Inbox Cleanup",
 }
 
 TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 -]{1,40}:\s*(.*)$")
@@ -324,6 +367,53 @@ def load_messages() -> list[Message]:
     return messages
 
 
+def message_parent_in(msg: Message, folders: tuple[Path, ...]) -> bool:
+    try:
+        parent = msg.path.parent.resolve()
+    except OSError:
+        parent = msg.path.parent
+    for folder in folders:
+        try:
+            if parent == folder.resolve():
+                return True
+        except OSError:
+            if str(parent) == str(folder):
+                return True
+    return False
+
+
+def message_in_agent_inbox(msg: Message, agent_id: str) -> bool:
+    return message_parent_in(msg, AGENT_INBOX_DIRS.get(agent_id, ()))
+
+
+def message_in_any_agent_inbox(msg: Message) -> bool:
+    return message_parent_in(msg, ALL_AGENT_INBOX_DIRS)
+
+
+def is_dispatch_message(msg: Message) -> bool:
+    msg_type = str(msg.message_type or "").strip().lower()
+    if msg_type in DISPATCH_MESSAGE_TYPES:
+        return True
+    text = " ".join([msg.title, msg.summary]).lower()
+    return "dispatch" in text
+
+
+def is_structured_mailbox_message(msg: Message) -> bool:
+    return bool(str(msg.schema_version or "").strip() and str(msg.message_id or "").strip())
+
+
+def is_completion_evidence_message(msg: Message) -> bool:
+    msg_type = str(msg.message_type or "").strip().lower()
+    status = str(msg.status or "").strip().lower()
+    if is_dispatch_message(msg):
+        return False
+    return msg_type in COMPLETION_EVIDENCE_TYPES or status in COMPLETION_EVIDENCE_STATUSES
+
+
+def completed_thread_ids(messages: list[Message]) -> set[str]:
+    return {msg.stable_thread for msg in messages if is_completion_evidence_message(msg)}
+
+
 def load_ledger_text() -> str:
     return read_text(LEDGER_PATH) if LEDGER_PATH.exists() else ""
 
@@ -427,16 +517,16 @@ def classify_thread_state(latest: Message, archived: bool = False) -> str:
         return "closed"
     if thread_status in {"parked", "paused"}:
         return "parked"
+    if owner == "darrin":
+        return "open_on_darrin"
+    if boolish(latest.requires_darrin_decision):
+        return "open_on_darrin"
+    if owner in {"codex", "claude_desktop", "claude_code", "claude-code", "claude-desktop"}:
+        return "open_on_agent"
     if msg_type in {"completion", "complete", "report", "ack", "acknowledgment"} or status in {"complete", "shipped", "review_complete"}:
         if thread_status in {"ready_for_review", "waiting_review"} or latest.to_agent in {"claude-desktop", "claude-code", "codex"}:
             return "open_on_agent"
         return "closed"
-    if owner == "darrin":
-        return "open_on_darrin"
-    if owner in {"codex", "claude_desktop", "claude_code", "claude-code", "claude-desktop"}:
-        return "open_on_agent"
-    if not owner and boolish(latest.requires_darrin_decision):
-        return "open_on_darrin"
     if thread_status in {"waiting_on_agent", "waiting_review", "ready_for_review"}:
         return "open_on_agent"
     if thread_status == "waiting_on_darrin" and status in {"open", "blocked"} and msg_type == "decision_request":
@@ -1291,20 +1381,95 @@ def unique_destination(path: Path) -> Path:
     raise FileExistsError(f"Could not find unique archive destination for {path}")
 
 
+def cleanup_archive_root_for(path: Path) -> Path:
+    parent = path.parent
+    for inbox_dir, archive_root in CLEANUP_ARCHIVE_ROOTS.items():
+        try:
+            if parent.resolve() == inbox_dir.resolve():
+                return archive_root
+        except OSError:
+            if parent == inbox_dir:
+                return archive_root
+    return CODEX_ARCHIVE / "Inbox Cleanup"
+
+
+def cleanup_inbox_dirs() -> tuple[Path, ...]:
+    return tuple(dict.fromkeys(path for paths in CLEANUP_MAILBOX_TARGETS.values() for path in paths))
+
+
+def cleanup_target_dirs(mailbox: str) -> tuple[Path, ...]:
+    target = safe_slug(mailbox or "all")
+    if target not in CLEANUP_MAILBOX_TARGETS:
+        raise ValueError(f"Unknown mailbox cleanup target: {mailbox}")
+    return tuple(dict.fromkeys(CLEANUP_MAILBOX_TARGETS[target]))
+
+
+def cleanup_inbox_accumulation(
+    actor: str = "codex",
+    older_than_hours: int = MESSAGE_RETENTION_HOURS,
+    dry_run: bool = True,
+    mailbox: str = "all",
+) -> dict[str, Any]:
+    _ = older_than_hours
+    inbox_dirs = cleanup_target_dirs(mailbox)
+    moved: list[dict[str, str]] = []
+    skipped = {"missing_inbox": 0, "non_markdown": 0}
+
+    for inbox_dir in inbox_dirs:
+        if not inbox_dir.exists():
+            skipped["missing_inbox"] += 1
+            continue
+        for path in sorted(inbox_dir.iterdir(), key=lambda item: item.name.lower()):
+            if not path.is_file():
+                continue
+            if path.suffix.lower() != ".md":
+                skipped["non_markdown"] += 1
+                continue
+            modified = path.stat().st_mtime
+            date_dir = datetime.fromtimestamp(modified).strftime("%Y%m%d")
+            archive_dir = cleanup_archive_root_for(path) / inbox_dir.name / date_dir
+            destination = unique_destination(archive_dir / path.name)
+            record = {
+                "source": str(path),
+                "destination": str(destination),
+                "inbox": str(inbox_dir),
+                "archive": str(archive_dir),
+            }
+            if not dry_run:
+                archive_dir.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(path), str(destination))
+            moved.append(record)
+
+    return {
+        "actor": actor.strip() or "codex",
+        "dry_run": dry_run,
+        "mailbox": safe_slug(mailbox or "all"),
+        "count": len(moved),
+        "moved": moved,
+        "skipped": skipped,
+    }
+
+
 def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = False) -> dict[str, Any]:
     read_state_data = load_read_state()
-    codex_inbox = CODEX_INBOX.resolve()
-    archive_dir = CODEX_ARCHIVE / "Read Messages" / datetime.now().strftime("%Y%m%d")
+    inbox_dirs = cleanup_inbox_dirs()
+    messages = load_messages()
+    completed_threads = completed_thread_ids(messages)
     candidates: list[Message] = []
     skipped_waiting = 0
-    for msg in load_messages():
-        try:
-            if msg.path.parent.resolve() != codex_inbox:
-                continue
-        except OSError:
+    skipped_pending_dispatch = 0
+    skipped_unstructured = 0
+    for msg in messages:
+        if not message_parent_in(msg, inbox_dirs):
+            continue
+        if not is_structured_mailbox_message(msg):
+            skipped_unstructured += 1
             continue
         if msg.is_waiting_on_darrin:
             skipped_waiting += 1
+            continue
+        if is_dispatch_message(msg) and msg.stable_thread not in completed_threads:
+            skipped_pending_dispatch += 1
             continue
         read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
         if read_status["unread"]:
@@ -1312,9 +1477,10 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
         candidates.append(msg)
 
     moved: list[dict[str, str]] = []
-    if not dry_run:
-        archive_dir.mkdir(parents=True, exist_ok=True)
     for msg in candidates:
+        archive_dir = cleanup_archive_root_for(msg.path) / msg.path.parent.name / datetime.fromtimestamp(
+            msg.path.stat().st_mtime
+        ).strftime("%Y%m%d")
         destination = unique_destination(archive_dir / msg.path.name)
         record = {
             "message_id": msg.message_id,
@@ -1323,8 +1489,10 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
             "to": msg.to_agent,
             "source": str(msg.path),
             "destination": str(destination),
+            "archive": str(archive_dir),
         }
         if not dry_run:
+            archive_dir.mkdir(parents=True, exist_ok=True)
             shutil.move(str(msg.path), str(destination))
         moved.append(record)
 
@@ -1333,7 +1501,8 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
         "dry_run": dry_run,
         "count": len(moved),
         "skipped_waiting_on_darrin": skipped_waiting,
-        "archive_dir": str(archive_dir),
+        "skipped_pending_dispatch": skipped_pending_dispatch,
+        "skipped_unstructured": skipped_unstructured,
         "moved": moved,
     }
 
@@ -1358,6 +1527,32 @@ def archive_selected_alert(path_value: str, actor: str = "codex", dry_run: bool 
         archive_dir.mkdir(parents=True, exist_ok=True)
         shutil.move(str(msg.path), str(destination))
     return record
+
+
+def clear_diagnostic_reports(actor: str = "codex", dry_run: bool = True) -> dict[str, Any]:
+    archive_root = CODEX_ARCHIVE / "Deleted Diagnostics" / datetime.now().strftime("%Y%m%d")
+    moved: list[dict[str, str]] = []
+    skipped = {"missing_dir": 0, "non_file": 0}
+    if not DIAGNOSTICS_DIR.exists():
+        skipped["missing_dir"] = 1
+        return {"actor": actor.strip() or "codex", "dry_run": dry_run, "count": 0, "moved": moved, "skipped": skipped}
+    for path in sorted(DIAGNOSTICS_DIR.iterdir(), key=lambda item: item.name.lower()):
+        if not path.is_file():
+            skipped["non_file"] += 1
+            continue
+        destination = unique_destination(archive_root / path.name)
+        record = {"source": str(path), "destination": str(destination)}
+        if not dry_run:
+            archive_root.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(path), str(destination))
+        moved.append(record)
+    return {
+        "actor": actor.strip() or "codex",
+        "dry_run": dry_run,
+        "count": len(moved),
+        "moved": moved,
+        "skipped": skipped,
+    }
 
 
 def messages_for_thread(thread_id: str, messages: list[Message] | None = None) -> list[Message]:
@@ -1468,7 +1663,7 @@ def state() -> dict[str, Any]:
     adapters = adapter_status()
     quarantine = quarantine_status()
     decision_state = decision_state_summary()
-    agent_status = build_agent_status(messages, read_state_data, work_board, decisions)
+    agent_status = build_agent_status(messages, read_state_data, work_board, decisions, thread_focus)
     watcher = build_watcher_status(agent_status, route_tests)
     return {
         "project_root": str(PROJECT_ROOT),
@@ -1790,8 +1985,8 @@ def cockpit_agents(status_data: dict[str, Any]) -> list[dict[str, Any]]:
         inbound_count = int(agent.get("inbound", 0) or 0)
         outbound_count = int(agent.get("outbound", 0) or 0)
         if agent.get("id") == "darrin":
-            count_value = status_data.get("counts", {}).get("decisions", 0)
-            count_label = "decision" if count_value == 1 else "decisions"
+            count_value = int(status_data.get("thread_focus", {}).get("counts", {}).get("open_on_darrin", 0) or 0)
+            count_label = "thread" if count_value == 1 else "threads"
         elif waiting_count:
             count_value = waiting_count
             count_label = "queued"
@@ -1911,7 +2106,7 @@ def cockpit_action_queue(
 def cockpit_thread_queue(thread_focus: dict[str, Any], limit: int = 80) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for bucket, kind, severity in (
-        ("open_on_darrin", "you", "warn"),
+        ("open_on_darrin", "you", "ok"),
         ("open_on_agent", "agent", "ok"),
         ("parked", "parked", "ok"),
         ("closed", "closed", "ok"),
@@ -2017,6 +2212,7 @@ def cockpit_payload() -> dict[str, Any]:
             "checks_fail": sum(1 for check in diagnostic_checks if not check.get("ok") and check.get("severity") != "warning"),
             "actionable_validation_issues": validation_summary.get("actionable", 0),
             "last_run_iso": generated_at,
+            "thread_classifier": thread_focus.get("diagnostics", {}),
             "relay_health": {
                 "ok": bool(relay_health_check.get("ok")) if relay_health_check else False,
                 "severity": str(relay_health_check.get("severity", "warning")) if relay_health_check else "warning",
@@ -2194,9 +2390,9 @@ def build_agent_mailbox_messages(
         if not read_status["unread"]:
             continue
         targets: list[str] = []
-        if msg.is_waiting_on_darrin:
+        if msg.is_waiting_on_darrin and message_in_any_agent_inbox(msg):
             targets.append("darrin")
-        if msg.to_agent in boxes:
+        if msg.to_agent in boxes and message_in_agent_inbox(msg, msg.to_agent):
             targets.append(msg.to_agent)
         for target in dict.fromkeys(targets):
             if len(boxes[target]) < limit:
@@ -2209,8 +2405,10 @@ def build_agent_status(
     read_state_data: dict[str, Any] | None,
     work_board: dict[str, Any],
     decisions: list[dict[str, Any]],
+    thread_focus: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     now = datetime.now().timestamp()
+    thread_focus = thread_focus or {}
     active_work_states = {"todo", "in_progress", "review", "blocked"}
     agent_rows = [
         {"id": "codex", "label": "Codex", "initials": "CX", "role": "builder / sender"},
@@ -2243,12 +2441,18 @@ def build_agent_status(
     for agent in agent_rows:
         agent_id = agent["id"]
         if agent_id == "darrin":
-            inbound = [msg for msg in messages if msg.is_waiting_on_darrin]
+            open_on_darrin = list(thread_focus.get("open_on_darrin", []))
+            open_thread_ids = {str(row.get("thread_id") or row.get("id")) for row in open_on_darrin}
+            inbound = [
+                msg
+                for msg in messages
+                if msg.stable_thread in open_thread_ids and message_in_any_agent_inbox(msg)
+            ]
             outbound: list[Message] = []
             waiting_messages = inbound
-            agent_work = decisions[:4]
+            agent_work: list[dict[str, Any]] = []
         else:
-            inbound = [msg for msg in messages if msg.to_agent == agent_id]
+            inbound = [msg for msg in messages if msg.to_agent == agent_id and message_in_agent_inbox(msg, agent_id)]
             outbound = [msg for msg in messages if msg.from_agent == agent_id]
             waiting_messages = [
                 msg
@@ -2300,8 +2504,10 @@ def build_agent_status(
             if msg.priority.lower() in {"high", "urgent"} or msg.thread_status.lower() == "waiting_on_agent"
         ]
 
-        if agent_id == "darrin" and decisions:
+        if agent_id == "darrin" and waiting_messages:
             state = "needs_attention"
+        elif agent_id == "darrin":
+            state = "idle"
         elif urgent_waiting:
             state = "needs_wake" if agent_id == "claude-code" else "waiting"
         elif waiting_messages:
@@ -2853,8 +3059,13 @@ load(); setInterval(load, 8000);
 
 def html_page() -> str:
     if UI_PATH.exists():
-        return read_text(UI_PATH).replace("__WRITE_TOKEN__", WRITE_TOKEN)
-    return HTML_PAGE.replace("__WRITE_TOKEN__", WRITE_TOKEN)
+        return read_text(UI_PATH).replace("__WRITE_TOKEN__", "")
+    return """<!doctype html>
+<html><head><meta charset="utf-8"><title>PANDA Agent Hub</title></head>
+<body style="font-family: system-ui; background: #151526; color: #e0ddd5;">
+<h1>PANDA Agent Hub</h1>
+<p>The mailroom UI file is missing. Legacy compose/read-state fallback is retired.</p>
+</body></html>"""
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -2870,7 +3081,11 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def trusted_write_request(self) -> bool:
-        if self.headers.get("X-Agent-Hub-Token") != WRITE_TOKEN:
+        cookie = SimpleCookie()
+        cookie.load(self.headers.get("Cookie", ""))
+        cookie_token = cookie.get("pah_write_token")
+        token_value = cookie_token.value if cookie_token else ""
+        if token_value != WRITE_TOKEN and self.headers.get("X-Agent-Hub-Token") != WRITE_TOKEN:
             return False
         origin = self.headers.get("Origin")
         if origin:
@@ -2923,24 +3138,33 @@ class Handler(BaseHTTPRequestHandler):
         data = html_page().encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Set-Cookie", f"pah_write_token={WRITE_TOKEN}; HttpOnly; SameSite=Strict; Path=/")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
 
     def do_POST(self) -> None:
         parsed_path = urlparse(self.path).path
+        if parsed_path in LEGACY_MESSAGE_ENDPOINTS:
+            self.send_json(
+                {
+                    "ok": False,
+                    "error": "Legacy messaging/read-state endpoint retired. PAH uses the thread classifier mailroom now.",
+                },
+                410,
+            )
+            return
         if parsed_path not in {
-            "/api/send",
             "/api/test-notification",
             "/api/write-decision-queue",
             "/api/run-diagnostics",
+            "/api/clear-diagnostics",
+            "/api/cleanup-inbox-accumulation",
+            "/api/archive-read-codex-inbox",
             "/api/create-route-test",
             "/api/quarantine-message",
             "/api/decision-state",
             "/api/validation-state",
-            "/api/message-read-state",
-            "/api/mark-all-read",
-            "/api/archive-read-codex-inbox",
             "/api/archive-selected-alert",
             "/api/thread-archive-state",
             "/api/work-item",
@@ -2976,6 +3200,41 @@ class Handler(BaseHTTPRequestHandler):
         if parsed_path == "/api/run-diagnostics":
             diagnostics = run_communication_diagnostics(write_report=True)
             self.send_json({"ok": diagnostics["ok"], **diagnostics})
+            return
+        if parsed_path == "/api/clear-diagnostics":
+            try:
+                record = clear_diagnostic_reports(
+                    actor=str(payload.get("actor", "codex")),
+                    dry_run=bool(payload.get("dry_run", True)),
+                )
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **record})
+            return
+        if parsed_path == "/api/cleanup-inbox-accumulation":
+            try:
+                record = cleanup_inbox_accumulation(
+                    actor=str(payload.get("actor", "codex")),
+                    older_than_hours=int(payload.get("older_than_hours", MESSAGE_RETENTION_HOURS)),
+                    dry_run=bool(payload.get("dry_run", True)),
+                    mailbox=str(payload.get("mailbox", "all")),
+                )
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **record})
+            return
+        if parsed_path == "/api/archive-read-codex-inbox":
+            try:
+                record = archive_read_codex_inbox_messages(
+                    actor=str(payload.get("actor", "codex")),
+                    dry_run=bool(payload.get("dry_run", False)),
+                )
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **record})
             return
         if parsed_path == "/api/create-route-test":
             try:
@@ -3026,37 +3285,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
             self.send_json({"ok": True, "record": record})
-            return
-        if parsed_path == "/api/message-read-state":
-            try:
-                record = set_read_state_for_message(
-                    str(payload.get("path", "")),
-                    str(payload.get("state", READ_STATE)),
-                    actor=str(payload.get("actor", "codex")),
-                )
-            except Exception as exc:
-                self.send_json({"ok": False, "error": str(exc)}, 400)
-                return
-            self.send_json({"ok": True, "record": record})
-            return
-        if parsed_path == "/api/mark-all-read":
-            try:
-                record = mark_all_messages_read(actor=str(payload.get("actor", "codex")))
-            except Exception as exc:
-                self.send_json({"ok": False, "error": str(exc)}, 400)
-                return
-            self.send_json({"ok": True, **record})
-            return
-        if parsed_path == "/api/archive-read-codex-inbox":
-            try:
-                record = archive_read_codex_inbox_messages(
-                    actor=str(payload.get("actor", "codex")),
-                    dry_run=bool(payload.get("dry_run", False)),
-                )
-            except Exception as exc:
-                self.send_json({"ok": False, "error": str(exc)}, 400)
-                return
-            self.send_json({"ok": True, **record})
             return
         if parsed_path == "/api/archive-selected-alert":
             try:

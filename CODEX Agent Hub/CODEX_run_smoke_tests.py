@@ -1021,6 +1021,166 @@ def test_read_state_marks_changed_content_unread() -> None:
         assert_true(summary["counts"]["read"] == 1, "read state summary counts read records")
 
 
+def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        codex_inbox = root / "CODEX Inbox"
+        claude_inbox = root / "CLAUDE Inbox"
+        codex_archive = root / "CODEX Archive" / "Inbox Cleanup"
+        claude_archive = root / "CLAUDE Archive" / "Inbox Cleanup"
+        codex_inbox.mkdir()
+        claude_inbox.mkdir()
+        state_path = root / "read_state.json"
+
+        read_codex = codex_inbox / "read_codex.md"
+        unread_codex = codex_inbox / "unread_codex.md"
+        read_claude = claude_inbox / "read_claude.md"
+        waiting_darrin = claude_inbox / "waiting_darrin.md"
+        pending_dispatch = claude_inbox / "pending_dispatch.md"
+        unstructured = claude_inbox / "unstructured_amendment.md"
+
+        messages = [
+            (
+                read_codex,
+                "PAH-ARCHIVE-READ-CODEX",
+                {
+                    "from": "claude-code",
+                    "to": "codex",
+                    "type": "report",
+                    "status": "complete",
+                    "thread_status": "closed",
+                },
+            ),
+            (
+                unread_codex,
+                "PAH-ARCHIVE-UNREAD-CODEX",
+                {
+                    "from": "claude-code",
+                    "to": "codex",
+                    "type": "report",
+                    "status": "complete",
+                    "thread_status": "closed",
+                },
+            ),
+            (
+                read_claude,
+                "PAH-ARCHIVE-READ-CLAUDE",
+                {
+                    "from": "codex",
+                    "to": "claude-desktop",
+                    "type": "report",
+                    "status": "complete",
+                    "thread_status": "closed",
+                },
+            ),
+            (
+                waiting_darrin,
+                "PAH-ARCHIVE-WAITING-DARRIN",
+                {
+                    "from": "claude-code",
+                    "to": "claude-desktop",
+                    "type": "decision_request",
+                    "status": "open",
+                    "thread_status": "waiting_on_darrin",
+                    "requires_darrin_decision": True,
+                },
+            ),
+            (
+                pending_dispatch,
+                "PAH-ARCHIVE-PENDING-DISPATCH",
+                {
+                    "from": "claude-desktop",
+                    "to": "claude-code",
+                    "type": "dispatch",
+                    "status": "active",
+                    "thread_status": "active",
+                },
+            ),
+        ]
+        for path, message_id, overrides in messages:
+            metadata = {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "id": message_id,
+                "thread_id": message_id,
+                "created_at": "2026-04-29T10:00:00-07:00",
+                "priority": "normal",
+                "approval_boundary": "coordination_only",
+                "requires_darrin_decision": False,
+                **overrides,
+            }
+            text = render_message_markdown(metadata, "Archive read smoke", "Smoke test", "Body.")
+            path.write_text(text, encoding="utf-8")
+            if path != unread_codex:
+                set_message_read_state(path, message_id, text, "read", actor="smoke", state_path=state_path)
+        unstructured.write_text(
+            "# Dispatch Amendment\n\n**Message-ID:** `PAH-UNSTRUCTURED-AMENDMENT`\n**From:** Claude Desktop\n**To:** Claude Code\n",
+            encoding="utf-8",
+        )
+
+        original_values = {
+            "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
+            "CLEANUP_MAILBOX_TARGETS": agent_hub.CLEANUP_MAILBOX_TARGETS,
+            "CLEANUP_ARCHIVE_ROOTS": agent_hub.CLEANUP_ARCHIVE_ROOTS,
+            "load_read_state": agent_hub.load_read_state,
+        }
+        try:
+            agent_hub.MESSAGE_DIRS = (("Codex Inbox", codex_inbox), ("Claude Inbox", claude_inbox))
+            agent_hub.CLEANUP_MAILBOX_TARGETS = {
+                "all": (codex_inbox, claude_inbox),
+                "codex": (codex_inbox,),
+                "claude-desktop": (claude_inbox,),
+            }
+            agent_hub.CLEANUP_ARCHIVE_ROOTS = {
+                codex_inbox: codex_archive,
+                claude_inbox: claude_archive,
+            }
+            agent_hub.load_read_state = lambda: json.loads(state_path.read_text(encoding="utf-8"))
+
+            preview = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=True)
+            assert_true(preview["count"] == 2, "dry run finds read messages in all active inboxes")
+            assert_true(read_codex.exists() and read_claude.exists(), "dry run does not move files")
+            assert_true(preview["skipped_pending_dispatch"] == 1, "dry run skips read pending dispatches")
+            assert_true(preview["skipped_unstructured"] == 1, "dry run skips unstructured mailbox messages")
+
+            result = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=False)
+            assert_true(result["count"] == 2, "archive read moves only read non-Darrin-waiting messages")
+            assert_true(not read_codex.exists(), "read Codex inbox message is removed")
+            assert_true(not read_claude.exists(), "read Claude inbox message is removed")
+            assert_true(unread_codex.exists(), "unread message stays active")
+            assert_true(waiting_darrin.exists(), "Darrin-waiting message stays active")
+            assert_true(pending_dispatch.exists(), "pending dispatch stays active even when read")
+            assert_true(unstructured.exists(), "unstructured mailbox message stays active")
+            assert_true(any((codex_archive / "CODEX Inbox").rglob("read_codex.md")), "Codex read mail lands in archive")
+            assert_true(any((claude_archive / "CLAUDE Inbox").rglob("read_claude.md")), "Claude read mail lands in archive")
+            assert_true(result["skipped_waiting_on_darrin"] == 1, "Darrin-waiting skip is reported")
+            assert_true(result["skipped_pending_dispatch"] == 1, "pending dispatch skip is reported")
+            assert_true(result["skipped_unstructured"] == 1, "unstructured skip is reported")
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+
+
+def test_classifier_darrin_precedence_beats_completion_fallback() -> None:
+    message = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/smoke.md"),
+        name="smoke.md",
+        modified=1.0,
+        title="Darrin decision beats report fallback",
+        message_id="PAH-CLASSIFIER-DARRIN-PRECEDENCE",
+        thread_id="PAH-CLASSIFIER-DARRIN-PRECEDENCE",
+        thread_status="active",
+        status="shipped",
+        from_agent="claude-code",
+        to_agent="claude-desktop",
+        action_owner="darrin",
+        requires_darrin_decision=True,
+        message_type="report",
+    )
+    state = agent_hub.classify_thread_state(message)
+    assert_true(state == "open_on_darrin", "Darrin ownership wins before completion/report fallback")
+
+
 def test_thread_archive_state_reopens_on_new_activity() -> None:
     with TemporaryDirectory() as temp_dir:
         state_path = Path(temp_dir) / "thread_archive.json"
@@ -1158,6 +1318,8 @@ def main() -> None:
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()
     test_read_state_marks_changed_content_unread()
+    test_archive_read_mail_moves_read_messages_from_active_inboxes()
+    test_classifier_darrin_precedence_beats_completion_fallback()
     test_thread_archive_state_reopens_on_new_activity()
     test_decision_state()
     test_validation_state()
