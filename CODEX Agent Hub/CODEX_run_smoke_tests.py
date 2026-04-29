@@ -8,11 +8,16 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import os
+import socket
 import subprocess
 import sys
+import time
 from tempfile import TemporaryDirectory
 
 import CODEX_agent_hub as agent_hub
+import CODEX_pah_inspector as inspector
+import CODEX_pah_periodic_health_check as periodic_health
 from pah_core import MESSAGE_SCHEMA_VERSION
 from pah_core.decisions import decision_is_active, decision_state_summary, set_decision_state
 from pah_core.participants import route_participants
@@ -435,6 +440,117 @@ def test_routes_and_scope() -> None:
     assert_true(classify_path(Path("C:/panda-gallery/test.txt")) == "panda_gallery_requires_darrin", "PG path boundary")
 
 
+def test_create_message_dry_run_does_not_write_mail() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        inbox = root / "CLAUDE Inbox"
+        ledger = root / "CODEX_MAILBOX_LEDGER.md"
+        interaction_ledger = root / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
+        original_values = {
+            "CLAUDE_INBOX": agent_hub.CLAUDE_INBOX,
+            "LEDGER_PATH": agent_hub.LEDGER_PATH,
+            "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
+        }
+        try:
+            agent_hub.CLAUDE_INBOX = inbox
+            agent_hub.LEDGER_PATH = ledger
+            agent_hub.INTERACTION_LEDGER_PATH = interaction_ledger
+            result = agent_hub.create_message(
+                {
+                    "route": "codex_to_claude",
+                    "subject": "Dry run route probe",
+                    "body": "This should not be written.",
+                    "dry_run": True,
+                }
+            )
+            assert_true(result["dry_run"] is True, "create_message reports dry-run mode")
+            assert_true(not Path(str(result["path"])).exists(), "create_message dry-run does not write mailbox file")
+            assert_true(not inbox.exists(), "create_message dry-run does not create inbox directory")
+            assert_true(not ledger.exists(), "create_message dry-run does not write mailbox ledger")
+            assert_true(not interaction_ledger.exists(), "create_message dry-run does not write interaction ledger")
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+
+
+def test_create_message_writes_reply_tombstone_for_active_message() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        codex_inbox = root / "CODEX Inbox"
+        claude_inbox = root / "CLAUDE Inbox"
+        codex_inbox.mkdir()
+        claude_inbox.mkdir()
+        original_path = codex_inbox / "original.md"
+        ledger = root / "CODEX_MAILBOX_LEDGER.md"
+        interaction_ledger = root / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
+        original_text = render_message_markdown(
+            {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "message_id": "PAH-ORIGINAL-001",
+                "thread_id": "PAH-REPLY-TOMBSTONE",
+                "created_at": "2026-04-29T10:00:00-07:00",
+                "from": "claude-desktop",
+                "to": "codex",
+                "type": "directive",
+                "status": "open",
+                "thread_status": "active",
+                "action_owner": "codex",
+                "priority": "normal",
+                "requires_darrin_decision": False,
+                "approval_boundary": "coordination_only",
+            },
+            "Original active request",
+            "Needs reply",
+            "Please reply to this message.",
+        )
+        original_path.write_text(original_text, encoding="utf-8")
+        original_values = {
+            "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
+            "CODEX_INBOX": agent_hub.CODEX_INBOX,
+            "CLAUDE_INBOX": agent_hub.CLAUDE_INBOX,
+            "LEDGER_PATH": agent_hub.LEDGER_PATH,
+            "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
+        }
+        try:
+            agent_hub.clear_message_parse_cache()
+            agent_hub.MESSAGE_DIRS = (("Claude -> Codex", codex_inbox), ("Codex -> Claude", claude_inbox))
+            agent_hub.CODEX_INBOX = codex_inbox
+            agent_hub.CLAUDE_INBOX = claude_inbox
+            agent_hub.LEDGER_PATH = ledger
+            agent_hub.INTERACTION_LEDGER_PATH = interaction_ledger
+            result = agent_hub.create_message(
+                {
+                    "route": "codex_to_claude",
+                    "subject": "Reply tombstone probe",
+                    "body": "Replying so the original should stop looking live.",
+                    "thread_id": "PAH-REPLY-TOMBSTONE",
+                    "reply_to": "PAH-ORIGINAL-001",
+                }
+            )
+            assert_true(Path(str(result["path"])).exists(), "reply message is written")
+            assert_true(len(result["reply_tombstones"]) == 1, "create_message reports one reply tombstone")
+            tombstone_path = agent_hub.reply_tombstone_path(original_path)
+            assert_true(tombstone_path.exists(), "reply tombstone is written beside the original message")
+            tombstone = json.loads(tombstone_path.read_text(encoding="utf-8"))
+            assert_true(tombstone["original_message_id"] == "PAH-ORIGINAL-001", "tombstone identifies original message")
+            assert_true(tombstone["reply_message_id"] == result["message_id"], "tombstone identifies reply message")
+            original_message = next(msg for msg in agent_hub.load_messages() if msg.message_id == "PAH-ORIGINAL-001")
+            assert_true(agent_hub.classify_thread_state(original_message) == "closed", "replied original classifies closed")
+            ledger_events = [
+                json.loads(line)
+                for line in interaction_ledger.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            assert_true(
+                any(event.get("event_type") == "message_reply_tombstoned" for event in ledger_events),
+                "interaction ledger records reply tombstone creation",
+            )
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+            agent_hub.clear_message_parse_cache()
+
+
 def test_cockpit_payload_contract() -> None:
     payload = agent_hub.cockpit_payload()
     assert_true(payload["schema_version"] == 1, "cockpit schema version")
@@ -466,12 +582,539 @@ def test_cockpit_payload_contract() -> None:
     assert_true("relay_health" in payload["diagnostics"], "cockpit diagnostics carries relay health summary")
     assert_true("status_label" in payload["diagnostics"]["relay_health"], "relay health summary carries status label")
     assert_true("cache" in payload["diagnostics"]["relay_health"], "relay health summary carries cache metadata")
+    assert_true("health" in payload, "cockpit carries canonical health summary")
+    assert_true("components" in payload["health"], "health summary carries components")
+    assert_true("server" in payload["health"]["components"], "health summary carries server component")
+    assert_true("routes" in payload["health"]["components"], "health summary carries routes component")
+    assert_true("diagnostics" in payload["health"]["components"], "health summary carries diagnostics component")
     if (agent_hub.PROJECT_ROOT / ".git").exists():
         assert_true(payload["git"]["last_commit"], "git payload carries last commit hash when repo metadata is available")
         assert_true(payload["git"]["last_commit_message"], "git payload carries last commit message when repo metadata is available")
         assert_true(payload["git"]["last_commit_iso"], "git payload carries last commit timestamp when repo metadata is available")
     ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
     assert_true("unread over 60s" not in ui_text, "UI derives stale threshold labels from cockpit_state")
+
+
+def test_health_payload_contract() -> None:
+    payload = agent_hub.health_payload()
+    assert_true(payload["schema_version"] == 1, "health schema version")
+    assert_true(payload["overall"] in {"ok", "warn", "err", "unknown"}, "health overall level is normalized")
+    assert_true(isinstance(payload["ok"], bool), "health ok is boolean")
+    components = payload["components"]
+    for name in ("server", "routes", "mailboxes", "unanswered", "agent_progress", "archive", "diagnostics", "periodic_monitor", "github_backup"):
+        assert_true(name in components, f"health carries {name} component")
+        assert_true(components[name]["level"] in {"ok", "warn", "err", "unknown"}, f"{name} health level is normalized")
+        assert_true(bool(components[name]["label"]), f"{name} health has label")
+        assert_true(bool(components[name]["detail"]), f"{name} health has detail")
+
+
+def test_agent_progress_monitor_contract() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        pg_root = root / "panda-gallery"
+        target = pg_root / "panda_ledger" / "shared"
+        state_dir = pg_root / "workflows" / "cc_mailbox" / "_state"
+        target.mkdir(parents=True)
+        state_dir.mkdir(parents=True)
+        sidecar = state_dir / "active_dispatch.json"
+        file_path = target / "ipc.py"
+        file_path.write_text("print('ok')\n", encoding="utf-8")
+        stale_time = time.time() - (50 * 60)
+        os.utime(file_path, (stale_time, stale_time))
+        now_iso = agent_hub.datetime.now().astimezone().isoformat(timespec="seconds")
+        old_iso = agent_hub.datetime.fromtimestamp(time.time() - (50 * 60)).astimezone().isoformat(timespec="seconds")
+        original_values = {
+            "CC_ACTIVE_DISPATCH_PATH": agent_hub.CC_ACTIVE_DISPATCH_PATH,
+            "PANDA_GALLERY_ROOT": agent_hub.PANDA_GALLERY_ROOT,
+        }
+        try:
+            agent_hub.CC_ACTIVE_DISPATCH_PATH = sidecar
+            agent_hub.PANDA_GALLERY_ROOT = pg_root
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "agent": "claude-code",
+                        "dispatch_id": "PG-LEDGER-PHASE2",
+                        "thread_id": "PG-LEDGER-PHASE2",
+                        "phase": "Layer 1 shared/",
+                        "status": "active",
+                        "started_at": old_iso,
+                        "updated_at": now_iso,
+                        "expected_target_paths": [str(target)],
+                        "stale_warn_minutes": 30,
+                        "stale_error_minutes": 45,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            stale = agent_hub.cc_active_dispatch_progress()
+            assert_true(stale["severity"] == "err", "stale active dispatch becomes red")
+            assert_true("Interrupt CC" in stale["recommended_action"], "stale active dispatch recommends interrupt")
+
+            fresh_time = time.time()
+            os.utime(file_path, (fresh_time, fresh_time))
+            fresh = agent_hub.cc_active_dispatch_progress()
+            assert_true(fresh["severity"] == "ok", "recent target mtime becomes green")
+            assert_true(fresh["recommended_action"], "fresh progress card still has a recommended action")
+
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "agent": "claude-code",
+                        "dispatch_id": "PG-LEDGER-PHASE2",
+                        "phase": "Composing module",
+                        "status": "compose",
+                        "started_at": old_iso,
+                        "updated_at": old_iso,
+                        "expected_target_paths": [str(target)],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            compose = agent_hub.cc_active_dispatch_progress()
+            assert_true(compose["severity"] == "err", "overlong compose state becomes red")
+            assert_true("compose state exceeded" in compose["recommended_action"], "compose state explains action")
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+
+
+def test_codex_mailbox_sla_progress() -> None:
+    with TemporaryDirectory() as temp_dir:
+        inbox = Path(temp_dir) / "CODEX Inbox"
+        inbox.mkdir()
+        path = inbox / "urgent.md"
+        path.write_text("urgent body", encoding="utf-8")
+        original_values = {
+            "AGENT_INBOX_DIRS": agent_hub.AGENT_INBOX_DIRS,
+            "ALL_AGENT_INBOX_DIRS": agent_hub.ALL_AGENT_INBOX_DIRS,
+        }
+        try:
+            agent_hub.AGENT_INBOX_DIRS = {**agent_hub.AGENT_INBOX_DIRS, "codex": (inbox,)}
+            agent_hub.ALL_AGENT_INBOX_DIRS = (inbox,)
+            msg = agent_hub.Message(
+                direction="smoke",
+                path=path,
+                name=path.name,
+                modified=time.time() - 180,
+                title="Urgent pickup test",
+                summary="urgent",
+                body="urgent body",
+                message_id="PAH-SLA-URGENT",
+                thread_id="PAH-SLA-URGENT",
+                from_agent="claude-desktop",
+                to_agent="codex",
+                message_type="urgent_request",
+                priority="urgent",
+                status="open",
+                thread_status="active",
+                schema_version="1",
+            )
+            progress = agent_hub.codex_mailbox_sla_progress([msg], {})
+            assert_true(progress["severity"] == "err", "urgent unread beyond SLA becomes red")
+            assert_true(progress["urgent_breached"] == 1, "urgent SLA breach is counted")
+            assert_true(progress["recommended_action"] == "Read urgent Codex mail now.", "urgent SLA recommends immediate read")
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+
+
+def test_health_payload_unanswered_component() -> None:
+    cockpit = {
+        "generated_at": "2026-04-29T09:30:00",
+        "cockpit_state": {
+            "counts": {
+                "open_on_darrin": 2,
+                "open_on_agent": 3,
+                "owner_unknown": 0,
+                "stale_unread": 1,
+            },
+            "routes_summary": {"severity": "ok", "label": "4/4 routes pass"},
+        },
+        "diagnostics": {"checks_fail": 0, "checks_warn": 0, "actionable_validation_issues": 0},
+        "git": {"clean": True, "branch": "main", "tracking": "origin/main"},
+    }
+    health = agent_hub.health_payload_from_cockpit(cockpit)
+    unanswered = health["components"]["unanswered"]
+    assert_true(unanswered["level"] == "warn", "open answered work is a warning")
+    assert_true(unanswered["total"] == 5, "unanswered total sums Darrin, agent, and unknown owners")
+
+    cockpit["cockpit_state"]["counts"]["owner_unknown"] = 1
+    health = agent_hub.health_payload_from_cockpit(cockpit)
+    assert_true(health["components"]["unanswered"]["level"] == "err", "owner-unknown unanswered work is an error")
+
+
+def test_periodic_archive_sweep_contract() -> None:
+    original = periodic_health.agent_hub.archive_read_codex_inbox_messages
+
+    def fake_archive_read(actor: str = "codex", dry_run: bool = False) -> dict[str, object]:
+        assert_true(actor == "periodic_health_monitor", "periodic archive sweep uses steward actor")
+        assert_true(dry_run is False, "periodic archive sweep performs real read-mail archiving")
+        return {
+            "protocol_version": 2,
+            "count": 2,
+            "skipped_waiting_on_darrin": 1,
+            "skipped_pending_dispatch": 1,
+            "skipped_unstructured": 1,
+            "archive_conflicts": 1,
+            "inbox_summary": [{"name": "CLAUDE Inbox", "moved": 2}],
+        }
+
+    try:
+        periodic_health.agent_hub.archive_read_codex_inbox_messages = fake_archive_read
+        result = periodic_health.archive_read_sweep()
+        assert_true(result["ok"], "periodic archive sweep wrapper reports ok")
+        assert_true(result["protocol_version"] == 2, "periodic archive sweep preserves protocol version")
+        assert_true(result["moved"] == 2, "periodic archive sweep reports moved read mail")
+        assert_true(result["archive_conflicts"] == 1, "periodic archive sweep reports archive conflicts")
+        assert_true(result["inbox_summary"][0]["moved"] == 2, "periodic archive sweep reports per-inbox moved count")
+    finally:
+        periodic_health.agent_hub.archive_read_codex_inbox_messages = original
+
+
+def test_periodic_steward_schedule_metadata() -> None:
+    started_at = "2026-04-29T10:00:00-07:00"
+    original = periodic_health.os.environ.get("PAH_PERIODIC_HEALTH_INTERVAL_MINUTES")
+    try:
+        periodic_health.os.environ["PAH_PERIODIC_HEALTH_INTERVAL_MINUTES"] = "15"
+        schedule = periodic_health.steward_schedule(started_at)
+        assert_true(schedule["interval_minutes"] == 15, "steward schedule honors interval override")
+        assert_true(schedule["last_run_started_at"] == started_at, "steward schedule records last run start")
+        assert_true(schedule["next_run_after"] == "2026-04-29T10:15:00-07:00", "steward schedule records next run")
+        periodic_health.os.environ["PAH_PERIODIC_HEALTH_INTERVAL_MINUTES"] = "invalid"
+        fallback = periodic_health.steward_schedule(started_at)
+        assert_true(
+            fallback["interval_minutes"] == periodic_health.DEFAULT_RUN_INTERVAL_MINUTES,
+            "steward schedule falls back to default interval",
+        )
+    finally:
+        if original is None:
+            periodic_health.os.environ.pop("PAH_PERIODIC_HEALTH_INTERVAL_MINUTES", None)
+        else:
+            periodic_health.os.environ["PAH_PERIODIC_HEALTH_INTERVAL_MINUTES"] = original
+
+
+def test_pah_inspector_detects_retired_ui_routes() -> None:
+    with TemporaryDirectory() as temp_dir:
+        ui_path = Path(temp_dir) / "ui.html"
+        ui_path.write_text(
+            """<!doctype html><div id=\"stewardPanel\"></div><div id=\"trustStrip\"></div><div id=\"summaryStrip\"></div><button id=\"archiveRead\"></button><button id=\"cleanupInboxes\"></button><button id=\"refresh\"></button><button id=\"openInspector\"></button><section id=\"inspectorPanel\"><div id=\"inspectorSummary\"></div><div id=\"inspectorFindings\"></div><pre id=\"inspectorMarkdown\"></pre></section><div id=\"agentList\"></div><div id=\"actionList\"></div><div id=\"inboxStrip\"></div><div id=\"detailTitle\"></div><div id=\"detailSummary\"></div><div id=\"messagePreview\"></div><div id=\"queueCount\"></div><input id=\"queueSearch\"><button id=\"deleteVisible\"></button><button id=\"openMessage\"></button><button id=\"openFolder\"></button><button id=\"copyPath\"></button><button id=\"snoozeAlert\"></button><script>postJson('/api/archive-read-codex-inbox', {}); fetch('/api/send');</script>""",
+            encoding="utf-8",
+        )
+        original = inspector.agent_hub.UI_PATH
+        try:
+            inspector.agent_hub.UI_PATH = ui_path
+            findings = inspector.inspect_ui_wiring()
+            by_id = {finding.check_id: finding for finding in findings}
+            assert_true(by_id["ui.required_controls"].status == "pass", "inspector sees required controls")
+            assert_true(by_id["ui.no_retired_routes"].status == "fail", "inspector flags retired UI endpoint")
+        finally:
+            inspector.agent_hub.UI_PATH = original
+
+
+def test_pah_inspector_summary_and_markdown_report() -> None:
+    findings = [
+        inspector.passed("a", "A", "ok"),
+        inspector.warn("b", "B", "warn"),
+        inspector.fail("c", "C", "fail"),
+    ]
+    summary = inspector.summarize(findings)
+    assert_true(summary["overall"] == "fail", "inspector summary fails when any finding fails")
+    report = {
+        "generated_at": "2026-04-29T10:00:00-07:00",
+        "url": "http://127.0.0.1:8765",
+        "summary": summary,
+        "findings": [finding.as_dict() for finding in findings],
+    }
+    text = inspector.markdown_report(report)
+    assert_true("# PAH Inspector Report" in text, "inspector markdown has title")
+    assert_true("[FAIL] C" in text, "inspector markdown includes failing finding")
+
+
+def test_interaction_ledger_helper_writes_jsonl() -> None:
+    with TemporaryDirectory() as temp_dir:
+        ledger_path = Path(temp_dir) / "CODEX_pah_interaction_ledger.jsonl"
+        original = agent_hub.INTERACTION_LEDGER_PATH
+        try:
+            agent_hub.INTERACTION_LEDGER_PATH = ledger_path
+            event = agent_hub.append_interaction_ledger_event(
+                "smoke_event",
+                actor="smoke",
+                path=Path(temp_dir) / "message.md",
+                nested={"path": Path(temp_dir) / "nested.md"},
+            )
+            assert_true(event["schema_version"] == 1, "interaction ledger event includes schema version")
+            payload = json.loads(ledger_path.read_text(encoding="utf-8").strip())
+            assert_true(payload["event_type"] == "smoke_event", "interaction ledger writes event type")
+            assert_true(payload["actor"] == "smoke", "interaction ledger writes actor")
+            assert_true(isinstance(payload["path"], str), "interaction ledger serializes paths")
+            assert_true(isinstance(payload["nested"]["path"], str), "interaction ledger serializes nested paths")
+        finally:
+            agent_hub.INTERACTION_LEDGER_PATH = original
+
+
+def test_interaction_ledger_recent_events_and_summary() -> None:
+    with TemporaryDirectory() as temp_dir:
+        ledger_path = Path(temp_dir) / "CODEX_pah_interaction_ledger.jsonl"
+        original = agent_hub.INTERACTION_LEDGER_PATH
+        try:
+            agent_hub.INTERACTION_LEDGER_PATH = ledger_path
+            agent_hub.append_interaction_ledger_event("message_sent", actor="smoke")
+            discrepancy = agent_hub.append_interaction_ledger_event(
+                "agent_no_mail_claim_discrepancy",
+                actor="smoke",
+                agent="claude-desktop",
+                actionable_unread_count=2,
+                physical_unread_count=3,
+            )
+            agent_hub.append_interaction_ledger_event(
+                "agent_no_mail_claim_validated",
+                actor="smoke",
+                agent="claude-code",
+            )
+
+            recent = agent_hub.recent_interaction_ledger_events(limit=2)
+            assert_true(len(recent) == 2, "recent interaction ledger honors limit")
+            assert_true(recent[0]["event_type"] == "agent_no_mail_claim_validated", "recent interaction ledger is newest first")
+
+            filtered = agent_hub.recent_interaction_ledger_events(
+                limit=10,
+                event_types={"agent_no_mail_claim_discrepancy"},
+            )
+            assert_true(len(filtered) == 1, "recent interaction ledger filters event types")
+            assert_true(filtered[0]["agent"] == "claude-desktop", "filtered interaction ledger preserves payload fields")
+
+            summary = agent_hub.interaction_ledger_summary()
+            assert_true(summary["exists"], "interaction ledger summary reports existing ledger")
+            assert_true(summary["discrepancy_count"] == 1, "interaction ledger summary counts discrepancy events")
+            assert_true(summary["latest_discrepancy"]["time"] == discrepancy["time"], "interaction ledger summary exposes latest discrepancy")
+            assert_true(
+                all(event["event_type"] != "message_sent" for event in summary["events"]),
+                "interaction ledger summary only includes trust events",
+            )
+        finally:
+            agent_hub.INTERACTION_LEDGER_PATH = original
+
+
+def test_message_audit_records_discovery_and_classifier_transition() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        inbox = root / "CC Inbox"
+        inbox.mkdir()
+        ledger_path = root / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
+        audit_state_path = root / "CODEX state" / "message_audit.json"
+        original_values = {
+            "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
+            "MESSAGE_AUDIT_STATE_PATH": agent_hub.MESSAGE_AUDIT_STATE_PATH,
+        }
+        try:
+            agent_hub.INTERACTION_LEDGER_PATH = ledger_path
+            agent_hub.MESSAGE_AUDIT_STATE_PATH = audit_state_path
+
+            first_path = inbox / "open.md"
+            first_path.write_text(
+                render_message_markdown(
+                    {
+                        "schema_version": MESSAGE_SCHEMA_VERSION,
+                        "id": "PAH-AUDIT-OPEN",
+                        "thread_id": "PAH-AUDIT-THREAD",
+                        "created_at": "2026-04-29T10:00:00-07:00",
+                        "from": "claude-desktop",
+                        "to": "claude-code",
+                        "type": "dispatch",
+                        "priority": "normal",
+                        "status": "open",
+                        "thread_status": "active",
+                        "action_owner": "claude-code",
+                        "requires_darrin_decision": False,
+                        "approval_boundary": "coordination_only",
+                    },
+                    "Audit open",
+                    "Initial open thread.",
+                    "No action.",
+                ),
+                encoding="utf-8",
+            )
+            first = agent_hub.parse_message(first_path, "To Claude Code")
+            focus = agent_hub.build_thread_focus([first])
+            audit = agent_hub.audit_messages_and_thread_states([first], focus, {"messages": {}})
+            assert_true(audit["discovered"] == 1, "message audit records first-seen message")
+            assert_true(audit["transitions"] == 0, "first classifier observation establishes baseline")
+
+            time.sleep(0.01)
+            closed_path = inbox / "closed.md"
+            closed_path.write_text(
+                render_message_markdown(
+                    {
+                        "schema_version": MESSAGE_SCHEMA_VERSION,
+                        "id": "PAH-AUDIT-CLOSED",
+                        "thread_id": "PAH-AUDIT-THREAD",
+                        "created_at": "2026-04-29T10:05:00-07:00",
+                        "from": "claude-code",
+                        "to": "claude-desktop",
+                        "type": "report",
+                        "priority": "normal",
+                        "status": "completed",
+                        "thread_status": "closed",
+                        "action_owner": "none",
+                        "requires_darrin_decision": False,
+                        "approval_boundary": "ack_only",
+                    },
+                    "Audit closed",
+                    "Closed thread.",
+                    "Done.",
+                ),
+                encoding="utf-8",
+            )
+            closed = agent_hub.parse_message(closed_path, "Claude Code -> Claude")
+            focus = agent_hub.build_thread_focus([first, closed])
+            audit = agent_hub.audit_messages_and_thread_states([first, closed], focus, {"messages": {}})
+            assert_true(audit["discovered"] == 1, "message audit records newly discovered follow-up")
+            assert_true(audit["transitions"] == 1, "message audit records classifier state transition")
+
+            events = [
+                json.loads(line)
+                for line in ledger_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            event_types = [event["event_type"] for event in events]
+            assert_true(event_types.count("message_discovered") == 2, "ledger records both message discoveries")
+            transition = next(event for event in events if event["event_type"] == "classifier_state_changed")
+            assert_true(transition["previous_state"] == "open_on_agent", "transition records previous classifier state")
+            assert_true(transition["state"] == "closed", "transition records new classifier state")
+        finally:
+            agent_hub.INTERACTION_LEDGER_PATH = original_values["INTERACTION_LEDGER_PATH"]
+            agent_hub.MESSAGE_AUDIT_STATE_PATH = original_values["MESSAGE_AUDIT_STATE_PATH"]
+
+
+def test_agent_no_mail_claim_validation() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        claude_inbox = root / "CLAUDE Inbox"
+        claude_inbox.mkdir()
+        ledger_path = root / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
+        state_path = root / "read_state.json"
+        state_path.write_text(json.dumps({"messages": {}}), encoding="utf-8")
+
+        original_values = {
+            "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
+            "AGENT_INBOX_DIRS": agent_hub.AGENT_INBOX_DIRS,
+            "ALL_AGENT_INBOX_DIRS": agent_hub.ALL_AGENT_INBOX_DIRS,
+            "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
+            "load_read_state": agent_hub.load_read_state,
+        }
+        try:
+            agent_hub.MESSAGE_DIRS = (("Claude Inbox", claude_inbox),)
+            agent_hub.AGENT_INBOX_DIRS = {"claude-desktop": (claude_inbox,)}
+            agent_hub.ALL_AGENT_INBOX_DIRS = (claude_inbox,)
+            agent_hub.INTERACTION_LEDGER_PATH = ledger_path
+            agent_hub.load_read_state = lambda: json.loads(state_path.read_text(encoding="utf-8"))
+
+            clear = agent_hub.validate_agent_no_mail_claim("claude-desktop", actor="smoke")
+            assert_true(clear["ok"], "no-mail claim passes when agent inbox has no unread messages")
+            assert_true(clear["actionable_unread_count"] == 0, "clear no-mail claim has no actionable unread")
+            assert_true(clear["physical_unread_count"] == 0, "clear no-mail claim has no physical unread")
+
+            message_path = claude_inbox / "unread_for_claude.md"
+            message_text = render_message_markdown(
+                {
+                    "schema_version": MESSAGE_SCHEMA_VERSION,
+                    "id": "PAH-NO-MAIL-CLAIM-UNREAD",
+                    "thread_id": "PAH-NO-MAIL-CLAIM-UNREAD",
+                    "created_at": "2026-04-29T10:00:00-07:00",
+                    "from": "codex",
+                    "to": "claude-desktop",
+                    "type": "coordination",
+                    "status": "open",
+                    "thread_status": "active",
+                    "priority": "normal",
+                    "approval_boundary": "coordination_only",
+                    "requires_darrin_decision": False,
+                },
+                "Unread for Claude",
+                "Claim mismatch smoke.",
+                "Claude Desktop should not be able to claim no mail while this is unread.",
+            )
+            message_path.write_text(message_text, encoding="utf-8")
+            mismatch = agent_hub.validate_agent_no_mail_claim("cd", actor="smoke")
+            assert_true(not mismatch["ok"], "no-mail claim fails when actionable unread mail exists")
+            assert_true(mismatch["actionable_unread_count"] == 1, "no-mail claim reports actionable unread count")
+            assert_true(mismatch["physical_unread_count"] == 1, "no-mail claim reports physical unread count")
+
+            set_message_read_state(message_path, "PAH-NO-MAIL-CLAIM-UNREAD", message_text, "read", actor="smoke", state_path=state_path)
+            unstructured_path = claude_inbox / "owner_unknown.md"
+            unstructured_path.write_text("# Legacy note\n\nThis lacks PAH frontmatter but still lives in the inbox.\n", encoding="utf-8")
+            malformed = agent_hub.validate_agent_no_mail_claim("claude", actor="smoke")
+            assert_true(not malformed["ok"], "no-mail claim fails when owner-unknown unread mail exists")
+            assert_true(malformed["actionable_unread_count"] == 0, "owner-unknown no-mail mismatch is not counted as actionable")
+            assert_true(malformed["physical_unread_count"] == 1, "owner-unknown no-mail mismatch is counted as physical unread")
+            assert_true(malformed["owner_unknown_count"] == 1, "no-mail claim reports owner-unknown unread count")
+
+            events = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            event_types = [event["event_type"] for event in events]
+            assert_true("agent_no_mail_claim_validated" in event_types, "ledger records valid no-mail claim")
+            assert_true("agent_no_mail_claim_discrepancy" in event_types, "ledger records discrepant no-mail claim")
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+
+
+def test_periodic_communication_backlog_detects_discrepancies() -> None:
+    cockpit = {
+        "cockpit_state": {
+            "counts": {
+                "open_on_agent": 1,
+                "owner_unknown": 1,
+                "open_on_darrin": 0,
+            }
+        },
+        "thread_focus": {
+            "open_on_agent": [{"title": "Check your mail", "thread_id": "PAH-E2E-TEST", "owner": "claude_desktop"}],
+            "owner_unknown": [{"title": "Legacy unowned message", "thread_id": "legacy.md"}],
+        },
+    }
+    backlog = periodic_health.communication_backlog(cockpit)
+    assert_true(not backlog["ok"], "communication backlog fails when agents or unknown owners have work")
+    assert_true(backlog["open_on_agent"] == 1, "communication backlog reports open-on-agent count")
+    assert_true(backlog["owner_unknown"] == 1, "communication backlog reports owner-unknown count")
+    assert_true(backlog["agent_threads"][0]["thread_id"] == "PAH-E2E-TEST", "communication backlog includes agent thread details")
+
+    clear = {
+        "cockpit_state": {"counts": {"open_on_agent": 0, "owner_unknown": 0, "open_on_darrin": 2}},
+        "thread_focus": {},
+    }
+    assert_true(periodic_health.communication_backlog(clear)["ok"], "Darrin-only work does not fail agent communication backlog")
+
+
+def test_periodic_communication_backlog_records_discrepancy_event() -> None:
+    backlog = {
+        "ok": False,
+        "open_on_agent": 1,
+        "owner_unknown": 2,
+        "open_on_darrin": 0,
+        "agent_threads": [{"title": "Needs agent", "thread_id": "THREAD-1", "owner": "claude-desktop"}],
+        "owner_unknown_threads": [{"title": "Unknown owner", "thread_id": "THREAD-2"}],
+    }
+    captured: list[dict[str, object]] = []
+    original = periodic_health.agent_hub.append_interaction_ledger_event
+
+    def fake_append(event_type: str, actor: str = "pah", **details: object) -> dict[str, object]:
+        payload = {"event_type": event_type, "actor": actor, **details}
+        captured.append(payload)
+        return payload
+
+    try:
+        periodic_health.agent_hub.append_interaction_ledger_event = fake_append
+        event = periodic_health.record_communication_backlog_event(backlog)
+        assert_true(event is not None, "periodic backlog records discrepancy event")
+        assert_true(captured[0]["event_type"] == "mailbox_discrepancy_detected", "discrepancy event type is recorded")
+        assert_true(captured[0]["actor"] == "periodic_health_monitor", "discrepancy event actor is steward")
+        assert_true(captured[0]["open_on_agent"] == 1, "discrepancy event records agent backlog count")
+        assert_true(captured[0]["owner_unknown"] == 2, "discrepancy event records owner-unknown count")
+    finally:
+        periodic_health.agent_hub.append_interaction_ledger_event = original
 
 
 def test_cockpit_action_queue_ordering() -> None:
@@ -521,16 +1164,176 @@ def test_cockpit_action_queue_ordering() -> None:
     assert_true([item["id"] for item in queue] == ["new-wake", "old-wake", "plain-unread"], "action queue preserves schema order")
 
 
+def test_urgent_codex_request_protocol() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        codex_inbox = root / "CODEX Inbox"
+        codex_inbox.mkdir()
+        path = codex_inbox / "urgent.md"
+        text = render_message_markdown(
+            {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "message_id": "PAH-URGENT-CODEX-001",
+                "thread_id": "PAH-URGENT-CODEX-001",
+                "created_at": "2026-04-29T12:20:00-07:00",
+                "from": "claude-code",
+                "to": "codex",
+                "type": "urgent_request",
+                "priority": "urgent",
+                "status": "open",
+                "thread_status": "waiting_on_agent",
+                "action_owner": "codex",
+                "approval_boundary": "coordination_only",
+                "requires_darrin_decision": False,
+            },
+            "URGENT: Codex help needed",
+            "Claude Code is blocked and needs Codex now.",
+            "Please interrupt lower-priority work and respond.",
+        )
+        path.write_text(text, encoding="utf-8")
+        original_values = {
+            "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
+            "AGENT_INBOX_DIRS": agent_hub.AGENT_INBOX_DIRS,
+            "ALL_AGENT_INBOX_DIRS": agent_hub.ALL_AGENT_INBOX_DIRS,
+            "NOTIFICATION_STATE_PATH": agent_hub.NOTIFICATION_STATE_PATH,
+            "NOTIFICATION_LOG_PATH": agent_hub.NOTIFICATION_LOG_PATH,
+            "load_notification_config": agent_hub.load_notification_config,
+            "send_notification": agent_hub.send_notification,
+            "processed_message_event_status": agent_hub.processed_message_event_status,
+            "record_processed_message_event": agent_hub.record_processed_message_event,
+        }
+        try:
+            agent_hub.clear_message_parse_cache()
+            agent_hub.MESSAGE_DIRS = (("Claude -> Codex", codex_inbox),)
+            agent_hub.AGENT_INBOX_DIRS = {"codex": (codex_inbox,), "claude-desktop": (), "claude-code": ()}
+            agent_hub.ALL_AGENT_INBOX_DIRS = (codex_inbox,)
+            notification_state = root / "notification_state.json"
+            notification_log = root / "notification_log.jsonl"
+            processed_sidecar = root / "processed" / "urgent.json"
+            sent_notifications = []
+            processed_events: set[tuple[str, str]] = set()
+
+            class FakeProcessedStatus:
+                def __init__(self, status: str, sidecar_path: Path) -> None:
+                    self.status = status
+                    self.sidecar_path = sidecar_path
+
+            def fake_load_notification_config() -> dict[str, object]:
+                config = json.loads(json.dumps(agent_hub.DEFAULT_NOTIFICATION_CONFIG))
+                config["enabled"] = False
+                config["provider"] = "log_only"
+                config["send_existing_on_start"] = False
+                config["notify_on"].pop("urgent_codex_request", None)
+                return config
+
+            def fake_send_notification(config: dict[str, object], subject: str, body: str) -> dict[str, object]:
+                sent_notifications.append({"config": dict(config), "subject": subject, "body": body})
+                return {"ok": True, "provider": config.get("provider", "log_only"), "detail": "fake"}
+
+            def fake_processed_message_event_status(message_id: str, source_path: Path, body: str, event: str) -> FakeProcessedStatus:
+                status = "already_processed" if (message_id, event) in processed_events else "unseen"
+                return FakeProcessedStatus(status, processed_sidecar)
+
+            def fake_record_processed_message_event(
+                message_id: str, source_path: Path, body: str, event: str, outcome: str = "sent"
+            ) -> dict[str, str]:
+                processed_events.add((message_id, event))
+                processed_sidecar.parent.mkdir(parents=True, exist_ok=True)
+                return {"content_hash": "fake-hash", "outcome": outcome}
+
+            agent_hub.NOTIFICATION_STATE_PATH = notification_state
+            agent_hub.NOTIFICATION_LOG_PATH = notification_log
+            agent_hub.load_notification_config = fake_load_notification_config
+            agent_hub.send_notification = fake_send_notification
+            agent_hub.processed_message_event_status = fake_processed_message_event_status
+            agent_hub.record_processed_message_event = fake_record_processed_message_event
+            messages = agent_hub.load_messages()
+            urgent = agent_hub.urgent_codex_request_rows(messages, {})
+            assert_true(len(urgent) == 1, "urgent Codex request is detected")
+            assert_true(agent_hub.classify_thread_state(messages[0]) == "open_on_agent", "urgent Codex request is active until replied or closed")
+            assert_true(urgent[0]["kind"] == "urgent", "urgent Codex request becomes urgent queue item")
+            assert_true(urgent[0]["severity"] == "err", "urgent Codex request is error-severity")
+            assert_true("URGENT for Codex" in urgent[0]["wake_line"], "urgent Codex request carries an interrupt line")
+            read_state_path = root / "read_state.json"
+            agent_hub.set_message_read_state(path, messages[0].message_id, messages[0].body, agent_hub.READ_STATE, actor="smoke", state_path=read_state_path)
+            read_state_data = agent_hub.load_read_state(read_state_path)
+            read_urgent = agent_hub.urgent_codex_request_rows(messages, read_state_data)
+            assert_true(len(read_urgent) == 1, "read-but-unreplied urgent Codex request stays active")
+            assert_true(read_urgent[0]["read_state"] == agent_hub.READ_STATE, "urgent row exposes read state")
+            assert_true(read_urgent[0]["unread"] is False, "urgent row can be read without being hidden")
+            assert_true(not messages[0].is_waiting_on_darrin, "urgent Codex request does not become Darrin decision work")
+            boxes = agent_hub.build_agent_mailbox_messages(messages, {})
+            assert_true(len(boxes["codex"]) == 1, "urgent Codex request appears in Codex mailbox")
+            assert_true(len(boxes["darrin"]) == 0, "urgent Codex request does not pollute Darrin mailbox")
+            events = agent_hub.attention_events(messages, [])
+            assert_true(events[0]["kind"] == "urgent_codex_request", "urgent Codex request is first notification event")
+            tray = agent_hub.tray_status_payload(
+                {
+                    "generated_at": "2026-04-29T12:20:00",
+                    "cockpit_state": {
+                        "counts": {"urgent_codex_requests": 1, "stale_unread": 0, "unread": 1, "decisions_needed": 0},
+                        "routes_summary": {"failed": 0, "held": 0},
+                    },
+                    "diagnostics": {"checks_warn": 0, "checks_fail": 0},
+                    "wake_candidates": [],
+                    "agents": [],
+                }
+            )
+            assert_true(tray["level"] == "urgent", "tray status prioritizes urgent Codex requests")
+            cockpit = agent_hub.cockpit_payload()
+            assert_true(cockpit["action_queue"][0]["kind"] == "urgent", "cockpit queue places urgent Codex requests first")
+            assert_true(cockpit["urgent_breakthrough"]["active"], "cockpit exposes active urgent breakthrough state")
+            assert_true(cockpit["wake"]["route_status"] == "urgent_codex_request", "wake block prioritizes urgent Codex route")
+            assert_true("URGENT for Codex" in cockpit["wake"]["line"], "wake block carries urgent Codex line")
+
+            result = agent_hub.run_notification_scan()
+            assert_true(result["enabled"] is False, "urgent scan reports optional notification config disabled")
+            assert_true(result["logged"] == 1, "disabled notification config still logs urgent Codex breakthrough")
+            assert_true(result["urgent_breakthrough_logged"] == 1, "urgent Codex breakthrough bypasses disabled notifications")
+            assert_true(len(sent_notifications) == 1, "urgent Codex breakthrough sends one hard-channel log notification")
+            assert_true(sent_notifications[0]["subject"] == "URGENT request for Codex", "urgent breakthrough subject is explicit")
+            assert_true(sent_notifications[0]["config"]["provider"] == "log_only", "disabled urgent breakthrough uses log-only delivery")
+            state_data = json.loads(notification_state.read_text(encoding="utf-8"))
+            assert_true(
+                any(key.startswith("urgent-codex:") for key in state_data.get("sent", {})),
+                "urgent breakthrough records sent state",
+            )
+            assert_true("urgent_codex_request" in notification_log.read_text(encoding="utf-8"), "urgent breakthrough is logged")
+            result_again = agent_hub.run_notification_scan()
+            assert_true(result_again["urgent_breakthrough_logged"] == 0, "urgent breakthrough scan is idempotent")
+            assert_true(len(sent_notifications) == 1, "urgent breakthrough does not duplicate notifications")
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+            agent_hub.clear_message_parse_cache()
+
+
 def test_tray_status_payload_contract() -> None:
     status = agent_hub.tray_status_payload()
     assert_true(status["schema_version"] == 1, "tray status schema version")
     assert_true(status["ok"], "tray status reports ok")
-    assert_true(status["level"] in {"ok", "attention", "decision", "diagnostic"}, "tray status level enum")
+    assert_true(status["level"] in {"ok", "urgent", "attention", "decision", "diagnostic"}, "tray status level enum")
     assert_true("stale_unread" in status["counts"], "tray status includes stale unread count")
     assert_true("diagnostic_problems" in status["counts"], "tray status includes diagnostic count")
     assert_true(isinstance(status["target_counts"], dict), "tray status target counts are structured")
     assert_true(not status["direct_wake_supported"], "tray status does not imply direct wake support")
     assert_true("Human-in-the-loop" in status["safety_label"], "tray status carries safety label")
+    stale_status = agent_hub.tray_status_payload(
+        {
+            "generated_at": "2026-04-29T08:00:00",
+            "cockpit_state": {
+                "counts": {"stale_unread": 1, "unread": 2, "decisions_needed": 0},
+                "routes_summary": {"failed": 0, "held": 0},
+                "stale_unread_threshold_seconds": 60,
+            },
+            "diagnostics": {"checks_warn": 0, "checks_fail": 0},
+            "wake_candidates": [{"age_seconds": 90, "wake_candidate_agent": "claude_code"}],
+            "agents": [{"id": "claude_code", "display_name": "Claude Code"}],
+        }
+    )
+    assert_true(stale_status["level"] == "attention", "tray status prioritizes stale unread messages")
+    assert_true(stale_status["counts"]["stale_unread"] == 1, "tray status reports stale unread count")
+    assert_true(stale_status["oldest_stale_unread_seconds"] == 90, "tray status reports oldest stale unread age")
 
 
 def test_diagnostics() -> None:
@@ -1021,22 +1824,114 @@ def test_read_state_marks_changed_content_unread() -> None:
         assert_true(summary["counts"]["read"] == 1, "read state summary counts read records")
 
 
+def test_message_parse_cache_reuses_unchanged_files_and_invalidates_changes() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        inbox = root / "CODEX Inbox"
+        inbox.mkdir(parents=True)
+        path = inbox / "message.md"
+        first_text = render_message_markdown(
+            {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "message_id": "PAH-PARSE-CACHE-001",
+                "thread_id": "PAH-PARSE-CACHE-001",
+                "from": "claude-desktop",
+                "to": "codex",
+                "type": "coordination",
+                "status": "open",
+                "thread_status": "active",
+            },
+            "First cache title",
+            "Cache smoke",
+            "Body.",
+        )
+        second_text = render_message_markdown(
+            {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "message_id": "PAH-PARSE-CACHE-001",
+                "thread_id": "PAH-PARSE-CACHE-001",
+                "from": "claude-desktop",
+                "to": "codex",
+                "type": "coordination",
+                "status": "open",
+                "thread_status": "active",
+            },
+            "Second cache title",
+            "Cache smoke",
+            "Body changed.",
+        )
+        atomic_write_text(path, first_text)
+        original_dirs = agent_hub.MESSAGE_DIRS
+        original_parse = agent_hub.parse_message
+        parse_calls = {"count": 0}
+
+        def counting_parse(message_path: Path, direction: str) -> agent_hub.Message:
+            parse_calls["count"] += 1
+            return original_parse(message_path, direction)
+
+        try:
+            agent_hub.clear_message_parse_cache()
+            agent_hub.MESSAGE_DIRS = (("Codex -> Claude", inbox),)
+            agent_hub.parse_message = counting_parse
+            first = agent_hub.load_messages()
+            second = agent_hub.load_messages()
+            assert_true(parse_calls["count"] == 1, "unchanged mailbox file is served from parse cache")
+            assert_true(first[0].title == second[0].title == "First cache title", "cached message preserves parsed fields")
+
+            time.sleep(0.02)
+            atomic_write_text(path, second_text)
+            third = agent_hub.load_messages()
+            assert_true(parse_calls["count"] == 2, "changed mailbox file invalidates parse cache")
+            assert_true(third[0].title == "Second cache title", "changed mailbox file is reparsed")
+
+            path.unlink()
+            empty = agent_hub.load_messages()
+            assert_true(not empty, "deleted mailbox file is absent from loaded messages")
+            assert_true(not agent_hub.MESSAGE_PARSE_CACHE, "deleted mailbox file is pruned from parse cache")
+        finally:
+            agent_hub.MESSAGE_DIRS = original_dirs
+            agent_hub.parse_message = original_parse
+            agent_hub.clear_message_parse_cache()
+
+
+def test_port_fallback_can_be_disabled_for_tray_launches() -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        sock.listen(1)
+        occupied = int(sock.getsockname()[1])
+        fallback = agent_hub.find_free_port(occupied, "127.0.0.1", allow_fallback=True)
+        assert_true(fallback != occupied, "normal server launch can fall back from occupied port")
+        try:
+            agent_hub.find_free_port(occupied, "127.0.0.1", allow_fallback=False)
+        except OSError:
+            pass
+        else:
+            raise AssertionError("tray launch must fail instead of silently falling back to a random port")
+
+
 def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
     with TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
         codex_inbox = root / "CODEX Inbox"
         claude_inbox = root / "CLAUDE Inbox"
+        claude_code_inbox = root / "CC Inbox"
         codex_archive = root / "CODEX Archive" / "Inbox Cleanup"
         claude_archive = root / "CLAUDE Archive" / "Inbox Cleanup"
+        claude_code_archive = root / "CC Archive" / "Inbox Cleanup"
         codex_inbox.mkdir()
         claude_inbox.mkdir()
+        claude_code_inbox.mkdir()
         state_path = root / "read_state.json"
 
         read_codex = codex_inbox / "read_codex.md"
         unread_codex = codex_inbox / "unread_codex.md"
         read_claude = claude_inbox / "read_claude.md"
+        read_claude_second = claude_inbox / "read_claude_second.md"
+        read_claude_code = claude_code_inbox / "read_claude_code.md"
         waiting_darrin = claude_inbox / "waiting_darrin.md"
+        pre_staged_draft = claude_inbox / "pre_staged_draft.md"
         pending_dispatch = claude_inbox / "pending_dispatch.md"
+        active_directive = claude_code_inbox / "active_directive.md"
         unstructured = claude_inbox / "unstructured_amendment.md"
 
         messages = [
@@ -1071,6 +1966,30 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                     "type": "report",
                     "status": "complete",
                     "thread_status": "closed",
+                    "thread_id": "PAH-ARCHIVE-CLAUDE-MULTI",
+                },
+            ),
+            (
+                read_claude_second,
+                "PAH-ARCHIVE-READ-CLAUDE-SECOND",
+                {
+                    "from": "codex",
+                    "to": "claude-desktop",
+                    "type": "report",
+                    "status": "complete",
+                    "thread_status": "closed",
+                    "thread_id": "PAH-ARCHIVE-CLAUDE-MULTI",
+                },
+            ),
+            (
+                read_claude_code,
+                "PAH-ARCHIVE-READ-CLAUDE-CODE",
+                {
+                    "from": "codex",
+                    "to": "claude-code",
+                    "type": "report",
+                    "status": "complete",
+                    "thread_status": "closed",
                 },
             ),
             (
@@ -1086,6 +2005,20 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                 },
             ),
             (
+                pre_staged_draft,
+                "PAH-ARCHIVE-PRE-STAGED-DRAFT",
+                {
+                    "from": "claude-desktop",
+                    "to": "codex",
+                    "type": "dispatch",
+                    "status": "drafted_pending_phase2_ship",
+                    "thread_status": "draft",
+                    "action_owner": "claude_desktop",
+                    "requires_darrin_decision": True,
+                    "approval_boundary": "dispatch_after_phase2_ship",
+                },
+            ),
+            (
                 pending_dispatch,
                 "PAH-ARCHIVE-PENDING-DISPATCH",
                 {
@@ -1094,6 +2027,19 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                     "type": "dispatch",
                     "status": "active",
                     "thread_status": "active",
+                },
+            ),
+            (
+                active_directive,
+                "PAH-ARCHIVE-ACTIVE-DIRECTIVE",
+                {
+                    "from": "claude-desktop",
+                    "to": "claude-code",
+                    "type": "directive",
+                    "status": "authorized",
+                    "thread_status": "active",
+                    "action_owner": "claude_code",
+                    "approval_boundary": "build_go",
                 },
             ),
         ]
@@ -1116,48 +2062,298 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
             "# Dispatch Amendment\n\n**Message-ID:** `PAH-UNSTRUCTURED-AMENDMENT`\n**From:** Claude Desktop\n**To:** Claude Code\n",
             encoding="utf-8",
         )
+        conflict_date_dir = agent_hub.datetime.fromtimestamp(read_codex.stat().st_mtime).strftime("%Y%m%d")
+        conflicting_requested_destination = codex_archive / "CODEX Inbox" / conflict_date_dir / read_codex.name
+        conflicting_requested_destination.parent.mkdir(parents=True, exist_ok=True)
+        conflicting_requested_destination.write_text("existing archive copy\n", encoding="utf-8")
 
         original_values = {
             "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
             "CLEANUP_MAILBOX_TARGETS": agent_hub.CLEANUP_MAILBOX_TARGETS,
             "CLEANUP_ARCHIVE_ROOTS": agent_hub.CLEANUP_ARCHIVE_ROOTS,
+            "SWEEP_AUDIT_LOG_PATH": agent_hub.SWEEP_AUDIT_LOG_PATH,
+            "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
             "load_read_state": agent_hub.load_read_state,
         }
         try:
-            agent_hub.MESSAGE_DIRS = (("Codex Inbox", codex_inbox), ("Claude Inbox", claude_inbox))
+            agent_hub.MESSAGE_DIRS = (
+                ("Codex Inbox", codex_inbox),
+                ("Claude Inbox", claude_inbox),
+                ("CC Inbox", claude_code_inbox),
+            )
             agent_hub.CLEANUP_MAILBOX_TARGETS = {
-                "all": (codex_inbox, claude_inbox),
+                "all": (codex_inbox, claude_inbox, claude_code_inbox),
                 "codex": (codex_inbox,),
                 "claude-desktop": (claude_inbox,),
+                "claude-code": (claude_code_inbox,),
             }
             agent_hub.CLEANUP_ARCHIVE_ROOTS = {
                 codex_inbox: codex_archive,
                 claude_inbox: claude_archive,
+                claude_code_inbox: claude_code_archive,
             }
+            agent_hub.SWEEP_AUDIT_LOG_PATH = root / "CODEX logs" / "CODEX_pah_sweep_audit.md"
+            agent_hub.INTERACTION_LEDGER_PATH = root / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
             agent_hub.load_read_state = lambda: json.loads(state_path.read_text(encoding="utf-8"))
 
             preview = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=True)
-            assert_true(preview["count"] == 2, "dry run finds read messages in all active inboxes")
-            assert_true(read_codex.exists() and read_claude.exists(), "dry run does not move files")
+            assert_true(preview["protocol_version"] == 2, "archive read returns protocol v2 summary")
+            assert_true(preview["count"] == 4, "dry run finds every read message across active inboxes")
+            assert_true(preview["archive_conflicts"] == 1, "dry run reports archive destination conflicts")
+            assert_true(
+                read_codex.exists() and read_claude.exists() and read_claude_second.exists() and read_claude_code.exists(),
+                "dry run does not move files",
+            )
+            preview_by_name = {item["name"]: item for item in preview["inbox_summary"]}
+            assert_true(preview_by_name["CODEX Inbox"]["archive_conflicts"] == 1, "dry run reports Codex archive conflict")
+            assert_true(preview_by_name["CLAUDE Inbox"]["scanned"] == 6, "dry run scans every Claude Desktop inbox message")
+            assert_true(preview_by_name["CLAUDE Inbox"]["candidates"] == 2, "dry run finds both read Claude Desktop candidates")
+            assert_true(preview_by_name["CLAUDE Inbox"]["moved"] == 0, "dry run reports no moved Claude Desktop files")
+            assert_true(preview["skipped_pre_staged_pending_trigger"] == 1, "dry run skips pre-staged pending-trigger drafts")
             assert_true(preview["skipped_pending_dispatch"] == 1, "dry run skips read pending dispatches")
+            assert_true(preview["skipped_active_thread"] == 1, "dry run skips active agent-owned directive threads")
             assert_true(preview["skipped_unstructured"] == 1, "dry run skips unstructured mailbox messages")
 
             result = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=False)
-            assert_true(result["count"] == 2, "archive read moves only read non-Darrin-waiting messages")
+            assert_true(result["protocol_version"] == 2, "archive read move returns protocol v2 summary")
+            assert_true(result["count"] == 4, "archive read moves all read non-Darrin-waiting messages")
+            assert_true(result["archive_conflicts"] == 1, "archive read move reports archive destination conflicts")
             assert_true(not read_codex.exists(), "read Codex inbox message is removed")
             assert_true(not read_claude.exists(), "read Claude inbox message is removed")
+            assert_true(not read_claude_second.exists(), "second read Claude inbox message is removed")
+            assert_true(not read_claude_code.exists(), "read Claude Code inbox message is removed")
             assert_true(unread_codex.exists(), "unread message stays active")
             assert_true(waiting_darrin.exists(), "Darrin-waiting message stays active")
+            assert_true(pre_staged_draft.exists(), "pre-staged draft stays active even when read")
             assert_true(pending_dispatch.exists(), "pending dispatch stays active even when read")
+            assert_true(active_directive.exists(), "active directive stays active even when read")
             assert_true(unstructured.exists(), "unstructured mailbox message stays active")
             assert_true(any((codex_archive / "CODEX Inbox").rglob("read_codex.md")), "Codex read mail lands in archive")
             assert_true(any((claude_archive / "CLAUDE Inbox").rglob("read_claude.md")), "Claude read mail lands in archive")
+            assert_true(
+                any((claude_archive / "CLAUDE Inbox").rglob("read_claude_second.md")),
+                "second Claude read mail lands in archive",
+            )
+            assert_true(
+                any((claude_code_archive / "CC Inbox").rglob("read_claude_code.md")),
+                "Claude Code read mail lands in archive",
+            )
+            codex_move = next(item for item in result["moved"] if item["message_id"] == "PAH-ARCHIVE-READ-CODEX")
+            assert_true(codex_move["destination_conflict"] is True, "archive move record reports destination conflict")
+            assert_true(
+                codex_move["requested_destination"] == str(conflicting_requested_destination),
+                "archive move record preserves requested destination",
+            )
+            assert_true(codex_move["destination"].endswith("read_codex_001.md"), "archive move record reports unique renamed destination")
+            assert_true(Path(codex_move["destination"]).exists(), "conflicted archive move lands at unique destination")
+            assert_true(conflicting_requested_destination.exists(), "existing archive destination is not overwritten")
+            result_by_name = {item["name"]: item for item in result["inbox_summary"]}
+            assert_true(result_by_name["CODEX Inbox"]["moved"] == 1, "Codex inbox reports one moved read message")
+            assert_true(result_by_name["CODEX Inbox"]["archive_conflicts"] == 1, "Codex inbox reports archive conflict")
+            assert_true(result_by_name["CLAUDE Inbox"]["moved"] == 2, "Claude Desktop inbox reports both read messages moved")
+            assert_true(result_by_name["CC Inbox"]["moved"] == 1, "Claude Code inbox reports one moved read message")
+            assert_true(result_by_name["CC Inbox"]["skipped_active_thread"] == 1, "Claude Code inbox reports active directive skip")
+            assert_true(result_by_name["CLAUDE Inbox"]["skipped_waiting_on_darrin"] == 1, "Claude Desktop summary reports Darrin skip")
+            assert_true(
+                result_by_name["CLAUDE Inbox"]["skipped_pre_staged_pending_trigger"] == 1,
+                "Claude Desktop summary reports pre-staged pending-trigger skip",
+            )
+            assert_true(result_by_name["CLAUDE Inbox"]["skipped_pending_dispatch"] == 1, "Claude Desktop summary reports pending dispatch skip")
+            assert_true(result_by_name["CLAUDE Inbox"]["skipped_unstructured"] == 1, "Claude Desktop summary reports unstructured skip")
             assert_true(result["skipped_waiting_on_darrin"] == 1, "Darrin-waiting skip is reported")
+            assert_true(result["skipped_pre_staged_pending_trigger"] == 1, "pre-staged pending-trigger skip is reported")
             assert_true(result["skipped_pending_dispatch"] == 1, "pending dispatch skip is reported")
+            assert_true(result["skipped_active_thread"] == 1, "active thread skip is reported")
             assert_true(result["skipped_unstructured"] == 1, "unstructured skip is reported")
+            active_messages = agent_hub.load_messages()
+            active_ids = {message.message_id for message in active_messages}
+            assert_true("PAH-ARCHIVE-READ-CODEX" not in active_ids, "archived read Codex mail leaves active message scan")
+            assert_true("PAH-ARCHIVE-READ-CLAUDE" not in active_ids, "archived read Claude mail leaves active message scan")
+            assert_true(
+                "PAH-ARCHIVE-READ-CLAUDE-SECOND" not in active_ids,
+                "second archived read Claude mail leaves active message scan",
+            )
+            assert_true("PAH-ARCHIVE-READ-CLAUDE-CODE" not in active_ids, "archived read Claude Code mail leaves active message scan")
+            assert_true("PAH-ARCHIVE-UNREAD-CODEX" in active_ids, "unread mail remains in active message scan")
+            assert_true("PAH-ARCHIVE-WAITING-DARRIN" in active_ids, "Darrin-waiting mail remains in active message scan")
+            assert_true("PAH-ARCHIVE-PRE-STAGED-DRAFT" in active_ids, "pre-staged draft remains in active message scan")
+            assert_true("PAH-ARCHIVE-ACTIVE-DIRECTIVE" in active_ids, "active directive remains in active message scan")
+            active_read_state = json.loads(state_path.read_text(encoding="utf-8"))
+            active_overview = agent_hub.build_mailbox_overview(active_messages, active_read_state)
+            active_overview_count = sum(int(row.get("count", 0) or 0) for row in active_overview)
+            assert_true(active_overview_count == len(active_messages), "mailbox overview count matches active messages after archive")
+            active_mailboxes = agent_hub.build_agent_mailbox_messages(active_messages, active_read_state)
+            visible_ids = {
+                item["message_id"]
+                for items in active_mailboxes.values()
+                for item in items
+            }
+            assert_true("PAH-ARCHIVE-READ-CODEX" not in visible_ids, "archived read Codex mail leaves active agent mailbox")
+            assert_true("PAH-ARCHIVE-READ-CLAUDE" not in visible_ids, "archived read Claude mail leaves active agent mailbox")
+            assert_true(
+                "PAH-ARCHIVE-READ-CLAUDE-SECOND" not in visible_ids,
+                "second archived read Claude mail leaves active agent mailbox",
+            )
+            assert_true("PAH-ARCHIVE-READ-CLAUDE-CODE" not in visible_ids, "archived read Claude Code mail leaves active agent mailbox")
+            audit_text = agent_hub.SWEEP_AUDIT_LOG_PATH.read_text(encoding="utf-8")
+            assert_true("[sweep-started]" in audit_text, "sweep audit records run start")
+            assert_true("[archive-moved]" in audit_text, "sweep audit records moved files")
+            assert_true("owner_unknown_or_unstructured" in audit_text, "sweep audit records unstructured skip reason")
+            assert_true("pre_staged_pending_trigger" in audit_text, "sweep audit records pre-staged pending-trigger skip reason")
+            assert_true("active_thread_without_completion_evidence" in audit_text, "sweep audit records active thread skip reason")
+            assert_true("[sweep-finished]" in audit_text, "sweep audit records run finish")
+            ledger_events = [
+                json.loads(line)
+                for line in agent_hub.INTERACTION_LEDGER_PATH.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            ledger_event_types = {event["event_type"] for event in ledger_events}
+            assert_true("archive_read_sweep_started" in ledger_event_types, "interaction ledger records sweep start")
+            assert_true("message_archive_candidate" in ledger_event_types, "interaction ledger records dry-run archive candidates")
+            assert_true("message_archive_skipped" in ledger_event_types, "interaction ledger records archive skips")
+            assert_true("message_archived" in ledger_event_types, "interaction ledger records archived messages")
+            assert_true("archive_read_sweep_finished" in ledger_event_types, "interaction ledger records sweep finish")
+            assert_true(
+                any(
+                    event.get("event_type") == "message_archived"
+                    and event.get("message_id") == "PAH-ARCHIVE-READ-CLAUDE-SECOND"
+                    for event in ledger_events
+                ),
+                "interaction ledger records the second Claude Desktop archived read message",
+            )
+            assert_true(
+                any(
+                    event.get("event_type") == "message_archive_skipped"
+                    and event.get("reason") == "pre_staged_pending_trigger"
+                    for event in ledger_events
+                ),
+                "interaction ledger records pre-staged pending-trigger skip reason",
+            )
+            assert_true(
+                any(
+                    event.get("event_type") == "message_archive_skipped"
+                    and event.get("reason") == "pending_dispatch_without_completion_evidence"
+                    for event in ledger_events
+                ),
+                "interaction ledger records pending dispatch skip reason",
+            )
+            assert_true(
+                any(
+                    event.get("event_type") == "message_archive_skipped"
+                    and event.get("reason") == "active_thread_without_completion_evidence"
+                    for event in ledger_events
+                ),
+                "interaction ledger records active thread skip reason",
+            )
         finally:
             for key, value in original_values.items():
                 setattr(agent_hub, key, value)
+
+
+def test_archive_read_moves_replied_tombstoned_unread_messages() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        codex_inbox = root / "CODEX Inbox"
+        codex_archive = root / "CODEX Archive" / "Inbox Cleanup"
+        codex_inbox.mkdir()
+        state_path = root / "read_state.json"
+        state_path.write_text("{}", encoding="utf-8")
+        original_path = codex_inbox / "tombstoned_unread.md"
+        original_text = render_message_markdown(
+            {
+                "schema_version": MESSAGE_SCHEMA_VERSION,
+                "message_id": "PAH-TOMBSTONED-UNREAD",
+                "thread_id": "PAH-TOMBSTONED-UNREAD",
+                "created_at": "2026-04-29T10:00:00-07:00",
+                "from": "claude-desktop",
+                "to": "codex",
+                "type": "directive",
+                "status": "open",
+                "thread_status": "active",
+                "action_owner": "codex",
+                "priority": "normal",
+                "requires_darrin_decision": False,
+                "approval_boundary": "coordination_only",
+            },
+            "Tombstoned unread request",
+            "Already replied",
+            "This original was answered elsewhere.",
+        )
+        original_path.write_text(original_text, encoding="utf-8")
+        tombstone_path = agent_hub.reply_tombstone_path(original_path)
+        tombstone_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "tombstone_type": "replied",
+                    "reason": "reply_sent",
+                    "original_message_id": "PAH-TOMBSTONED-UNREAD",
+                    "original_thread_id": "PAH-TOMBSTONED-UNREAD",
+                    "original_path": str(original_path),
+                    "reply_message_id": "PAH-REPLY-001",
+                    "reply_thread_id": "PAH-TOMBSTONED-UNREAD",
+                    "reply_path": str(root / "CLAUDE Inbox" / "reply.md"),
+                    "reply_from": "codex",
+                    "reply_to": "claude-desktop",
+                    "replied_at": "2026-04-29T10:05:00-07:00",
+                    "actor": "codex",
+                    "route": "codex_to_claude",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        original_values = {
+            "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
+            "CLEANUP_MAILBOX_TARGETS": agent_hub.CLEANUP_MAILBOX_TARGETS,
+            "CLEANUP_ARCHIVE_ROOTS": agent_hub.CLEANUP_ARCHIVE_ROOTS,
+            "SWEEP_AUDIT_LOG_PATH": agent_hub.SWEEP_AUDIT_LOG_PATH,
+            "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
+            "load_read_state": agent_hub.load_read_state,
+        }
+        try:
+            agent_hub.clear_message_parse_cache()
+            agent_hub.MESSAGE_DIRS = (("Claude -> Codex", codex_inbox),)
+            agent_hub.CLEANUP_MAILBOX_TARGETS = {"all": (codex_inbox,), "codex": (codex_inbox,)}
+            agent_hub.CLEANUP_ARCHIVE_ROOTS = {codex_inbox: codex_archive}
+            agent_hub.SWEEP_AUDIT_LOG_PATH = root / "CODEX logs" / "CODEX_pah_sweep_audit.md"
+            agent_hub.INTERACTION_LEDGER_PATH = root / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
+            agent_hub.load_read_state = lambda: json.loads(state_path.read_text(encoding="utf-8"))
+
+            preview = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=True)
+            assert_true(preview["count"] == 1, "dry run treats replied tombstone as archive candidate")
+            assert_true(preview["replied_tombstone"] == 1, "dry run reports replied tombstone candidate")
+            assert_true(preview["moved"][0]["archive_reason"] == "replied_tombstone", "dry run reports tombstone archive reason")
+            assert_true(original_path.exists(), "dry run leaves tombstoned original in place")
+            assert_true(tombstone_path.exists(), "dry run leaves tombstone in place")
+
+            result = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=False)
+            assert_true(result["count"] == 1, "archive read moves replied tombstoned unread original")
+            assert_true(result["replied_tombstone"] == 1, "archive read reports replied tombstone move")
+            assert_true(not original_path.exists(), "tombstoned unread original is removed from inbox")
+            assert_true(not tombstone_path.exists(), "tombstone sidecar is removed from inbox")
+            move = result["moved"][0]
+            assert_true(Path(move["destination"]).exists(), "tombstoned original lands in archive")
+            assert_true(Path(move["tombstone_destination"]).exists(), "tombstone sidecar lands in archive")
+            ledger_events = [
+                json.loads(line)
+                for line in agent_hub.INTERACTION_LEDGER_PATH.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            assert_true(
+                any(
+                    event.get("event_type") == "message_archived"
+                    and event.get("archive_reason") == "replied_tombstone"
+                    for event in ledger_events
+                ),
+                "interaction ledger records tombstone archive reason",
+            )
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+            agent_hub.clear_message_parse_cache()
 
 
 def test_classifier_darrin_precedence_beats_completion_fallback() -> None:
@@ -1179,6 +2375,106 @@ def test_classifier_darrin_precedence_beats_completion_fallback() -> None:
     )
     state = agent_hub.classify_thread_state(message)
     assert_true(state == "open_on_darrin", "Darrin ownership wins before completion/report fallback")
+
+
+def test_classifier_pre_staged_pending_trigger_is_parked() -> None:
+    message = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/draft.md"),
+        name="draft.md",
+        modified=1.0,
+        title="Phase 4 dispatch draft",
+        message_id="PAH-CLASSIFIER-DRAFTED-PENDING",
+        thread_id="PAH-CLASSIFIER-DRAFTED-PENDING",
+        thread_status="draft",
+        status="drafted_pending_phase2_ship",
+        from_agent="claude-desktop",
+        to_agent="codex",
+        action_owner="darrin",
+        requires_darrin_decision=True,
+        message_type="dispatch",
+        schema_version="1",
+    )
+    state = agent_hub.classify_thread_state(message)
+    assert_true(state == "parked", "pre-staged pending-trigger drafts stay parked instead of open on Darrin")
+
+
+def test_classifier_completion_messages_close_before_agent_owner() -> None:
+    shipped_report = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/shipped.md"),
+        name="shipped.md",
+        modified=1.0,
+        title="Shipped report should close",
+        message_id="PAH-CLASSIFIER-SHIPPED-REPORT",
+        thread_id="PAH-CLASSIFIER-SHIPPED-REPORT",
+        thread_status="active",
+        status="shipped",
+        from_agent="claude-code",
+        to_agent="claude-desktop",
+        action_owner="claude_desktop",
+        requires_darrin_decision=False,
+        message_type="report",
+        schema_version="1",
+    )
+    state = agent_hub.classify_thread_state(shipped_report)
+    assert_true(state == "closed", "shipped report closes before generic agent ownership")
+
+    delivered_response = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/response.md"),
+        name="response.md",
+        modified=1.0,
+        title="Delivered response should close",
+        message_id="PAH-CLASSIFIER-DELIVERED-RESPONSE",
+        thread_id="PAH-CLASSIFIER-DELIVERED-RESPONSE",
+        thread_status="active",
+        status="response_delivered",
+        from_agent="claude-desktop",
+        to_agent="claude-code",
+        action_owner="claude_code",
+        requires_darrin_decision=False,
+        message_type="coordination_response",
+        schema_version="1",
+    )
+    state = agent_hub.classify_thread_state(delivered_response)
+    assert_true(state == "closed", "response-delivered coordination response closes before generic agent ownership")
+
+    review_report = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/review.md"),
+        name="review.md",
+        modified=1.0,
+        title="Review report should stay open",
+        message_id="PAH-CLASSIFIER-REVIEW-REPORT",
+        thread_id="PAH-CLASSIFIER-REVIEW-REPORT",
+        thread_status="ready_for_review",
+        status="shipped",
+        from_agent="claude-code",
+        to_agent="claude-desktop",
+        action_owner="claude_desktop",
+        requires_darrin_decision=False,
+        message_type="report",
+        schema_version="1",
+    )
+    state = agent_hub.classify_thread_state(review_report)
+    assert_true(state == "open_on_agent", "ready-for-review report remains open on the reviewing agent")
+
+
+def test_classifier_unstructured_inbox_message_is_owner_unknown() -> None:
+    with TemporaryDirectory() as temp_dir:
+        inbox = Path(temp_dir) / "CODEX Inbox"
+        inbox.mkdir()
+        path = inbox / "unstructured.md"
+        path.write_text("# Unstructured amendment\n\n**Message-ID:** `PAH-NO-FRONTMATTER`\n", encoding="utf-8")
+        original_dirs = agent_hub.ALL_AGENT_INBOX_DIRS
+        try:
+            agent_hub.ALL_AGENT_INBOX_DIRS = (inbox,)
+            message = agent_hub.parse_message(path, "Codex Inbox")
+            state = agent_hub.classify_thread_state(message)
+            assert_true(state == "owner_unknown", "unstructured active inbox message is owner_unknown")
+        finally:
+            agent_hub.ALL_AGENT_INBOX_DIRS = original_dirs
 
 
 def test_thread_archive_state_reopens_on_new_activity() -> None:
@@ -1304,8 +2600,25 @@ def main() -> None:
     test_decision_gate()
     test_cross_check_auto_resolution_rule()
     test_routes_and_scope()
+    test_create_message_dry_run_does_not_write_mail()
+    test_create_message_writes_reply_tombstone_for_active_message()
     test_cockpit_payload_contract()
+    test_health_payload_contract()
+    test_agent_progress_monitor_contract()
+    test_codex_mailbox_sla_progress()
+    test_health_payload_unanswered_component()
+    test_periodic_archive_sweep_contract()
+    test_periodic_steward_schedule_metadata()
+    test_pah_inspector_detects_retired_ui_routes()
+    test_pah_inspector_summary_and_markdown_report()
+    test_interaction_ledger_helper_writes_jsonl()
+    test_interaction_ledger_recent_events_and_summary()
+    test_message_audit_records_discovery_and_classifier_transition()
+    test_agent_no_mail_claim_validation()
+    test_periodic_communication_backlog_detects_discrepancies()
+    test_periodic_communication_backlog_records_discrepancy_event()
     test_cockpit_action_queue_ordering()
+    test_urgent_codex_request_protocol()
     test_tray_status_payload_contract()
     test_diagnostics()
     test_notification_provider_status()
@@ -1318,8 +2631,14 @@ def main() -> None:
     test_backpressure_detection()
     test_processed_message_sidecar_idempotency()
     test_read_state_marks_changed_content_unread()
+    test_message_parse_cache_reuses_unchanged_files_and_invalidates_changes()
+    test_port_fallback_can_be_disabled_for_tray_launches()
     test_archive_read_mail_moves_read_messages_from_active_inboxes()
+    test_archive_read_moves_replied_tombstoned_unread_messages()
     test_classifier_darrin_precedence_beats_completion_fallback()
+    test_classifier_pre_staged_pending_trigger_is_parked()
+    test_classifier_completion_messages_close_before_agent_owner()
+    test_classifier_unstructured_inbox_message_is_owner_unknown()
     test_thread_archive_state_reopens_on_new_activity()
     test_decision_state()
     test_validation_state()

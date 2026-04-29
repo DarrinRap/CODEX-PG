@@ -6,22 +6,32 @@
 <title>PANDA Agent Hub</title>
 <style>
 :root {
-  --canvas: #f1eee4;
-  --panel: #fffdf7;
-  --panel-2: #ebe5d7;
-  --field: #ffffff;
-  --border: #d7d0c0;
-  --text: #181b18;
-  --muted: #5d6258;
-  --quiet: #7d8375;
-  --accent: #4f7d42;
-  --accent-ink: #fffdf7;
-  --ok: #2f7d4a;
-  --warn: #b97818;
-  --err: #b64b3f;
-  --ink: #161a16;
-  --bamboo: #5e8f43;
-  --focus: rgba(79, 125, 66, .34);
+  --canvas: #14141f;
+  --chrome: #161625;
+  --panel: #1a1a2e;
+  --panel-2: #22223a;
+  --field: #22223a;
+  --field-hover: #2a2a4e;
+  --border: #2a2a3e;
+  --border-soft: #232336;
+  --text: #e0ddd5;
+  --muted: #a7a09a;
+  --quiet: #888888;
+  --dim: #555555;
+  --accent: #e8a87c;
+  --accent-hover: #d4945a;
+  --accent-light: #f0b98c;
+  --accent-ink: #14141f;
+  --accent-soft: rgba(232, 168, 124, .12);
+  --ok: #7fb069;
+  --warn: #d7b86b;
+  --err: #e74c3c;
+  --ink: #161625;
+  --bamboo: #7fb069;
+  --focus: rgba(232, 168, 124, .36);
+  --shadow: rgba(0, 0, 0, .22);
+  --font-ui: "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, monospace;
 }
 * { box-sizing: border-box; }
 html, body { width: 100%; height: 100%; min-height: 100%; overflow: hidden; }
@@ -29,28 +39,43 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--text);
-  font: 14px/1.35 "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font: 12px/1.32 var(--font-ui);
   letter-spacing: 0;
 }
-button { font: inherit; }
-button {
-  min-height: 34px;
+button,
+select,
+input {
+  font: inherit;
+}
+button,
+select,
+input[type="text"],
+.queue-search {
+  min-height: 26px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--field);
   color: var(--text);
-  padding: 0 12px;
+}
+button {
+  padding: 0 9px;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(24, 27, 24, .08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03), 0 1px 1px var(--shadow);
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+button:hover:not([disabled]) {
+  background: var(--field-hover);
+  border-color: #3a3a4e;
 }
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
-  font-weight: 800;
+  font-weight: 700;
 }
-button.secondary { background: #f8f6ef; color: var(--muted); }
-button.danger { background: #fff5f2; border-color: rgba(182, 75, 63, .58); color: var(--err); }
+button.primary:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+button.secondary { background: var(--panel-2); color: var(--muted); }
+button.danger { background: rgba(231, 76, 60, .10); border-color: rgba(231, 76, 60, .48); color: #f0aaa2; }
 button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 button[disabled] { opacity: .48; cursor: default; }
 .top-actions #shortcutHelp,
@@ -63,31 +88,31 @@ button[disabled] { opacity: .48; cursor: default; }
   min-height: 0;
   min-width: 0;
   display: grid;
-  grid-template-rows: 64px 1fr 44px;
+  grid-template-rows: 48px 1fr 32px;
 }
 .topbar {
   display: grid;
-  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(180px, 248px) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 18px;
-  padding: 0 18px;
+  gap: 12px;
+  padding: 0 12px;
   border-bottom: 1px solid var(--border);
   background: var(--ink);
-  color: #fffdf7;
+  color: var(--text);
 }
-.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   display: grid;
   place-items: center;
-  background: var(--accent);
+  background: linear-gradient(180deg, var(--accent-light), var(--accent) 55%, var(--accent-hover));
   color: var(--accent-ink);
-  font-weight: 900;
+  font-weight: 800;
 }
-.brand-title { font-size: 15px; font-weight: 900; }
-.brand-sub { color: var(--quiet); font-size: 12px; margin-top: 2px; }
+.brand-title { font-size: 13px; font-weight: 700; }
+.brand-sub { color: var(--quiet); font: 10px/1.15 var(--font-mono); margin-top: 1px; }
 .status-line {
   min-width: 0;
   display: flex;
@@ -99,40 +124,87 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 .system-state {
   color: var(--text);
-  font-size: 18px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 650;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.meta { color: var(--quiet); font-size: 12px; }
+.meta { color: var(--quiet); font: 10px/1.2 var(--font-mono); }
+.server-health {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.health-chip {
+  appearance: none;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, .055);
+  border-radius: 4px;
+  background: #07070d;
+  color: #5f5b66;
+  font: 10px/1 var(--font-mono);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .55);
+}
+.health-chip:focus-visible {
+  outline: 2px solid rgba(242, 176, 126, .72);
+  outline-offset: 2px;
+}
+.health-chip:hover {
+  filter: brightness(1.08);
+}
+.health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #171721;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .025);
+}
+.health-chip.ok { border-color: rgba(127, 176, 105, .44); background: rgba(24, 42, 28, .72); color: #d7e8cf; }
+.health-chip.ok .health-dot { background: var(--ok); box-shadow: 0 0 8px rgba(127, 176, 105, .45); }
+.health-chip.warn { border-color: rgba(215, 184, 107, .56); background: rgba(58, 45, 20, .78); color: #f3dc9d; }
+.health-chip.warn .health-dot { background: var(--warn); box-shadow: 0 0 8px rgba(215, 184, 107, .45); }
+.health-chip.err { border-color: rgba(231, 76, 60, .64); background: rgba(63, 24, 31, .82); color: #ffc4bd; }
+.health-chip.err .health-dot { background: var(--err); box-shadow: 0 0 8px rgba(231, 76, 60, .50); }
+.health-chip.unknown { border-color: rgba(255, 255, 255, .04); background: #030306; color: #3e3b45; }
+.health-chip.unknown .health-dot { background: #0d0d13; box-shadow: none; }
 .topbar .status-line,
 .topbar .meta,
 .topbar .brand-sub {
   color: #d9d2c2;
 }
 .topbar .system-state {
-  color: #fffdf7;
-}
-.top-actions { display: flex; gap: 8px; align-items: center; }
-.top-actions select {
-  min-height: 34px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fffdf7;
   color: var(--text);
-  padding: 0 9px;
+}
+.top-actions { display: flex; gap: 6px; align-items: center; }
+.top-actions select {
+  min-height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--field);
+  color: var(--text);
+  padding: 0 24px 0 8px;
   font: inherit;
+  color-scheme: dark;
 }
 .toggle {
-  min-height: 34px;
+  min-height: 26px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fffdf7;
+  border-radius: 4px;
+  background: var(--field);
   color: var(--muted);
-  padding: 0 10px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -141,32 +213,34 @@ button[disabled] { opacity: .48; cursor: default; }
 .main {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: 12px;
-  padding: 12px;
+  grid-template-columns: minmax(172px, 212px) minmax(0, 1fr) minmax(300px, 372px);
+  gap: 8px;
+  padding: 8px;
   overflow: hidden;
 }
 .panel {
   min-width: 0;
   min-height: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--panel);
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .16);
 }
 .panel-head {
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: 32px;
+  padding: 7px 9px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+  background: var(--chrome);
 }
-.panel-title { font-size: 12px; font-weight: 900; color: var(--muted); text-transform: uppercase; }
-.count { color: var(--text); font-weight: 900; }
+.panel-title { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .9px; }
+.count { color: var(--text); font: 11px/1.2 var(--font-mono); font-weight: 700; }
 .scroll {
   min-height: 0;
   overflow: auto;
@@ -174,65 +248,91 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 .scroll::-webkit-scrollbar,
 .message-preview-body::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
 }
 .scroll::-webkit-scrollbar-track,
 .message-preview-body::-webkit-scrollbar-track {
-  background: #e6dfcf;
+  background: var(--chrome);
   border-left: 1px solid var(--border);
 }
 .scroll::-webkit-scrollbar-thumb,
 .message-preview-body::-webkit-scrollbar-thumb {
-  background: #9aa58d;
-  border: 3px solid #e6dfcf;
-  border-radius: 999px;
+  background: #3a3a4e;
+  border: 2px solid var(--chrome);
+  border-radius: 8px;
 }
 .scroll::-webkit-scrollbar-thumb:hover,
 .message-preview-body::-webkit-scrollbar-thumb:hover {
-  background: var(--bamboo);
+  background: var(--accent);
 }
 
-.agents { padding: 8px; display: grid; gap: 8px; align-content: start; }
+.agents { padding: 6px; display: grid; gap: 5px; align-content: start; }
 .agent {
   width: 100%;
   color: var(--text);
   text-align: left;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 5px;
   background: var(--field);
-  padding: 10px;
+  padding: 7px;
   display: grid;
-  grid-template-columns: 34px 1fr;
-  gap: 10px;
+  grid-template-columns: 28px 1fr;
+  gap: 7px;
   cursor: pointer;
 }
 .agent:hover {
-  border-color: rgba(79, 125, 66, .48);
-  background: #f8f6ef;
+  border-color: #3a3a4e;
+  background: var(--field-hover);
 }
 .agent:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .agent.selected {
-  border-color: rgba(79, 125, 66, .8);
+  border-color: rgba(232, 168, 124, .72);
+  background: var(--accent-soft);
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
   background: var(--panel-2);
   display: grid;
   place-items: center;
-  font-weight: 900;
+  font: 11px/1 var(--font-mono);
+  font-weight: 700;
 }
-.agent-name { font-weight: 900; }
-.agent-note { color: var(--quiet); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-name { font-weight: 650; }
+.agent-note { color: var(--quiet); font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-note.status-warn {
+  justify-self: start;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 2px 7px;
+  border: 1px solid rgba(215, 184, 107, .56);
+  border-radius: 5px;
+  background: rgba(58, 45, 20, .78);
+  color: #f3dc9d;
+  font-weight: 760;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
+}
+.agent-note.status-ok {
+  justify-self: start;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 2px 7px;
+  border: 1px solid rgba(127, 176, 105, .48);
+  border-radius: 5px;
+  background: rgba(24, 42, 28, .78);
+  color: #d7e8cf;
+  font-weight: 760;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
+}
 .agent > .agent-note { grid-column: 2; margin-top: -4px; }
-.agent-count { grid-column: 2; color: var(--muted); font-size: 12px; }
-.agent-action { grid-column: 2; color: var(--accent); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.agent-count { grid-column: 2; color: var(--muted); font: 10px/1.2 var(--font-mono); }
+.agent-action { grid-column: 2; color: var(--accent); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--quiet); margin-right: 6px; }
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--warn); }
@@ -245,34 +345,34 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 
 .participants-panel { display: grid; }
-.queue-panel { grid-template-rows: auto auto auto auto auto auto 1fr; }
+.queue-panel { grid-template-rows: auto auto auto auto auto 1fr; }
 .queue-panel > .panel-head .count { display: none; }
 .guide-card {
-  margin: 8px 12px 0;
+  margin: 6px 8px 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #f8f6ef;
-  padding: 9px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  padding: 7px;
   display: none;
-  gap: 7px;
+  gap: 6px;
 }
-.guide-title { font-size: 13px; font-weight: 900; color: var(--text); }
-.guide-copy { color: var(--muted); font-size: 12px; }
+.guide-title { font-size: 11px; font-weight: 650; color: var(--text); }
+.guide-copy { color: var(--muted); font-size: 10px; }
 .guide-breakdown {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 .mini-pill {
-  min-height: 22px;
+  min-height: 20px;
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 4px;
   color: var(--muted);
   background: var(--field);
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 1px 6px;
+  font-size: 10px;
 }
 button.mini-pill { cursor: pointer; }
 button.mini-pill.active {
@@ -291,12 +391,12 @@ button.mini-pill.active strong { color: var(--accent-ink); }
 .guide-step {
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 5px;
   background: var(--field);
-  padding: 7px 8px;
+  padding: 6px 7px;
 }
-.guide-step strong { display: block; color: var(--accent); font-size: 11px; text-transform: uppercase; }
-.guide-step span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.guide-step strong { display: block; color: var(--accent); font-size: 9px; text-transform: uppercase; letter-spacing: .7px; }
+.guide-step span { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
 .inbox-strip {
   padding: 10px 12px 0;
   display: grid;
@@ -315,8 +415,8 @@ button.mini-pill.active strong { color: var(--accent-ink); }
   gap: 3px;
   text-align: left;
 }
-.inbox-card:hover { border-color: rgba(79, 125, 66, .48); background: #f8f6ef; }
-.inbox-card.active { border-color: rgba(79, 125, 66, .8); box-shadow: inset 3px 0 0 var(--accent); }
+.inbox-card:hover { border-color: #3a3a4e; background: var(--field-hover); }
+.inbox-card.active { border-color: rgba(232, 168, 124, .72); box-shadow: inset 3px 0 0 var(--accent); }
 .inbox-card.waiting { border-color: rgba(215, 184, 107, .56); }
 .inbox-card.attention { border-color: rgba(231, 76, 60, .62); }
 .inbox-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
@@ -325,44 +425,45 @@ button.mini-pill.active strong { color: var(--accent-ink); }
 .inbox-note { color: var(--quiet); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .filter-row {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   align-items: center;
-  padding: 10px 12px 0;
+  padding: 7px 8px 0;
   flex-wrap: wrap;
 }
 .filter-row .spacer { flex: 1; }
 .filter-label {
   color: var(--accent);
-  font-size: 11px;
-  font-weight: 900;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: .8px;
 }
 .queue-search {
-  width: min(190px, 26vw);
-  min-height: 28px;
+  width: min(168px, 22vw);
+  min-height: 24px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 4px;
   background: var(--field);
   color: var(--text);
-  padding: 0 10px;
+  padding: 0 8px;
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
 }
 .queue-search::placeholder { color: var(--quiet); }
 .queue-search:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
 button.filter {
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 6px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 4px;
   color: var(--muted);
   white-space: nowrap;
-  background: #f8f6ef;
+  background: var(--field);
 }
 button.filter.active {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
-  font-weight: 900;
+  font-weight: 700;
 }
 .summary-strip {
   padding: 8px 12px 0;
@@ -376,20 +477,92 @@ button.filter.active {
   min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: #fffdf7;
+  background: var(--field);
   padding: 8px 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.summary:hover { border-color: rgba(79, 125, 66, .48); background: #f8f6ef; }
-.summary.active { border-color: rgba(79, 125, 66, .8); box-shadow: inset 4px 0 0 var(--accent); }
+.summary:hover { border-color: #3a3a4e; background: var(--field-hover); }
+.summary.active { border-color: rgba(232, 168, 124, .72); box-shadow: inset 4px 0 0 var(--accent); }
 .summary strong { display: block; min-width: 30px; font-size: 20px; line-height: 1; }
 .summary span { color: var(--muted); font-size: 11px; line-height: 1.2; }
 .summary.warn { border-color: rgba(185, 120, 24, .56); }
 .summary.err { border-color: rgba(182, 75, 63, .62); }
 .summary.warn.active, .summary.err.active { border-color: rgba(79, 125, 66, .8); }
+.steward-panel {
+  margin: 8px 12px 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.steward-panel[hidden] { display: none; }
+.steward-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--field);
+  padding: 7px 8px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+.steward-card:focus-visible {
+  outline: 2px solid rgba(235, 171, 124, .85);
+  outline-offset: 2px;
+}
+.steward-card:hover {
+  border-color: rgba(235, 171, 124, .7);
+  filter: brightness(1.08);
+}
+.steward-card-action {
+  margin-top: 2px;
+  color: var(--accent);
+  font: 9px/1.2 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.steward-card.ok { border-color: rgba(47, 125, 74, .34); }
+.steward-card.warn { border-color: rgba(215, 184, 107, .42); }
+.steward-card.err { border-color: rgba(182, 75, 63, .58); }
+.steward-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--quiet);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.steward-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--quiet);
+  flex: 0 0 auto;
+}
+.steward-card.ok .steward-dot { background: var(--ok); box-shadow: 0 0 7px rgba(127, 176, 105, .42); }
+.steward-card.warn .steward-dot { background: var(--warn); box-shadow: 0 0 7px rgba(215, 184, 107, .42); }
+.steward-card.err .steward-dot { background: var(--err); box-shadow: 0 0 7px rgba(231, 76, 60, .44); }
+.steward-value {
+  min-width: 0;
+  color: var(--text);
+  font-weight: 760;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.steward-note {
+  min-width: 0;
+  color: var(--muted);
+  font: 10px/1.2 var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .notice {
   margin: 10px 12px 0;
   border: 1px solid rgba(182, 75, 63, .56);
@@ -404,43 +577,123 @@ button.filter.active {
   background: #e9f3e2;
 }
 .notice[hidden] { display: none; }
+.trust-strip {
+  margin: 8px 12px 0;
+  border: 1px solid rgba(232, 168, 124, .38);
+  border-radius: 6px;
+  background: var(--field);
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+}
+.trust-strip[hidden] { display: none; }
+.trust-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(232, 168, 124, .20);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.trust-close {
+  min-width: 24px;
+  height: 22px;
+  border-radius: 4px;
+  padding: 0 6px;
+  color: var(--muted);
+  background: transparent;
+  border-color: transparent;
+}
+.trust-close:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--field-hover);
+}
+.trust-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.trust-row + .trust-row { border-top: 1px solid rgba(255, 255, 255, .06); }
+.trust-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 0 3px rgba(215, 184, 107, .18);
+}
+.trust-row.err .trust-dot {
+  background: var(--err);
+  box-shadow: 0 0 0 3px rgba(182, 75, 63, .16);
+}
+.trust-row.ok .trust-dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px rgba(47, 125, 74, .14);
+}
+.trust-title {
+  min-width: 0;
+  color: var(--text);
+  font-weight: 720;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trust-title .muted { color: #c9c0b5; font-weight: 550; }
+.trust-meta {
+  color: #c9c0b5;
+  font: 10px/1.2 var(--font-mono);
+  white-space: nowrap;
+}
 
-.action-list { padding: 8px; display: grid; gap: 8px; align-content: start; }
+.action-list { padding: 6px; display: grid; gap: 5px; align-content: start; }
 .action {
   width: 100%;
   text-align: left;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fffdf7;
+  border-radius: 5px;
+  background: var(--field);
   color: var(--text);
-  padding: 12px;
+  padding: 8px;
   display: grid;
-  gap: 8px;
+  gap: 5px;
 }
-.action.selected { border-color: rgba(79, 125, 66, .8); box-shadow: inset 4px 0 0 var(--accent); }
-.action.warn { border-color: rgba(185, 120, 24, .56); }
-.action-title { font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.action-summary { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.action-help { color: var(--quiet); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action:hover { background: var(--field-hover); }
+.action.selected { border-color: rgba(232, 168, 124, .72); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.action.warn { border-color: rgba(215, 184, 107, .58); }
+.action-title { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action-summary { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action-help { color: var(--quiet); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action.ok { border-color: rgba(47, 125, 74, .38); }
 .action.err { border-color: rgba(182, 75, 63, .56); }
 .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag {
-  min-height: 22px;
+  min-height: 18px;
   border: 0;
-  border-radius: 4px;
-  padding: 2px 8px;
+  border-radius: 3px;
+  padding: 1px 6px;
   color: var(--quiet);
-  background: #eee8da;
-  font-size: 11px;
-  font-weight: 800;
+  background: rgba(255, 255, 255, .06);
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: .5px;
 }
-.tag.wake { background: #fff1cf; color: #855a10; }
-.tag.decision { background: #e8f1df; color: #355f2b; }
-.tag.unread { background: #e9ece3; color: var(--text); }
-.tag.local { background: #e4f1dd; color: var(--ok); }
-.tag.snoozed { background: #ece7f2; color: #665178; }
+.tag.wake { background: rgba(215, 184, 107, .16); color: var(--warn); }
+.tag.urgent { background: rgba(231, 76, 60, .18); color: #f5b4ad; }
+.tag.decision { background: rgba(232, 168, 124, .16); color: var(--accent-light); }
+.tag.unread { background: rgba(255, 255, 255, .08); color: var(--text); }
+.tag.local { background: rgba(127, 176, 105, .14); color: var(--ok); }
+.tag.snoozed { background: rgba(167, 160, 154, .14); color: var(--muted); }
 .empty {
   padding: 28px;
   color: var(--muted);
@@ -448,28 +701,44 @@ button.filter.active {
 }
 
 .detail-panel { grid-template-rows: auto auto 1fr; }
-.detail-body { padding: 10px; display: grid; gap: 8px; align-content: start; }
-.detail-title { font-size: 18px; line-height: 1.15; font-weight: 900; }
-.detail-summary { color: var(--muted); font-size: 12px; }
+.detail-body { padding: 7px; display: grid; gap: 6px; align-content: start; }
+.detail-title { font-size: 15px; line-height: 1.16; font-weight: 650; }
+.detail-summary { color: var(--muted); font-size: 11px; }
 .detail-section {
   border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--panel);
+  border-radius: 5px;
+  background: var(--field);
   overflow: hidden;
 }
 .detail-section > summary {
-  min-height: 32px;
-  padding: 7px 9px;
+  min-height: 28px;
+  padding: 6px 8px;
   color: var(--accent);
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: .8px;
   cursor: pointer;
-  list-style-position: inside;
+  list-style: none;
+  background: var(--chrome);
 }
-.detail-section > summary:hover { background: #f8f6ef; }
+.detail-section > summary::-webkit-details-marker { display: none; }
+.detail-section > summary::before {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font: 11px/1 var(--font-mono);
+}
+.detail-section[open] > summary::before { content: "-"; color: var(--accent); border-color: rgba(232, 168, 124, .48); }
+.detail-section > summary:hover { background: var(--field-hover); }
 .detail-section[open] > summary { border-bottom: 1px solid var(--border); }
-.detail-section-content { padding: 9px; display: grid; gap: 8px; min-width: 0; }
+.detail-section-content { padding: 7px; display: grid; gap: 6px; min-width: 0; }
 .message-preview {
   border: 0;
   border-radius: 0;
@@ -479,54 +748,55 @@ button.filter.active {
   overflow: hidden;
 }
 .message-preview-head {
-  min-height: 30px;
+  min-height: 24px;
   border-bottom: 1px solid var(--border);
   color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 6px 9px;
-  font-size: 11px;
-  font-weight: 900;
+  gap: 6px;
+  padding: 5px 7px;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: .7px;
 }
 .message-preview-body {
-  max-height: 126px;
+  max-height: 154px;
   overflow: auto;
   color: var(--muted);
-  padding: 9px;
+  padding: 7px;
   white-space: pre-wrap;
-  font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
+  font: 11px/1.38 var(--font-mono);
 }
 .message-preview-empty { color: var(--quiet); font-family: inherit; }
-.fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .fact {
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 4px;
   background: var(--field);
-  padding: 9px;
+  padding: 7px;
   min-width: 0;
 }
-.fact-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
-.fact-value { margin-top: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fact-label { color: var(--quiet); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+.fact-value { margin-top: 3px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wake-box {
   border: 0;
   border-radius: 0;
   background: rgba(215, 184, 107, .07);
-  padding: 10px;
+  padding: 7px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
-.wake-label { color: #855a10; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.wake-label { color: var(--warn); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
 .wake-line {
-  min-height: 54px;
+  min-height: 48px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--field);
   color: var(--text);
-  padding: 9px;
-  font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
+  padding: 7px;
+  font: 11px/1.38 var(--font-mono);
 }
 .how-box, .checks-box, .session-box, .scope-box {
   border: 0;
@@ -543,108 +813,287 @@ button.filter.active {
 }
 .scope-row {
   display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 8px;
-  padding-top: 6px;
+  grid-template-columns: 86px 1fr;
+  gap: 6px;
+  padding-top: 5px;
   border-top: 1px solid var(--border);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 .scope-row:first-child { border-top: 0; padding-top: 0; }
-.scope-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.scope-label { color: var(--quiet); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
 .scope-value { min-width: 0; overflow-wrap: anywhere; }
-.how-title, .checks-title, .session-title, .scope-title { color: var(--accent); font-size: 12px; font-weight: 900; text-transform: uppercase; }
-.how-list { margin: 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
+.how-title, .checks-title, .session-title, .scope-title { color: var(--accent); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
+.how-list { margin: 0; padding-left: 18px; color: var(--muted); font-size: 11px; }
 .how-list li { margin: 3px 0; }
-.session-copy { color: var(--muted); font-size: 12px; }
-.session-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.session-actions button { min-height: 28px; padding: 0 8px; font-size: 12px; }
-.session-actions button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 900; }
-.activity-list { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+.session-copy { color: var(--muted); font-size: 11px; }
+.session-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.session-actions button { min-height: 24px; padding: 0 6px; font-size: 11px; }
+.session-actions button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.activity-list { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
 .activity-row {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 8px;
+  gap: 6px;
   border-top: 1px solid var(--border);
-  padding-top: 6px;
+  padding-top: 5px;
 }
 .activity-row:first-child { border-top: 0; padding-top: 0; }
-.activity-time { color: var(--quiet); font: 11px/1.2 "Cascadia Mono", Consolas, monospace; }
+.activity-time { color: var(--quiet); font: 10px/1.2 var(--font-mono); }
 .activity-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .route-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 10px;
-  padding: 7px 0;
+  gap: 8px;
+  padding: 6px 0;
   border-top: 1px solid var(--border);
 }
 .route-row:first-of-type { border-top: 0; }
-.route-name { min-width: 0; color: var(--text); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.route-meta { color: var(--quiet); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.route-time { color: var(--muted); font: 11px/1.2 "Cascadia Mono", Consolas, monospace; white-space: nowrap; }
+.route-name { min-width: 0; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.route-meta { color: var(--quiet); font-size: 10px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.route-time { color: var(--muted); font: 10px/1.2 var(--font-mono); white-space: nowrap; }
 .route-status { color: var(--ok); }
 .route-status.warn { color: var(--warn); }
 .route-status.err { color: var(--err); }
 .detail-actions {
   border-bottom: 1px solid var(--border);
-  padding: 8px;
+  padding: 6px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 5px;
   align-items: stretch;
+  background: var(--panel);
 }
 .detail-actions button {
   min-width: 0;
-  padding: 0 8px;
-  font-size: 12px;
+  padding: 0 6px;
+  font-size: 11px;
 }
 .detail-actions button.danger,
 .detail-actions button.primary {
-  font-weight: 900;
+  font-weight: 700;
 }
 .detail-actions button[hidden] { display: none; }
+.inspector-overlay[hidden] { display: none; }
+.inspector-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(12, 12, 25, .96);
+  color: var(--text);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  min-width: 0;
+}
+.inspector-head {
+  min-height: 60px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--ink);
+}
+.inspector-title {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.inspector-title h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+}
+.inspector-meta {
+  color: var(--quiet);
+  font: 11px/1.2 var(--font-mono);
+  white-space: nowrap;
+}
+.inspector-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inspector-actions button { min-height: 34px; }
+.inspector-summary {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 8px;
+  background: var(--panel);
+}
+.inspector-stat {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--field);
+  padding: 10px;
+}
+.inspector-stat-label {
+  color: var(--quiet);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+}
+.inspector-stat-value {
+  margin-top: 5px;
+  font: 20px/1.1 var(--font-mono);
+  font-weight: 800;
+}
+.inspector-stat.pass .inspector-stat-value { color: var(--ok); }
+.inspector-stat.warn .inspector-stat-value { color: var(--warn); }
+.inspector-stat.fail .inspector-stat-value { color: var(--err); }
+.inspector-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(360px, 1.2fr) minmax(320px, .8fr);
+  gap: 0;
+}
+.inspector-findings,
+.inspector-raw {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px;
+}
+.inspector-findings { border-right: 1px solid var(--border); }
+.inspector-list { display: grid; gap: 8px; }
+.inspector-finding {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  padding: 10px;
+}
+.inspector-finding.pass { border-color: rgba(128, 194, 105, .46); }
+.inspector-finding.warn { border-color: rgba(215, 184, 107, .66); }
+.inspector-finding.fail { border-color: rgba(231, 76, 60, .68); }
+.inspector-finding-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.inspector-badge {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font: 10px/1 var(--font-mono);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.inspector-badge.pass { background: rgba(128, 194, 105, .15); color: var(--ok); border: 1px solid rgba(128, 194, 105, .45); }
+.inspector-badge.warn { background: rgba(215, 184, 107, .16); color: var(--warn); border: 1px solid rgba(215, 184, 107, .5); }
+.inspector-badge.fail { background: rgba(231, 76, 60, .18); color: #ffc4bd; border: 1px solid rgba(231, 76, 60, .62); }
+.inspector-finding-title {
+  min-width: 0;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inspector-check-id {
+  color: var(--quiet);
+  font: 10px/1.2 var(--font-mono);
+}
+.inspector-finding-copy {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.inspector-recommendation {
+  margin-top: 7px;
+  color: var(--warn);
+  font-size: 12px;
+}
+.inspector-raw pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font: 11px/1.4 var(--font-mono);
+}
+.inspector-empty {
+  color: var(--muted);
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--field);
+}
 .footer {
   border-top: 1px solid var(--border);
   background: var(--ink);
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
+  gap: 10px;
+  padding: 0 10px;
   color: var(--quiet);
-  font-size: 12px;
+  font: 10px/1.2 var(--font-mono);
 }
-.diag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.footer strong { color: #fffdf7; }
+.diag {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.diag-action {
+  appearance: none;
+  flex: 0 0 auto;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid rgba(231, 76, 60, .64);
+  border-radius: 5px;
+  background: rgba(63, 24, 31, .82);
+  color: #ffc4bd;
+  font: 10px/1 var(--font-mono);
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45);
+}
+.diag-action:hover { filter: brightness(1.08); }
+.diag-action:focus-visible {
+  outline: 2px solid rgba(242, 176, 126, .72);
+  outline-offset: 2px;
+}
+.diag-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.footer strong { color: var(--text); }
 .quiet-home {
   display: none;
   min-height: 460px;
-  padding: 34px 28px;
+  padding: 28px 24px;
   place-items: center;
   text-align: center;
 }
 .quiet-card {
   width: min(900px, 100%);
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 .quiet-kicker {
   color: var(--accent);
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 1px;
 }
 .quiet-title {
   margin: 0;
-  font-size: 36px;
+  font-size: 30px;
   line-height: 1;
   letter-spacing: 0;
+  font-weight: 300;
 }
 .quiet-copy {
   margin: 0 auto;
   max-width: 520px;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 12px;
 }
 .quiet-actions {
   display: flex;
@@ -667,36 +1116,36 @@ button.filter.active {
   gap: 4px;
 }
 .mailbox-card {
-  min-height: 214px;
-  padding: 14px 12px;
+  min-height: 172px;
+  padding: 12px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fffdf7;
+  border-radius: 6px;
+  background: var(--panel);
   color: var(--text);
   display: grid;
-  grid-template-rows: 88px auto auto auto;
+  grid-template-rows: 64px auto auto auto;
   justify-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .mailbox-card:hover {
-  border-color: rgba(79, 125, 66, .56);
-  background: #f8f6ef;
+  border-color: #3a3a4e;
+  background: var(--field);
 }
 .mailbox-card.hot {
-  border-color: rgba(185, 120, 24, .72);
-  box-shadow: inset 0 -3px 0 rgba(185, 120, 24, .72);
+  border-color: rgba(215, 184, 107, .72);
+  box-shadow: inset 0 -3px 0 rgba(215, 184, 107, .72);
 }
 .mailbox-card.waiting {
-  border-color: rgba(79, 125, 66, .46);
-  box-shadow: inset 0 -3px 0 rgba(79, 125, 66, .38);
+  border-color: rgba(232, 168, 124, .48);
+  box-shadow: inset 0 -3px 0 rgba(232, 168, 124, .38);
 }
 .mailbox-graphic {
   position: relative;
   width: 24px;
   height: 17px;
-  border: 2px solid var(--bamboo);
-  border-radius: 4px;
-  background: #f8f6ef;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  background: var(--field);
   overflow: hidden;
 }
 .mailbox-graphic::before,
@@ -706,7 +1155,7 @@ button.filter.active {
   top: 2px;
   width: 15px;
   height: 15px;
-  border-top: 2px solid var(--bamboo);
+  border-top: 2px solid var(--accent);
 }
 .mailbox-graphic::before {
   left: -3px;
@@ -723,22 +1172,22 @@ button.filter.active {
   display: none;
 }
 .mailbox-number {
-  font-size: 42px;
+  font: 34px/1 var(--font-mono);
   line-height: 1;
-  font-weight: 900;
+  font-weight: 700;
 }
 .mailbox-label {
-  font-size: 15px;
-  font-weight: 900;
+  font-size: 12px;
+  font-weight: 700;
 }
 .mailbox-note {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   min-height: 16px;
 }
 .mailbox-grid-main .mailbox-card {
-  min-height: 42px;
-  padding: 4px;
+  min-height: 34px;
+  padding: 3px 4px;
   grid-template-columns: 20px minmax(0, 1fr);
   grid-template-rows: auto auto;
   justify-items: start;
@@ -755,7 +1204,7 @@ button.filter.active {
 .mailbox-grid-main .mailbox-number {
   grid-column: 2;
   grid-row: 1;
-  font-size: 20px;
+  font-size: 15px;
   line-height: 1;
   min-width: 1ch;
   text-align: left;
@@ -763,7 +1212,7 @@ button.filter.active {
 .mailbox-grid-main .mailbox-label {
   grid-column: 2;
   grid-row: 2;
-  font-size: 10px;
+  font-size: 8px;
   line-height: 1.1;
   max-width: 100%;
   overflow: hidden;
@@ -812,12 +1261,14 @@ body.quiet-mode .top-actions button[disabled] {
   .app { min-width: 0; grid-template-rows: auto 1fr auto; }
   .topbar { grid-template-columns: 1fr; align-items: start; gap: 8px; padding: 10px 12px; }
   .status-line { flex-wrap: wrap; white-space: normal; }
+  .server-health { flex-wrap: wrap; }
   .top-actions { flex-wrap: wrap; }
   .main {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 34%);
+    grid-template-rows: minmax(140px, auto) minmax(0, 1fr) minmax(0, 34%);
     overflow: hidden;
   }
+  .participants-panel { max-height: 220px; }
   .detail-panel { grid-column: 1 / -1; min-height: 0; }
   .summary-strip { grid-template-columns: 1fr; }
   .guide-steps { grid-template-columns: 1fr; }
@@ -829,13 +1280,17 @@ body.quiet-mode .top-actions button[disabled] {
   .app, .topbar, .main, .footer { width: 100%; max-width: 100vw; min-width: 0; }
   .main {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 32%);
+    grid-template-rows: minmax(132px, 24%) minmax(0, 1fr) minmax(0, 34%);
+    grid-template-areas:
+      "agents"
+      "queue"
+      "detail";
     padding: 8px;
     gap: 8px;
   }
-  .queue-panel { order: -2; }
-  .participants-panel { order: -1; max-height: 260px; }
-  .detail-panel { order: 3; }
+  .queue-panel { grid-area: queue; }
+  .participants-panel { grid-area: agents; max-height: none; }
+  .detail-panel { grid-area: detail; }
   .panel { width: 100%; min-width: 0; min-height: 0; }
   .brand, .status-line, .top-actions, .diag, .footer strong { min-width: 0; max-width: 100%; }
   .top-actions > * { flex: 1 1 auto; }
@@ -845,6 +1300,12 @@ body.quiet-mode .top-actions button[disabled] {
   .filter-row .toggle { display: none; }
   .footer { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 44px; padding: 8px 12px; }
   .footer strong { overflow-wrap: anywhere; white-space: normal; }
+  .inspector-head { grid-template-columns: minmax(0, 1fr); }
+  .inspector-title { display: grid; gap: 4px; }
+  .inspector-actions { justify-content: start; flex-wrap: wrap; }
+  .inspector-summary { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+  .inspector-body { grid-template-columns: minmax(0, 1fr); }
+  .inspector-findings { border-right: 0; border-bottom: 1px solid var(--border); }
   .mailbox-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mailbox-grid-main { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .mailbox-card { min-height: 96px; grid-template-rows: 44px auto auto; }
@@ -888,6 +1349,12 @@ body.quiet-mode .top-actions button[disabled] {
     <div class="status-line">
       <div class="system-state" id="systemState">Loading...</div>
       <div class="meta" id="asOf">as of --</div>
+      <div class="server-health" id="serverHealth" aria-label="PAH server health">
+        <button class="health-chip unknown" id="healthApi" type="button" data-health-target="api" title="Open API health detail"><span class="health-dot"></span><span data-health-label>API</span></button>
+        <button class="health-chip unknown" id="healthRoutes" type="button" data-health-target="routes" title="Open route diagnostics"><span class="health-dot"></span><span data-health-label>Routes</span></button>
+        <button class="health-chip unknown" id="healthQueue" type="button" data-health-target="queue" title="Open queue detail"><span class="health-dot"></span><span data-health-label>Queue</span></button>
+        <button class="health-chip unknown" id="healthLedger" type="button" data-health-target="ledger" title="Open interaction ledger detail"><span class="health-dot"></span><span data-health-label>Ledger</span></button>
+      </div>
     </div>
     <div class="top-actions">
       <label class="toggle"><input type="checkbox" id="autoRefresh"> Auto refresh</label>
@@ -898,6 +1365,7 @@ body.quiet-mode .top-actions button[disabled] {
         <option value="claude-desktop">Claude inbox</option>
         <option value="claude-code">CC inbox</option>
       </select>
+      <button id="openInspector">Inspector</button>
       <button id="cleanupInboxes">Clean inboxes</button>
       <button id="archiveRead">Archive read</button>
       <button id="shortcutHelp">Shortcuts</button>
@@ -918,7 +1386,7 @@ body.quiet-mode .top-actions button[disabled] {
 
     <section class="panel queue-panel">
       <div class="panel-head">
-        <div class="panel-title">Mailboxes</div>
+        <div class="panel-title">Steward & Mailboxes</div>
         <div class="count" id="queueCount">0</div>
       </div>
       <div class="quiet-home" id="quietHome">
@@ -948,7 +1416,9 @@ body.quiet-mode .top-actions button[disabled] {
       </div>
       </div>
       <div class="summary-strip" id="summaryStrip"></div>
+      <div class="steward-panel" id="stewardPanel" hidden></div>
       <div class="notice" id="notice" hidden></div>
+      <div class="trust-strip" id="trustStrip" hidden></div>
       <div class="filter-row">
         <span class="filter-label">View</span>
         <button class="filter active" data-filter="you" title="Show threads waiting on you">My threads</button>
@@ -1054,6 +1524,29 @@ body.quiet-mode .top-actions button[disabled] {
     <div class="diag" id="diagnosticsLine">Diagnostics quiet.</div>
     <div><strong id="gitState">git</strong></div>
   </footer>
+
+  <section class="inspector-overlay" id="inspectorPanel" hidden aria-label="PAH Inspector panel" role="dialog" aria-modal="true">
+    <div class="inspector-head">
+      <div class="inspector-title">
+        <h2>PAH Inspector</h2>
+        <span class="inspector-meta" id="inspectorMeta">Latest report not loaded.</span>
+      </div>
+      <div class="inspector-actions">
+        <button id="refreshInspector">Refresh report</button>
+        <button id="openInspectorReport">Open report</button>
+        <button id="closeInspector">Close</button>
+      </div>
+    </div>
+    <div class="inspector-summary" id="inspectorSummary"></div>
+    <div class="inspector-body">
+      <div class="inspector-findings">
+        <div class="inspector-list" id="inspectorFindings"></div>
+      </div>
+      <div class="inspector-raw">
+        <pre id="inspectorMarkdown">Open Inspector to load the latest report.</pre>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -1077,6 +1570,8 @@ let prefs = loadPrefs();
 let autoTimer = null;
 let refreshInFlight = false;
 const messagePreviewCache = {};
+let inspectorReport = null;
+let inspectorOpen = false;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1133,6 +1628,7 @@ function agentActionCount(agentId) {
   if (!agentId) return 0;
   const queue = cockpit?.action_queue || [];
   if (agentId === 'darrin') return queue.filter(item => item.kind === 'you').length;
+  if (agentId === 'codex') return queue.filter(item => item.kind === 'urgent' || (item.kind === 'agent' && String(item.owner_label || item.agent_label || '').toLowerCase().includes(agentName(agentId).toLowerCase()))).length;
   return queue.filter(item => item.kind === 'agent' && String(item.owner_label || item.agent_label || '').toLowerCase().includes(agentName(agentId).toLowerCase())).length;
 }
 function agentFocusFilter(agentId) {
@@ -1151,6 +1647,26 @@ function focusMailbox(agentId) {
   prefs.selectedId = selected?.id || '';
   savePrefs();
   render();
+}
+function focusRoutesHealth() {
+  const routes = cockpit?.routes || [];
+  const attentionRoute = routes.find(route => route.status !== 'pass') || routes[0] || null;
+  focusQueueItem('diagnostics', attentionRoute?.id ? `diag-route-${attentionRoute.id}` : 'diag-suite');
+}
+function focusHealthChip(target) {
+  if (target === 'routes') {
+    focusRoutesHealth();
+    return;
+  }
+  if (target === 'queue') {
+    focusPanel('all');
+    return;
+  }
+  if (target === 'ledger') {
+    focusQueueItem('diagnostics', 'diag-discrepancy');
+    return;
+  }
+  focusQueueItem('diagnostics', 'diag-suite');
 }
 function focusAgent(agentId) {
   selectedAgentId = agentId || '';
@@ -1180,6 +1696,19 @@ function focusPanel(filter) {
   savePrefs();
   render();
 }
+function focusQueueItem(filter, itemId) {
+  selectedAgentId = '';
+  agentFilter = '';
+  queueFilter = filter || 'you';
+  const visible = filteredQueue();
+  selected = visible.find(item => item.id === itemId) || visible[0] || null;
+  prefs.queueFilter = queueFilter;
+  prefs.agentFilter = '';
+  prefs.selectedAgentId = '';
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  render();
+}
 async function postJson(path, body) {
   const res = await fetch(path, {
     method: 'POST',
@@ -1193,14 +1722,22 @@ async function postJson(path, body) {
 function visibleMessageItems() {
   return currentVisibleQueue.filter(item => item?.message_path);
 }
+function bulkDeleteEligibleItems() {
+  return currentVisibleQueue.filter(item => item?.message_path && item.kind === 'diagnostic');
+}
 function setSnooze(item, minutes) {
-  if (!item?.id) return;
+  if (!item?.id) return false;
+  if (item.kind === 'urgent') {
+    setNotice('Urgent Codex requests cannot be snoozed. Open the message or copy the wake line now.', 'err');
+    return false;
+  }
   snoozedItems[item.id] = {
     until: new Date(Date.now() + minutes * 60000).toISOString(),
     title: item.title || item.id,
   };
   saveSnoozedItems();
   recordActivity(`Snoozed ${minutes}m`, item);
+  return true;
 }
 function clearSnooze(item) {
   if (!item?.id) return;
@@ -1237,6 +1774,86 @@ function parentPath(pathValue) {
   const index = Math.max(text.lastIndexOf('\\'), text.lastIndexOf('/'));
   return index > 0 ? text.slice(0, index) : text;
 }
+function inspectorCounts(report) {
+  const counts = report?.summary?.counts || {};
+  const findings = Array.isArray(report?.findings) ? report.findings : [];
+  return {
+    pass: Number(counts.pass ?? findings.filter(item => item.status === 'pass').length),
+    warn: Number(counts.warn ?? findings.filter(item => item.status === 'warn').length),
+    fail: Number(counts.fail ?? findings.filter(item => item.status === 'fail').length),
+  };
+}
+function inspectorOverall(report) {
+  const counts = inspectorCounts(report);
+  return String(report?.summary?.overall || (counts.fail ? 'fail' : counts.warn ? 'warn' : 'pass')).toLowerCase();
+}
+async function loadInspectorReport() {
+  const res = await fetch('/api/inspector-report');
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok || payload.ok === false) throw new Error(payload.error || `Inspector report failed ${res.status}`);
+  inspectorReport = payload;
+  renderInspectorPanel();
+  return payload;
+}
+async function openInspectorPanel() {
+  inspectorOpen = true;
+  document.getElementById('inspectorPanel').hidden = false;
+  renderInspectorPanel();
+  try {
+    await loadInspectorReport();
+    setNotice('Inspector report loaded.', 'ok');
+  } catch (err) {
+    setNotice(`Inspector report could not load: ${err.message || err}`);
+  }
+}
+function closeInspectorPanel() {
+  inspectorOpen = false;
+  document.getElementById('inspectorPanel').hidden = true;
+}
+function renderInspectorPanel() {
+  const panel = document.getElementById('inspectorPanel');
+  if (!panel || panel.hidden) return;
+  const payload = inspectorReport || {};
+  const report = payload.report || {};
+  const counts = inspectorCounts(report);
+  const overall = inspectorOverall(report);
+  const generated = payload.generated_at || report.generated_at || '';
+  document.getElementById('inspectorMeta').textContent = generated
+    ? `Latest ${overall.toUpperCase()} report from ${fmtTime(generated)}`
+    : 'No inspector report found yet.';
+  document.getElementById('inspectorSummary').innerHTML = [
+    ['overall', 'Overall', overall.toUpperCase()],
+    ['pass', 'Pass', counts.pass],
+    ['warn', 'Warn', counts.warn],
+    ['fail', 'Fail', counts.fail],
+  ].map(([tone, label, value]) => `
+    <div class="inspector-stat ${tone === 'overall' ? overall : tone}">
+      <div class="inspector-stat-label">${esc(label)}</div>
+      <div class="inspector-stat-value">${esc(value)}</div>
+    </div>
+  `).join('');
+  const findings = Array.isArray(report.findings) ? report.findings : [];
+  const ordered = [...findings].sort((a, b) => {
+    const weight = {fail: 0, err: 0, warn: 1, pass: 2};
+    return (weight[String(a.status || '').toLowerCase()] ?? 3) - (weight[String(b.status || '').toLowerCase()] ?? 3);
+  });
+  document.getElementById('inspectorFindings').innerHTML = ordered.length ? ordered.map(item => {
+    const status = String(item.status || 'unknown').toLowerCase();
+    return `
+      <div class="inspector-finding ${esc(status)}">
+        <div class="inspector-finding-head">
+          <span class="inspector-badge ${esc(status)}">${esc(status)}</span>
+          <div class="inspector-finding-title">${esc(item.title || item.check_id || 'Inspector check')}</div>
+          <div class="inspector-check-id">${esc(item.check_id || '')}</div>
+        </div>
+        <div class="inspector-finding-copy">${esc(item.summary || '')}</div>
+        ${item.recommendation ? `<div class="inspector-recommendation">${esc(item.recommendation)}</div>` : ''}
+      </div>
+    `;
+  }).join('') : '<div class="inspector-empty">No inspector findings are available yet. Run PAH Inspector, then refresh this panel.</div>';
+  document.getElementById('inspectorMarkdown').textContent = payload.markdown
+    || 'No Markdown report found. Run CODEX_pah_inspector.py, then refresh this panel.';
+}
 function setDetailAction(id, visible, disabled = false) {
   const button = document.getElementById(id);
   if (!button) return;
@@ -1262,20 +1879,21 @@ function configureDetailActions(item, wakeText = '') {
   const kind = item?.kind || '';
   const hasMessage = Boolean(item?.message_path);
   const hasWake = Boolean(wakeText);
-  const isWake = kind === 'wake';
+  const isUrgent = kind === 'urgent';
+  const isWake = kind === 'wake' || isUrgent;
   const isDecision = kind === 'decision';
   const isDiagnostic = kind === 'diagnostic';
   const isSnoozed = Boolean(snoozeUntilFor(item));
   setDetailAction('openMessage', hasMessage, !hasMessage);
   setDetailAction('openFolder', hasMessage, !hasMessage);
   setDetailAction('copyPath', hasMessage, !hasMessage);
-  setDetailAction('snoozeAlert', Boolean(item?.id) && !isDiagnostic && !isSnoozed, !item?.id);
+  setDetailAction('snoozeAlert', Boolean(item?.id) && !isDiagnostic && !isSnoozed && !isUrgent, !item?.id);
   setDetailAction('unsnoozeAlert', isSnoozed, !isSnoozed);
   setDetailAction('markRead', false, true);
   setDetailAction('resolveDecision', isDecision && hasMessage, !hasMessage);
   setDetailAction('dismissDecision', isDecision && hasMessage, !hasMessage);
   setDetailAction('runDiagnostics', isDiagnostic || queueFilter === 'diagnostics', false);
-  setDetailAction('deleteAlert', hasMessage, !hasMessage);
+  setDetailAction('deleteAlert', isDiagnostic && hasMessage, !hasMessage);
   setDetailAction('copyWake', isWake && hasWake, !hasWake);
 }
 function diagnosticItems() {
@@ -1298,8 +1916,55 @@ function diagnosticItems() {
   const relay = diagnostics.relay_health || {};
   const relayCounts = relay.counts || {};
   const relayCache = relay.cache || {};
+  const health = cockpit?.health?.components || {};
+  const monitor = health.periodic_monitor || {};
+  const archive = health.archive || {};
+  const archiveSweep = latestArchiveSweep();
+  const ledger = cockpit?.interaction_ledger || {};
+  const latestDiscrepancy = ledger.latest_discrepancy || null;
   return [
+    {
+      id: 'diag-periodic-monitor',
+      kind: 'diagnostic',
+      severity: componentLevel(monitor),
+      title: 'Periodic monitor',
+      summary: monitor.detail || 'Periodic monitor has not reported yet.',
+      primary_action: 'Review monitor',
+      secondary_action: monitor.next_run_after ? `Next ${fmtTime(monitor.next_run_after)}` : 'No schedule',
+      thread_id: 'periodic-monitor',
+      message_path: '',
+      wake_line: '',
+      diagnostic: monitor,
+    },
     ...routes,
+    {
+      id: 'diag-archive-sweep',
+      kind: 'diagnostic',
+      severity: componentLevel(archive),
+      title: 'Archive/read sweep',
+      summary: archiveSweep
+        ? `${archiveSweep.moved || 0} moved; ${archiveSweep.skipped_active_thread || 0} active thread(s) skipped; ${archiveSweep.skipped_unread || 0} unread skipped.`
+        : archive.detail || 'Archive sweep audit has not reported yet.',
+      primary_action: 'Review archive sweep',
+      secondary_action: archive.audit_log_path || archive.label || 'audit log',
+      thread_id: 'archive-sweep',
+      message_path: '',
+      wake_line: '',
+      diagnostic: archiveSweep || archive,
+    },
+    {
+      id: 'diag-discrepancy',
+      kind: 'diagnostic',
+      severity: latestDiscrepancy ? 'warn' : 'ok',
+      title: latestDiscrepancy ? 'Latest mailbox discrepancy' : 'No active mailbox discrepancy',
+      summary: latestDiscrepancy ? discrepancySummary(latestDiscrepancy) : 'No current mismatch is recorded in the interaction ledger.',
+      primary_action: 'Review discrepancy',
+      secondary_action: latestDiscrepancy?.agent || 'interaction ledger',
+      thread_id: 'mailbox-discrepancy',
+      message_path: '',
+      wake_line: '',
+      diagnostic: latestDiscrepancy || ledger,
+    },
     {
       id: 'diag-suite',
       kind: 'diagnostic',
@@ -1371,8 +2036,8 @@ function filteredQueue() {
   if (queueFilter === 'mailbox') return mailboxQueue(selectedAgentId || 'darrin');
   const queue = diagnosticView ? diagnosticItems() : cockpit?.action_queue || [];
   let visible = queue;
-  if (queueFilter === 'you') visible = queue.filter(item => item.kind === 'you');
-  else if (queueFilter === 'agents') visible = queue.filter(item => item.kind === 'agent');
+  if (queueFilter === 'you') visible = queue.filter(item => item.kind === 'you' || item.kind === 'urgent');
+  else if (queueFilter === 'agents') visible = queue.filter(item => item.kind === 'agent' || item.kind === 'urgent');
   else if (queueFilter === 'closed') visible = queue.filter(item => item.kind === 'closed' || item.kind === 'parked');
   else if (queueFilter === 'all') visible = queue.filter(item => item.kind !== 'closed' || queueSearch.trim());
   if (agentFilter) {
@@ -1412,17 +2077,53 @@ function openThreadsForMailbox(agentId) {
   const aliases = new Set(ownerAliases(agentId));
   return (focus.open_on_agent || []).filter(item => aliases.has(String(item.owner || '').toLowerCase()));
 }
+function mailboxMessagesFor(agentId) {
+  const id = agentId || 'darrin';
+  const messages = cockpit?.mailbox_messages?.[id];
+  return Array.isArray(messages) ? messages : [];
+}
+function mailboxWaitingCount(agentId) {
+  return mailboxMessagesFor(agentId).filter(item => item.unread || item.stale_unread || String(item.read_state || '').toLowerCase() === 'unread').length;
+}
 function mailboxQueue(agentId) {
   const id = agentId || 'darrin';
-  const items = openThreadsForMailbox(id);
-  return items.map(item => ({
+  const seen = new Set();
+  const physicalMessages = mailboxMessagesFor(id)
+    .filter(item => item.unread || item.stale_unread || String(item.read_state || '').toLowerCase() === 'unread')
+    .map(item => {
+      const itemId = item.message_id || item.path || item.name || item.thread_id || `mailbox-${Math.random()}`;
+      seen.add(itemId);
+      if (item.path) seen.add(item.path);
+      if (item.thread_id) seen.add(item.thread_id);
+      return {
+        id: itemId,
+        kind: 'mailbox',
+        severity: item.urgent_codex_request ? 'err' : item.stale_unread || item.unread ? 'warn' : 'ok',
+        title: item.title || item.name || 'Mailbox message',
+        summary: item.summary || item.direction || '',
+        primary_action: 'Open message',
+        secondary_action: item.urgent_codex_request ? 'Urgent' : item.stale_unread ? 'Unread' : 'Mailbox',
+        message_path: item.path || '',
+        thread_id: item.thread_id || '',
+        age_seconds: item.age_seconds || 0,
+        agent_label: agentName(id),
+        owner_label: agentName(id),
+        wake_line: item.urgent_codex_request ? 'Urgent request flagged for Codex.' : '',
+        source: 'mailbox message',
+        source_message: item,
+      };
+    });
+  const threadItems = openThreadsForMailbox(id).filter(item => {
+    const keys = [item.id, item.thread_id, item.message_path].filter(Boolean);
+    return !keys.some(key => seen.has(key));
+  }).map(item => ({
     id: item.id || item.thread_id || item.message_path,
     kind: 'mailbox',
-    severity: item.requires_darrin_decision ? 'warn' : 'ok',
+    severity: item.is_urgent ? 'err' : item.requires_darrin_decision ? 'warn' : 'ok',
     title: item.title || 'Open thread',
     summary: item.summary || '',
     primary_action: 'Open message',
-    secondary_action: item.requires_darrin_decision ? 'Decision' : 'Open thread',
+    secondary_action: item.is_urgent ? 'Urgent' : item.requires_darrin_decision ? 'Decision' : 'Open thread',
     message_path: item.message_path || '',
     thread_id: item.thread_id || '',
     age_seconds: item.age_seconds || 0,
@@ -1431,6 +2132,7 @@ function mailboxQueue(agentId) {
     wake_line: '',
     source_message: item,
   }));
+  return physicalMessages.concat(threadItems);
 }
 function severityRank(value) {
   if (value === 'err') return 3;
@@ -1446,6 +2148,7 @@ function statusClass(value) {
   return 'ok';
 }
 function kindClass(kind) {
+  if (kind === 'urgent') return 'urgent';
   if (kind === 'wake') return 'wake';
   if (kind === 'decision') return 'decision';
   if (kind === 'you') return 'decision';
@@ -1484,6 +2187,13 @@ function saveSnoozedItems() {
 }
 function snoozeUntilFor(item) {
   if (!item?.id) return '';
+  if (item.kind === 'urgent') {
+    if (snoozedItems[item.id]) {
+      delete snoozedItems[item.id];
+      saveSnoozedItems();
+    }
+    return '';
+  }
   const until = snoozedItems[item.id]?.until || '';
   if (!until) return '';
   const time = new Date(until).getTime();
@@ -1574,18 +2284,36 @@ async function loadCockpit() {
     const res = await fetch('/api/cockpit', { cache: 'no-store' });
     if (!res.ok) throw new Error(`PAH API returned ${res.status}`);
     cockpit = await res.json();
+    cockpit.load_error = false;
     setNotice('');
   } catch (err) {
     setNotice(`Refresh failed: ${err.message || err}. Showing last loaded data if available.`);
     if (!cockpit) {
       cockpit = emptyCockpit();
     }
+    cockpit.load_error = true;
   } finally {
     refreshInFlight = false;
     refreshButton.disabled = false;
   }
-  const visible = filteredQueue();
-  selected = visible.find(item => item.id === previousSelectedId) || visible[0] || (selectedAgentId ? null : (cockpit.action_queue || [])[0] || null);
+  const urgent = (cockpit?.action_queue || []).find(item => item.kind === 'urgent') || null;
+  if (urgent) {
+    queueFilter = 'you';
+    selectedAgentId = '';
+    agentFilter = '';
+    queueSearch = '';
+    const searchInput = document.getElementById('queueSearch');
+    if (searchInput) searchInput.value = '';
+    selected = urgent;
+    setNotice('URGENT Codex request active. Open the message or copy the wake line now.', 'err');
+  } else {
+    const visible = filteredQueue();
+    selected = visible.find(item => item.id === previousSelectedId) || visible[0] || (selectedAgentId ? null : (cockpit.action_queue || [])[0] || null);
+  }
+  prefs.queueFilter = queueFilter;
+  prefs.agentFilter = agentFilter;
+  prefs.selectedAgentId = selectedAgentId;
+  prefs.queueSearch = queueSearch;
   prefs.selectedId = selected?.id || '';
   savePrefs();
   render();
@@ -1607,7 +2335,74 @@ function emptyCockpit() {
     diagnostics: {},
     git: {},
     wake: {},
+    interaction_ledger: {events: [], discrepancy_count: 0, latest_discrepancy: null},
+    load_error: false,
   };
+}
+function setHealthChip(id, level, label, title) {
+  const node = document.getElementById(id);
+  if (!node) return;
+  const normalized = ['ok', 'warn', 'err', 'unknown'].includes(level) ? level : 'unknown';
+  node.className = `health-chip ${normalized}`;
+  const labelNode = node.querySelector('[data-health-label]');
+  if (labelNode) labelNode.textContent = label;
+  node.title = title || label;
+}
+function renderServerHealth() {
+  const state = cockpit.cockpit_state || {};
+  const counts = state.counts || {};
+  const routesSummary = state.routes_summary || {};
+  const diagnostics = cockpit.diagnostics || {};
+  const health = cockpit.health?.components || {};
+  if (Object.keys(health).length) {
+    const apiHealth = health.server || {};
+    const routeHealth = health.routes || {};
+    const urgentHealth = health.urgent_codex || {};
+    const unansweredHealth = health.unanswered || {};
+    const mailboxesHealth = health.mailboxes || {};
+    const diagnosticsHealth = health.diagnostics || {};
+    const ledgerHealth = health.interaction_ledger || {};
+    const urgentCount = Number(urgentHealth.urgent_codex_requests || 0);
+    const unansweredTotal = Number(unansweredHealth.total || 0);
+    const ownerUnknown = Number(unansweredHealth.owner_unknown || mailboxesHealth.owner_unknown || 0);
+    const staleUnread = Number(mailboxesHealth.stale_unread || 0);
+    const diagnosticsProblems = Number(diagnosticsHealth.failed_checks || 0) + Number(diagnosticsHealth.warn_checks || 0) + Number(diagnosticsHealth.actionable_validation_issues || 0);
+    const queueLevel = urgentCount || ownerUnknown || unansweredTotal
+      ? 'err'
+      : diagnosticsProblems || staleUnread
+      ? 'warn'
+      : healthLevel(urgentHealth.level, mailboxesHealth.level, unansweredHealth.level);
+    const queueDetail = [urgentHealth.detail, health.unanswered?.detail, health.diagnostics?.detail, health.mailboxes?.detail].filter(Boolean).join(' ');
+    setHealthChip('healthApi', cockpit.load_error ? 'err' : apiHealth.level || 'unknown', 'API', cockpit.load_error ? 'API refresh failed; showing last loaded data.' : apiHealth.detail || 'PAH API status.');
+    setHealthChip('healthRoutes', routeHealth.level || 'unknown', 'Routes', routeHealth.detail || 'Mailbox route status.');
+    setHealthChip('healthQueue', queueLevel, 'Queue', queueDetail || 'Queue and diagnostics status.');
+    setHealthChip('healthLedger', ledgerHealth.level || 'unknown', 'Ledger', ledgerHealth.detail || 'Interaction ledger status.');
+    return;
+  }
+  const failedRoutes = Number(routesSummary.failed || 0);
+  const heldRoutes = Number(routesSummary.held || 0);
+  const warnChecks = Number(diagnostics.checks_warn || 0);
+  const failedChecks = Number(diagnostics.checks_fail || 0);
+  const staleUnread = Number(counts.stale_unread || 0);
+  const urgentCodex = Number(counts.urgent_codex_requests || 0);
+  const openOnAgent = Number(counts.open_on_agent || 0);
+  const ownerUnknown = Number(counts.owner_unknown || 0);
+  const apiLevel = cockpit.load_error ? 'err' : cockpit.generated_at ? 'ok' : 'unknown';
+  const routeLevel = failedRoutes ? 'err' : heldRoutes ? 'warn' : 'ok';
+  const queueLevel = (urgentCodex || openOnAgent || ownerUnknown)
+    ? 'err'
+    : (failedChecks || warnChecks || staleUnread)
+    ? 'warn'
+    : 'ok';
+  setHealthChip('healthApi', apiLevel, 'API', cockpit.load_error ? 'API refresh failed; showing last loaded data.' : `API refreshed ${fmtTime(state.as_of_iso || cockpit.generated_at)}.`);
+  setHealthChip('healthRoutes', routeLevel, 'Routes', routesSummary.label || 'Mailbox routes have no reported holds.');
+  setHealthChip('healthQueue', queueLevel, 'Queue', `${staleUnread} stale unread; ${failedChecks} failed diagnostics; ${warnChecks} warnings.`);
+  const ledgerEvents = cockpit?.interaction_ledger?.events?.length || 0;
+  setHealthChip('healthLedger', cockpit?.interaction_ledger ? 'ok' : 'unknown', 'Ledger', `${ledgerEvents} recent ledger event${ledgerEvents === 1 ? '' : 's'}.`);
+}
+function healthLevel(...levels) {
+  const rank = {unknown: 0, ok: 1, warn: 2, err: 3};
+  return levels.reduce((best, level) => (rank[level] || 0) > (rank[best] || 0) ? level : best, 'unknown');
 }
 function render() {
   const state = cockpit.cockpit_state || {};
@@ -1629,6 +2424,7 @@ function render() {
     : mailboxText;
   document.getElementById('systemState').textContent = systemText;
   document.getElementById('asOf').textContent = `as of ${fmtTime(state.as_of_iso || cockpit.generated_at)}`;
+  renderServerHealth();
   document.getElementById('queueCount').textContent = visibleQueue.length;
   document.getElementById('gitState').textContent = compactGitLabel(cockpit.git?.status_label || 'git');
   document.getElementById('quietAgentsCount').textContent = openOnAgents;
@@ -1637,6 +2433,8 @@ function render() {
   renderMailboxGrid(cockpit.agents || []);
   renderInboxStatus(cockpit.agents || []);
   renderSummary(counts, cockpit.diagnostics || {});
+  renderStewardPanel();
+  renderTrustStrip(cockpit.interaction_ledger || {});
   currentVisibleQueue = visibleQueue;
   renderFilters();
   renderQueue(visibleQueue);
@@ -1707,8 +2505,8 @@ function renderFilters() {
   showSnoozed.checked = Boolean(prefs.showSnoozed);
   const hasActiveSnooze = Object.values(snoozedItems).some(entry => Date.parse(entry?.until || '') > Date.now());
   showSnoozed.closest('label').hidden = !hasActiveSnooze && !prefs.showSnoozed;
-  const visibleMessages = visibleMessageItems();
-  const bulkDisabled = !visibleMessages.length || queueFilter === 'diagnostics';
+  const deletableMessages = bulkDeleteEligibleItems();
+  const bulkDisabled = !deletableMessages.length || queueFilter !== 'diagnostics';
   const dismissVisible = document.getElementById('dismissVisible');
   const deleteVisible = document.getElementById('deleteVisible');
   dismissVisible.hidden = true;
@@ -1716,9 +2514,9 @@ function renderFilters() {
   dismissVisible.disabled = true;
   deleteVisible.disabled = bulkDisabled;
   dismissVisible.textContent = 'Dismiss visible';
-  deleteVisible.textContent = visibleMessages.length ? `Delete visible (${visibleMessages.length})` : 'Delete visible';
+  deleteVisible.textContent = deletableMessages.length ? `Delete visible (${deletableMessages.length})` : 'Delete visible';
   dismissVisible.hidden = true;
-  deleteVisible.hidden = queueFilter === 'you' || queueFilter === 'agents' || bulkDisabled;
+  deleteVisible.hidden = bulkDisabled;
 }
 function renderAgents(agents) {
   document.getElementById('agentCount').textContent = agents.length;
@@ -1726,19 +2524,38 @@ function renderAgents(agents) {
   setHTML('agentList', agents.map(agent => {
     const actionCount = agentActionCount(agent.id);
     const displayCount = agent.id === 'darrin' ? Number(counts.open_on_darrin || 0) : actionCount;
+    const mailboxWaiting = agent.id === 'darrin' ? 0 : mailboxWaitingCount(agent.id) || Number(agent.waiting_count || agent.unread_count || agent.count_value || 0);
+    const dotStatus = displayCount
+      ? agent.status
+      : mailboxWaiting
+      ? 'warn'
+      : 'ok';
     const statusLabel = agent.id === 'darrin'
       ? (displayCount ? 'open on you' : 'all clear')
-      : (displayCount ? 'open on agents' : 'quiet');
-    const actionLabel = agent.id === 'darrin' ? 'open on you' : actionCount ? 'open on agents' : 'open details';
+      : displayCount
+      ? 'open on agents'
+      : mailboxWaiting
+      ? `${mailboxWaiting} unread mail`
+      : 'quiet';
+    const actionLabel = agent.id === 'darrin' ? 'open on you' : actionCount ? 'open on agents' : mailboxWaiting ? 'review mailbox' : 'open details';
+    const statusPillClass = mailboxWaiting && !displayCount
+      ? 'status-warn'
+      : statusLabel === 'all clear'
+      ? 'status-ok'
+      : '';
     const inboxLabel = agent.id === 'darrin'
       ? `${esc(counts.open_on_darrin || 0)} thread${Number(counts.open_on_darrin || 0) === 1 ? '' : 's'} open`
-      : `${esc(actionCount)} thread${Number(actionCount) === 1 ? '' : 's'} open`;
+      : displayCount
+      ? `${esc(displayCount)} thread${Number(displayCount) === 1 ? '' : 's'} open`
+      : mailboxWaiting
+      ? `${esc(mailboxWaiting)} unread mailbox item${mailboxWaiting === 1 ? '' : 's'}`
+      : '0 threads open';
     return `
-    <button class="agent ${agent.id === selectedAgentId ? 'selected' : ''}" data-agent-id="${esc(agent.id)}" title="Show ${esc(agent.display_name)} details and actions">
+    <button class="agent ${agent.id === selectedAgentId ? 'selected' : ''}" data-agent-id="${esc(agent.id)}" data-agent-mailbox-waiting="${esc(mailboxWaiting)}" data-agent-action-count="${esc(actionCount)}" title="Show ${esc(agent.display_name)} details and actions">
       <div class="avatar">${esc(agent.code)}</div>
       <div>
-        <div class="agent-name"><span class="dot ${statusClass(agent.status)}${agent.pulse ? ' pulse' : ''}"></span>${esc(agent.display_name)}</div>
-        <div class="agent-note" title="${esc(statusLabel)}">${esc(statusLabel)}</div>
+        <div class="agent-name"><span class="dot ${statusClass(dotStatus)}${agent.pulse ? ' pulse' : ''}"></span>${esc(agent.display_name)}</div>
+        <div class="agent-note ${statusPillClass}" title="${esc(statusLabel)}">${esc(statusLabel)}</div>
       </div>
       <div class="agent-count">${esc(displayCount)} thread${Number(displayCount) === 1 ? '' : 's'}</div>
       <div class="agent-note">${inboxLabel}</div>
@@ -1746,7 +2563,16 @@ function renderAgents(agents) {
     </button>
   `}).join(''));
   document.querySelectorAll('button.agent[data-agent-id]').forEach(button => {
-    button.addEventListener('click', () => focusAgent(button.dataset.agentId || ''));
+    button.addEventListener('click', () => {
+      const agentId = button.dataset.agentId || '';
+      const mailboxWaiting = Number(button.dataset.agentMailboxWaiting || 0);
+      const actionCount = Number(button.dataset.agentActionCount || 0);
+      if (mailboxWaiting && !actionCount && agentId !== 'darrin') {
+        focusMailbox(agentId);
+        return;
+      }
+      focusAgent(agentId);
+    });
   });
 }
 function renderInboxStatus(agents) {
@@ -1778,13 +2604,14 @@ function renderInboxStatus(agents) {
 }
 function renderMailboxGrid(agents) {
   const rows = [
-    ['darrin', 'Me', 'open on you'],
+    ['darrin', 'Darrin', 'open on you'],
     ['codex', 'Codex', 'AI backlog'],
     ['claude-desktop', 'Claude', 'AI backlog'],
     ['claude-code', 'CC', 'AI backlog'],
   ].map(([id, label, noteText]) => {
-    const count = openThreadsForMailbox(id).length;
-    const note = count ? noteText : 'all clear';
+    const mailboxWaiting = id === 'darrin' ? 0 : mailboxWaitingCount(id);
+    const count = mailboxWaiting || openThreadsForMailbox(id).length;
+    const note = count ? (mailboxWaiting ? 'unread mail' : noteText) : 'all clear';
     const tone = id === 'darrin' && count ? 'hot' : count ? 'waiting' : 'clear';
     return {id, label, count, note, tone};
   });
@@ -1826,6 +2653,261 @@ function renderSummary(counts, diagnostics) {
     button.addEventListener('click', () => focusPanel(button.dataset.filter || 'you'));
   });
 }
+function componentLevel(component) {
+  const level = String(component?.level || 'unknown');
+  return ['ok', 'warn', 'err', 'unknown'].includes(level) ? level : 'unknown';
+}
+function renderStewardPanel() {
+  const node = document.getElementById('stewardPanel');
+  if (!node) return;
+  const health = cockpit?.health?.components || {};
+  const monitor = health.periodic_monitor || {};
+  const routes = health.routes || {};
+  const archive = health.archive || {};
+  const mailboxesHealth = health.mailboxes || {};
+  const unansweredHealth = health.unanswered || {};
+  const diagnosticsHealth = health.diagnostics || {};
+  const ledger = cockpit?.interaction_ledger || {};
+  const progress = cockpit?.agent_progress || {};
+  const progressCards = Array.isArray(progress.cards) ? progress.cards : [];
+  const counts = cockpit?.cockpit_state?.counts || {};
+  const queue = cockpit?.action_queue || [];
+  const latestDiscrepancy = ledger.latest_discrepancy || null;
+  const routeRows = cockpit?.routes || [];
+  const attentionRoute = routeRows.find(route => route.status && route.status !== 'pass') || routeRows[0] || {};
+  const monitorLabel = monitor.generated_at
+    ? `last ${fmtTime(monitor.generated_at)}`
+    : 'not reported';
+  const monitorNote = monitor.next_run_after
+    ? `${monitorLabel}; next ${fmtTime(monitor.next_run_after)}`
+    : monitorLabel;
+  const archiveSweep = latestArchiveSweep();
+  const archiveNote = archiveSweep
+    ? `${archiveSweep.moved || 0} moved / ${archiveSweep.skipped_active_thread || 0} active skipped`
+    : archive.detail || 'audit log not checked';
+  const discrepancyNote = latestDiscrepancy
+    ? discrepancySummary(latestDiscrepancy)
+    : 'no current mismatch';
+  const urgentCount = Number((health.urgent_codex || {}).urgent_codex_requests || counts.urgent_codex_requests || 0);
+  const openOnAgent = Number(counts.open_on_agent || 0);
+  const unansweredTotal = Number(unansweredHealth.total || 0);
+  const ownerUnknown = Number(unansweredHealth.owner_unknown || mailboxesHealth.owner_unknown || counts.owner_unknown || 0);
+  const staleUnread = Number(mailboxesHealth.stale_unread || counts.stale_unread || 0);
+  const diagnosticsProblems = Number(diagnosticsHealth.failed_checks || 0) + Number(diagnosticsHealth.warn_checks || 0) + Number(diagnosticsHealth.actionable_validation_issues || 0);
+  const queueLevel = urgentCount || openOnAgent || ownerUnknown || unansweredTotal
+    ? 'err'
+    : staleUnread || diagnosticsProblems
+    ? 'warn'
+    : 'ok';
+  const queueValue = urgentCount || openOnAgent || ownerUnknown || unansweredTotal
+    ? `${urgentCount} urgent / ${openOnAgent} agent`
+    : staleUnread
+    ? `${staleUnread} stale unread`
+    : 'all clear';
+  const queueNote = `${queue.length} visible / ${ownerUnknown} unknown`;
+  const rows = [
+    {
+      label: 'Steward',
+      level: componentLevel(monitor),
+      value: monitor.detail || 'Periodic monitor not reported',
+      note: monitorNote,
+      title: monitor.detail ? `${monitor.detail} ${monitorNote}` : monitorNote,
+      itemId: 'diag-periodic-monitor',
+      action: 'Open diagnostics',
+      target: 'diagnostics',
+    },
+    {
+      label: 'Routes',
+      level: componentLevel(routes),
+      value: routes.detail || 'No route summary',
+      note: `${(routes.counts || {}).pass ?? 0}/${(routes.counts || {}).total ?? 0} pass`,
+      title: routes.detail || 'Mailbox route checks',
+      itemId: attentionRoute.id ? `diag-route-${attentionRoute.id}` : 'diag-suite',
+      action: 'Review routes',
+      target: 'diagnostics',
+    },
+    {
+      label: 'Queue',
+      level: queueLevel,
+      value: queueValue,
+      note: queueNote,
+      title: `Queue has ${queue.length} visible item(s), ${staleUnread} stale unread, ${ownerUnknown} owner unknown.`,
+      itemId: 'queue',
+      action: 'Review queue',
+      target: 'queue',
+    },
+    ...progressCards.map(card => ({
+      label: card.label || 'Agent Progress',
+      level: card.severity || 'unknown',
+      value: card.phase || card.status || 'progress monitor',
+      note: card.evidence_summary || '',
+      title: `${card.evidence_summary || ''} ${card.recommended_action || ''}`.trim(),
+      itemId: `diag-progress-${card.id || card.agent || 'agent'}`,
+      action: card.recommended_action || 'Review progress',
+      target: card.id === 'codex_mailbox_sla' ? 'queue' : 'diagnostics',
+    })),
+    {
+      label: 'Archive',
+      level: componentLevel(archive),
+      value: archiveSweep ? 'read sweep safe' : archive.label || 'archive sweep',
+      note: archiveNote,
+      title: archiveNote,
+      itemId: 'diag-archive-sweep',
+      action: 'Review sweep',
+      target: 'diagnostics',
+    },
+    {
+      label: 'Discrepancy',
+      level: latestDiscrepancy ? 'warn' : 'ok',
+      value: latestDiscrepancy ? String(latestDiscrepancy.event_type || 'discrepancy') : 'none active',
+      note: discrepancyNote,
+      title: discrepancyNote,
+      itemId: 'diag-discrepancy',
+      action: 'Review ledger',
+      target: 'diagnostics',
+    },
+  ];
+  node.hidden = false;
+  node.innerHTML = rows.map(row => `
+    <button class="steward-card ${esc(row.level)}" type="button" data-diagnostic-id="${esc(row.itemId)}" data-action-target="${esc(row.target)}" title="${esc(row.title)}">
+      <div class="steward-top"><span class="steward-dot"></span><span>${esc(row.label)}</span></div>
+      <div class="steward-value">${esc(row.value)}</div>
+      <div class="steward-note">${esc(row.note)}</div>
+      <div class="steward-card-action">${esc(row.action)}</div>
+    </button>
+  `).join('');
+  node.querySelectorAll('.steward-card[data-diagnostic-id]').forEach(card => {
+    card.addEventListener('click', () => {
+      if (card.dataset.actionTarget === 'queue') {
+        focusPanel('all');
+        return;
+      }
+      focusQueueItem('diagnostics', card.dataset.diagnosticId || 'diag-suite');
+    });
+  });
+}
+function latestArchiveSweep() {
+  const monitor = cockpit?.health?.components?.periodic_monitor || {};
+  const healthArchive = cockpit?.health?.components?.archive || {};
+  const events = cockpit?.interaction_ledger?.events || [];
+  const sweepEvent = events.find(event => String(event.event_type || '') === 'archive_read_sweep_finished');
+  if (sweepEvent) return sweepEvent;
+  return healthArchive.sweep || monitor.archive_read_sweep || null;
+}
+function discrepancySummary(event) {
+  const type = String(event?.event_type || '');
+  if (type === 'agent_no_mail_claim_discrepancy') {
+    const agent = agentName(String(event.agent || 'agent'));
+    const unread = Number(event.physical_unread_count || 0);
+    const actionable = Number(event.actionable_unread_count || 0);
+    return `${agent}: ${unread} unread / ${actionable} actionable`;
+  }
+  const openOnAgent = Number(event?.open_on_agent || 0);
+  const ownerUnknown = Number(event?.owner_unknown || 0);
+  const thread = (event?.agent_threads || event?.owner_unknown_threads || [])[0] || {};
+  return `${openOnAgent} agent / ${ownerUnknown} unknown${thread.thread_id ? ` - ${thread.thread_id}` : ''}`;
+}
+function trustEventDetail(event) {
+  const type = String(event?.event_type || '');
+  if (type === 'agent_no_mail_claim_discrepancy') {
+    const agentKey = String(event.agent || '');
+    const agent = agentName(agentKey || 'agent');
+    const currentUnread = (cockpit?.mailbox_messages?.[agentKey] || []).filter(item => item.unread).length;
+    const physical = currentUnread || Number(event.physical_unread_count || 0);
+    const actionable = currentUnread || Number(event.actionable_unread_count || 0);
+    const unknown = Number(event.owner_unknown_count || 0);
+    const parts = [`${physical} physical unread`, `${actionable} actionable`];
+    if (unknown) parts.push(`${unknown} owner unknown`);
+    return {
+      tone: 'err',
+      title: `${agent} no-mail mismatch`,
+      meta: parts.join(' / '),
+      detail: String(event.note || event.claim || ''),
+    };
+  }
+  if (type === 'mailbox_discrepancy_detected') {
+    const openOnAgent = Number(event.open_on_agent || 0);
+    const ownerUnknown = Number(event.owner_unknown || 0);
+    const firstThread = (event.agent_threads || event.owner_unknown_threads || [])[0] || {};
+    return {
+      tone: 'err',
+      title: 'Mailbox discrepancy detected',
+      meta: `${openOnAgent} agent / ${ownerUnknown} unknown`,
+      detail: String(firstThread.title || event.note || ''),
+    };
+  }
+  if (type === 'agent_no_mail_claim_validated') {
+    return {
+      tone: 'ok',
+      title: `${agentName(String(event.agent || 'agent'))} no-mail claim validated`,
+      meta: 'clear',
+      detail: String(event.note || ''),
+    };
+  }
+  return {
+    tone: 'warn',
+    title: String(event.event_type || 'Communication ledger event'),
+    meta: fmtTime(event.time),
+    detail: String(event.note || ''),
+  };
+}
+function renderTrustStrip(ledger) {
+  const node = document.getElementById('trustStrip');
+  if (!node) return;
+  const priorityTypes = new Set(['agent_no_mail_claim_discrepancy', 'mailbox_discrepancy_detected']);
+  const seen = new Set();
+  const counts = cockpit?.cockpit_state?.counts || {};
+  const events = [];
+  for (const event of (ledger.events || [])) {
+    const type = String(event.event_type || '');
+    if (!priorityTypes.has(type)) continue;
+    if (type === 'agent_no_mail_claim_discrepancy') {
+      const agent = String(event.agent || '');
+      const unreadNow = (cockpit?.mailbox_messages?.[agent] || []).filter(item => item.unread).length;
+      if (!unreadNow) continue;
+    }
+    if (type === 'mailbox_discrepancy_detected' && !Number(counts.owner_unknown || 0) && !Number(counts.open_on_agent || 0)) continue;
+    const key = `${type}:${String(event.agent || 'mailbox')}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    events.push(event);
+    if (events.length >= 3) break;
+  }
+  const signature = events.map(event => `${event.event_type}:${event.agent || 'mailbox'}:${event.time || ''}`).join('|');
+  if (signature && prefs.dismissedTrustSignature === signature) {
+    node.hidden = true;
+    node.innerHTML = '';
+    return;
+  }
+  if (!events.length) {
+    node.hidden = true;
+    node.innerHTML = '';
+    return;
+  }
+  node.hidden = false;
+  node.innerHTML = `
+    <div class="trust-head">
+      <span>Communication Attention</span>
+      <button class="trust-close" id="trustClose" type="button" title="Hide this notice">Close</button>
+    </div>
+    ${events.map(event => {
+    const detail = trustEventDetail(event);
+    const titleText = [detail.title, detail.detail].filter(Boolean).join(' - ');
+    return `
+      <div class="trust-row ${esc(detail.tone)}" title="${esc(titleText)}">
+        <span class="trust-dot"></span>
+        <span class="trust-title">${esc(detail.title)}${detail.detail ? ` <span class="muted">&middot; ${esc(detail.detail)}</span>` : ''}</span>
+        <span class="trust-meta">${esc(detail.meta || fmtTime(event.time))}</span>
+      </div>
+    `;
+  }).join('')}`;
+  document.getElementById('trustClose')?.addEventListener('click', () => {
+    prefs.dismissedTrustSignature = signature;
+    savePrefs();
+    node.hidden = true;
+    node.innerHTML = '';
+  });
+}
 function renderQueue(queue) {
   if (!queue.length) {
     const lastCheck = latestMailboxCheck();
@@ -1844,7 +2926,7 @@ function renderQueue(queue) {
   }
   setHTML('actionList', queue.map(item => `
     <button class="action ${item.id === selected?.id ? 'selected' : ''} ${esc(item.severity)}" data-id="${esc(item.id)}">
-      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.state_label || (item.kind === 'you' ? 'Open on you' : item.kind === 'agent' ? 'Open on agent' : item.kind))}</span>${item.requires_darrin_decision ? '<span class="tag decision">decision</span>' : ''}${localStateFor(item) ? `<span class="tag local">${esc(localStateLabel(localStateFor(item)))}</span>` : ''}${snoozeLabel(item) ? `<span class="tag snoozed">${esc(snoozeLabel(item))}</span>` : ''}</div>
+      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.state_label || (item.kind === 'urgent' ? 'URGENT to Codex' : item.kind === 'you' ? 'Open on you' : item.kind === 'agent' ? 'Open on agent' : item.kind))}</span>${item.is_urgent || item.kind === 'urgent' ? '<span class="tag urgent">urgent</span>' : ''}${item.requires_darrin_decision ? '<span class="tag decision">decision</span>' : ''}${localStateFor(item) ? `<span class="tag local">${esc(localStateLabel(localStateFor(item)))}</span>` : ''}${snoozeLabel(item) ? `<span class="tag snoozed">${esc(snoozeLabel(item))}</span>` : ''}</div>
       <div class="action-title">${esc(item.title)}</div>
       <div class="action-summary">${esc(item.agent_label ? `${item.agent_label} · ${fmtAge(item.age_seconds)} ago · ${item.message_count || 1} message${Number(item.message_count || 1) === 1 ? '' : 's'}` : humanSummary(item))}</div>
       <div class="action-help">${esc(item.thread_id || item.message_path || '')}</div>
@@ -2157,12 +3239,25 @@ function renderDiagnostics(diagnostics) {
   const fail = Number(diagnostics.checks_fail || 0);
   const classifier = diagnostics.thread_classifier || {};
   const missing = Number(classifier.missing_action_owner || 0) + Number(classifier.missing_thread_id || 0);
-  const text = fail || warn
-    ? `Diagnostics need review: ${fail} failed, ${warn} warning.`
-    : missing
-      ? `Diagnostics quiet. Classifier metadata gaps: ${missing}.`
-      : `Diagnostics quiet. ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass.`;
-  document.getElementById('diagnosticsLine').textContent = text;
+  const node = document.getElementById('diagnosticsLine');
+  if (!node) return;
+  if (fail || warn) {
+    node.innerHTML = `
+      ${fail ? '<button class="diag-action" type="button" data-diagnostics-action="failure">Failure</button>' : ''}
+      <span class="diag-text">Diagnostics need review: ${esc(fail)} failed, ${esc(warn)} warning.</span>
+    `;
+    const action = node.querySelector('button[data-diagnostics-action="failure"]');
+    if (action) {
+      action.addEventListener('click', () => focusQueueItem('diagnostics', 'diag-suite'));
+    } else {
+      node.addEventListener('click', () => focusQueueItem('diagnostics', 'diag-suite'), {once: true});
+    }
+    return;
+  }
+  const text = missing
+    ? `Diagnostics quiet. Classifier metadata gaps: ${missing}.`
+    : `Diagnostics quiet. ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass.`;
+  node.textContent = text;
 }
 document.getElementById('refresh').addEventListener('click', loadCockpit);
 document.querySelectorAll('button.filter').forEach(button => {
@@ -2233,6 +3328,30 @@ document.getElementById('stateAck').addEventListener('click', () => setLocalStat
 document.getElementById('stateCopied').addEventListener('click', () => setLocalState('copied'));
 document.getElementById('stateWaiting').addEventListener('click', () => setLocalState('waiting'));
 document.getElementById('stateHandled').addEventListener('click', () => setLocalState('handled'));
+document.getElementById('openInspector').addEventListener('click', () => openInspectorPanel());
+document.getElementById('refreshInspector').addEventListener('click', async () => {
+  try {
+    await loadInspectorReport();
+    setNotice('Inspector report refreshed.', 'ok');
+  } catch (err) {
+    setNotice(`Inspector refresh failed: ${err.message || err}`);
+  }
+});
+document.getElementById('closeInspector').addEventListener('click', () => closeInspectorPanel());
+document.getElementById('openInspectorReport').addEventListener('click', async () => {
+  const path = inspectorReport?.markdown_path || inspectorReport?.json_path;
+  if (!path) {
+    setNotice('No inspector report path is available yet.');
+    return;
+  }
+  try {
+    const res = await fetch(`/api/open?path=${encodeURIComponent(path)}`);
+    if (!res.ok) throw new Error(`open failed ${res.status}`);
+    setNotice('Open inspector report request sent.', 'ok');
+  } catch (err) {
+    setNotice(`Open inspector report failed: ${err.message || err}`);
+  }
+});
 document.getElementById('openMessage').addEventListener('click', async () => {
   if (!selected?.message_path) return;
   try {
@@ -2266,7 +3385,10 @@ document.getElementById('copyPath').addEventListener('click', async () => {
 });
 document.getElementById('snoozeAlert').addEventListener('click', () => {
   if (!selected?.id) return;
-  setSnooze(selected, 15);
+  if (!setSnooze(selected, 15)) {
+    render();
+    return;
+  }
   const visible = filteredQueue();
   selected = visible.find(item => item.id === selected?.id) || visible[0] || null;
   prefs.selectedId = selected?.id || '';
@@ -2335,8 +3457,11 @@ document.getElementById('dismissVisible').addEventListener('click', async () => 
   setNotice('Legacy bulk read-state dismiss is retired. Use thread replies/decision state, then refresh.', 'ok');
 });
 document.getElementById('deleteVisible').addEventListener('click', async () => {
-  const items = visibleMessageItems();
-  if (!items.length) return;
+  const items = bulkDeleteEligibleItems();
+  if (!items.length) {
+    setNotice('Bulk delete is only available for diagnostic alert rows. Open agent work should be resolved or archived by protocol, not deleted from the queue.', 'ok');
+    return;
+  }
   const ok = confirm(`Delete ${items.length} visible alert(s) from active mailbox views? PAH will move them into CODEX Archive / Deleted Alerts.`);
   if (!ok) return;
   try {
@@ -2447,6 +3572,11 @@ document.addEventListener('keydown', event => {
   const target = event.target;
   const isTyping = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
   if (event.key === 'Escape') {
+    if (inspectorOpen) {
+      event.preventDefault();
+      closeInspectorPanel();
+      return;
+    }
     if (queueSearch) {
       event.preventDefault();
       queueSearch = '';
@@ -2516,6 +3646,9 @@ document.getElementById('shortcutHelp').addEventListener('click', showShortcutHe
 document.getElementById('quietAgents').addEventListener('click', () => focusPanel('agents'));
 document.getElementById('quietBrowse').addEventListener('click', () => focusPanel('all'));
 document.getElementById('quietDiagnostics').addEventListener('click', () => focusPanel('diagnostics'));
+document.querySelectorAll('button.health-chip[data-health-target]').forEach(button => {
+  button.addEventListener('click', () => focusHealthChip(button.dataset.healthTarget || 'api'));
+});
 document.getElementById('autoRefresh').addEventListener('change', event => {
   prefs.autoRefresh = Boolean(event.target.checked);
   savePrefs();

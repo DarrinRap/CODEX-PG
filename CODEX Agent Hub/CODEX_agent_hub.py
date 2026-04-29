@@ -113,6 +113,13 @@ NOTIFICATION_STATE_PATH = NOTIFICATIONS_DIR / "CODEX_notification_state.local.js
 NOTIFICATION_LOG_PATH = NOTIFICATIONS_DIR / "CODEX_notification_log.jsonl"
 WATCHER_STATE_PATH = HUB_ROOT / "CODEX state" / "CODEX_watcher_state.local.json"
 WATCHER_EVENT_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_watcher_events.jsonl"
+SWEEP_AUDIT_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_sweep_audit.md"
+INTERACTION_LEDGER_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
+MESSAGE_AUDIT_STATE_PATH = HUB_ROOT / "CODEX state" / "CODEX_message_audit_state.local.json"
+PERIODIC_HEALTH_LATEST_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_periodic_health_latest.json"
+INSPECTOR_LATEST_JSON_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.json"
+INSPECTOR_LATEST_MARKDOWN_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.md"
+CC_ACTIVE_DISPATCH_PATH = CC_MAILBOX_ROOT / "_state" / "active_dispatch.json"
 UI_PATH = HUB_ROOT / "CODEX_agent_hub_ui.html"
 WRITE_TOKEN = secrets.token_urlsafe(32)
 ALLOW_SIMULATED_INBOUND = False
@@ -125,23 +132,64 @@ MESSAGE_RETENTION_HOURS = 36
 TIMESTAMPED_MESSAGE_RE = re.compile(r"^20\d{6}.*\.md$", re.IGNORECASE)
 NOTIFICATION_LOCK = threading.Lock()
 WATCHER_LOCK = threading.Lock()
+MESSAGE_AUDIT_LOCK = threading.Lock()
 WATCHER_SNOOZE_DEFAULT_MINUTES = 15
 STALE_UNREAD_SECONDS = 60
+MAILBOX_SLA_NORMAL_SECONDS = 15 * 60
+MAILBOX_SLA_URGENT_SECONDS = 2 * 60
+COMPOSE_STATE_MAX_SECONDS = 20 * 60
+DEFAULT_PROGRESS_WARN_MINUTES = 30
+DEFAULT_PROGRESS_ERROR_MINUTES = 45
+MESSAGE_PARSE_CACHE_LOCK = threading.Lock()
+MESSAGE_PARSE_CACHE: dict[str, tuple[tuple[int, int], Message]] = {}
+PROGRESS_MONITOR_STATUSES = {"active", "compose", "heavy_write", "paused", "blocked", "complete", "abandoned"}
+PROGRESS_MONITOR_IGNORE_DIRS = {
+    ".git",
+    ".venv",
+    "__pycache__",
+    "node_modules",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "dist",
+    "build",
+    "cache",
+    "logs",
+}
 
 IMPORTANT_STATUSES = {"Decision Needed", "Response Requested", "Implementation Report"}
 IMPORTANT_TYPES = {"dispatch", "complete", "decision", "blocker", "response-request", "implementation"}
 DISPATCH_MESSAGE_TYPES = {"dispatch", "task", "build_go", "build-go"}
+PRE_STAGED_PENDING_STATUS_PREFIXES = ("drafted_pending_",)
+REPLIED_TOMBSTONE_SUFFIX = ".replied_tombstone.json"
+URGENT_CODEX_REQUEST_TYPES = {"urgent_request", "urgent-request", "blocker", "emergency_request"}
+URGENT_CODEX_REQUEST_STATUSES = {"urgent", "urgent_request", "blocked"}
+URGENT_CODEX_SENDERS = {"claude-desktop", "claude-code"}
 COMPLETION_EVIDENCE_TYPES = {
     "implementation_report",
     "implementation-report",
     "impl_report",
     "impl-report",
+    "coordination_response",
+    "coordination-response",
     "completion",
     "complete",
     "completed",
     "report",
+    "response",
+    "ack",
+    "acknowledgment",
 }
-COMPLETION_EVIDENCE_STATUSES = {"complete", "completed", "shipped", "review_complete", "closed"}
+COMPLETION_EVIDENCE_STATUSES = {
+    "acknowledged",
+    "closed",
+    "complete",
+    "completed",
+    "delivered",
+    "response_delivered",
+    "review_complete",
+    "shipped",
+}
 SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
     "Claude -> Codex": ({"claude-desktop", "claude-code"}, {"codex"}),
     "Codex -> Claude": ({"codex"}, {"claude-desktop"}),
@@ -188,6 +236,7 @@ DEFAULT_NOTIFICATION_CONFIG = {
     "notify_on": {
         "darrin_decision_needed": True,
         "claude_response_requested": True,
+        "urgent_codex_request": True,
         "validation_warning": False,
     },
     "desktop_popups": {
@@ -251,6 +300,8 @@ class Message:
 
     @property
     def is_waiting_on_darrin(self) -> bool:
+        if is_urgent_codex_request_message(self):
+            return False
         return metadata_waits_on_darrin(
             {
                 "requires_darrin_decision": self.requires_darrin_decision,
@@ -341,6 +392,39 @@ def parse_message(path: Path, direction: str) -> Message:
     return msg
 
 
+def message_cache_key(path: Path) -> str:
+    try:
+        return str(path.resolve())
+    except OSError:
+        return str(path)
+
+
+def parse_message_cached(path: Path, direction: str) -> Message:
+    stat_result = path.stat()
+    signature = (int(getattr(stat_result, "st_mtime_ns", int(stat_result.st_mtime * 1_000_000_000))), stat_result.st_size)
+    cache_key = message_cache_key(path)
+    with MESSAGE_PARSE_CACHE_LOCK:
+        cached = MESSAGE_PARSE_CACHE.get(cache_key)
+        if cached and cached[0] == signature:
+            return cached[1]
+    msg = parse_message(path, direction)
+    with MESSAGE_PARSE_CACHE_LOCK:
+        MESSAGE_PARSE_CACHE[cache_key] = (signature, msg)
+    return msg
+
+
+def prune_message_parse_cache(active_keys: set[str]) -> None:
+    with MESSAGE_PARSE_CACHE_LOCK:
+        stale_keys = [key for key in MESSAGE_PARSE_CACHE if key not in active_keys]
+        for key in stale_keys:
+            MESSAGE_PARSE_CACHE.pop(key, None)
+
+
+def clear_message_parse_cache() -> None:
+    with MESSAGE_PARSE_CACHE_LOCK:
+        MESSAGE_PARSE_CACHE.clear()
+
+
 def compact(value: str, limit: int) -> str:
     value = " ".join(value.split())
     return value if len(value) <= limit else value[: limit - 1].rstrip() + "..."
@@ -355,14 +439,17 @@ def local_timestamp() -> str:
 
 def load_messages() -> list[Message]:
     messages: list[Message] = []
+    active_cache_keys: set[str] = set()
     for direction, folder in MESSAGE_DIRS:
         if not folder.exists():
             continue
         for path in folder.glob("*.md"):
+            active_cache_keys.add(message_cache_key(path))
             try:
-                messages.append(parse_message(path, direction))
+                messages.append(parse_message_cached(path, direction))
             except OSError:
                 continue
+    prune_message_parse_cache(active_cache_keys)
     messages.sort(key=lambda item: item.modified, reverse=True)
     return messages
 
@@ -398,8 +485,63 @@ def is_dispatch_message(msg: Message) -> bool:
     return "dispatch" in text
 
 
+def message_is_flagged_urgent(msg: Message) -> bool:
+    priority = str(msg.priority or "").strip().lower()
+    status = str(msg.status or "").strip().lower()
+    msg_type = str(msg.message_type or "").strip().lower()
+    title = str(msg.title or "").strip().lower()
+    return (
+        priority == "urgent"
+        or msg_type in URGENT_CODEX_REQUEST_TYPES
+        or status in URGENT_CODEX_REQUEST_STATUSES
+        or title.startswith("urgent:")
+        or title.startswith("[urgent]")
+    )
+
+
+def is_urgent_codex_request_message(msg: Message) -> bool:
+    return (
+        msg.to_agent == "codex"
+        and msg.from_agent in URGENT_CODEX_SENDERS
+        and message_in_agent_inbox(msg, "codex")
+        and message_is_flagged_urgent(msg)
+        and not boolish(msg.requires_darrin_decision)
+        and str(msg.thread_status or "").strip().lower() != "waiting_on_darrin"
+        and "_requires_darrin" not in str(msg.approval_boundary or "").strip().lower()
+    )
+
+
+def is_pre_staged_pending_trigger(msg: Message) -> bool:
+    status = str(msg.status or "").strip().lower()
+    return any(status.startswith(prefix) for prefix in PRE_STAGED_PENDING_STATUS_PREFIXES)
+
+
 def is_structured_mailbox_message(msg: Message) -> bool:
     return bool(str(msg.schema_version or "").strip() and str(msg.message_id or "").strip())
+
+
+def reply_tombstone_path(message_path: Path) -> Path:
+    return message_path.with_name(message_path.name + REPLIED_TOMBSTONE_SUFFIX)
+
+
+def load_reply_tombstone_for_path(message_path: Path) -> dict[str, Any] | None:
+    path = reply_tombstone_path(message_path)
+    if not path.exists():
+        return None
+    payload = read_json(path, {})
+    if not isinstance(payload, dict):
+        return None
+    if str(payload.get("tombstone_type", "")).strip().lower() != "replied":
+        return None
+    return payload
+
+
+def load_reply_tombstone(message: Message) -> dict[str, Any] | None:
+    return load_reply_tombstone_for_path(message.path)
+
+
+def message_has_reply_tombstone(message: Message) -> bool:
+    return load_reply_tombstone(message) is not None
 
 
 def is_completion_evidence_message(msg: Message) -> bool:
@@ -513,20 +655,28 @@ def classify_thread_state(latest: Message, archived: bool = False) -> str:
     status = str(latest.status or "").strip().lower()
     thread_status = str(latest.thread_status or "").strip().lower()
     msg_type = str(latest.message_type or "").strip().lower()
+    if message_has_reply_tombstone(latest):
+        return "closed"
+    if not is_structured_mailbox_message(latest) and message_in_any_agent_inbox(latest):
+        return "owner_unknown"
     if archived or thread_status in {"archived", "closed", "resolved"}:
         return "closed"
+    if is_pre_staged_pending_trigger(latest):
+        return "parked"
     if thread_status in {"parked", "paused"}:
         return "parked"
+    if is_urgent_codex_request_message(latest):
+        return "open_on_agent"
     if owner == "darrin":
         return "open_on_darrin"
     if boolish(latest.requires_darrin_decision):
         return "open_on_darrin"
-    if owner in {"codex", "claude_desktop", "claude_code", "claude-code", "claude-desktop"}:
-        return "open_on_agent"
-    if msg_type in {"completion", "complete", "report", "ack", "acknowledgment"} or status in {"complete", "shipped", "review_complete"}:
-        if thread_status in {"ready_for_review", "waiting_review"} or latest.to_agent in {"claude-desktop", "claude-code", "codex"}:
+    if msg_type in COMPLETION_EVIDENCE_TYPES or status in COMPLETION_EVIDENCE_STATUSES:
+        if thread_status in {"ready_for_review", "waiting_review"}:
             return "open_on_agent"
         return "closed"
+    if owner in {"codex", "claude_desktop", "claude_code", "claude-code", "claude-desktop"}:
+        return "open_on_agent"
     if thread_status in {"waiting_on_agent", "waiting_review", "ready_for_review"}:
         return "open_on_agent"
     if thread_status == "waiting_on_darrin" and status in {"open", "blocked"} and msg_type == "decision_request":
@@ -571,6 +721,7 @@ def build_thread_focus(messages: list[Message], archive_state_data: dict[str, An
                 "state_label": {
                     "open_on_darrin": "Open on you",
                     "open_on_agent": "Open on agents",
+                    "owner_unknown": "Owner unknown",
                     "parked": "Parked",
                     "closed": "Closed",
                 }.get(state_name, state_name),
@@ -586,6 +737,7 @@ def build_thread_focus(messages: list[Message], archive_state_data: dict[str, An
                 "age_seconds": age_seconds,
                 "count": len(items),
                 "requires_darrin_decision": boolish(latest.requires_darrin_decision),
+                "is_urgent": is_urgent_codex_request_message(latest),
                 "latest_from": latest.from_agent,
                 "latest_to": latest.to_agent,
                 "latest_status": latest.status,
@@ -600,6 +752,7 @@ def build_thread_focus(messages: list[Message], archive_state_data: dict[str, An
     buckets = {
         "open_on_darrin": [row for row in rows if row["state"] == "open_on_darrin"],
         "open_on_agent": [row for row in rows if row["state"] == "open_on_agent"],
+        "owner_unknown": [row for row in rows if row["state"] == "owner_unknown"],
         "parked": [row for row in rows if row["state"] == "parked"],
         "closed": [row for row in rows if row["state"] == "closed"],
     }
@@ -607,6 +760,7 @@ def build_thread_focus(messages: list[Message], archive_state_data: dict[str, An
         "counts": {key: len(value) for key, value in buckets.items()} | {"all": len(rows)},
         "open_on_darrin": buckets["open_on_darrin"],
         "open_on_agent": buckets["open_on_agent"],
+        "owner_unknown": buckets["owner_unknown"],
         "parked": buckets["parked"],
         "closed": buckets["closed"],
         "all": rows,
@@ -790,6 +944,253 @@ def read_json(path: Path, default: dict[str, Any]) -> dict[str, Any]:
 
 def write_json(path: Path, value: dict[str, Any]) -> None:
     atomic_write_text(path, json.dumps(value, indent=2) + "\n")
+
+
+def load_message_audit_state() -> dict[str, Any]:
+    return read_json(MESSAGE_AUDIT_STATE_PATH, {"messages": {}, "threads": {}})
+
+
+def write_message_audit_state(state_data: dict[str, Any]) -> None:
+    write_json(MESSAGE_AUDIT_STATE_PATH, state_data)
+
+
+def ledger_json_safe(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): ledger_json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [ledger_json_safe(item) for item in value]
+    return value
+
+
+def message_ledger_fields(message: Message) -> dict[str, Any]:
+    return {
+        "message_id": message.message_id,
+        "thread_id": message.stable_thread,
+        "title": message.title,
+        "from": message.from_agent,
+        "to": message.to_agent,
+        "type": message.message_type,
+        "status": message.status,
+        "thread_status": message.thread_status,
+        "action_owner": message.action_owner,
+        "path": str(message.path),
+        "content_hash": content_hash(message.body) if message.body else "",
+    }
+
+
+def append_interaction_ledger_event(
+    event_type: str,
+    actor: str = "pah",
+    message: Message | None = None,
+    **details: Any,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_version": 1,
+        "time": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "event_type": event_type,
+        "actor": actor.strip() or "pah",
+    }
+    if message is not None:
+        payload.update({key: value for key, value in message_ledger_fields(message).items() if value not in ("", None)})
+    payload.update({key: ledger_json_safe(value) for key, value in details.items() if value is not None})
+    INTERACTION_LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    atomic_append_text(INTERACTION_LEDGER_PATH, json.dumps(payload, sort_keys=True) + "\n")
+    return payload
+
+
+def message_discovery_key(message: Message) -> str:
+    clean_id = str(message.message_id or "").strip()
+    if clean_id:
+        return f"id:{clean_id}"
+    return f"path:{message_cache_key(message.path)}"
+
+
+def normalize_reply_ref(value: str) -> str:
+    return str(value or "").strip().strip("`").strip()
+
+
+def find_messages_by_reply_ref(reply_ref: str, messages: list[Message]) -> list[Message]:
+    ref = normalize_reply_ref(reply_ref)
+    if not ref:
+        return []
+    by_message_id = [msg for msg in messages if msg.message_id == ref]
+    if by_message_id:
+        return by_message_id
+    by_path = [
+        msg
+        for msg in messages
+        if msg.name == ref or str(msg.path) == ref or str(msg.path.resolve()) == ref
+    ]
+    if by_path:
+        return by_path
+    by_thread = [msg for msg in messages if msg.stable_thread == ref]
+    return by_thread if len(by_thread) == 1 else []
+
+
+def write_reply_tombstones(
+    reply_refs: list[str],
+    *,
+    reply_message_id: str,
+    reply_thread_id: str,
+    reply_path: Path,
+    reply_from: str,
+    reply_to: str,
+    route: str,
+    replied_at: str,
+    actor: str,
+) -> list[dict[str, Any]]:
+    messages = load_messages()
+    records: list[dict[str, Any]] = []
+    seen_originals: set[str] = set()
+    for raw_ref in reply_refs:
+        reply_ref = normalize_reply_ref(raw_ref)
+        if not reply_ref:
+            continue
+        matches = find_messages_by_reply_ref(reply_ref, messages)
+        if not matches:
+            record = {"reply_ref": reply_ref, "status": "missing"}
+            records.append(record)
+            append_interaction_ledger_event(
+                "message_reply_tombstone_missing",
+                actor=actor,
+                reply_ref=reply_ref,
+                reply_message_id=reply_message_id,
+                reply_thread_id=reply_thread_id,
+                reply_path=reply_path,
+                route=route,
+            )
+            continue
+        for original in matches:
+            if original.path == reply_path:
+                continue
+            original_key = message_cache_key(original.path)
+            if original_key in seen_originals:
+                continue
+            seen_originals.add(original_key)
+            tombstone_path = reply_tombstone_path(original.path)
+            tombstone = {
+                "schema_version": 1,
+                "tombstone_type": "replied",
+                "reason": "reply_sent",
+                "original_message_id": original.message_id,
+                "original_thread_id": original.stable_thread,
+                "original_path": str(original.path),
+                "reply_ref": reply_ref,
+                "reply_message_id": reply_message_id,
+                "reply_thread_id": reply_thread_id,
+                "reply_path": str(reply_path),
+                "reply_from": reply_from,
+                "reply_to": reply_to,
+                "route": route,
+                "actor": actor,
+                "replied_at": replied_at,
+            }
+            atomic_write_text(tombstone_path, json.dumps(tombstone, indent=2, sort_keys=True) + "\n")
+            record = {
+                "reply_ref": reply_ref,
+                "status": "written",
+                "original_message_id": original.message_id,
+                "original_thread_id": original.stable_thread,
+                "original_path": str(original.path),
+                "tombstone_path": str(tombstone_path),
+            }
+            records.append(record)
+            append_interaction_ledger_event(
+                "message_reply_tombstoned",
+                actor=actor,
+                message=original,
+                reply_ref=reply_ref,
+                reply_message_id=reply_message_id,
+                reply_thread_id=reply_thread_id,
+                reply_path=reply_path,
+                tombstone_path=tombstone_path,
+                route=route,
+            )
+    return records
+
+
+def audit_messages_and_thread_states(
+    messages: list[Message],
+    thread_focus: dict[str, Any],
+    read_state_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    with MESSAGE_AUDIT_LOCK:
+        state_data = load_message_audit_state()
+        seen_messages = state_data.setdefault("messages", {})
+        seen_threads = state_data.setdefault("threads", {})
+        if not isinstance(seen_messages, dict):
+            seen_messages = {}
+            state_data["messages"] = seen_messages
+        if not isinstance(seen_threads, dict):
+            seen_threads = {}
+            state_data["threads"] = seen_threads
+
+        discovered = 0
+        transitions = 0
+        for msg in messages:
+            key = message_discovery_key(msg)
+            current = {
+                "message_id": msg.message_id,
+                "thread_id": msg.stable_thread,
+                "path": str(msg.path),
+                "content_hash": content_hash(msg.body) if msg.body else "",
+                "modified": msg.modified,
+            }
+            if key not in seen_messages:
+                append_interaction_ledger_event(
+                    "message_discovered",
+                    actor="pah_observer",
+                    message=msg,
+                    direction=msg.direction,
+                    read_state=message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["state"],
+                )
+                discovered += 1
+            seen_messages[key] = {**current, "last_seen_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+
+        for row in thread_focus.get("all", []):
+            if not isinstance(row, dict):
+                continue
+            thread_id = str(row.get("thread_id") or row.get("id") or "")
+            if not thread_id:
+                continue
+            current = {
+                "state": str(row.get("state", "")),
+                "owner": str(row.get("owner", "")),
+                "message_id": str(row.get("message_id", "")),
+                "message_path": str(row.get("message_path", "")),
+                "latest_modified": row.get("latest_modified", 0),
+            }
+            previous = seen_threads.get(thread_id)
+            if isinstance(previous, dict) and (
+                previous.get("state") != current["state"] or previous.get("owner") != current["owner"]
+            ):
+                append_interaction_ledger_event(
+                    "classifier_state_changed",
+                    actor="pah_classifier",
+                    thread_id=thread_id,
+                    previous_state=previous.get("state", ""),
+                    state=current["state"],
+                    previous_owner=previous.get("owner", ""),
+                    owner=current["owner"],
+                    message_id=current["message_id"],
+                    path=current["message_path"],
+                )
+                transitions += 1
+            seen_threads[thread_id] = {
+                **current,
+                "last_seen_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+            }
+
+        write_message_audit_state(state_data)
+        return {
+            "path": str(MESSAGE_AUDIT_STATE_PATH),
+            "messages_tracked": len(seen_messages),
+            "threads_tracked": len(seen_threads),
+            "discovered": discovered,
+            "transitions": transitions,
+        }
 
 
 def ensure_notification_template() -> None:
@@ -985,6 +1386,17 @@ def send_webhook_notification(config: dict[str, Any], subject: str, text: str) -
 
 def attention_events(messages: list[Message], decisions: list[dict[str, str]]) -> list[dict[str, str]]:
     events: list[dict[str, str]] = []
+    for msg in messages[:40]:
+        if is_urgent_codex_request_message(msg):
+            events.append(
+                {
+                    "kind": "urgent_codex_request",
+                    "fingerprint": f"urgent-codex:{msg.message_id or msg.path}",
+                    "subject": "URGENT request for Codex",
+                    "body": compact(f"{msg.title} | {msg.summary or msg.body_preview}", 500),
+                    "path": str(msg.path),
+                }
+            )
     for item in decisions[:5]:
         events.append(
             {
@@ -1027,18 +1439,25 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
                 "real_delivery_attempted": real_delivery_attempted,
                 "result": result,
             }
-        if not config.get("enabled"):
-            return {"sent": 0, "enabled": False}
-
         messages = load_messages()
         message_by_path = {str(msg.path): msg for msg in messages}
         decisions = build_decision_queue(messages, write_file=False)
         enabled_kinds = {key for key, enabled in dict(config.get("notify_on", {})).items() if enabled}
-        events = [event for event in attention_events(messages, decisions) if event["kind"] in enabled_kinds]
+        all_events = attention_events(messages, decisions)
+        urgent_events = [event for event in all_events if event["kind"] == "urgent_codex_request"]
+        enabled_events = [
+            event
+            for event in all_events
+            if config.get("enabled") and event["kind"] in enabled_kinds and event["kind"] != "urgent_codex_request"
+        ]
+        events = [*urgent_events, *enabled_events]
+        if not events:
+            return {"sent": 0, "logged": 0, "enabled": bool(config.get("enabled")), "urgent_breakthrough_logged": 0}
 
         sent = dict(state_data.get("sent", {}))
-        if not state_data.get("baseline_initialized") and not config.get("send_existing_on_start"):
-            for event in events:
+        if config.get("enabled") and not state_data.get("baseline_initialized") and not config.get("send_existing_on_start"):
+            baseline_events = [event for event in events if event["kind"] != "urgent_codex_request"]
+            for event in baseline_events:
                 sent[event["fingerprint"]] = {"baseline": True, "time": datetime.now().isoformat(timespec="seconds")}
                 target = message_by_path.get(event["path"])
                 if target and target.message_id:
@@ -1061,11 +1480,24 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
             state_data["sent"] = sent
             state_data["baseline_initialized"] = True
             write_json(NOTIFICATION_STATE_PATH, state_data)
-            return {"sent": 0, "baseline_initialized": True}
+            events = [event for event in events if event["kind"] == "urgent_codex_request"]
+            if not events:
+                return {
+                    "sent": 0,
+                    "logged": 0,
+                    "enabled": True,
+                    "baseline_initialized": True,
+                    "urgent_breakthrough_logged": 0,
+                }
 
         cooldown_seconds = max(0, int(config.get("cooldown_minutes", 30))) * 60
         last_sent_epoch = float(state_data.get("last_sent_epoch", 0) or 0)
+        delivery_config = json.loads(json.dumps(config))
+        if not delivery_config.get("enabled"):
+            delivery_config["provider"] = "log_only"
         sent_count = 0
+        logged_count = 0
+        urgent_breakthrough_logged = 0
         for event in events:
             if event["fingerprint"] in sent:
                 continue
@@ -1096,10 +1528,10 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
                         }
                     )
                     continue
-            if cooldown_seconds and now - last_sent_epoch < cooldown_seconds:
+            if event["kind"] != "urgent_codex_request" and cooldown_seconds and now - last_sent_epoch < cooldown_seconds:
                 continue
             try:
-                result = send_notification(config, event["subject"], event["body"])
+                result = send_notification(delivery_config, event["subject"], event["body"])
                 sent[event["fingerprint"]] = {"time": datetime.now().isoformat(timespec="seconds"), "path": event["path"]}
                 if target and target.message_id:
                     record = record_processed_message_event(
@@ -1121,7 +1553,13 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
                 state_data["last_sent_at"] = sent[event["fingerprint"]]["time"]
                 state_data["last_sent_epoch"] = now
                 state_data["last_error"] = ""
-                sent_count += 1
+                if str(result.get("provider", "log_only")) == "log_only":
+                    logged_count += 1
+                else:
+                    sent_count += 1
+                if event["kind"] == "urgent_codex_request":
+                    urgent_breakthrough_logged += 1
+                    state_data["last_urgent_breakthrough_at"] = sent[event["fingerprint"]]["time"]
                 append_notification_log({"time": state_data["last_sent_at"], "event": event, "result": result})
             except (HTTPError, URLError, OSError, RuntimeError, ValueError, smtplib.SMTPException) as exc:
                 state_data["last_error"] = str(exc)
@@ -1130,7 +1568,12 @@ def run_notification_scan(manual_test: bool = False) -> dict[str, Any]:
         state_data["sent"] = sent
         state_data["baseline_initialized"] = True
         write_json(NOTIFICATION_STATE_PATH, state_data)
-        return {"sent": sent_count, "enabled": True}
+        return {
+            "sent": sent_count,
+            "logged": logged_count,
+            "enabled": bool(config.get("enabled")),
+            "urgent_breakthrough_logged": urgent_breakthrough_logged,
+        }
 
 
 def notification_loop() -> None:
@@ -1189,18 +1632,66 @@ def build_decision_queue(
     return decisions
 
 
+def urgent_codex_request_rows(
+    messages: list[Message], read_state_data: dict[str, Any] | None = None, limit: int = 20
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for msg in messages:
+        if not is_urgent_codex_request_message(msg):
+            continue
+        if message_has_reply_tombstone(msg) or classify_thread_state(msg) == "closed":
+            continue
+        read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+        age_seconds = max(0, int(time.time() - msg.modified))
+        from_label = participant_label(msg.from_agent)
+        rows.append(
+            {
+                "id": f"urgent:{msg.message_id or message_cache_key(msg.path)}",
+                "kind": "urgent",
+                "severity": "err",
+                "state": "urgent_codex_request",
+                "state_label": "URGENT to Codex",
+                "title": msg.title,
+                "summary": msg.summary or msg.body_preview,
+                "primary_action": "Open now",
+                "secondary_action": "Urgent",
+                "message_path": str(msg.path),
+                "thread_id": msg.stable_thread,
+                "message_id": msg.message_id,
+                "age_seconds": age_seconds,
+                "message_count": 1,
+                "agent_label": from_label,
+                "owner_label": "Codex",
+                "owner": "codex",
+                "from_agent": msg.from_agent,
+                "to_agent": msg.to_agent,
+                "priority": msg.priority,
+                "read_state": read_status["state"],
+                "unread": read_status["unread"],
+                "requires_darrin_decision": False,
+                "wake_line": (
+                    f"URGENT for Codex: read {msg.message_id or msg.stable_thread} "
+                    f"from {from_label} and reply before lower-priority work."
+                ),
+            }
+        )
+    rows.sort(key=lambda item: (-int(item.get("age_seconds", 0) or 0), str(item.get("title", ""))))
+    return rows[:limit]
+
+
 def safe_slug(value: str) -> str:
     slug = re.sub(r"[^A-Za-z0-9]+", "-", value.strip()).strip("-").lower()
     return slug[:42] or "message"
 
 
-def create_message(payload: dict[str, Any]) -> dict[str, str]:
+def create_message(payload: dict[str, Any]) -> dict[str, Any]:
     route = str(payload.get("route", "codex_to_claude"))
     subject = compact(str(payload.get("subject", "Agent Hub message")).strip(), 90)
     body = str(payload.get("body", "")).strip()
     ui_status = str(payload.get("status", "Info")).strip() or "Info"
     thread_id = str(payload.get("thread_id", "")).strip()
     reply_to = str(payload.get("reply_to", "")).strip()
+    dry_run = bool(payload.get("dry_run", False))
 
     now = datetime.now()
     stamp = now.strftime("%Y%m%d_%H%M%S")
@@ -1248,7 +1739,6 @@ def create_message(payload: dict[str, Any]) -> dict[str, str]:
         msg_type = "implementation_report"
         schema_status = "review_complete"
 
-    inbox.mkdir(parents=True, exist_ok=True)
     path = inbox / filename
     title = f"{from_agent.upper()} -> {to_agent.upper()}: {subject}"
     reply_lines = [line.strip() for line in reply_to.splitlines() if line.strip()]
@@ -1274,16 +1764,53 @@ def create_message(payload: dict[str, Any]) -> dict[str, str]:
         compact(body, 280) if body else subject,
         body or "No additional detail supplied.",
     )
-    atomic_write_text(path, text)
+    reply_tombstones: list[dict[str, Any]] = []
+    if not dry_run:
+        inbox.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(path, text)
+        append_interaction_ledger_event(
+            "message_sent",
+            actor=from_id,
+            route=route,
+            message_id=message_id,
+            thread_id=thread_id,
+            subject=subject,
+            status=schema_status,
+            thread_status=thread_status,
+            message_type=msg_type,
+            from_agent=from_id,
+            to_agent=to_id,
+            path=path,
+            created_at=created_at,
+            content_hash=content_hash(text),
+        )
+        if reply_lines:
+            reply_tombstones = write_reply_tombstones(
+                reply_lines,
+                reply_message_id=message_id,
+                reply_thread_id=thread_id,
+                reply_path=path,
+                reply_from=from_id,
+                reply_to=to_id,
+                route=route,
+                replied_at=created_at,
+                actor=from_id,
+            )
 
-    if ui_status in IMPORTANT_STATUSES or "request" in ui_status.lower() or "decision" in ui_status.lower():
+    if not dry_run and (ui_status in IMPORTANT_STATUSES or "request" in ui_status.lower() or "decision" in ui_status.lower()):
         ledger_line = (
             f"{generated} | {from_agent}->{to_agent} | {ui_status.lower()} | "
             f"{subject} | {inbox.name}\\{filename} | {path}\n"
         )
         atomic_append_text(LEDGER_PATH, ledger_line)
 
-    return {"path": str(path), "message_id": message_id}
+    return {
+        "path": str(path),
+        "message_id": message_id,
+        "thread_id": thread_id,
+        "dry_run": dry_run,
+        "reply_tombstones": reply_tombstones,
+    }
 
 
 def dispatch_work_item(item_id: str) -> dict[str, Any]:
@@ -1359,14 +1886,124 @@ def find_loaded_message(path_value: str, messages: list[Message] | None = None) 
 
 def set_read_state_for_message(path_value: str, state_name: str, actor: str = "codex") -> dict[str, Any]:
     msg = find_loaded_message(path_value)
-    return set_message_read_state(msg.path, msg.message_id, msg.body, state_name, actor=actor)
+    result = set_message_read_state(msg.path, msg.message_id, msg.body, state_name, actor=actor)
+    append_interaction_ledger_event(
+        "message_read_marked" if state_name == READ_STATE else "message_unread_marked",
+        actor=actor,
+        message=msg,
+        read_state=state_name,
+        state_path=READ_STATE_PATH,
+    )
+    return result
 
 
 def mark_all_messages_read(actor: str = "codex") -> dict[str, Any]:
     messages = load_messages()
     for msg in messages:
         set_message_read_state(msg.path, msg.message_id, msg.body, READ_STATE, actor=actor)
+        append_interaction_ledger_event(
+            "message_read_marked",
+            actor=actor,
+            message=msg,
+            read_state=READ_STATE,
+            source="mark_all_messages_read",
+            state_path=READ_STATE_PATH,
+        )
     return {"count": len(messages), "state_path": str(READ_STATE_PATH)}
+
+
+def normalize_agent_id(value: str) -> str:
+    normalized = safe_slug(value).replace("_", "-")
+    aliases = {
+        "cc": "claude-code",
+        "claude": "claude-desktop",
+        "claude-desktop": "claude-desktop",
+        "claude-code": "claude-code",
+        "cd": "claude-desktop",
+        "codex": "codex",
+        "darrin": "darrin",
+    }
+    return aliases.get(normalized, normalized)
+
+
+def validate_agent_no_mail_claim(
+    agent_id: str,
+    actor: str = "pah",
+    claim: str = "no_mail",
+    note: str = "",
+) -> dict[str, Any]:
+    agent = normalize_agent_id(agent_id)
+    if agent not in AGENT_INBOX_DIRS:
+        raise ValueError(f"Unknown agent for no-mail claim: {agent_id}")
+
+    messages = load_messages()
+    read_state_data = load_read_state()
+    agent_mailboxes = build_agent_mailbox_messages(messages, read_state_data)
+    visible_items = list(agent_mailboxes.get(agent, []))
+    physical_unread: list[dict[str, Any]] = []
+    waiting_on_darrin: list[dict[str, Any]] = []
+    owner_unknown: list[dict[str, Any]] = []
+
+    for msg in messages:
+        if not message_in_agent_inbox(msg, agent):
+            continue
+        if not message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]:
+            continue
+        item = {
+            "message_id": msg.message_id,
+            "thread_id": msg.stable_thread,
+            "title": msg.title,
+            "path": str(msg.path),
+            "from": msg.from_agent,
+            "to": msg.to_agent,
+            "classifier_state": classify_thread_state(msg),
+        }
+        physical_unread.append(item)
+        if msg.is_waiting_on_darrin:
+            waiting_on_darrin.append(item)
+        if item["classifier_state"] == "owner_unknown":
+            owner_unknown.append(item)
+
+    visible_ids = {str(item.get("message_id") or item.get("path", "")) for item in visible_items}
+    physical_ids = {str(item.get("message_id") or item.get("path", "")) for item in physical_unread}
+    unexpected_items = [
+        item
+        for item in physical_unread
+        if str(item.get("message_id") or item.get("path", "")) not in visible_ids
+    ]
+    ok = not visible_items and not physical_unread
+    event_type = "agent_no_mail_claim_validated" if ok else "agent_no_mail_claim_discrepancy"
+    event = append_interaction_ledger_event(
+        event_type,
+        actor=actor,
+        agent=agent,
+        claim=claim,
+        note=note,
+        ok=ok,
+        actionable_unread_count=len(visible_items),
+        physical_unread_count=len(physical_unread),
+        waiting_on_darrin_count=len(waiting_on_darrin),
+        owner_unknown_count=len(owner_unknown),
+        visible_message_ids=sorted(visible_ids),
+        physical_message_ids=sorted(physical_ids),
+        unexpected_items=unexpected_items[:20],
+    )
+    return {
+        "schema_version": 1,
+        "ok": ok,
+        "agent": agent,
+        "claim": claim,
+        "note": note,
+        "actionable_unread_count": len(visible_items),
+        "physical_unread_count": len(physical_unread),
+        "waiting_on_darrin_count": len(waiting_on_darrin),
+        "owner_unknown_count": len(owner_unknown),
+        "visible_items": visible_items[:20],
+        "physical_unread_items": physical_unread[:20],
+        "unexpected_items": unexpected_items[:20],
+        "ledger_event": {"event_type": event.get("event_type", ""), "time": event.get("time", "")},
+        "ledger_path": str(INTERACTION_LEDGER_PATH),
+    }
 
 
 def unique_destination(path: Path) -> Path:
@@ -1404,6 +2041,39 @@ def cleanup_target_dirs(mailbox: str) -> tuple[Path, ...]:
     return tuple(dict.fromkeys(CLEANUP_MAILBOX_TARGETS[target]))
 
 
+def sweep_audit_header() -> str:
+    return "\n".join(
+        [
+            "# PAH Sweep Audit Log",
+            "",
+            "Append-only log of archive-read sweeps. PAH writes; Darrin, CC, and CD can read.",
+            "",
+            "Format: `- TIMESTAMP_ISO  [action]  source_path  -> detail`",
+            "",
+            "## Entries",
+            "",
+        ]
+    )
+
+
+def sweep_audit_safe(value: str) -> str:
+    return " ".join(str(value or "").replace("`", "'").split()) or "-"
+
+
+def append_sweep_audit_entries(entries: list[tuple[str, str, str]]) -> None:
+    if not entries:
+        return
+    lines: list[str] = []
+    if not SWEEP_AUDIT_LOG_PATH.exists():
+        lines.append(sweep_audit_header())
+    timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    for action, source, detail in entries:
+        lines.append(
+            f"- `{timestamp}`  `[{sweep_audit_safe(action)}]`  `{sweep_audit_safe(source)}`  -> {sweep_audit_safe(detail)}\n"
+        )
+    atomic_append_text(SWEEP_AUDIT_LOG_PATH, "".join(lines))
+
+
 def cleanup_inbox_accumulation(
     actor: str = "codex",
     older_than_hours: int = MESSAGE_RETENTION_HOURS,
@@ -1412,7 +2082,7 @@ def cleanup_inbox_accumulation(
 ) -> dict[str, Any]:
     _ = older_than_hours
     inbox_dirs = cleanup_target_dirs(mailbox)
-    moved: list[dict[str, str]] = []
+    moved: list[dict[str, Any]] = []
     skipped = {"missing_inbox": 0, "non_markdown": 0}
 
     for inbox_dir in inbox_dirs:
@@ -1451,64 +2121,306 @@ def cleanup_inbox_accumulation(
 
 
 def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = False) -> dict[str, Any]:
+    started = time.perf_counter()
+    actor_name = actor.strip() or "codex"
+    append_interaction_ledger_event(
+        "archive_read_sweep_started",
+        actor=actor_name,
+        dry_run=dry_run,
+        classifier="owner_unknown_guard",
+    )
+    audit_entries: list[tuple[str, str, str]] = [
+        (
+            "sweep-started",
+            "-",
+            f"actor={actor_name}; dry_run={str(bool(dry_run)).lower()}; classifier=owner_unknown_guard",
+        )
+    ]
     read_state_data = load_read_state()
     inbox_dirs = cleanup_inbox_dirs()
+    inbox_summary: dict[str, dict[str, Any]] = {}
+    for inbox_dir in inbox_dirs:
+        key = str(inbox_dir)
+        inbox_summary[key] = {
+            "path": key,
+            "name": inbox_dir.name,
+            "scanned": 0,
+            "candidates": 0,
+            "moved": 0,
+            "skipped_unread": 0,
+            "skipped_waiting_on_darrin": 0,
+            "skipped_pre_staged_pending_trigger": 0,
+            "skipped_pending_dispatch": 0,
+            "skipped_active_thread": 0,
+            "skipped_unstructured": 0,
+            "replied_tombstone": 0,
+            "archive_conflicts": 0,
+        }
+
+    def summary_for(path: Path) -> dict[str, Any]:
+        key = str(path.parent)
+        if key not in inbox_summary:
+            inbox_summary[key] = {
+                "path": key,
+                "name": path.parent.name,
+                "scanned": 0,
+                "candidates": 0,
+                "moved": 0,
+                "skipped_unread": 0,
+                "skipped_waiting_on_darrin": 0,
+                "skipped_pre_staged_pending_trigger": 0,
+                "skipped_pending_dispatch": 0,
+                "skipped_active_thread": 0,
+                "skipped_unstructured": 0,
+                "replied_tombstone": 0,
+                "archive_conflicts": 0,
+            }
+        return inbox_summary[key]
+
     messages = load_messages()
     completed_threads = completed_thread_ids(messages)
     candidates: list[Message] = []
     skipped_waiting = 0
+    skipped_pre_staged = 0
     skipped_pending_dispatch = 0
+    skipped_active_thread = 0
     skipped_unstructured = 0
+    replied_tombstone_candidates = 0
+    candidate_reasons: dict[str, str] = {}
     for msg in messages:
         if not message_parent_in(msg, inbox_dirs):
             continue
-        if not is_structured_mailbox_message(msg):
+        summary = summary_for(msg.path)
+        summary["scanned"] += 1
+        reply_tombstone = load_reply_tombstone(msg)
+        if reply_tombstone:
+            replied_tombstone_candidates += 1
+            summary["replied_tombstone"] += 1
+            summary["candidates"] += 1
+            candidate_reasons[message_cache_key(msg.path)] = "replied_tombstone"
+            candidates.append(msg)
+            continue
+        thread_state = classify_thread_state(msg)
+        if thread_state == "owner_unknown" or not is_structured_mailbox_message(msg):
             skipped_unstructured += 1
+            summary["skipped_unstructured"] += 1
+            audit_entries.append(
+                (
+                    "archive-skipped",
+                    str(msg.path),
+                    "reason=owner_unknown_or_unstructured; no parseable frontmatter/message_id; never auto-archive",
+                )
+            )
+            append_interaction_ledger_event(
+                "message_archive_skipped",
+                actor=actor_name,
+                message=msg,
+                dry_run=dry_run,
+                reason="owner_unknown_or_unstructured",
+                classifier_state=thread_state,
+            )
+            continue
+        if is_pre_staged_pending_trigger(msg):
+            skipped_pre_staged += 1
+            summary["skipped_pre_staged_pending_trigger"] += 1
+            audit_entries.append(("archive-skipped", str(msg.path), "reason=pre_staged_pending_trigger"))
+            append_interaction_ledger_event(
+                "message_archive_skipped",
+                actor=actor_name,
+                message=msg,
+                dry_run=dry_run,
+                reason="pre_staged_pending_trigger",
+                classifier_state=thread_state,
+            )
             continue
         if msg.is_waiting_on_darrin:
             skipped_waiting += 1
+            summary["skipped_waiting_on_darrin"] += 1
+            audit_entries.append(("archive-skipped", str(msg.path), "reason=waiting_on_darrin"))
+            append_interaction_ledger_event(
+                "message_archive_skipped",
+                actor=actor_name,
+                message=msg,
+                dry_run=dry_run,
+                reason="waiting_on_darrin",
+                classifier_state=thread_state,
+            )
             continue
         if is_dispatch_message(msg) and msg.stable_thread not in completed_threads:
             skipped_pending_dispatch += 1
+            summary["skipped_pending_dispatch"] += 1
+            audit_entries.append(("archive-skipped", str(msg.path), "reason=pending_dispatch_without_completion_evidence"))
+            append_interaction_ledger_event(
+                "message_archive_skipped",
+                actor=actor_name,
+                message=msg,
+                dry_run=dry_run,
+                reason="pending_dispatch_without_completion_evidence",
+                classifier_state=thread_state,
+            )
+            continue
+        if thread_state in {"open_on_agent", "open_on_darrin", "parked"}:
+            skipped_active_thread += 1
+            summary["skipped_active_thread"] += 1
+            audit_entries.append(("archive-skipped", str(msg.path), f"reason=active_thread_without_completion_evidence; state={thread_state}"))
+            append_interaction_ledger_event(
+                "message_archive_skipped",
+                actor=actor_name,
+                message=msg,
+                dry_run=dry_run,
+                reason="active_thread_without_completion_evidence",
+                classifier_state=thread_state,
+            )
             continue
         read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
         if read_status["unread"]:
+            summary["skipped_unread"] += 1
             continue
+        summary["candidates"] += 1
         candidates.append(msg)
 
     moved: list[dict[str, str]] = []
+    archive_conflicts = 0
     for msg in candidates:
+        archive_reason = candidate_reasons.get(message_cache_key(msg.path), "read")
         archive_dir = cleanup_archive_root_for(msg.path) / msg.path.parent.name / datetime.fromtimestamp(
             msg.path.stat().st_mtime
         ).strftime("%Y%m%d")
-        destination = unique_destination(archive_dir / msg.path.name)
+        requested_destination = archive_dir / msg.path.name
+        destination = unique_destination(requested_destination)
+        destination_conflict = destination != requested_destination
+        tombstone_source = reply_tombstone_path(msg.path)
+        tombstone_destination = destination.with_name(destination.name + REPLIED_TOMBSTONE_SUFFIX)
+        tombstone_exists = tombstone_source.exists()
+        if tombstone_exists:
+            tombstone_destination = unique_destination(tombstone_destination)
         record = {
             "message_id": msg.message_id,
             "thread_id": msg.stable_thread,
             "from": msg.from_agent,
             "to": msg.to_agent,
+            "archive_reason": archive_reason,
             "source": str(msg.path),
+            "requested_destination": str(requested_destination),
             "destination": str(destination),
             "archive": str(archive_dir),
+            "destination_conflict": destination_conflict,
         }
+        if tombstone_exists:
+            record["tombstone_source"] = str(tombstone_source)
+            record["tombstone_destination"] = str(tombstone_destination)
+        if destination_conflict:
+            archive_conflicts += 1
+            summary_for(msg.path)["archive_conflicts"] += 1
         if not dry_run:
             archive_dir.mkdir(parents=True, exist_ok=True)
             shutil.move(str(msg.path), str(destination))
+            if tombstone_exists:
+                shutil.move(str(tombstone_source), str(tombstone_destination))
+            summary_for(msg.path)["moved"] += 1
+            audit_entries.append(
+                (
+                    "archive-moved",
+                    str(msg.path),
+                    (
+                        f"destination={destination}; requested_destination={requested_destination}; "
+                        f"destination_conflict={str(destination_conflict).lower()}; "
+                        f"archive_reason={archive_reason}; thread_id={msg.stable_thread}"
+                    ),
+                )
+            )
+            append_interaction_ledger_event(
+                "message_archived",
+                actor=actor_name,
+                message=msg,
+                source_path=msg.path,
+                requested_destination=requested_destination,
+                destination_path=destination,
+                archive_dir=archive_dir,
+                destination_conflict=destination_conflict,
+                archive_reason=archive_reason,
+                tombstone_source=tombstone_source if tombstone_exists else None,
+                tombstone_destination=tombstone_destination if tombstone_exists else None,
+            )
+        else:
+            audit_entries.append(
+                (
+                    "archive-candidate",
+                    str(msg.path),
+                    (
+                        f"destination={destination}; requested_destination={requested_destination}; "
+                        f"destination_conflict={str(destination_conflict).lower()}; "
+                        f"archive_reason={archive_reason}; thread_id={msg.stable_thread}"
+                    ),
+                )
+            )
+            append_interaction_ledger_event(
+                "message_archive_candidate",
+                actor=actor_name,
+                message=msg,
+                source_path=msg.path,
+                requested_destination=requested_destination,
+                destination_path=destination,
+                archive_dir=archive_dir,
+                destination_conflict=destination_conflict,
+                archive_reason=archive_reason,
+                tombstone_source=tombstone_source if tombstone_exists else None,
+                tombstone_destination=tombstone_destination if tombstone_exists else None,
+                dry_run=True,
+            )
         moved.append(record)
 
+    duration_ms = int((time.perf_counter() - started) * 1000)
+    audit_entries.append(
+        (
+            "sweep-finished",
+            "-",
+            (
+                f"moved={len(moved)}; skipped_waiting_on_darrin={skipped_waiting}; "
+                f"skipped_pre_staged_pending_trigger={skipped_pre_staged}; "
+                f"skipped_pending_dispatch={skipped_pending_dispatch}; skipped_active_thread={skipped_active_thread}; "
+                f"skipped_unstructured={skipped_unstructured}; replied_tombstone={replied_tombstone_candidates}; "
+                f"archive_conflicts={archive_conflicts}; "
+                f"duration_ms={duration_ms}"
+            ),
+        )
+    )
+    append_sweep_audit_entries(audit_entries)
+    append_interaction_ledger_event(
+        "archive_read_sweep_finished",
+        actor=actor_name,
+        dry_run=dry_run,
+        moved=len(moved),
+        skipped_waiting_on_darrin=skipped_waiting,
+        skipped_pre_staged_pending_trigger=skipped_pre_staged,
+        skipped_pending_dispatch=skipped_pending_dispatch,
+        skipped_active_thread=skipped_active_thread,
+        skipped_unstructured=skipped_unstructured,
+        replied_tombstone=replied_tombstone_candidates,
+        archive_conflicts=archive_conflicts,
+        duration_ms=duration_ms,
+    )
     return {
-        "actor": actor.strip() or "codex",
+        "protocol_version": 2,
+        "actor": actor_name,
         "dry_run": dry_run,
         "count": len(moved),
         "skipped_waiting_on_darrin": skipped_waiting,
+        "skipped_pre_staged_pending_trigger": skipped_pre_staged,
         "skipped_pending_dispatch": skipped_pending_dispatch,
+        "skipped_active_thread": skipped_active_thread,
         "skipped_unstructured": skipped_unstructured,
+        "replied_tombstone": replied_tombstone_candidates,
+        "archive_conflicts": archive_conflicts,
+        "inbox_summary": sorted(inbox_summary.values(), key=lambda item: item["path"].lower()),
         "moved": moved,
     }
 
 
 def archive_selected_alert(path_value: str, actor: str = "codex", dry_run: bool = False) -> dict[str, Any]:
     msg = find_loaded_message(path_value)
+    if is_pre_staged_pending_trigger(msg):
+        raise ValueError("Pre-staged pending-trigger messages cannot be deleted; promote or archive them by protocol.")
     archive_dir = CODEX_ARCHIVE / "Deleted Alerts" / datetime.now().strftime("%Y%m%d")
     destination = unique_destination(archive_dir / msg.path.name)
     read_record = set_message_read_state(msg.path, msg.message_id, msg.body, READ_STATE, actor=actor)
@@ -1552,6 +2464,346 @@ def clear_diagnostic_reports(actor: str = "codex", dry_run: bool = True) -> dict
         "count": len(moved),
         "moved": moved,
         "skipped": skipped,
+    }
+
+
+def inspector_report_payload() -> dict[str, Any]:
+    report: dict[str, Any] = {}
+    markdown = ""
+    json_exists = INSPECTOR_LATEST_JSON_PATH.exists()
+    markdown_exists = INSPECTOR_LATEST_MARKDOWN_PATH.exists()
+    if json_exists:
+        try:
+            loaded = json.loads(read_text(INSPECTOR_LATEST_JSON_PATH))
+            if isinstance(loaded, dict):
+                report = loaded
+        except Exception as exc:
+            report = {
+                "summary": {"overall": "err", "counts": {"pass": 0, "warn": 0, "fail": 1}},
+                "findings": [
+                    {
+                        "status": "fail",
+                        "title": "Inspector report unreadable",
+                        "summary": str(exc),
+                        "check_id": "inspector.report_unreadable",
+                        "recommendation": "Run PAH Inspector again from the terminal.",
+                        "detail": {"path": str(INSPECTOR_LATEST_JSON_PATH)},
+                    }
+                ],
+            }
+    if markdown_exists:
+        markdown = read_text(INSPECTOR_LATEST_MARKDOWN_PATH)
+    generated = report.get("generated_at") or (
+        datetime.fromtimestamp(INSPECTOR_LATEST_JSON_PATH.stat().st_mtime).isoformat(timespec="seconds")
+        if json_exists
+        else ""
+    )
+    return {
+        "ok": bool(report),
+        "generated_at": generated,
+        "json_exists": json_exists,
+        "markdown_exists": markdown_exists,
+        "json_path": str(INSPECTOR_LATEST_JSON_PATH),
+        "markdown_path": str(INSPECTOR_LATEST_MARKDOWN_PATH),
+        "report": report,
+        "markdown": markdown,
+    }
+
+
+def parse_iso_datetime(value: str) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def seconds_since_iso(value: str, now: datetime | None = None) -> int:
+    parsed = parse_iso_datetime(value)
+    if not parsed:
+        return 0
+    current = now or (datetime.now(parsed.tzinfo) if parsed.tzinfo else datetime.now())
+    try:
+        delta = current - parsed
+    except TypeError:
+        delta = datetime.now() - parsed.replace(tzinfo=None)
+    return max(0, int(delta.total_seconds()))
+
+
+def safe_int(value: Any, fallback: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def path_within(root: Path, path: Path) -> bool:
+    try:
+        resolved_root = root.resolve()
+        resolved_path = path.resolve()
+        return resolved_path == resolved_root or resolved_root in resolved_path.parents
+    except OSError:
+        root_text = str(root).lower().rstrip("\\/")
+        path_text = str(path).lower().rstrip("\\/")
+        return path_text == root_text or path_text.startswith(root_text + "\\") or path_text.startswith(root_text + "/")
+
+
+def allowed_progress_target_path(path: Path) -> tuple[bool, str]:
+    allowed_roots = (PANDA_GALLERY_ROOT, HUB_ROOT, MAILBOX_ROOT)
+    if not any(path_within(root, path) for root in allowed_roots):
+        return False, "outside_allowed_roots"
+    for root in allowed_roots:
+        if path_within(root, path):
+            try:
+                if path.resolve() == root.resolve():
+                    return False, "target_is_project_root"
+            except OSError:
+                if str(path).lower().rstrip("\\/") == str(root).lower().rstrip("\\/"):
+                    return False, "target_is_project_root"
+    return True, ""
+
+
+def newest_child_file_evidence(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"path": str(path), "exists": False, "latest_path": "", "latest_mtime": 0.0, "scanned_files": 0}
+    if path.is_file():
+        stat_result = path.stat()
+        return {
+            "path": str(path),
+            "exists": True,
+            "latest_path": str(path),
+            "latest_mtime": float(stat_result.st_mtime),
+            "scanned_files": 1,
+        }
+    latest_path = ""
+    latest_mtime = 0.0
+    scanned = 0
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [name for name in dirs if name not in PROGRESS_MONITOR_IGNORE_DIRS]
+        for name in files:
+            candidate = Path(root) / name
+            try:
+                stat_result = candidate.stat()
+            except OSError:
+                continue
+            scanned += 1
+            if stat_result.st_mtime > latest_mtime:
+                latest_mtime = float(stat_result.st_mtime)
+                latest_path = str(candidate)
+    return {
+        "path": str(path),
+        "exists": True,
+        "latest_path": latest_path,
+        "latest_mtime": latest_mtime,
+        "scanned_files": scanned,
+    }
+
+
+def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
+    current = now or datetime.now().astimezone()
+    if not CC_ACTIVE_DISPATCH_PATH.exists():
+        return {
+            "id": "cc_active_dispatch",
+            "agent": "claude-code",
+            "label": "CC Progress",
+            "severity": "ok",
+            "status": "idle",
+            "phase": "No active dispatch",
+            "evidence_summary": "CC sidecar not present yet.",
+            "recommended_action": "Wait - no active CC dispatch sidecar.",
+            "sidecar_path": str(CC_ACTIVE_DISPATCH_PATH),
+            "issues": [],
+            "targets": [],
+        }
+    raw = read_json(CC_ACTIVE_DISPATCH_PATH, {})
+    if not isinstance(raw, dict) or not raw:
+        return {
+            "id": "cc_active_dispatch",
+            "agent": "claude-code",
+            "label": "CC Progress",
+            "severity": "warn",
+            "status": "invalid",
+            "phase": "Invalid sidecar",
+            "evidence_summary": "active_dispatch.json could not be parsed as an object.",
+            "recommended_action": "Fix CC sidecar JSON.",
+            "sidecar_path": str(CC_ACTIVE_DISPATCH_PATH),
+            "issues": ["invalid_json_object"],
+            "targets": [],
+        }
+
+    status_name = str(raw.get("status", "active")).strip().lower() or "active"
+    phase = compact(str(raw.get("phase") or raw.get("dispatch_id") or "CC active dispatch"), 80)
+    warn_minutes = safe_int(raw.get("stale_warn_minutes"), DEFAULT_PROGRESS_WARN_MINUTES)
+    error_minutes = safe_int(raw.get("stale_error_minutes"), DEFAULT_PROGRESS_ERROR_MINUTES)
+    if status_name == "heavy_write":
+        warn_minutes *= 2
+        error_minutes *= 2
+    issues: list[str] = []
+    if status_name not in PROGRESS_MONITOR_STATUSES:
+        issues.append("invalid_status")
+    target_values = raw.get("expected_target_paths", [])
+    if isinstance(target_values, str):
+        target_values = [target_values]
+    if not isinstance(target_values, list):
+        target_values = []
+        issues.append("expected_target_paths_not_list")
+
+    targets: list[dict[str, Any]] = []
+    newest_mtime = 0.0
+    newest_path = ""
+    for value in target_values:
+        target = Path(str(value))
+        allowed, reason = allowed_progress_target_path(target)
+        evidence = newest_child_file_evidence(target) if allowed else {
+            "path": str(target),
+            "exists": target.exists(),
+            "latest_path": "",
+            "latest_mtime": 0.0,
+            "scanned_files": 0,
+        }
+        evidence["allowed"] = allowed
+        evidence["invalid_reason"] = reason
+        targets.append(evidence)
+        if not allowed:
+            issues.append(f"unsafe_target:{reason}")
+        elif not evidence.get("exists"):
+            issues.append("missing_target")
+        elif float(evidence.get("latest_mtime", 0.0) or 0.0) > newest_mtime:
+            newest_mtime = float(evidence.get("latest_mtime", 0.0) or 0.0)
+            newest_path = str(evidence.get("latest_path", ""))
+    if status_name in {"active", "heavy_write"} and not targets:
+        issues.append("missing_targets")
+
+    started_age = seconds_since_iso(str(raw.get("started_at", "")), current)
+    updated_age = seconds_since_iso(str(raw.get("updated_at", "")), current)
+    sidecar_age = max(0, int(current.timestamp() - CC_ACTIVE_DISPATCH_PATH.stat().st_mtime))
+    evidence_age = max(0, int(current.timestamp() - newest_mtime)) if newest_mtime else max(started_age, updated_age, sidecar_age)
+
+    severity = "ok"
+    recommended_action = "Wait - within threshold."
+    evidence_summary = "No disk target evidence yet."
+    if newest_path:
+        evidence_summary = f"Last file evidence {human_duration(evidence_age)} ago: {compact(newest_path, 72)}"
+    elif status_name in {"active", "heavy_write"}:
+        evidence_summary = f"No target file evidence for {human_duration(evidence_age)}."
+
+    if status_name in {"paused", "blocked"}:
+        severity = "warn"
+        recommended_action = "Review blocker or pause reason."
+        evidence_summary = compact(str(raw.get("paused_reason") or raw.get("last_known_blocker") or f"CC state is {status_name}."), 110)
+    elif status_name in {"complete", "abandoned"}:
+        severity = "ok"
+        recommended_action = "No action - dispatch is not active."
+        evidence_summary = f"CC sidecar status is {status_name}."
+    elif issues:
+        severity = "warn"
+        recommended_action = "Fix CC sidecar before trusting progress status."
+        evidence_summary = f"Sidecar issue: {', '.join(sorted(set(issues)))[:120]}"
+    elif status_name == "compose":
+        evidence_age = updated_age or sidecar_age
+        evidence_summary = f"Compose state for {human_duration(evidence_age)}."
+        if evidence_age >= COMPOSE_STATE_MAX_SECONDS:
+            severity = "err"
+            recommended_action = "Interrupt CC: compose state exceeded 20 minutes."
+        else:
+            recommended_action = "Wait - CC is composing within cap."
+    elif evidence_age >= error_minutes * 60:
+        severity = "err"
+        recommended_action = "Interrupt CC: ask current tool state, last completed file, blocker."
+    elif evidence_age >= warn_minutes * 60:
+        severity = "warn"
+        recommended_action = "Review CC progress when convenient."
+
+    return {
+        "id": "cc_active_dispatch",
+        "agent": "claude-code",
+        "label": "CC Progress",
+        "severity": severity,
+        "status": status_name,
+        "dispatch_id": str(raw.get("dispatch_id", "")),
+        "thread_id": str(raw.get("thread_id", "")),
+        "phase": phase,
+        "evidence_summary": evidence_summary,
+        "recommended_action": recommended_action,
+        "sidecar_path": str(CC_ACTIVE_DISPATCH_PATH),
+        "started_age_seconds": started_age,
+        "updated_age_seconds": updated_age,
+        "evidence_age_seconds": evidence_age,
+        "warn_minutes": warn_minutes,
+        "error_minutes": error_minutes,
+        "targets": targets,
+        "issues": sorted(set(issues)),
+        "raw_status": raw,
+    }
+
+
+def codex_mailbox_sla_progress(messages: list[Message], read_state_data: dict[str, Any]) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    now_ts = time.time()
+    for msg in messages:
+        if msg.to_agent != "codex" or not message_in_agent_inbox(msg, "codex"):
+            continue
+        read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+        if not read_status["unread"]:
+            continue
+        age = max(0, int(now_ts - msg.modified))
+        urgent = is_urgent_codex_request_message(msg)
+        sla = MAILBOX_SLA_URGENT_SECONDS if urgent else MAILBOX_SLA_NORMAL_SECONDS
+        breached = age >= sla
+        rows.append(
+            {
+                "message_id": msg.message_id,
+                "thread_id": msg.stable_thread,
+                "title": msg.title,
+                "path": str(msg.path),
+                "age_seconds": age,
+                "sla_seconds": sla,
+                "urgent": urgent,
+                "breached": breached,
+            }
+        )
+    urgent_breached = sum(1 for row in rows if row["urgent"] and row["breached"])
+    normal_breached = sum(1 for row in rows if not row["urgent"] and row["breached"])
+    severity = "err" if urgent_breached else "warn" if normal_breached else "ok"
+    oldest = max((row["age_seconds"] for row in rows), default=0)
+    if urgent_breached:
+        action = "Read urgent Codex mail now."
+    elif normal_breached:
+        action = "Review Codex mailbox SLA breach."
+    else:
+        action = "Wait - Codex mailbox within SLA."
+    summary = f"{len(rows)} unread; {urgent_breached} urgent breach / {normal_breached} normal breach"
+    return {
+        "id": "codex_mailbox_sla",
+        "agent": "codex",
+        "label": "Codex SLA",
+        "severity": severity,
+        "status": "active" if rows else "idle",
+        "phase": "Mailbox pickup",
+        "evidence_summary": f"{summary}; oldest {human_duration(oldest)}" if rows else "No unread Codex mail.",
+        "recommended_action": action,
+        "unread": len(rows),
+        "urgent_breached": urgent_breached,
+        "normal_breached": normal_breached,
+        "oldest_unread_seconds": oldest,
+        "items": sorted(rows, key=lambda row: (-int(row["breached"]), -int(row["urgent"]), -int(row["age_seconds"])))[:10],
+    }
+
+
+def build_agent_progress_monitor(messages: list[Message], read_state_data: dict[str, Any]) -> dict[str, Any]:
+    cards = [cc_active_dispatch_progress(), codex_mailbox_sla_progress(messages, read_state_data)]
+    severity = health_level(*(str(card.get("severity", "unknown")).replace("fail", "err") for card in cards))
+    return {
+        "schema_version": 1,
+        "severity": severity,
+        "cards": cards,
+        "counts": {
+            "red": sum(1 for card in cards if card.get("severity") == "err"),
+            "yellow": sum(1 for card in cards if card.get("severity") == "warn"),
+            "green": sum(1 for card in cards if card.get("severity") == "ok"),
+        },
     }
 
 
@@ -1646,11 +2898,14 @@ def state() -> dict[str, Any]:
     archive_state_data = load_thread_archive_state()
     decisions = build_decision_queue(messages, write_file=False)
     all_decisions = build_decision_queue(messages, write_file=False, include_inactive=True)
+    urgent_codex_requests = urgent_codex_request_rows(messages, read_state_data)
+    agent_progress = build_agent_progress_monitor(messages, read_state_data)
     validation = validate_mailbox(messages)
     validation_actionable, validation_inactive = apply_validation_state(validation)
     validation_summary = summarize_validation(validation)
     all_threads = build_threads(messages, read_state_data, archive_state_data)
     thread_focus = build_thread_focus(messages, archive_state_data)
+    message_audit = audit_messages_and_thread_states(messages, thread_focus, read_state_data)
     active_threads = [thread for thread in all_threads if not thread.get("archived")]
     archived_threads = [thread for thread in all_threads if thread.get("archived")]
     unread_messages = sum(
@@ -1686,6 +2941,9 @@ def state() -> dict[str, Any]:
             "approval_records": approvals["records"],
             "enabled_adapters": adapters["enabled"],
             "inactive_decisions": max(0, len(all_decisions) - len(decisions)),
+            "urgent_codex_requests": len(urgent_codex_requests),
+            "agent_progress_red": agent_progress.get("counts", {}).get("red", 0),
+            "agent_progress_yellow": agent_progress.get("counts", {}).get("yellow", 0),
         },
         "latest": [message_to_json(msg, read_state_data) for msg in messages[:40]],
         "mailboxes": build_mailbox_overview(messages, read_state_data),
@@ -1695,6 +2953,8 @@ def state() -> dict[str, Any]:
         "threads": active_threads[:80],
         "archived_threads": archived_threads[:80],
         "thread_focus": thread_focus,
+        "urgent_codex_requests": urgent_codex_requests,
+        "agent_progress": agent_progress,
         "decisions": decisions,
         "decision_history": [item for item in all_decisions if item.get("decision_state") != ACTIVE_STATE],
         "decision_state": decision_state,
@@ -1704,6 +2964,7 @@ def state() -> dict[str, Any]:
         "validation_summary": validation_summary,
         "validation_state": validation_state_summary(),
         "read_state": read_state_summary(read_state_data),
+        "message_audit": message_audit,
         "thread_archive": thread_archive_summary(archive_state_data),
         "diagnostics": diagnostics,
         "route_tests": route_tests,
@@ -1811,9 +3072,162 @@ def summarize_cockpit_routes(routes: list[dict[str, Any]]) -> dict[str, Any]:
     return {**counts, "label": label, "severity": severity}
 
 
+def health_level(*levels: str) -> str:
+    rank = {"unknown": 0, "ok": 1, "warn": 2, "err": 3}
+    clean = [level if level in rank else "unknown" for level in levels]
+    return max(clean or ["unknown"], key=lambda level: rank[level])
+
+
+def health_component(level: str, label: str, detail: str, **extra: Any) -> dict[str, Any]:
+    normalized = level if level in {"ok", "warn", "err", "unknown"} else "unknown"
+    return {"level": normalized, "label": label, "detail": detail, **extra}
+
+
+def periodic_health_monitor_summary() -> dict[str, Any]:
+    report = read_json(PERIODIC_HEALTH_LATEST_PATH, {})
+    if not report:
+        return health_component(
+            "unknown",
+            "Periodic monitor not reported",
+            "No latest periodic health report is available yet.",
+            path=str(PERIODIC_HEALTH_LATEST_PATH),
+        )
+    checks = report.get("checks", {})
+    failed = [
+        name
+        for name, check in checks.items()
+        if isinstance(check, dict) and not bool(check.get("ok"))
+    ]
+    level = "err" if failed else "ok" if report.get("ok") else "warn"
+    generated_at = str(report.get("generated_at", ""))
+    schedule = report.get("schedule", {}) if isinstance(report.get("schedule", {}), dict) else {}
+    detail = "Periodic monitor passed." if level == "ok" else f"Periodic monitor needs attention: {', '.join(failed) or 'report warning'}."
+    return health_component(
+        level,
+        "Periodic monitor",
+        detail,
+        generated_at=generated_at,
+        next_run_after=str(schedule.get("next_run_after", "")),
+        schedule=schedule,
+        path=str(PERIODIC_HEALTH_LATEST_PATH),
+        failed_checks=failed,
+        duration_ms=report.get("duration_ms", 0),
+        archive_read_sweep=checks.get("archive_read_sweep", {}),
+        status_summary=report.get("status_summary", {}),
+        warnings=report.get("warnings", []),
+    )
+
+
+def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
+    state_data = cockpit.get("cockpit_state", {})
+    counts = state_data.get("counts", {})
+    diagnostics = cockpit.get("diagnostics", {})
+    agent_progress = cockpit.get("agent_progress", {})
+    routes_summary = state_data.get("routes_summary", {})
+    git = cockpit.get("git", {})
+    generated_at = str(cockpit.get("generated_at", datetime.now().isoformat(timespec="seconds")))
+    routes_level = str(routes_summary.get("severity", "unknown"))
+    stale_unread = int(counts.get("stale_unread", 0) or 0)
+    urgent_codex = int(counts.get("urgent_codex_requests", 0) or 0)
+    open_on_darrin = int(counts.get("open_on_darrin", 0) or 0)
+    open_on_agent = int(counts.get("open_on_agent", 0) or 0)
+    owner_unknown = int(counts.get("owner_unknown", 0) or 0)
+    unanswered_total = open_on_darrin + open_on_agent + owner_unknown
+    failed_checks = int(diagnostics.get("checks_fail", 0) or 0)
+    warn_checks = int(diagnostics.get("checks_warn", 0) or 0)
+    actionable_validation = int(diagnostics.get("actionable_validation_issues", 0) or 0)
+    monitor = periodic_health_monitor_summary()
+    progress_counts = agent_progress.get("counts", {}) if isinstance(agent_progress, dict) else {}
+    progress_level = str(agent_progress.get("severity", "unknown")) if isinstance(agent_progress, dict) else "unknown"
+    progress_cards = agent_progress.get("cards", []) if isinstance(agent_progress, dict) else []
+    git_clean = bool(git.get("clean"))
+    git_status = str(git.get("status_label") or "")
+
+    components = {
+        "server": health_component("ok", "Server API online", f"PAH API generated this payload at {generated_at}."),
+        "routes": health_component(routes_level, "Mailbox routes", str(routes_summary.get("label", "No route summary.")), counts=routes_summary),
+        "mailboxes": health_component(
+            "warn" if owner_unknown else "ok",
+            "Mailboxes",
+            f"{owner_unknown} owner-unknown thread(s); {stale_unread} stale unread message(s).",
+            owner_unknown=owner_unknown,
+            stale_unread=stale_unread,
+        ),
+        "unanswered": health_component(
+            "err" if owner_unknown else "warn" if unanswered_total else "ok",
+            "Unanswered work",
+            f"{open_on_darrin} open on Darrin; {open_on_agent} open on agents; {owner_unknown} owner unknown.",
+            open_on_darrin=open_on_darrin,
+            open_on_agent=open_on_agent,
+            owner_unknown=owner_unknown,
+            total=unanswered_total,
+        ),
+        "urgent_codex": health_component(
+            "err" if urgent_codex else "ok",
+            "Urgent Codex requests",
+            f"{urgent_codex} urgent request(s) flagged for Codex.",
+            urgent_codex_requests=urgent_codex,
+        ),
+        "agent_progress": health_component(
+            progress_level if progress_level in {"ok", "warn", "err", "unknown"} else "unknown",
+            "Agent progress",
+            f"{progress_counts.get('red', 0)} red; {progress_counts.get('yellow', 0)} yellow progress monitor card(s).",
+            counts=progress_counts,
+            cards=progress_cards,
+        ),
+        "archive": health_component(
+            "ok" if SWEEP_AUDIT_LOG_PATH.exists() else "unknown",
+            "Archive sweep",
+            "Read-mail sweep audit log is present." if SWEEP_AUDIT_LOG_PATH.exists() else "No sweep audit log has been written yet.",
+            audit_log_path=str(SWEEP_AUDIT_LOG_PATH),
+        ),
+        "interaction_ledger": health_component(
+            "ok" if INTERACTION_LEDGER_PATH.exists() else "unknown",
+            "Interaction ledger",
+            "Append-only PAH interaction ledger is present."
+            if INTERACTION_LEDGER_PATH.exists()
+            else "No interaction ledger events have been written yet.",
+            ledger_path=str(INTERACTION_LEDGER_PATH),
+        ),
+        "diagnostics": health_component(
+            "err" if failed_checks else "warn" if warn_checks or actionable_validation else "ok",
+            "Diagnostics",
+            f"{failed_checks} failed checks; {warn_checks} warnings; {actionable_validation} actionable validation issue(s).",
+            failed_checks=failed_checks,
+            warn_checks=warn_checks,
+            actionable_validation_issues=actionable_validation,
+        ),
+        "periodic_monitor": monitor,
+        "github_backup": health_component(
+            "ok" if git_clean else "warn",
+            "Git/GitHub backup",
+            "Working tree is clean." if git_clean else git_status or "Working tree has uncommitted or unsynced changes.",
+            branch=str(git.get("branch", "")),
+            tracking=str(git.get("tracking", "")),
+            clean=git_clean,
+        ),
+    }
+    overall = health_level(*(str(item.get("level", "unknown")) for item in components.values()))
+    return {
+        "ok": overall == "ok",
+        "schema_version": 1,
+        "generated_at": generated_at,
+        "overall": overall,
+        "summary": "PAH healthy." if overall == "ok" else "PAH needs attention.",
+        "components": components,
+    }
+
+
+def health_payload() -> dict[str, Any]:
+    return health_payload_from_cockpit(cockpit_payload())
+
+
 def cockpit_feed_item(row: dict[str, Any]) -> dict[str, Any]:
     is_stale = bool(row.get("stale_unread"))
+    is_urgent = bool(row.get("urgent_codex_request"))
     badges = [{"kind": "status", "label": str(label)} for label in row.get("status_badges", [])[:3]]
+    if is_urgent:
+        badges.insert(0, {"kind": "urgent", "label": "urgent"})
     if is_stale:
         badges.insert(0, {"kind": "wake", "label": "needs wake-up"})
     return {
@@ -1828,6 +3242,7 @@ def cockpit_feed_item(row: dict[str, Any]) -> dict[str, Any]:
         "unread": bool(row.get("unread")),
         "age_seconds": int(row.get("age_seconds", 0) or 0),
         "stale_unread": is_stale,
+        "urgent_codex_request": is_urgent,
         "wake_candidate_agent": row.get("wake_candidate_agent", ""),
         "badges": badges,
         "message_path": row.get("path", ""),
@@ -2108,6 +3523,7 @@ def cockpit_thread_queue(thread_focus: dict[str, Any], limit: int = 80) -> list[
     for bucket, kind, severity in (
         ("open_on_darrin", "you", "ok"),
         ("open_on_agent", "agent", "ok"),
+        ("owner_unknown", "unknown", "warn"),
         ("parked", "parked", "ok"),
         ("closed", "closed", "ok"),
     ):
@@ -2144,10 +3560,12 @@ def cockpit_payload() -> dict[str, Any]:
     feed = [cockpit_feed_item(row) for row in status_data.get("latest", [])[:24]]
     thread_focus = status_data.get("thread_focus", {})
     thread_counts = thread_focus.get("counts", {})
+    urgent_codex_requests = list(status_data.get("urgent_codex_requests", []))
+    agent_progress = status_data.get("agent_progress", {})
     decisions = cockpit_decisions(status_data)
     agents = cockpit_agents(status_data)
     wake_candidates = [item for item in feed if item.get("stale_unread")]
-    action_queue = cockpit_thread_queue(thread_focus)
+    action_queue = [*urgent_codex_requests, *cockpit_thread_queue(thread_focus)]
     selected_thread = cockpit_selected_thread(status_data, action_queue or feed, agents, [])
     diagnostics = status_data.get("diagnostics", {})
     diagnostic_checks = diagnostics.get("checks", [])
@@ -2162,7 +3580,9 @@ def cockpit_payload() -> dict[str, Any]:
     git_clean = len(git_lines) == 1 and git_lines[0].startswith("## ")
     git_synced = git_clean and "[" not in git_lines[0]
     stale_threshold_label = f"{STALE_UNREAD_SECONDS}s"
-    return {
+    primary_wake_item = urgent_codex_requests[0] if urgent_codex_requests else (wake_candidates[0] if wake_candidates else {})
+    urgent_breakthrough_line = str(primary_wake_item.get("wake_line", "")) if primary_wake_item else ""
+    payload = {
         "schema_version": 1,
         "generated_at": generated_at,
         "cockpit_state": {
@@ -2176,18 +3596,24 @@ def cockpit_payload() -> dict[str, Any]:
             "routes_summary": route_summary,
             "counts": {
                 "messages": status_data.get("counts", {}).get("messages", 0),
-                "unread": 0,
-                "stale_unread": 0,
+                "unread": status_data.get("counts", {}).get("unread_messages", 0),
+                "stale_unread": len(wake_candidates),
                 "decisions_needed": thread_counts.get("open_on_darrin", 0),
                 "open_on_darrin": thread_counts.get("open_on_darrin", 0),
                 "open_on_agent": thread_counts.get("open_on_agent", 0),
+                "owner_unknown": thread_counts.get("owner_unknown", 0),
                 "parked": thread_counts.get("parked", 0),
                 "closed": thread_counts.get("closed", 0),
                 "threads_all": thread_counts.get("all", 0),
                 "actionable_checks": status_data.get("counts", {}).get("actionable_validation_issues", 0),
+                "urgent_codex_requests": status_data.get("counts", {}).get("urgent_codex_requests", 0),
+                "agent_progress_red": status_data.get("counts", {}).get("agent_progress_red", 0),
+                "agent_progress_yellow": status_data.get("counts", {}).get("agent_progress_yellow", 0),
             },
         },
         "thread_focus": thread_focus,
+        "urgent_codex_requests": urgent_codex_requests,
+        "agent_progress": agent_progress,
         "mailbox_messages": status_data.get("agent_mailboxes", {}),
         "agents": agents,
         "action_queue": action_queue,
@@ -2197,13 +3623,21 @@ def cockpit_payload() -> dict[str, Any]:
         "decisions": decisions,
         "routes": routes,
         "wake": {
-            "target_agent": wake_candidates[0].get("wake_candidate_agent", "") if wake_candidates else "",
-            "line": action_queue[0].get("wake_line") if wake_candidates and action_queue and action_queue[0].get("wake_line") else "",
-            "route_status": "wake_candidate" if wake_candidates else "",
+            "target_agent": "codex" if urgent_codex_requests else (wake_candidates[0].get("wake_candidate_agent", "") if wake_candidates else ""),
+            "line": urgent_breakthrough_line,
+            "route_status": "urgent_codex_request" if urgent_codex_requests else ("wake_candidate" if wake_candidates else ""),
             "last_copy_iso": "",
             "direct_wake_supported": False,
-            "safety_label": f"{len(wake_candidates)} unread over {stale_threshold_label}. Copy line only." if wake_candidates else "Copy line only; Darrin pastes into Claude Code.",
+            "safety_label": f"{len(urgent_codex_requests)} urgent Codex request(s). Open now." if urgent_codex_requests else (f"{len(wake_candidates)} unread over {stale_threshold_label}. Copy line only." if wake_candidates else "Copy line only; Darrin pastes into Claude Code."),
         },
+        "urgent_breakthrough": {
+            "active": bool(urgent_codex_requests),
+            "count": len(urgent_codex_requests),
+            "line": urgent_breakthrough_line,
+            "delivery_mode": "always-on log channel plus dashboard focus",
+        },
+        "message_audit": status_data.get("message_audit", {}),
+        "interaction_ledger": interaction_ledger_summary(),
         "diagnostics": {
             "ok": bool(diagnostics.get("ok")),
             "checks_total": len(diagnostic_checks),
@@ -2238,6 +3672,8 @@ def cockpit_payload() -> dict[str, Any]:
             {"id": "send", "label": "Send", "enabled": False, "destructive": False, "reason": "no draft staged in read-only v1"},
         ],
     }
+    payload["health"] = health_payload_from_cockpit(payload)
+    return payload
 
 
 def human_duration(seconds: int) -> str:
@@ -2262,6 +3698,7 @@ def tray_status_payload(cockpit: dict[str, Any] | None = None) -> dict[str, Any]
     routes_summary = state.get("routes_summary", {})
     wake_candidates = cockpit.get("wake_candidates", [])
     decisions = int(counts.get("decisions_needed", 0) or 0)
+    urgent_codex = int(counts.get("urgent_codex_requests", 0) or 0)
     stale = int(counts.get("stale_unread", 0) or 0)
     unread = int(counts.get("unread", 0) or 0)
     diag_problems = int(diagnostics.get("checks_warn", 0) or 0) + int(diagnostics.get("checks_fail", 0) or 0)
@@ -2272,7 +3709,11 @@ def tray_status_payload(cockpit: dict[str, Any] | None = None) -> dict[str, Any]
         target = cockpit_agent_name(str(item.get("wake_candidate_agent", "")), agents)
         target_counts[target] = target_counts.get(target, 0) + 1
 
-    if stale:
+    if urgent_codex:
+        level = "urgent"
+        title = f"{urgent_codex} URGENT Codex request{'s' if urgent_codex != 1 else ''}"
+        body = "Open PAH now; CC/CD flagged work that should interrupt lower-priority Codex tasks."
+    elif stale:
         level = "attention"
         title = f"{stale} overdue PAH message{'s' if stale != 1 else ''}"
         body = f"Oldest unread is {human_duration(oldest)}. Open PAH and paste the prepared wake line into the named AI."
@@ -2300,6 +3741,7 @@ def tray_status_payload(cockpit: dict[str, Any] | None = None) -> dict[str, Any]
         "tooltip": tooltip,
         "counts": {
             "stale_unread": stale,
+            "urgent_codex_requests": urgent_codex,
             "unread": unread,
             "decisions_needed": decisions,
             "diagnostic_problems": diag_problems,
@@ -2321,6 +3763,7 @@ def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None)
     stale_unread = bool(read_status["unread"] and age_seconds >= STALE_UNREAD_SECONDS)
     wake_candidate_agent = safe_slug(msg.to_agent).replace("-", "_") if msg.to_agent else ""
     wake_candidate_label = msg.to_agent or ""
+    urgent_codex_request = is_urgent_codex_request_message(msg)
     return {
         "direction": msg.direction,
         "path": str(msg.path),
@@ -2340,6 +3783,7 @@ def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None)
         "unread": read_status["unread"],
         "age_seconds": age_seconds,
         "stale_unread": stale_unread,
+        "urgent_codex_request": urgent_codex_request,
         "wake_candidate_agent": wake_candidate_agent,
         "wake_candidate_label": wake_candidate_label,
         "content_changed_since_read": read_status["content_changed"],
@@ -2567,6 +4011,57 @@ def recent_watcher_events(limit: int = 50) -> list[dict[str, Any]]:
         if isinstance(payload, dict):
             events.append(payload)
     return list(reversed(events))
+
+
+TRUST_LEDGER_EVENT_TYPES = {
+    "agent_no_mail_claim_discrepancy",
+    "agent_no_mail_claim_validated",
+    "mailbox_discrepancy_detected",
+    "steward_check_finished",
+}
+DISCREPANCY_LEDGER_EVENT_TYPES = {
+    "agent_no_mail_claim_discrepancy",
+    "mailbox_discrepancy_detected",
+}
+
+
+def recent_interaction_ledger_events(
+    limit: int = 50,
+    event_types: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    limit = max(1, min(500, int(limit or 50)))
+    if not INTERACTION_LEDGER_PATH.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    for line in reversed(read_text(INTERACTION_LEDGER_PATH).splitlines()):
+        if len(events) >= limit:
+            break
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        if event_types and str(payload.get("event_type", "")) not in event_types:
+            continue
+        events.append(payload)
+    return events
+
+
+def interaction_ledger_summary(limit: int = 8) -> dict[str, Any]:
+    events = recent_interaction_ledger_events(limit=limit, event_types=TRUST_LEDGER_EVENT_TYPES)
+    discrepancies = [
+        event
+        for event in events
+        if str(event.get("event_type", "")) in DISCREPANCY_LEDGER_EVENT_TYPES
+    ]
+    return {
+        "path": str(INTERACTION_LEDGER_PATH),
+        "exists": INTERACTION_LEDGER_PATH.exists(),
+        "events": events,
+        "discrepancy_count": len(discrepancies),
+        "latest_discrepancy": discrepancies[0] if discrepancies else None,
+    }
 
 
 def watcher_default_path(agent_id: str) -> str:
@@ -3100,8 +4595,14 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/cockpit":
             self.send_json(cockpit_payload())
             return
+        if parsed.path == "/api/health":
+            self.send_json(health_payload())
+            return
         if parsed.path == "/api/tray-status":
             self.send_json(tray_status_payload())
+            return
+        if parsed.path == "/api/inspector-report":
+            self.send_json(inspector_report_payload())
             return
         if parsed.path == "/api/status":
             self.send_json(state())
@@ -3113,6 +4614,21 @@ class Handler(BaseHTTPRequestHandler):
             query = parse_qs(parsed.query)
             limit = int(query.get("limit", ["50"])[0] or "50")
             self.send_json({"ok": True, "events": recent_watcher_events(max(1, min(200, limit)))})
+            return
+        if parsed.path == "/api/interaction-ledger":
+            query = parse_qs(parsed.query)
+            limit = int(query.get("limit", ["50"])[0] or "50")
+            event_types = {value for value in query.get("event_type", []) if value}
+            self.send_json(
+                {
+                    "ok": True,
+                    "path": str(INTERACTION_LEDGER_PATH),
+                    "events": recent_interaction_ledger_events(
+                        max(1, min(500, limit)),
+                        event_types=event_types or None,
+                    ),
+                }
+            )
             return
         if parsed.path == "/api/message":
             query = parse_qs(parsed.query)
@@ -3161,6 +4677,8 @@ class Handler(BaseHTTPRequestHandler):
             "/api/clear-diagnostics",
             "/api/cleanup-inbox-accumulation",
             "/api/archive-read-codex-inbox",
+            "/api/agent-no-mail-claim",
+            "/api/create-message",
             "/api/create-route-test",
             "/api/quarantine-message",
             "/api/decision-state",
@@ -3235,6 +4753,27 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
             self.send_json({"ok": True, **record})
+            return
+        if parsed_path == "/api/agent-no-mail-claim":
+            try:
+                record = validate_agent_no_mail_claim(
+                    str(payload.get("agent", "")),
+                    actor=str(payload.get("actor", "pah")),
+                    claim=str(payload.get("claim", "no_mail")),
+                    note=str(payload.get("note", "")),
+                )
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json(record)
+            return
+        if parsed_path == "/api/create-message":
+            try:
+                result = create_message(payload)
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **result})
             return
         if parsed_path == "/api/create-route-test":
             try:
@@ -3351,12 +4890,17 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json({"ok": True, **result})
 
 
-def find_free_port(preferred: int) -> int:
+def find_free_port(preferred: int, host: str = "127.0.0.1", allow_fallback: bool = True) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        if sock.connect_ex(("127.0.0.1", preferred)) != 0:
+        try:
+            sock.bind((host, preferred))
             return preferred
+        except OSError:
+            pass
+    if not allow_fallback:
+        raise OSError(f"Port {preferred} is already in use on {host}.")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
+        sock.bind((host, 0))
         return int(sock.getsockname()[1])
 
 
@@ -3366,13 +4910,14 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-browser", action="store_true")
+    parser.add_argument("--no-port-fallback", action="store_true")
     parser.add_argument("--allow-simulated-inbound", action="store_true")
     args = parser.parse_args()
     ALLOW_SIMULATED_INBOUND = args.allow_simulated_inbound
     ensure_runtime_dirs()
     ensure_notification_template()
 
-    port = find_free_port(args.port)
+    port = find_free_port(args.port, args.host, allow_fallback=not args.no_port_fallback)
     server = ThreadingHTTPServer((args.host, port), Handler)
     url = f"http://{args.host}:{port}"
     print(f"PANDA Agent Hub running at {url}", flush=True)

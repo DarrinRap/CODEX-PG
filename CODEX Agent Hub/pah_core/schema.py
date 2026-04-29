@@ -305,6 +305,7 @@ def render_message_markdown(
         "priority",
         "status",
         "thread_status",
+        "action_owner",
         "approval_boundary",
         "requires_darrin_decision",
         "reply_to",

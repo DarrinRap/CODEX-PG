@@ -1,0 +1,74 @@
+# PAH Todo
+
+## Reliability / Audit
+
+- [x] Add append-only PAH interaction ledger v1 (`CODEX_pah_interaction_ledger.jsonl`) for sent messages, read marks, archive sweep start/finish, archive candidates, archived messages, archive skips, mailbox discrepancies, and steward check start/finish events.
+- [x] Extend PAH interaction ledger protocol to record explicit agent no-mail claims and compare them to PAH mailbox state.
+- [x] Extend PAH interaction ledger protocol to record first-seen/discovered message events and classifier state transition events.
+- [x] Add a dashboard discrepancy panel showing latest `mailbox_discrepancy_detected` events, affected agents, thread IDs, and recommended next action.
+- [ ] Add a dashboard ledger viewer with filters for message ID, thread ID, agent, event type, and time range.
+- [ ] Add ledger retention/export controls so the JSONL audit trail stays compact but remains reviewable.
+- [x] Add a PAH Inspector applet for endpoint, mailbox, archive/read, ledger, and dashboard UI wiring checks.
+- [x] Add create-message dry-run support so live endpoint probes cannot create stray mailbox messages.
+
+## Mailroom Protocol
+
+- [ ] Define PAH mailbox protocol v3 for CD/CC/Codex: check mail, report counts, mark read, archive read, and report no-mail claims through PAH-visible events.
+- [ ] Require agent replies to include mailbox check summary: inbox scanned count, message IDs read, message IDs archived, skipped IDs, and reason for each skip.
+- [x] Add no-mail claim validation: when an agent says "no mail", PAH compares that claim against active inbox state and logs pass/fail.
+- [ ] Add explicit read receipt message or state record for each agent-managed inbox read outside the PAH UI.
+- [ ] Add route-test ping/reply protocol for CD and CC, with automatic mismatch detection when replies are missing or archived incorrectly.
+- [x] Notify CD of the Phase 4 draft restore and `drafted_pending_*` archive-skip rule.
+- [x] Notify CC of the `drafted_pending_*` archive-skip rule for the next mailbox protocol sync.
+
+## Classifier / Message State
+
+- [ ] Review current owner-unknown items and either fix malformed frontmatter or add safe classifier rules for known valid legacy formats.
+- [ ] Add tests for every completion/ack/report/status combination that should close before generic agent ownership.
+- [ ] Add tests for ready-for-review/report combinations that must remain open on the reviewing agent.
+- [x] Add classifier transition logging whenever a thread changes between open-on-agent, open-on-Darrin, owner-unknown, parked, and closed.
+- [ ] Add a "why classified this way" explanation field in action detail for each open/unknown thread.
+
+## Archive / Read Handling
+
+- [x] Add a batch test that creates multiple unread/read messages in every active inbox, marks a subset read, runs archive sweep, and verifies every read item is removed and archived.
+- [x] Add a guard that prevents auto-archiving unstructured or owner-unknown messages until PAH can prove the message is safe to archive.
+- [x] Add a guard that prevents auto-archiving or alert-deleting `status: drafted_pending_*` pre-staged trigger messages.
+- [x] Add a guard that prevents auto-archiving read but still-active agent-owned threads without completion evidence.
+- [ ] Add archive restore tooling for accidental archive moves.
+- [x] Add archive conflict reporting when destination names collide and PAH has to create a unique filename.
+- [ ] Add inbox cleanup dry-run report to the dashboard before manual cleanup actions.
+
+## Steward / Monitoring
+
+- [x] Make the periodic steward emit a concise dashboard status card: last run, result, archived count, discrepancy count, and failed checks.
+- [x] Add next scheduled run timestamp once the recurring automation schedule is exposed to PAH.
+- [ ] Add automatic escalation rules for repeated discrepancies across two or more steward runs.
+- [ ] Add self-healing startup check: if PAH is not listening on 8765, start it with known-good Python runtime and write stdout/stderr to stable logs.
+- [ ] Add startup failure diagnostics that surface recent stderr/stdout in the dashboard.
+- [ ] Add automated periodic route checks that send test messages to CD and CC and verify reply visibility plus archive behavior.
+- [ ] Add test coverage for the periodic automation prompt/protocol so future automation edits preserve archive-read and discrepancy checks.
+- [ ] Implement CC active-dispatch progress watchdog from the v0.2 monitoring spec, including `_state/active_dispatch.json`, allowlisted target paths, child-file mtime evidence, warning/error thresholds, and dashboard status cards.
+- [ ] Fold CD-approved v0.2 monitoring amendments into implementation: first-class `recommended_action` on progress cards, retained healthy/stalled ASCII tile contract, M1 CC watchdog plus M2 mailbox SLA in MVP-of-MVP, default stale warn/error thresholds of 30/45 minutes, and formal `compose` / `heavy_write` states.
+- [ ] Upgrade PAH Inspector to validate `_state/active_dispatch.json` existence, JSON schema, required fields, allowed status values, sidecar freshness, and safe target-path allowlisting.
+- [ ] Upgrade PAH Inspector to test CC progress evidence: newest child-file mtime under target paths, ignored cache/build folders, missing target paths, and stale warning/error threshold transitions.
+- [ ] Upgrade PAH Inspector to verify false-positive guards for CC monitoring: paused, blocked, complete, abandoned, heavy-write, and non-file-progress states must not create incorrect stall alerts.
+- [ ] Upgrade PAH Inspector to verify Agent Progress dashboard wiring: yellow/red progress cards are clickable, open action detail, show evidence/reason/threshold, and expose copy escalation/open-folder actions where safe.
+- [ ] Upgrade PAH Inspector to verify CC-stall escalation behavior: red alerts route correctly, repeated alerts are deduplicated by dispatch/severity/evidence signature, and CD/Codex notification policy is honored.
+- [ ] Add smoke-test fixtures for CC progress monitoring in a temporary PAH sandbox so tests never touch real PG target directories.
+
+## UI / UX
+
+- [x] Surface interaction ledger health in the top status panel with a drilldown link.
+- [x] Add a main-screen Inspector button that opens a full-screen PAH Inspector panel with latest report summary, findings, Markdown report, and report-open action.
+- [ ] Add visual status for unresolved communication backlog: open-on-agent, owner-unknown, stale unread, and Darrin-waiting.
+- [ ] Add one-click "copy discrepancy summary" for sending concise status to CD/CC.
+- [ ] Add collapsible advanced diagnostics so the default dashboard stays clean but the details are nearby.
+- [ ] Continue aligning dashboard typography, density, controls, and colors to the PG design system.
+
+## Backup / Release Hygiene
+
+- [ ] Commit and push PAH reliability changes after the active mailbox/protocol work is stable.
+- [ ] Add a pre-commit or release checklist: py_compile, smoke tests, live `/api/health`, periodic steward run, and GitHub backup status.
+- [ ] Keep generated logs/state out of commits unless they are intentional fixtures or docs.
+- [x] Document PAH operational protocols in the README: live URL, server start command, health checks, archive-read behavior, and ledger location.

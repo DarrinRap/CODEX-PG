@@ -1,9 +1,7 @@
 # CODEX Last Automated Handoff
 
-Generated: 2026-04-28 15:24:30 -07:00
-Mode: LocalOnlyHandoff
-
-Note: the normal handoff automation was not run because Handoff mode may include GitHub backup/upload. This local-only handoff updates the resume files without staging, committing, pushing, or exporting anything.
+Generated: 2026-04-29 15:47:48 -07:00
+Mode: Handoff
 
 ## Current Git State
 
@@ -11,144 +9,77 @@ Note: the normal handoff automation was not run because Handoff mode may include
 - GitHub repo: `https://github.com/DarrinRap/CODEX-PG.git`
 - Branch: `main`
 - Origin: `https://github.com/DarrinRap/CODEX-PG.git`
-- Indexed project file count, excluding `.git`: 4623
+- Indexed project file count, excluding .git: 4757
 
 ## Git Status
 
 ```text
-## main...origin/main
+## main...origin/main [ahead 1]
+ M "CODEX Agent Hub/CODEX_README.md"
  M "CODEX Agent Hub/CODEX_agent_hub.py"
  M "CODEX Agent Hub/CODEX_agent_hub_ui.html"
  M "CODEX Agent Hub/CODEX_run_smoke_tests.py"
- M "CODEX Agent Hub/pah_diagnostics/checks.py"
- M "CODEX Canonical Specs/CODEX_MASTER_SPEC_INDEX.md"
- M "CODEX Canonical Specs/CODEX_PAH_COMPACT_COCKPIT_READONLY_SCHEMA_v1.md"
- M "CODEX Docs/CODEX_CURRENT_HANDOFF.md"
-?? "CODEX Automation/CODEX_mailbox_status.ps1"
-?? "CODEX Automation/CODEX_relay_health_check.ps1"
-?? "CODEX Canonical Specs/PG_DESIGN_LEDGER_SPEC_v1_CODEX_REVIEW.md"
-?? "CODEX Canonical Specs/PG_DESIGN_LEDGER_SPEC_v2.md"
-?? "CODEX Canonical Specs/PG_LEDGER_PARALLEL_BUILD_PLAN_v1.md"
-?? "CODEX Canonical Specs/RELAY_SPEC_v0.3.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_124900_CODEX_to_CLAUDE_a53_relay_setup_mockups_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_130800_CODEX_to_CLAUDE_relay_spec_v03_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_133200_CODEX_to_CLAUDE_a54_relay_hub_missing_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_134800_CODEX_to_CLAUDE_a52_delivery_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_140200_CODEX_to_CLAUDE_mailbox_relay_protocol_v1.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_144800_CODEX_to_CLAUDE_pg_design_ledger_v1_review_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_145214_CODEX_to_CLAUDE_pah_compact_cockpit_speedup_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_175000_CLAUDE_to_CODEX_a53_ack_oq_answers.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260428_175100_CLAUDE_to_CODEX_relay_spec_v03_ack.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_145000_CLAUDE_to_CODEX_a52_relay_mockup_spec_go.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_162000_CLAUDE_to_CODEX_a53_relay_setup_mockups.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_170000_CLAUDE_to_CODEX_relay_spec_v03_amendment.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_172000_CLAUDE_to_CODEX_a54_relay_hub_missing_screens.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_190100_CLAUDE_to_CODEX_a52_go.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260428_200500_CLAUDE_to_CODEX_recall_and_review_ledger_spec.md"
-?? "CODEX Claude Codex Mailbox/CODEX_ACTIVE_DISPATCH_INDEX.md"
-?? "CODEX Claude Codex Mailbox/CODEX_CURRENT_AUTHORITY.md"
-?? "CODEX Docs/CODEX_FUTURE_TODO.md"
-?? "CODEX Docs/CODEX_MAILBOX_RELAY_PROTOCOL_v1.md"
-?? "CODEX Relay Mockups/"
+ M "CODEX Agent Hub/CODEX_start_agent_hub_tray.ps1"
+ M "CODEX Agent Hub/pah_core/schema.py"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_075355_CODEX_to_CLAUDE_pah_archive_read_fix_test_request.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_080414_CODEX_to_CLAUDE_pah_archive_read_protocol_gap_response.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_080945_CODEX_to_CLAUDE_pah_archive_read_protocol_patch_complete.md"
+ D "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_083000_CC_to_CODEX_pah_archive_read_fix_verify_ack.md"
+ D "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_083500_CLAUDE_to_CODEX_archive_read_protocol_ack.md"
+ M "CODEX Claude Codex Mailbox/CODEX_MAILBOX_LEDGER.md"
+?? "CODEX Agent Hub/CODEX assets/AM Mockup Review.exe"
+?? "CODEX Agent Hub/CODEX assets/AM Mockup Review.lnk"
+?? "CODEX Agent Hub/CODEX assets/AM_Mockup_Review_Launcher.cs"
+?? "CODEX Agent Hub/CODEX assets/AM_Mockup_Review_icon.ico"
+?? "CODEX Agent Hub/CODEX assets/AM_Mockup_Review_icon_1024.png"
+?? "CODEX Agent Hub/CODEX_PAH_TODO.md"
+?? "CODEX Agent Hub/CODEX_pah_inspector.py"
+?? "CODEX Agent Hub/CODEX_pah_periodic_health_check.py"
+?? "CODEX Claude Codex Mailbox/CLAUDE Archive/"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_101620_CODEX_to_CLAUDE_phase4_drafts_restored.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_111902_CODEX_to_CLAUDE_DESKTOP_pah-pg-protocol-ask-codex-before-deep-mail.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_114133_CODEX_to_CLAUDE_DESKTOP_mailbox-stale-thread-incident-ack-protocol.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_120300_CODEX_to_CLAUDE_DESKTOP_pah-mailbox-protocol-update-tombstone-on-r.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_121311_CODEX_to_CLAUDE_DESKTOP_pah-protocol-update-urgent-to-codex-flag-i.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_122821_CODEX_to_CLAUDE_DESKTOP_pgdl_context_guard_update_review_request.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_123927_CODEX_to_CLAUDE_DESKTOP_pgdl_context_guard_cg1_implemented.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_132908_CODEX_to_CLAUDE_DESKTOP_urgent_unread_mail_ack_and_protocol_response.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_144840_CODEX_to_CLAUDE_DESKTOP_pah-agent-progress-monitoring-v0-2-review-.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_153118_CODEX_to_CLAUDE_DESKTOP_pah-agent-progress-monitoring-v0-2-approva.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Deleted Alerts/20260429/"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/E2E Test Cleanup/20260429_103808_route_validation/"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_083000_CC_to_CODEX_pah_archive_read_fix_verify_ack.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_083500_CLAUDE_to_CODEX_archive_read_protocol_ack.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_085000_CC_to_CODEX_mailbox_protocol_v2_proposal.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_092500_CC_to_CODEX_pah_robustness_response.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_110000_CLAUDE_to_CODEX_a52_a54_acceptance_acks.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_113500_CLAUDE_to_CODEX_mailbox_stale_thread_problem.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_140000_CLAUDE_DESKTOP_to_CODEX_pah_agent_progress_monitoring_proposal.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_140000_CLAUDE_DESKTOP_to_CODEX_pah_agent_progress_monitoring_proposal.md.replied_tombstone.json"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_152000_CLAUDE_DESKTOP_to_CODEX_pah_agent_progress_monitoring_v02_approval.md"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Inbox Cleanup/CODEX Inbox/20260429/20260429_152000_CLAUDE_DESKTOP_to_CODEX_pah_agent_progress_monitoring_v02_approval.md.replied_tombstone.json"
+?? "CODEX Claude Codex Mailbox/CODEX Archive/Read Mail/20260429/20260429_103000_CLAUDE_to_CODEX_phase4_drafts_restore_request.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_122000_CLAUDE_DESKTOP_to_CODEX_mailbox_protocol_v3_response.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_130500_CLAUDE_DESKTOP_to_CODEX_context_guard_review_and_urgent_flag_ack.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_142500_CLAUDE_DESKTOP_to_CODEX_URGENT_unread_mail_recurring_pattern.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_DRAFT_CLAUDE_to_CODEX_phase4_u1_r29_mockup_annotations.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_DRAFT_CLAUDE_to_CODEX_phase4_u3_decision_sync_hook.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260429_DRAFT_CLAUDE_to_CODEX_phase4_u5_per_rule_promotion.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/CLAUDE-DESKTOP-20260429-122000-mailbox-protocol-v3-response.read_receipt.json"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/PAH-URGENT-20260429-142500-claude-desktop-to-codex-unread-mail-recurring-pattern.read_receipt.json"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/PGDL-20260429-130500-claude-desktop-to-codex-context-guard-review-and-urgent-flag-ack.read_receipt.json"
+?? "CODEX Claude Codex Mailbox/PAH Quarantine/"
 ```
 
 ## Recent Commits
 
 ```text
+c7d59fe PAH archive-read protocol and desktop icon
+83de77f docs: checkpoint PAH cockpit, Relay mockups, Ledger review, and relay protocol
+f203a40 redirect stub: point at panda-gallery v1.1 plan + v2.2 spec
 2f80eff CODEX backup 2026-04-28 11:54:29
 4194b54 Harden PAH read state matching
-65cdf97 Add PAH dashboard launcher
-cfdedbe Add PAH archive read inbox cleanup
-6ab849b Add PAH tray dismiss action
 ```
-
-## Current Work Summary
-
-PAH speedup work continued after Darrin reopened PAH development.
-
-Completed in this chat:
-
-- Tightened PAH compact cockpit read-only action console:
-  - actual git last-commit metadata in the payload
-  - schema-ordered action queue
-  - UI-preserved payload queue order after filters/search
-  - stale threshold labels derive from `cockpit_state.stale_unread_threshold_seconds`
-  - Enter selected-item action and Ctrl+R shortcut help
-- Added relay health checker:
-  - `C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1`
-  - supports `-Json`, `-NoFail`, `-UpdateCache`, and `-NoCache`
-  - validates active index, current authority, source/completion paths, stale rows, unindexed new CODEX mail, unread recent incoming mail, and Darrin-gated messages
-- Added relay health cache/cursors:
-  - cache path: `C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_relay_health_cache.local.json`
-  - ignored by git
-  - stores parsed recent-mail frontmatter plus newest-mail cursors for `CODEX Inbox`, `CLAUDE Inbox`, and `CODEX_CLAUDE_CODE Inbox`
-  - latest CODEX Inbox cursor at handoff: `20260428_200500_CLAUDE_to_CODEX_recall_and_review_ledger_spec.md`
-- Wired relay health into PAH diagnostics:
-  - `C:\CODEX PG\CODEX Agent Hub\pah_diagnostics\checks.py`
-  - `C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub.py`
-  - `C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub_ui.html`
-  - `C:\CODEX PG\CODEX Canonical Specs\CODEX_PAH_COMPACT_COCKPIT_READONLY_SCHEMA_v1.md`
-  - `C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py`
-- Updated local handoff/protocol/authority docs:
-  - `C:\CODEX PG\CODEX Docs\CODEX_CURRENT_HANDOFF.md`
-  - `C:\CODEX PG\CODEX Docs\CODEX_MAILBOX_RELAY_PROTOCOL_v1.md`
-  - `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_CURRENT_AUTHORITY.md`
-
-## Verification
-
-Passed:
-
-```powershell
-python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"
-```
-
-Relay health:
-
-```powershell
-& "C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1" -UpdateCache -NoFail
-& "C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1" -Json -NoFail
-```
-
-Current relay health result:
-
-- status: `ok`
-- active rows: `3`
-- errors: `0`
-- warnings: `0`
-- unindexed newer CODEX mail: `0`
-- warm cache: `38` hits / `0` misses
-
-PAH verification server:
-
-- Current-code PAH server refreshed at `http://127.0.0.1:8766`
-- `/api/cockpit` reports `diagnostics.relay_health.ok: true`
-- `/api/cockpit` reports `cache 38 hit(s)/0 miss(es)`
-
-## Active Relay State
-
-Read these first when resuming:
-
-1. `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_ACTIVE_DISPATCH_INDEX.md`
-2. `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_CURRENT_AUTHORITY.md`
-3. `C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1`
-
-Active rows currently in the index:
-
-- `PG-LEDGER-SYSTEM` - `waiting_review`
-- `RELAY-MOCKUP-BATCH-A52` - `waiting_review`
-- `A54-RELAY-HUB-MISSING-SCREENS` - `waiting_review`
-
-No Ledger implementation should begin until Claude/Darrin reconcile v1 vs v2 authority.
-
-Relay v0.3 is canonical. A52 and A54 are waiting review. A53 is accepted.
-
-## Boundaries
-
-- No commit, stage, push, or PR was done.
-- Do not write to `C:\panda-gallery` unless Darrin/dispatch explicitly authorizes it.
-- PAH compact cockpit remains read-only for compose/send/standing permission grants/watcher startup.
-- The relay cache is local ignored state, not authority.
-- The normal handoff automation was blocked because it may include GitHub backup/export; this handoff is local-only.
 
 ## Fresh Chat Resume Prompt
 
@@ -168,21 +99,14 @@ Remember:
 - All Codex files stay under C:\CODEX PG
 - Every Codex folder starts with CODEX
 - C:\panda-gallery is read-only reference only
-- Do not commit, push, or write to C:\panda-gallery unless Darrin explicitly asks
-- Use the relay fast path:
-  1. Read C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_ACTIVE_DISPATCH_INDEX.md
-  2. Read C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_CURRENT_AUTHORITY.md
-  3. Run C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1 -NoFail
-  4. Only read mail flagged as new/unindexed or relevant to an active row
+- Continue from the latest handoff
 
-Continue from the latest handoff.
-
-Latest local-only handoff generated: 2026-04-28 15:24:30 -07:00
+Latest automated handoff generated: 2026-04-29 15:47:48 -07:00
 ```
 
 ## Trigger Words
 
-- CODEX HANDOFF: prefer local-only handoff unless Darrin explicitly approves GitHub backup/export.
-- CODEX CHECKPOINT: ask before committing/pushing.
-- CODEX BACKUP: run GitHub backup only if Darrin explicitly asks.
+- CODEX HANDOFF: run full handoff plus GitHub backup.
+- CODEX CHECKPOINT: save a progress checkpoint plus GitHub backup.
+- CODEX BACKUP: run GitHub backup only.
 - CODEX RESUME PG: start a new chat from memory and handoff files.

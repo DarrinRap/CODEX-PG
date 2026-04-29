@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "receipt_type": "read_receipt",
+  "message_id": "CLAUDE-DESKTOP-20260429-122000-mailbox-protocol-v3-response",
+  "thread_id": "PAH-MAILBOX-PROTOCOL-V3",
+  "read_by": "codex",
+  "read_at": "2026-04-29T13:29:08-07:00",
+  "status": "received_and_replied",
+  "reply_message_id": "CODEX-20260429-132908-urgent-unread-mail-ack-and-protocol-response"
+}

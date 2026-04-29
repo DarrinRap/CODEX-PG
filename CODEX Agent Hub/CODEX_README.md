@@ -95,9 +95,10 @@ If that port is busy, the app picks a free local port and prints it.
 - Validation finding state for accepted legacy, resolved, and dismissed findings. Historical ledger issues can be preserved without staying active.
 - Backpressure detection for flooded threads; PAH flags more than 25 messages in 5 minutes or more than 50 visible messages in one thread.
 - Processed-message sidecars for idempotency. PAH records message content hashes and processed event names so restart/refresh cannot resend the same notification for the same message content.
+- Message discovery and classifier transition audit tracking. PAH records first-seen mailbox messages and logs `classifier_state_changed` events when a thread moves between states such as open-on-agent, open-on-Darrin, parked, owner-unknown, and closed.
 - Read/unread state and status badges for mailbox messages. PAH stores read state locally, keeps read messages read across path/key drift by matching stable message IDs, and marks changed message content unread again.
 - Closed-thread archive state for keeping completed threads out of the active thread list. Newer activity on an archived thread surfaces it again automatically.
-- Physical cleanup action for read Codex inbox messages. `Archive read` moves PAH-confirmed read files from `CODEX Inbox` into `CODEX Archive\Read Messages\YYYYMMDD`; unread and waiting-on-Darrin messages stay in place.
+- Physical cleanup action for read inbox messages. `Archive read` moves PAH-confirmed read files from active inboxes into each mailbox's `Archive\Inbox Cleanup\...` folder; unread, active agent-owned threads, waiting-on-Darrin, pending-dispatch, owner-unknown/unstructured, and `status: drafted_pending_*` pre-staged trigger messages stay in place. Pre-staged trigger messages are classified as parked and archive skips are reported as `pre_staged_pending_trigger`; active open-thread skips are reported as `active_thread_without_completion_evidence`. Archive destination collisions are preserved with unique filenames and reported as `archive_conflicts` with requested and final destinations.
 - Token-protected write endpoints for compose and notification tests.
 
 ## Claude Code Bridge Model
@@ -132,6 +133,57 @@ C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_route_test_state.local.json
 ```
 
 The test passes only when PAH later sees a matching reply in `CODEX Inbox` by `Thread-ID`, `Reply-To`, or test ID reference.
+
+## Operational Protocol
+
+Live local URL:
+
+```text
+http://127.0.0.1:8765/
+```
+
+Known-good hidden server command:
+
+```powershell
+python "C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub.py" --port 8765 --no-browser --no-port-fallback
+```
+
+Primary health checks:
+
+```text
+http://127.0.0.1:8765/api/health
+http://127.0.0.1:8765/api/cockpit
+http://127.0.0.1:8765/api/status
+```
+
+Periodic steward run:
+
+```powershell
+python "C:\CODEX PG\CODEX Agent Hub\CODEX_pah_periodic_health_check.py"
+```
+
+The steward report records `schedule.interval_minutes`, `schedule.last_run_started_at`, and `schedule.next_run_after`. The default interval is 10 minutes and can be overridden for a launcher or automation with `PAH_PERIODIC_HEALTH_INTERVAL_MINUTES`.
+
+Deep inspector run:
+
+```powershell
+python "C:\CODEX PG\CODEX Agent Hub\CODEX_pah_inspector.py"
+```
+
+The inspector checks live endpoints, create-message dry-run behavior, internal mailbox/message contracts, archive-read dry-run behavior, interaction-ledger coverage, dashboard UI/API wiring, and current communication backlog. It writes JSON and Markdown reports to `CODEX logs\CODEX_pah_inspector_latest.json` and `CODEX logs\CODEX_pah_inspector_latest.md`.
+
+`Archive read` is intentionally conservative. It may move read, structured, completed/closed mailbox files into `Archive\Inbox Cleanup\...`; it must not move unread mail, active agent-owned threads, waiting-on-Darrin items, pending dispatches without completion evidence, owner-unknown/unstructured mail, or `status: drafted_pending_*` pre-staged trigger artifacts. The archive-read result reports skip reasons including `active_thread_without_completion_evidence`, `pending_dispatch_without_completion_evidence`, `pre_staged_pending_trigger`, `waiting_on_darrin`, and `owner_unknown_or_unstructured`. If a destination filename already exists, PAH uses a unique destination, does not overwrite the existing file, and reports `archive_conflicts`.
+
+Operational logs and state:
+
+```text
+C:\CODEX PG\CODEX Agent Hub\CODEX logs\CODEX_pah_interaction_ledger.jsonl
+C:\CODEX PG\CODEX Agent Hub\CODEX logs\CODEX_pah_sweep_audit.md
+C:\CODEX PG\CODEX Agent Hub\CODEX logs\CODEX_pah_periodic_health_latest.json
+C:\CODEX PG\CODEX Agent Hub\CODEX logs\CODEX_pah_inspector_latest.json
+C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_message_audit_state.local.json
+C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_route_test_state.local.json
+```
 
 ## Work Board
 

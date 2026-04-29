@@ -52,6 +52,7 @@ $script:StartedServer = $false
 $script:RestartAttempts = 0
 $script:LastAlertKey = ''
 $script:LastStaleUnread = -1
+$script:LastUrgentCodex = -1
 $script:LastAlertAt = [datetime]::MinValue
 $script:AlertsEnabled = $false
 $script:SnoozeUntil = [datetime]::MaxValue
@@ -104,6 +105,7 @@ function Start-PahServer {
         '127.0.0.1',
         '--port',
         "$Port",
+        '--no-port-fallback',
         '--no-browser'
     )
     $script:Process = Start-Process -FilePath python -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $Stdout -RedirectStandardError $Stderr -PassThru
@@ -169,8 +171,10 @@ function Dismiss-CurrentAlerts {
     $status = Invoke-PahJson '/api/tray-status'
     if ($null -ne $status) {
         $stale = [int]$status.counts.stale_unread
-        $script:LastAlertKey = "$($status.level)|$stale"
+        $urgent = [int]$status.counts.urgent_codex_requests
+        $script:LastAlertKey = "$($status.level)|$stale|$urgent"
         $script:LastStaleUnread = $stale
+        $script:LastUrgentCodex = $urgent
     }
     $script:LastAlertAt = Get-Date
     $script:AlertsEnabled = $false
@@ -186,6 +190,7 @@ function Set-TrayMenuStatus {
     if ($null -eq $Status) {
         $StatusItem.Text = 'Status: offline'
         $UnreadItem.Text = 'Unread: unknown'
+        $UrgentItem.Text = 'Urgent: unknown'
         $DecisionItem.Text = 'Decisions: unknown'
         $DiagnosticItem.Text = 'Diagnostics: unknown'
         $NotifyIcon.Text = 'PAH offline'
@@ -194,6 +199,7 @@ function Set-TrayMenuStatus {
     $counts = $Status.counts
     $StatusItem.Text = "Status: $($Status.title)"
     $UnreadItem.Text = "Unread: $($counts.unread), overdue: $($counts.stale_unread)"
+    $UrgentItem.Text = "Urgent: $($counts.urgent_codex_requests)"
     $DecisionItem.Text = "Decisions: $($counts.decisions_needed)"
     $DiagnosticItem.Text = "Diagnostics: $($counts.diagnostic_problems)"
     $NotifyIcon.Text = Limit-Text $Status.tooltip 63
@@ -212,18 +218,20 @@ function Update-TrayStatus {
     }
 
     $stale = [int]$status.counts.stale_unread
-    $alertKey = "$($status.level)|$stale"
+    $urgent = [int]$status.counts.urgent_codex_requests
+    $alertKey = "$($status.level)|$stale|$urgent"
     if (
-        $stale -gt 0 -and
+        ($stale -gt 0 -or $urgent -gt 0) -and
         (Alerts-AreActive) -and
         (Alert-CooldownElapsed) -and
-        ($script:LastAlertKey -ne $alertKey -or $stale -gt $script:LastStaleUnread)
+        ($script:LastAlertKey -ne $alertKey -or $stale -gt $script:LastStaleUnread -or $urgent -gt $script:LastUrgentCodex)
     ) {
         Show-PahBalloon $status.title $status.body 10000
         $script:LastAlertAt = Get-Date
     }
     $script:LastAlertKey = $alertKey
     $script:LastStaleUnread = $stale
+    $script:LastUrgentCodex = $urgent
     Update-AlertMenuText
 }
 
@@ -295,6 +303,8 @@ $StatusItem = $Menu.Items.Add('Status: starting')
 $StatusItem.Enabled = $false
 $UnreadItem = $Menu.Items.Add('Unread: checking')
 $UnreadItem.Enabled = $false
+$UrgentItem = $Menu.Items.Add('Urgent: checking')
+$UrgentItem.Enabled = $false
 $DecisionItem = $Menu.Items.Add('Decisions: checking')
 $DecisionItem.Enabled = $false
 $DiagnosticItem = $Menu.Items.Add('Diagnostics: checking')

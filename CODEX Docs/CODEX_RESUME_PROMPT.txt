@@ -13,13 +13,6 @@ Remember:
 - All Codex files stay under C:\CODEX PG
 - Every Codex folder starts with CODEX
 - C:\panda-gallery is read-only reference only
-- Do not commit, push, or write to C:\panda-gallery unless Darrin explicitly asks
-- Use the relay fast path:
-  1. Read C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_ACTIVE_DISPATCH_INDEX.md
-  2. Read C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX_CURRENT_AUTHORITY.md
-  3. Run C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1 -NoFail
-  4. Only read mail flagged as new/unindexed or relevant to an active row
+- Continue from the latest handoff
 
-Continue from the latest handoff.
-
-Latest local-only handoff generated: 2026-04-28 15:24:30 -07:00
+Latest automated handoff generated: 2026-04-29 15:47:48 -07:00
