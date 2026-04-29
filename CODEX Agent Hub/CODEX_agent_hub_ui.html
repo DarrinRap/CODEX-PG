@@ -22,7 +22,7 @@
   --focus: rgba(232, 168, 124, .42);
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; overflow: hidden; }
+html, body { min-height: 100%; overflow: auto; }
 body {
   margin: 0;
   background: var(--canvas);
@@ -52,15 +52,14 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 button[disabled] { opacity: .48; cursor: default; }
 
 .app {
-  height: 100vh;
-  min-width: 980px;
-  min-height: 620px;
+  min-height: 100vh;
+  min-width: 0;
   display: grid;
   grid-template-rows: 64px 1fr 44px;
 }
 .topbar {
   display: grid;
-  grid-template-columns: 260px 1fr auto;
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
   padding: 0 18px;
@@ -116,10 +115,10 @@ button[disabled] { opacity: .48; cursor: default; }
 .main {
   min-height: 0;
   display: grid;
-  grid-template-columns: 220px minmax(420px, 1fr) 360px;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(280px, 360px);
   gap: 12px;
   padding: 12px;
-  overflow: hidden;
+  overflow: auto;
 }
 .panel {
   min-width: 0;
@@ -440,7 +439,7 @@ button.filter.active {
   padding: 9px;
   font: 12px/1.4 "Cascadia Mono", Consolas, monospace;
 }
-.how-box, .checks-box, .session-box {
+.how-box, .checks-box, .session-box, .scope-box {
   border: 1px solid var(--border);
   border-radius: 7px;
   background: #161624;
@@ -448,7 +447,24 @@ button.filter.active {
   display: grid;
   gap: 8px;
 }
-.how-title, .checks-title, .session-title { color: var(--accent); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.scope-box[hidden] { display: none; }
+.scope-box {
+  border-color: rgba(215, 184, 107, .56);
+  background: rgba(215, 184, 107, .06);
+}
+.scope-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(224, 221, 213, .08);
+  color: var(--muted);
+  font-size: 12px;
+}
+.scope-row:first-child { border-top: 0; padding-top: 0; }
+.scope-label { color: var(--quiet); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.scope-value { min-width: 0; overflow-wrap: anywhere; }
+.how-title, .checks-title, .session-title, .scope-title { color: var(--accent); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 .how-list { margin: 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
 .how-list li { margin: 3px 0; }
 .session-copy { color: var(--muted); font-size: 12px; }
@@ -502,13 +518,201 @@ button.filter.active {
 }
 .diag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .footer strong { color: var(--muted); }
+.quiet-home {
+  display: none;
+  min-height: 460px;
+  padding: 34px 28px;
+  place-items: center;
+  text-align: center;
+}
+.quiet-card {
+  width: min(900px, 100%);
+  display: grid;
+  gap: 16px;
+}
+.quiet-kicker {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.quiet-title {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.quiet-copy {
+  margin: 0 auto;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.quiet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.quiet-actions button { min-width: 150px; }
+.mailbox-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(132px, 1fr));
+  gap: 14px;
+  margin: 8px 0 2px;
+}
+.mailbox-card {
+  min-height: 214px;
+  padding: 14px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #191929;
+  color: var(--text);
+  display: grid;
+  grid-template-rows: 88px auto auto auto;
+  justify-items: center;
+  gap: 8px;
+}
+.mailbox-card:hover {
+  border-color: rgba(232, 168, 124, .56);
+  background: #1e1e31;
+}
+.mailbox-card.hot {
+  border-color: rgba(215, 184, 107, .72);
+  box-shadow: inset 0 -3px 0 rgba(215, 184, 107, .72);
+}
+.mailbox-graphic {
+  position: relative;
+  width: 92px;
+  height: 82px;
+}
+.mailbox-box {
+  position: absolute;
+  left: 10px;
+  top: 18px;
+  width: 66px;
+  height: 44px;
+  border: 3px solid #d9c8a6;
+  border-radius: 26px 26px 8px 8px;
+  background: linear-gradient(180deg, #e8a87c 0%, #b9694f 100%);
+  box-shadow: inset 0 -8px 0 rgba(36, 21, 14, .22);
+}
+.mailbox-door {
+  position: absolute;
+  left: 28px;
+  top: 38px;
+  width: 28px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(36, 21, 14, .62);
+}
+.mailbox-flag {
+  position: absolute;
+  right: 2px;
+  top: 20px;
+  width: 26px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--warn);
+  transform-origin: left center;
+}
+.mailbox-flag::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 4px;
+  height: 38px;
+  border-radius: 999px;
+  background: #d9c8a6;
+}
+.mailbox-card.clear .mailbox-flag {
+  transform: rotate(90deg);
+  background: var(--quiet);
+}
+.mailbox-post {
+  position: absolute;
+  left: 39px;
+  top: 62px;
+  width: 12px;
+  height: 20px;
+  border-radius: 3px 3px 0 0;
+  background: #d9c8a6;
+}
+.mailbox-number {
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 900;
+}
+.mailbox-label {
+  font-size: 15px;
+  font-weight: 900;
+}
+.mailbox-note {
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 16px;
+}
+body.quiet-mode .app { grid-template-rows: auto 1fr; }
+body.quiet-mode .main {
+  grid-template-columns: minmax(0, 760px);
+  justify-content: center;
+  align-content: center;
+  overflow: visible;
+}
+body.quiet-mode .main > .panel:first-child,
+body.quiet-mode .detail-panel,
+body.quiet-mode .queue-panel > .panel-head,
+body.quiet-mode .inbox-strip,
+body.quiet-mode .guide-card,
+body.quiet-mode .summary-strip,
+body.quiet-mode .filter-row,
+body.quiet-mode .queue-panel > .scroll,
+body.quiet-mode .footer {
+  display: none;
+}
+body.quiet-mode .queue-panel {
+  min-height: 560px;
+  grid-template-rows: 1fr;
+  border: 0;
+  background: transparent;
+}
+body.quiet-mode .quiet-home { display: grid; }
+body.quiet-mode .top-actions .toggle,
+body.quiet-mode .top-actions #archiveRead,
+body.quiet-mode .top-actions #shortcutHelp,
+body.quiet-mode .top-actions button[disabled] {
+  display: none;
+}
 @media (max-width: 1160px) {
-  .app { min-width: 900px; }
-  .main { grid-template-columns: 196px minmax(390px, 1fr) 320px; }
+  .app { min-width: 0; grid-template-rows: auto 1fr auto; }
+  .topbar { grid-template-columns: 1fr; align-items: start; gap: 8px; padding: 10px 12px; }
+  .status-line { flex-wrap: wrap; white-space: normal; }
+  .top-actions { flex-wrap: wrap; }
+  .main { grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); overflow: visible; }
+  .detail-panel { grid-column: 1 / -1; min-height: 360px; }
   .summary-strip { grid-template-columns: 1fr; }
   .guide-steps { grid-template-columns: 1fr; }
   .summary { min-height: 40px; }
   .summary strong { font-size: 20px; }
+  .mailbox-grid { grid-template-columns: repeat(2, minmax(132px, 1fr)); }
+}
+@media (max-width: 720px) {
+  .app, .topbar, .main, .footer { width: 100%; max-width: 100vw; min-width: 0; }
+  .main { grid-template-columns: minmax(0, 1fr); padding: 8px; gap: 8px; }
+  .panel { width: 100%; min-width: 0; min-height: 260px; }
+  .brand, .status-line, .top-actions, .diag, .footer strong { min-width: 0; max-width: 100%; }
+  .top-actions > * { flex: 1 1 auto; }
+  .inbox-strip, .summary-strip, .guide-steps { grid-template-columns: minmax(0, 1fr); }
+  .filter-row, .detail-actions { flex-wrap: wrap; }
+  .queue-search { width: 100%; min-width: 0; }
+  .footer { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 44px; padding: 8px 12px; }
+  .footer strong { overflow-wrap: anywhere; white-space: normal; }
+  .mailbox-grid { grid-template-columns: minmax(0, 1fr); }
+  .mailbox-card { min-height: 176px; grid-template-rows: 72px auto auto auto; }
+  .mailbox-graphic { transform: scale(.84); transform-origin: top center; }
 }
 @media (max-height: 720px) {
   .app { grid-template-rows: 54px 1fr 38px; min-height: 580px; }
@@ -547,7 +751,7 @@ button.filter.active {
   <main class="main">
     <section class="panel">
       <div class="panel-head">
-        <div class="panel-title">Agents</div>
+        <div class="panel-title">Participants</div>
         <div class="count" id="agentCount">0</div>
       </div>
       <div class="scroll">
@@ -557,8 +761,21 @@ button.filter.active {
 
     <section class="panel queue-panel">
       <div class="panel-head">
-        <div class="panel-title">Triage Queue</div>
+        <div class="panel-title">Open Threads</div>
         <div class="count" id="queueCount">0</div>
+      </div>
+      <div class="quiet-home" id="quietHome">
+        <div class="quiet-card">
+          <div class="quiet-kicker">Unread mailbox watch</div>
+          <h1 class="quiet-title">Mailboxes</h1>
+          <p class="quiet-copy">Unread messages waiting in each inbox.</p>
+          <div class="mailbox-grid" id="mailboxGrid"></div>
+          <div class="quiet-actions">
+            <button id="quietAgents">Open on agents <strong id="quietAgentsCount">0</strong></button>
+            <button id="quietBrowse">Browse all</button>
+            <button id="quietDiagnostics">Diagnostics</button>
+          </div>
+        </div>
       </div>
       <div class="inbox-strip" id="inboxStrip"></div>
       <div class="guide-card">
@@ -568,19 +785,19 @@ button.filter.active {
         </div>
         <div class="guide-breakdown" id="guideBreakdown"></div>
       <div class="guide-steps">
-        <div class="guide-step"><strong>1. Review</strong><span>Oldest actionable item stays selected.</span></div>
-        <div class="guide-step"><strong>2. Act</strong><span>Use the buttons or wake line on the right.</span></div>
-        <div class="guide-step"><strong>3. Clear</strong><span>Dismiss, snooze, or resolve when done.</span></div>
+        <div class="guide-step"><strong>1. You</strong><span>Only threads that appear to need Darrin.</span></div>
+        <div class="guide-step"><strong>2. Agents</strong><span>What the AIs appear to owe next.</span></div>
+        <div class="guide-step"><strong>3. Browse</strong><span>History and diagnostics stay secondary.</span></div>
       </div>
       </div>
       <div class="summary-strip" id="summaryStrip"></div>
       <div class="notice" id="notice" hidden></div>
       <div class="filter-row">
         <span class="filter-label">Show</span>
-        <button class="filter active" data-filter="wake">Wake-ups</button>
-        <button class="filter" data-filter="decision">Decisions</button>
+        <button class="filter active" data-filter="you">Open on you</button>
+        <button class="filter" data-filter="agents">Open on agents</button>
         <button class="filter" data-filter="diagnostics">Diagnostics</button>
-        <button class="filter" data-filter="all">All</button>
+        <button class="filter" data-filter="all">Browse all</button>
         <span class="spacer"></span>
         <input class="queue-search" id="queueSearch" placeholder="Find in queue" aria-label="Find in current queue">
         <label class="toggle"><input type="checkbox" id="showSnoozed"> Snoozed</label>
@@ -607,6 +824,7 @@ button.filter.active {
             <div class="message-preview-body message-preview-empty" id="messagePreview">Select an alert to preview its message here.</div>
           </div>
           <div class="fact-grid" id="factGrid"></div>
+          <div class="scope-box" id="scopeBox" hidden></div>
           <div class="wake-box">
             <div class="wake-label">Wake line</div>
             <div class="wake-line" id="wakeLine">No wake needed.</div>
@@ -665,7 +883,7 @@ button.filter.active {
 const WRITE_TOKEN = "__WRITE_TOKEN__";
 let cockpit = null;
 let selected = null;
-let queueFilter = 'wake';
+let queueFilter = 'you';
 let agentFilter = '';
 let selectedAgentId = '';
 let queueSearch = '';
@@ -703,12 +921,20 @@ function fmtAge(seconds) {
   if (minutes) return `${minutes}m`;
   return `${total}s`;
 }
+function compactGitLabel(value) {
+  const text = String(value || '');
+  if (!text) return 'git';
+  if (text.includes('\n') || text.length > 90) return 'Working tree has changes';
+  return text;
+}
 function itemAgeSeconds(item) {
-  const match = String(item?.summary || '').match(/Unread\s+(\d+)s/i);
-  return match ? Number(match[1]) : 0;
+  return Number(item?.age_seconds || 0);
 }
 function itemTarget(item) {
-  return String(item?.primary_action || '').replace(/^Wake\s+/i, '') || 'unknown';
+  return String(item?.owner_label || item?.agent_label || item?.primary_action || '').replace(/^Wake\s+/i, '') || 'unknown';
+}
+function threadFocus() {
+  return cockpit?.thread_focus || {counts: {}, open_on_darrin: [], open_on_agent: [], parked: [], closed: [], all: []};
 }
 function agentName(agentId) {
   const agent = (cockpit?.agents || []).find(candidate => candidate.id === agentId);
@@ -721,11 +947,25 @@ function selectedAgent() {
 function agentActionCount(agentId) {
   if (!agentId) return 0;
   const queue = cockpit?.action_queue || [];
-  if (agentId === 'darrin') return queue.filter(item => item.kind === 'decision').length;
-  return queue.filter(item => item.kind === 'wake' && itemTarget(item) === agentId).length;
+  if (agentId === 'darrin') return queue.filter(item => item.kind === 'you').length;
+  return queue.filter(item => item.kind === 'agent' && String(item.owner_label || item.agent_label || '').toLowerCase().includes(agentName(agentId).toLowerCase())).length;
 }
 function agentFocusFilter(agentId) {
-  return agentId === 'darrin' ? 'decision' : 'wake';
+  return agentId === 'darrin' ? 'you' : 'agents';
+}
+function focusMailbox(agentId) {
+  selectedAgentId = agentId || 'darrin';
+  agentFilter = '';
+  queueFilter = 'mailbox';
+  const visible = filteredQueue();
+  selected = visible[0] || null;
+  prefs.queueFilter = queueFilter;
+  prefs.agentFilter = '';
+  prefs.selectedAgentId = selectedAgentId;
+  prefs.queueSearch = queueSearch;
+  prefs.selectedId = selected?.id || '';
+  savePrefs();
+  render();
 }
 function focusAgent(agentId) {
   selectedAgentId = agentId || '';
@@ -744,7 +984,7 @@ function focusAgent(agentId) {
 function focusPanel(filter) {
   selectedAgentId = '';
   agentFilter = '';
-  queueFilter = filter || 'wake';
+  queueFilter = filter || 'you';
   const visible = filteredQueue();
   selected = visible[0] || null;
   prefs.queueFilter = queueFilter;
@@ -795,7 +1035,17 @@ function selectRelative(delta) {
   render();
 }
 function showShortcutHelp() {
-  setNotice('Shortcuts: / search, J/K next/previous, O open message, C copy wake line, U dismiss alert, S snooze 15m, R run diagnostics, Esc clear search, ? show this help.', 'ok');
+  setNotice('Shortcuts: / search, J/K next/previous, Enter open selected, O open message, C copy wake line, U dismiss alert, S snooze 15m, R run diagnostics, Ctrl+R refresh, Esc clear search, ? show this help.', 'ok');
+}
+function activateSelectedAction() {
+  if (!selected) return;
+  for (const id of ['openMessage', 'copyWake', 'runDiagnostics']) {
+    const button = document.getElementById(id);
+    if (button && !button.hidden && !button.disabled) {
+      button.click();
+      return;
+    }
+  }
 }
 function parentPath(pathValue) {
   const text = String(pathValue || '');
@@ -851,7 +1101,7 @@ function diagnosticItems() {
     title: `${route.name}: ${route.status}`,
     summary: route.hold_reason || `Last checked ${fmtTime(route.last_check_iso)}.`,
     primary_action: route.status === 'held' ? 'Review hold' : 'Review route',
-    secondary_action: route.latency_ms ? `${route.latency_ms}ms` : 'No write',
+    secondary_action: route.latency_ms == null ? 'n/a' : `${route.latency_ms}ms`,
     thread_id: route.id,
     message_path: '',
     wake_line: '',
@@ -859,6 +1109,9 @@ function diagnosticItems() {
   }));
   const diagnostics = cockpit?.diagnostics || {};
   const git = cockpit?.git || {};
+  const relay = diagnostics.relay_health || {};
+  const relayCounts = relay.counts || {};
+  const relayCache = relay.cache || {};
   return [
     ...routes,
     {
@@ -873,6 +1126,19 @@ function diagnosticItems() {
       message_path: '',
       wake_line: '',
       diagnostic: diagnostics,
+    },
+    {
+      id: 'diag-relay-health',
+      kind: 'diagnostic',
+      severity: relay.ok ? 'ok' : relay.severity === 'error' ? 'err' : 'warn',
+      title: relay.ok ? 'Relay health OK' : 'Relay health needs review',
+      summary: relay.status_label || 'Relay health checker has not run.',
+      primary_action: 'Review relay health',
+      secondary_action: `${relayCounts.active_rows || 0} active · ${relayCache.hits || 0} cached`,
+      thread_id: 'relay-health',
+      message_path: '',
+      wake_line: '',
+      diagnostic: relay,
     },
     {
       id: 'diag-git',
@@ -897,11 +1163,18 @@ function humanSummary(item) {
   return item.summary || '';
 }
 function filteredQueue() {
-  const queue = queueFilter === 'diagnostics' ? diagnosticItems() : cockpit?.action_queue || [];
+  const diagnosticView = queueFilter === 'diagnostics';
+  if (queueFilter === 'mailbox') return mailboxQueue(selectedAgentId || 'darrin');
+  const queue = diagnosticView ? diagnosticItems() : cockpit?.action_queue || [];
   let visible = queue;
-  if (queueFilter === 'decision') visible = queue.filter(item => item.kind === 'decision');
-  else if (queueFilter === 'wake') visible = queue.filter(item => item.kind === 'wake');
-  if (agentFilter) visible = visible.filter(item => itemTarget(item) === agentFilter);
+  if (queueFilter === 'you') visible = queue.filter(item => item.kind === 'you');
+  else if (queueFilter === 'agents') visible = queue.filter(item => item.kind === 'agent');
+  else if (queueFilter === 'closed') visible = queue.filter(item => item.kind === 'closed' || item.kind === 'parked');
+  else if (queueFilter === 'all') visible = queue.filter(item => item.kind !== 'closed' || queueSearch.trim());
+  if (agentFilter) {
+    const agentText = agentName(agentFilter).toLowerCase();
+    visible = visible.filter(item => String(item.owner_label || item.agent_label || item.summary || '').toLowerCase().includes(agentText));
+  }
   if (!prefs.showSnoozed) visible = visible.filter(item => !snoozeUntilFor(item));
   const term = queueSearch.trim().toLowerCase();
   if (term) {
@@ -915,11 +1188,31 @@ function filteredQueue() {
       item.wake_line,
     ].some(value => String(value || '').toLowerCase().includes(term)));
   }
+  const sourceOrder = new Map(queue.map((item, index) => [item.id, index]));
   return [...visible].sort((a, b) => {
-    if (a.kind === 'wake' || b.kind === 'wake') return itemAgeSeconds(b) - itemAgeSeconds(a);
-    if (a.kind === 'diagnostic' || b.kind === 'diagnostic') return severityRank(b.severity) - severityRank(a.severity);
-    return String(a.title || '').localeCompare(String(b.title || ''));
+    if (diagnosticView) return severityRank(b.severity) - severityRank(a.severity);
+    return (sourceOrder.get(a.id) ?? 9999) - (sourceOrder.get(b.id) ?? 9999);
   });
+}
+function mailboxQueue(agentId) {
+  const id = agentId || 'darrin';
+  const items = cockpit?.mailbox_messages?.[id] || [];
+  return items.map(item => ({
+    id: item.message_id || item.path,
+    kind: 'mailbox',
+    severity: item.unread ? 'warn' : 'ok',
+    title: item.title || item.name || 'Mailbox message',
+    summary: item.summary || '',
+    primary_action: 'Open message',
+    secondary_action: item.unread ? 'Unread' : 'Read',
+    message_path: item.path || item.message_path || '',
+    thread_id: item.thread_id || '',
+    age_seconds: item.age_seconds || 0,
+    agent_label: agentName(id),
+    owner_label: agentName(id),
+    wake_line: '',
+    source_message: item,
+  }));
 }
 function severityRank(value) {
   if (value === 'err') return 3;
@@ -937,6 +1230,9 @@ function statusClass(value) {
 function kindClass(kind) {
   if (kind === 'wake') return 'wake';
   if (kind === 'decision') return 'decision';
+  if (kind === 'you') return 'decision';
+  if (kind === 'agent') return 'wake';
+  if (kind === 'closed' || kind === 'parked') return 'unread';
   if (kind === 'diagnostic') return 'unread';
   return 'unread';
 }
@@ -1096,23 +1392,31 @@ function emptyCockpit() {
 function render() {
   const state = cockpit.cockpit_state || {};
   const counts = state.counts || {};
-  const queue = cockpit.action_queue || [];
   const visibleQueue = filteredQueue();
-  const stale = counts.stale_unread || 0;
-  const decisions = counts.decisions_needed || 0;
+  if (!visibleQueue.length) selected = null;
+  else if (!visibleQueue.some(item => item.id === selected?.id)) selected = visibleQueue[0];
+  const openOnYou = counts.open_on_darrin || 0;
+  const openOnAgents = counts.open_on_agent || 0;
+  const mailboxUnread = (cockpit.agents || []).reduce((total, agent) => total + Number(agent.unread_count || 0), 0);
+  const quietHome = queueFilter === 'you' && !openOnYou && !queueSearch.trim();
+  document.body.classList.toggle('quiet-mode', quietHome);
   const systemText = queueFilter === 'diagnostics'
     ? 'Diagnostics view'
-    : stale
-    ? `${stale} message${stale === 1 ? '' : 's'} need wake-up`
-    : decisions
-      ? `${decisions} decision${decisions === 1 ? '' : 's'} waiting`
-      : 'No urgent action';
+    : queueFilter === 'mailbox'
+    ? `${agentName(selectedAgentId || 'darrin')} mailbox`
+    : quietHome
+    ? `${mailboxUnread} unread mailbox message${mailboxUnread === 1 ? '' : 's'}`
+    : openOnYou
+    ? `${openOnYou} thread${openOnYou === 1 ? '' : 's'} open on you`
+    : 'All clear';
   document.getElementById('systemState').textContent = systemText;
   document.getElementById('asOf').textContent = `as of ${fmtTime(state.as_of_iso || cockpit.generated_at)}`;
   document.getElementById('queueCount').textContent = visibleQueue.length;
-  document.getElementById('gitState').textContent = cockpit.git?.status_label || 'git';
-  renderGuide(stale, decisions);
+  document.getElementById('gitState').textContent = compactGitLabel(cockpit.git?.status_label || 'git');
+  document.getElementById('quietAgentsCount').textContent = openOnAgents;
+  renderGuide(openOnYou, openOnAgents);
   renderAgents(cockpit.agents || []);
+  renderMailboxGrid(cockpit.agents || []);
   renderInboxStatus(cockpit.agents || []);
   renderSummary(counts, cockpit.diagnostics || {});
   currentVisibleQueue = visibleQueue;
@@ -1123,51 +1427,54 @@ function render() {
   renderDiagnostics(cockpit.diagnostics || {});
   renderActivity();
 }
-function renderGuide(stale, decisions) {
-  const wakeItems = (cockpit.action_queue || []).filter(item => item.kind === 'wake');
-  const oldest = wakeItems.reduce((max, item) => Math.max(max, itemAgeSeconds(item)), 0);
-  const threshold = cockpit.cockpit_state?.stale_unread_threshold_seconds || 60;
+function renderGuide(openOnYou, openOnAgents) {
   const title = queueFilter === 'diagnostics'
     ? 'Diagnostics show route, watcher, git, and validation health'
+    : queueFilter === 'mailbox'
+      ? `${agentName(selectedAgentId || 'darrin')} mailbox`
     : agentFilter
       ? `${agentName(agentFilter)} queue`
     : selectedAgentId === 'darrin'
-      ? 'Darrin decision queue'
-    : stale
-    ? `${stale} overdue message${stale === 1 ? '' : 's'} need action`
-    : decisions
-      ? `${decisions} decision${decisions === 1 ? '' : 's'} need Darrin`
-      : 'Triage queue is clear';
+      ? 'Open on you'
+    : queueFilter === 'agents'
+      ? `${openOnAgents} thread${openOnAgents === 1 ? '' : 's'} open on agents`
+    : queueFilter === 'all'
+      ? 'Browse all active threads'
+    : openOnYou
+      ? `${openOnYou} thread${openOnYou === 1 ? '' : 's'} open on you`
+      : 'All clear';
   const copy = queueFilter === 'diagnostics'
     ? 'Check this when PAH feels off: mailbox routes, watcher hold state, diagnostics, and git health are all summarized here.'
+    : queueFilter === 'mailbox'
+      ? 'Unread messages currently waiting in this mailbox. Pick one to preview or open the source file.'
     : agentFilter
-      ? 'Review this agent only. Pick a queue item, then use Action Detail to wake, snooze, dismiss, or inspect the source message.'
+      ? 'This view is filtered to one participant. Pick a thread to inspect the source message.'
     : selectedAgentId === 'darrin'
-      ? 'Review decisions, then resolve, defer, or ask an AI to follow up. PAH keeps the decision context beside the action controls.'
-    : stale
-    ? `Oldest first. Anything unread for ${fmtAge(threshold)} or longer is treated as actionable. The selected row opens its full controls on the right.${oldest ? ` Oldest is ${fmtAge(oldest)} overdue.` : ''}`
-    : decisions
-      ? 'Open Darrin decisions to approve, defer, or route follow-up work.'
-      : 'No inbox needs action. Refresh checks all PAH routes again.';
+      ? 'These are threads whose latest message appears to need Darrin. If this is empty, the dashboard should feel quiet.'
+    : queueFilter === 'agents'
+      ? 'These are threads where an AI appears to owe the next reply. This is useful context, not a demand on you.'
+    : queueFilter === 'all'
+      ? 'Browse is for history and debugging. The front-page truth is still Open on you.'
+    : openOnYou
+      ? 'This list is computed from the latest message in each thread, not from old unread flags.'
+      : 'No thread currently appears to need Darrin. Browse and Diagnostics stay available when you want the machinery.';
   document.getElementById('guideTitle').textContent = title;
   document.getElementById('guideCopy').textContent = copy;
-  renderGuideBreakdown(wakeItems, decisions);
+  renderGuideBreakdown(openOnYou, openOnAgents);
 }
-function renderGuideBreakdown(wakeItems, decisions) {
-  const counts = {};
-  wakeItems.forEach(item => {
-    const target = itemTarget(item);
-    counts[target] = (counts[target] || 0) + 1;
-  });
-  const pills = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([target, count]) => `<button class="mini-pill ${target === agentFilter ? 'active' : ''}" data-agent="${esc(target)}"><strong>${esc(count)}</strong>${esc(target)}</button>`);
-  if (decisions) pills.push(`<button class="mini-pill ${selectedAgentId === 'darrin' ? 'active' : ''}" data-agent="darrin"><strong>${esc(decisions)}</strong>Darrin decision${decisions === 1 ? '' : 's'}</button>`);
-  setHTML('guideBreakdown', pills.length ? pills.join('') : '<span class="mini-pill">No overdue wake-ups</span>');
+function renderGuideBreakdown(openOnYou, openOnAgents) {
+  const pills = [
+    `<button class="mini-pill ${queueFilter === 'you' ? 'active' : ''}" data-filter="you"><strong>${esc(openOnYou)}</strong>open on you</button>`,
+    `<button class="mini-pill ${queueFilter === 'agents' ? 'active' : ''}" data-filter="agents"><strong>${esc(openOnAgents)}</strong>open on agents</button>`,
+  ];
+  setHTML('guideBreakdown', pills.join(''));
   document.querySelectorAll('button.mini-pill[data-agent]').forEach(button => {
     button.addEventListener('click', () => {
       focusAgent(button.dataset.agent || '');
     });
+  });
+  document.querySelectorAll('button.mini-pill[data-filter]').forEach(button => {
+    button.addEventListener('click', () => focusPanel(button.dataset.filter || 'you'));
   });
 }
 function renderFilters() {
@@ -1193,23 +1500,30 @@ function renderFilters() {
   deleteVisible.disabled = bulkDisabled;
   dismissVisible.textContent = visibleMessages.length ? `Dismiss visible (${visibleMessages.length})` : 'Dismiss visible';
   deleteVisible.textContent = visibleMessages.length ? `Delete visible (${visibleMessages.length})` : 'Delete visible';
+  dismissVisible.hidden = queueFilter === 'you' || queueFilter === 'agents' || bulkDisabled;
+  deleteVisible.hidden = queueFilter === 'you' || queueFilter === 'agents' || bulkDisabled;
 }
 function renderAgents(agents) {
   document.getElementById('agentCount').textContent = agents.length;
+  const counts = cockpit?.cockpit_state?.counts || {};
   setHTML('agentList', agents.map(agent => {
     const actionCount = agentActionCount(agent.id);
-    const actionLabel = agent.id === 'darrin' ? 'open decisions' : actionCount ? 'open wake-ups' : 'open details';
+    const displayCount = agent.id === 'darrin' ? Number(counts.open_on_darrin || 0) : actionCount;
+    const statusLabel = agent.id === 'darrin'
+      ? (displayCount ? 'open on you' : 'all clear')
+      : (displayCount ? 'open on agents' : 'quiet');
+    const actionLabel = agent.id === 'darrin' ? 'open on you' : actionCount ? 'open on agents' : 'open details';
     const inboxLabel = agent.id === 'darrin'
-      ? `${esc(agent.count_value)} decision${Number(agent.count_value) === 1 ? '' : 's'} waiting`
-      : `${esc(agent.count_value)} message${Number(agent.count_value) === 1 ? '' : 's'} waiting`;
+      ? `${esc(counts.open_on_darrin || 0)} thread${Number(counts.open_on_darrin || 0) === 1 ? '' : 's'} open`
+      : `${esc(actionCount)} thread${Number(actionCount) === 1 ? '' : 's'} open`;
     return `
     <button class="agent ${agent.id === selectedAgentId ? 'selected' : ''}" data-agent-id="${esc(agent.id)}" title="Show ${esc(agent.display_name)} details and actions">
       <div class="avatar">${esc(agent.code)}</div>
       <div>
         <div class="agent-name"><span class="dot ${statusClass(agent.status)}"></span>${esc(agent.display_name)}</div>
-        <div class="agent-note" title="${esc(agent.summary_line)}">${esc(agent.status_label || agent.summary_line || 'Ready')}</div>
+        <div class="agent-note" title="${esc(statusLabel)}">${esc(statusLabel)}</div>
       </div>
-      <div class="agent-count">${esc(agent.count_value)} ${esc(agent.count_label)}</div>
+      <div class="agent-count">${esc(displayCount)} thread${Number(displayCount) === 1 ? '' : 's'}</div>
       <div class="agent-note">${inboxLabel}</div>
       <div class="agent-action">${esc(actionLabel)}</div>
     </button>
@@ -1220,31 +1534,71 @@ function renderAgents(agents) {
 }
 function renderInboxStatus(agents) {
   const lastCheck = latestMailboxCheck();
-  setHTML('inboxStrip', agents.map(agent => {
+  const counts = cockpit?.cockpit_state?.counts || {};
+  const rows = [
+    {id: 'darrin', display_name: 'Open on you', count_value: counts.open_on_darrin || 0, status: counts.open_on_darrin ? 'warn' : 'ok', label: 'thread(s)', filter: 'you'},
+    {id: 'agents', display_name: 'Open on agents', count_value: counts.open_on_agent || 0, status: counts.open_on_agent ? 'ok' : 'idle', label: 'thread(s)', filter: 'agents'},
+  ];
+  setHTML('inboxStrip', rows.map(agent => {
     const count = Number(agent.count_value || 0);
     const attention = agent.id === 'darrin' && count > 0;
     const tone = attention ? 'attention' : count > 0 ? 'waiting' : '';
-    const label = agent.id === 'darrin' ? 'decisions' : 'waiting';
+    const label = agent.label;
     const note = count > 0
       ? `${count} ${label}`
       : 'clear';
     return `
-      <button class="inbox-card ${esc(tone)} ${agent.id === selectedAgentId ? 'active' : ''}" data-agent-id="${esc(agent.id)}" title="Open ${esc(agent.display_name)} ${esc(label)}">
+      <button class="inbox-card ${esc(tone)} ${queueFilter === agent.filter ? 'active' : ''}" data-filter="${esc(agent.filter)}" title="Open ${esc(agent.display_name)}">
         <div class="inbox-top"><span class="inbox-name">${esc(agent.display_name)}</span><span class="dot ${statusClass(agent.status)}"></span></div>
         <div class="inbox-count">${esc(count)}</div>
         <div class="inbox-note">${esc(note)} · checked ${esc(fmtTime(lastCheck))}</div>
       </button>
     `;
   }).join(''));
-  document.querySelectorAll('button.inbox-card[data-agent-id]').forEach(button => {
-    button.addEventListener('click', () => focusAgent(button.dataset.agentId || ''));
+  document.querySelectorAll('button.inbox-card[data-filter]').forEach(button => {
+    button.addEventListener('click', () => focusPanel(button.dataset.filter || 'you'));
+  });
+}
+function renderMailboxGrid(agents) {
+  const byId = new Map((agents || []).map(agent => [agent.id, agent]));
+  const rows = [
+    ['darrin', 'Darrin', 'you'],
+    ['codex', 'Codex', 'codex'],
+    ['claude-desktop', 'Claude', 'claude-desktop'],
+    ['claude-code', 'CC', 'claude-code'],
+  ].map(([id, label, target]) => {
+    const agent = byId.get(id) || {};
+    const unread = Number(agent.unread_count ?? agent.count_value ?? 0);
+    const inboxTotal = Number(agent.inbound_count || 0);
+    const note = unread ? `${unread} unread of ${inboxTotal || unread}` : 'clear';
+    return {id, label, target, unread, note};
+  });
+  setHTML('mailboxGrid', rows.map(row => `
+    <button class="mailbox-card ${row.unread ? 'hot' : 'clear'}" data-mailbox-target="${esc(row.target)}" title="Show ${esc(row.label)} mailbox">
+      <div class="mailbox-graphic" aria-hidden="true">
+        <div class="mailbox-box"><span class="mailbox-door"></span></div>
+        <div class="mailbox-flag"></div>
+        <div class="mailbox-post"></div>
+      </div>
+      <div class="mailbox-number">${esc(row.unread)}</div>
+      <div class="mailbox-label">${esc(row.label)}</div>
+      <div class="mailbox-note">${esc(row.note)}</div>
+    </button>
+  `).join(''));
+  document.querySelectorAll('button.mailbox-card[data-mailbox-target]').forEach(button => {
+    button.addEventListener('click', () => {
+      const target = button.dataset.mailboxTarget || 'you';
+      if (target === 'you') focusPanel('you');
+      else focusAgent(target);
+    });
   });
 }
 function renderSummary(counts, diagnostics) {
   const diagProblems = Number(diagnostics.checks_warn || 0) + Number(diagnostics.checks_fail || 0);
   const cards = [
-    ['wake', 'Overdue', counts.stale_unread || 0, 'unread over 60s', counts.stale_unread ? 'warn' : ''],
-    ['all', 'Inbox', counts.unread || 0, 'total waiting', ''],
+    ['you', 'Open on you', counts.open_on_darrin || 0, (counts.open_on_darrin || 0) ? 'needs your reply' : 'all clear', counts.open_on_darrin ? 'warn' : ''],
+    ['agents', 'Open on agents', counts.open_on_agent || 0, 'waiting elsewhere', ''],
+    ['all', 'Browse', counts.threads_all || 0, 'active and history', ''],
     ['diagnostics', 'Health', diagProblems, diagProblems ? 'needs review' : 'quiet', diagProblems ? 'warn' : ''],
   ];
   setHTML('summaryStrip', cards.map(([filter, label, value, note, tone]) => `
@@ -1253,7 +1607,7 @@ function renderSummary(counts, diagnostics) {
     </button>
   `).join(''));
   document.querySelectorAll('button.summary[data-filter]').forEach(button => {
-    button.addEventListener('click', () => focusPanel(button.dataset.filter || 'wake'));
+    button.addEventListener('click', () => focusPanel(button.dataset.filter || 'you'));
   });
 }
 function renderQueue(queue) {
@@ -1261,22 +1615,22 @@ function renderQueue(queue) {
     const lastCheck = latestMailboxCheck();
     const message = queueSearch.trim()
       ? `No items match "${queueSearch.trim()}".`
-      : queueFilter === 'wake'
-      ? agentFilter ? `No overdue wake-ups for ${agentFilter}.` : 'No overdue wake-ups in this view.'
-      : queueFilter === 'decision'
-        ? 'No Darrin decisions in this view.'
+      : queueFilter === 'you'
+      ? 'All clear'
+      : queueFilter === 'agents'
+        ? 'No threads are currently open on agents.'
         : queueFilter === 'diagnostics'
           ? 'No diagnostics available.'
-        : 'Nothing needs action right now.';
+        : 'No threads in this view.';
     const checkLine = lastCheck ? `Last mailbox check: ${fmtTime(lastCheck)}.` : 'Last mailbox check is not available yet.';
     setHTML('actionList', `<div class="empty"><strong>${esc(message)}</strong><br>${esc(checkLine)}</div>`);
     return;
   }
   setHTML('actionList', queue.map(item => `
     <button class="action ${item.id === selected?.id ? 'selected' : ''} ${esc(item.severity)}" data-id="${esc(item.id)}">
-      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.kind === 'wake' ? 'Needs wake-up' : item.kind)}</span>${localStateFor(item) ? `<span class="tag local">${esc(localStateLabel(localStateFor(item)))}</span>` : ''}${snoozeLabel(item) ? `<span class="tag snoozed">${esc(snoozeLabel(item))}</span>` : ''}</div>
+      <div class="tag-row"><span class="tag ${kindClass(item.kind)}">${esc(item.state_label || (item.kind === 'you' ? 'Open on you' : item.kind === 'agent' ? 'Open on agent' : item.kind))}</span>${item.requires_darrin_decision ? '<span class="tag decision">decision</span>' : ''}${localStateFor(item) ? `<span class="tag local">${esc(localStateLabel(localStateFor(item)))}</span>` : ''}${snoozeLabel(item) ? `<span class="tag snoozed">${esc(snoozeLabel(item))}</span>` : ''}</div>
       <div class="action-title">${esc(item.title)}</div>
-      <div class="action-summary">${esc(humanSummary(item))}</div>
+      <div class="action-summary">${esc(item.agent_label ? `${item.agent_label} · ${fmtAge(item.age_seconds)} ago · ${item.message_count || 1} message${Number(item.message_count || 1) === 1 ? '' : 's'}` : humanSummary(item))}</div>
       <div class="action-help">${esc(item.thread_id || item.message_path || '')}</div>
     </button>
   `).join(''));
@@ -1302,25 +1656,56 @@ function renderDetail(item) {
     renderAgentDetail(agent);
     return;
   }
+  if (!item) {
+    document.getElementById('selectedKind').textContent = 'none';
+    document.getElementById('selectedKind').className = 'tag unread';
+    document.getElementById('detailTitle').textContent = 'All clear';
+    document.getElementById('detailSummary').textContent = 'No thread currently appears to need Darrin.';
+    setHTML('factGrid', [
+      ['Open on you', cockpit?.cockpit_state?.counts?.open_on_darrin || 0],
+      ['Open on agents', cockpit?.cockpit_state?.counts?.open_on_agent || 0],
+      ['Source', 'thread classifier'],
+    ].map(([label, value]) => `
+      <div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value" title="${esc(value)}">${esc(value)}</div></div>
+    `).join(''));
+    renderDecisionScope(null);
+    document.getElementById('wakeLine').textContent = 'No wake needed.';
+    hideDetailActions();
+    renderMessagePreview(null);
+    setHTML('howList', [
+      'Use Open on agents to see what the AIs owe next.',
+      'Use Browse all for history.',
+      'Use Diagnostics when the numbers look wrong.'
+    ].map(line => `<li>${esc(line)}</li>`).join(''));
+    document.getElementById('sessionCopy').textContent = 'No local handling state needed.';
+    ['stateAck', 'stateCopied', 'stateWaiting', 'stateHandled'].forEach(id => {
+      const button = document.getElementById(id);
+      button.disabled = true;
+      button.classList.remove('active');
+    });
+    return;
+  }
   const kind = item?.kind || 'none';
-  document.getElementById('selectedKind').textContent = kind === 'wake' ? 'needs wake-up' : kind;
+  document.getElementById('selectedKind').textContent = item?.state_label || (kind === 'wake' ? 'needs wake-up' : kind);
   document.getElementById('selectedKind').className = `tag ${kindClass(kind)}`;
   document.getElementById('detailTitle').textContent = item?.title || 'No item selected';
   document.getElementById('detailSummary').textContent = humanSummary(item) || 'No current action is required.';
   const lifecycle = localStateLabel(localStateFor(item))
     || snoozeLabel(item)
-    || (item?.kind === 'wake' ? 'new wake-up' : item?.kind === 'decision' ? 'new decision' : 'not started');
+    || (item?.state_label || (item?.kind === 'wake' ? 'new wake-up' : item?.kind === 'decision' ? 'new decision' : 'not started'));
   const facts = item?.kind === 'diagnostic'
     ? diagnosticFacts(item)
     : [
         ['Lifecycle', lifecycle],
         ['Primary action', item?.primary_action || 'None'],
         ['Thread', item?.thread_id || 'None'],
+        ['Owner', item?.owner_label || item?.agent_label || 'None'],
         ['Source', item?.message_path ? 'mailbox message' : 'none'],
       ];
   setHTML('factGrid', facts.map(([label, value]) => `
     <div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value" title="${esc(value)}">${esc(value)}</div></div>
   `).join(''));
+  renderDecisionScope(item);
   const wakeText = item?.wake_line || (!item ? cockpit?.wake?.line : '');
   document.getElementById('wakeLine').textContent = wakeText || 'No wake needed.';
   document.getElementById('markRead').textContent = item?.kind === 'decision' ? 'Dismiss alert' : 'Dismiss alert';
@@ -1328,6 +1713,29 @@ function renderDetail(item) {
   renderMessagePreview(item);
   renderHow(item);
   renderSessionState(item);
+}
+function renderDecisionScope(item) {
+  const box = document.getElementById('scopeBox');
+  const scope = item?.scope_text || {};
+  const actions = Array.isArray(item?.actions) ? item.actions : [];
+  const confirmActions = actions.filter(action => action?.requires_confirm);
+  if (item?.kind !== 'decision' || (!Object.keys(scope).length && !confirmActions.length)) {
+    box.hidden = true;
+    box.innerHTML = '';
+    return;
+  }
+  const willNotDo = Array.isArray(scope.will_not_do) ? scope.will_not_do.join('; ') : '';
+  const rows = [
+    ['Action gate', confirmActions.map(action => action.label).filter(Boolean).join(', ') || 'Confirm required'],
+    ['Path', scope.path || 'No path specified'],
+    ['Read cadence', scope.read_frequency || 'Not specified'],
+    ['Writes', scope.writes || 'Not specified'],
+    ['Will not do', willNotDo || 'Not specified'],
+  ];
+  box.hidden = false;
+  box.innerHTML = `<div class="scope-title">Confirmation scope</div>${rows.map(([label, value]) => `
+    <div class="scope-row"><div class="scope-label">${esc(label)}</div><div class="scope-value">${esc(value)}</div></div>
+  `).join('')}`;
 }
 function renderMessagePreview(item) {
   const preview = document.getElementById('messagePreview');
@@ -1337,7 +1745,7 @@ function renderMessagePreview(item) {
     preview.classList.add('message-preview-empty');
     preview.textContent = item?.kind === 'diagnostic'
       ? 'Diagnostics do not have a mailbox message body.'
-      : 'Select an alert to preview its message here.';
+      : 'Select a thread to preview its message here.';
     return;
   }
   meta.textContent = item.kind || 'message';
@@ -1392,6 +1800,7 @@ function renderAgentDetail(agent) {
   setHTML('factGrid', facts.map(([label, value]) => `
     <div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value" title="${esc(value)}">${esc(value)}</div></div>
   `).join(''));
+  renderDecisionScope(null);
   document.getElementById('wakeLine').textContent = actionCount && agent.id !== 'darrin'
     ? `Select the oldest ${agent.display_name} item, then copy its wake line.`
     : 'No wake line selected.';
@@ -1437,9 +1846,21 @@ function renderHow(item) {
           'Open the message if you need the full context.',
           'Resolve, dismiss, or ask Codex to handle the follow-up.'
         ]
+      : item?.kind === 'you'
+        ? [
+            'Read the thread summary first.',
+            'Open the source message only if you need detail.',
+            'After you answer elsewhere, refresh; the classifier should move the thread off this list.'
+          ]
+      : item?.kind === 'agent'
+        ? [
+            'This is waiting on an AI, not on you.',
+            'Open the source message if you want context.',
+            'Refresh after that AI replies.'
+          ]
       : [
           'Select an action from the queue.',
-          'Use Action Detail for source, wake line, and lifecycle controls.',
+          'Use Action Detail for source and thread context.',
           'Refresh after any AI replies.'
         ];
   setHTML('howList', lines.map(line => `<li>${esc(line)}</li>`).join(''));
@@ -1472,7 +1893,7 @@ function diagnosticFacts(item) {
     return [
       ['Status', d.status || 'unknown'],
       ['Last check', fmtTime(d.last_check_iso)],
-      ['Latency', `${d.latency_ms ?? 0}ms`],
+      ['Latency', d.latency_ms == null ? 'n/a' : `${d.latency_ms}ms`],
       ['Writes', 'None from this screen'],
     ];
   }
@@ -1499,7 +1920,9 @@ function renderRoutes(routes) {
     setHTML('routeChecks', '<div class="route-meta">No route check data available.</div>');
     return;
   }
-  setHTML('routeChecks', routes.map(route => {
+  const summary = cockpit?.cockpit_state?.routes_summary || {};
+  const summaryLine = summary.label ? `<div class="route-row"><div><div class="route-name">${esc(summary.label)}</div><div class="route-meta">Single source: cockpit_state.routes_summary</div></div><div class="route-time">${esc(summary.severity || 'ok')}</div></div>` : '';
+  setHTML('routeChecks', summaryLine + routes.map(route => {
     const status = statusClass(route.status);
     const hold = route.hold_reason ? ` - ${route.hold_reason}` : '';
     return `
@@ -1524,9 +1947,9 @@ function renderDiagnostics(diagnostics) {
 document.getElementById('refresh').addEventListener('click', loadCockpit);
 document.querySelectorAll('button.filter').forEach(button => {
   button.addEventListener('click', () => {
-    queueFilter = button.dataset.filter || 'wake';
+    queueFilter = button.dataset.filter || 'you';
     selectedAgentId = '';
-    if (queueFilter !== 'wake') agentFilter = '';
+    if (queueFilter !== 'agents') agentFilter = '';
     const visible = filteredQueue();
     if (!visible.some(item => item.id === selected?.id)) selected = visible[0] || null;
     prefs.queueFilter = queueFilter;
@@ -1810,6 +2233,11 @@ document.addEventListener('keydown', event => {
     selectRelative(-1);
     return;
   }
+  if (key === 'enter') {
+    event.preventDefault();
+    activateSelectedAction();
+    return;
+  }
   if (key === 'o') {
     event.preventDefault();
     document.getElementById('openMessage').click();
@@ -1836,6 +2264,9 @@ document.addEventListener('keydown', event => {
   }
 });
 document.getElementById('shortcutHelp').addEventListener('click', showShortcutHelp);
+document.getElementById('quietAgents').addEventListener('click', () => focusPanel('agents'));
+document.getElementById('quietBrowse').addEventListener('click', () => focusPanel('all'));
+document.getElementById('quietDiagnostics').addEventListener('click', () => focusPanel('diagnostics'));
 document.getElementById('autoRefresh').addEventListener('change', event => {
   prefs.autoRefresh = Boolean(event.target.checked);
   savePrefs();
@@ -1850,10 +2281,10 @@ function configureAutoRefresh() {
   if (prefs.autoRefresh) autoTimer = window.setInterval(loadCockpit, AUTO_REFRESH_MS);
 }
 function applyPrefs() {
-  queueFilter = prefs.queueFilter || 'wake';
-  agentFilter = prefs.agentFilter || '';
-  selectedAgentId = prefs.selectedAgentId || '';
-  queueSearch = prefs.queueSearch || '';
+  queueFilter = 'you';
+  agentFilter = '';
+  selectedAgentId = '';
+  queueSearch = '';
   if (selectedAgentId && selectedAgentId !== 'darrin' && !agentFilter) agentFilter = selectedAgentId;
   document.getElementById('autoRefresh').checked = Boolean(prefs.autoRefresh);
   document.getElementById('queueSearch').value = queueSearch;
@@ -1864,3 +2295,8 @@ loadCockpit();
 </script>
 </body>
 </html>
+
+
+
+
+

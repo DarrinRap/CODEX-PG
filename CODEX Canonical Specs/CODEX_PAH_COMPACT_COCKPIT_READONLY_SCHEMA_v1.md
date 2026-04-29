@@ -35,6 +35,12 @@ Scope: data contract for the first live PAH action-console slice. This slice is 
 }
 ```
 
+Compatibility rules:
+
+- Consumers must tolerate unknown fields without failing.
+- Producers must not remove, rename, or retype fields without bumping `schema_version`.
+- Adding fields is non-breaking. Removing fields, renaming fields, or changing a field type is breaking.
+
 ## cockpit_state
 
 ```json
@@ -71,6 +77,11 @@ Rules:
 - `as_of_iso` must update on every successful refresh.
 - `read_only: true` disables compose/send/write actions in v1.
 - `stale_unread_threshold_seconds` is authoritative for both producer wake promotion and consumer labels such as "overdue >60s".
+- Allowed `mode`: `live`.
+- Allowed `active_filter`: `needs_action`, `unread`, `claude_code`, `decisions`, `shipped`.
+- Allowed `density`: `compact`, `medium`, `loose`.
+- Allowed `routes_summary.severity`: `ok`, `warn`, `err`.
+- `counts.actionable_checks` means queue items requiring user attention, not validator findings. Validator findings use `diagnostics.actionable_validation_issues`.
 
 ## agents[]
 
@@ -114,7 +125,6 @@ Rules:
   "age_seconds": 74,
   "stale_unread": true,
   "wake_candidate_agent": "claude_code",
-  "wake_candidate_label": "Claude Code",
   "badges": [
     {"kind": "wake", "label": "needs wake-up"},
     {"kind": "status", "label": "waiting_on_codex"},
@@ -128,8 +138,11 @@ Rules:
 
 - Feed item title is one line.
 - `sub` is one line and should include route or thread context.
-- `stale_unread: true` means the message is unread and at least 60 seconds old.
+- `age_seconds` is producer-authoritative and must be computed from `time_iso` and top-level `generated_at`. Consumers should not recompute it for visible labels.
+- `stale_unread: true` means the message is unread and at least `cockpit_state.stale_unread_threshold_seconds` old.
 - Stale unread messages must be visually promoted in the action queue.
+- `wake_candidate_agent` is an agent ID. Consumers derive the visible label from `agents[].display_name`; no separate wake-candidate label field is allowed.
+- `from_agents` and `to_agents` are arrays to support fanout. The v1 convention is one sender and one or more receivers.
 - Raw message body is available through `message_path`, not displayed by default.
 
 ## action_queue[]
@@ -154,12 +167,14 @@ Allowed `kind`: `wake`, `decision`, `unread`.
 Rules:
 
 - `wake` items render first.
+- Secondary sort: severity order `err`, `warn`, `ok`, then newest first by matching `feed[].time_iso`.
 - Action copy must be plain language.
 - The queue is the primary user workflow; route health and diagnostics stay secondary.
+- `action_queue` is intentionally denormalized for render speed. Producers must keep `title` and `summary` in sync with the matching `feed[]` item by `id`; validators should flag mismatches.
 
 ## wake_candidates[]
 
-Same item shape as `feed[]`, filtered to stale unread messages. The first item drives the default wake line.
+Same item shape as `feed[]`, filtered to stale unread messages. The first item drives the default wake line and the top-level `wake` block.
 
 ## selected_thread
 
@@ -181,6 +196,7 @@ Same item shape as `feed[]`, filtered to stale unread messages. The first item d
   "cards": [
     {
       "title": "Current gate",
+      "kind": "text",
       "body": "Confirm whether PAH may continuously read the native Claude Code mailbox under C:\\panda-gallery\\workflows\\cc_mailbox."
     }
   ],
@@ -192,6 +208,7 @@ Rules:
 
 - Detail cards can scroll inside the detail pane.
 - No content is silently hidden based on viewport height.
+- Allowed `cards[].kind` in v1: `text`. Future non-breaking additions may include typed card kinds such as `checklist`, `path_list`, `status_rows`, or `code`.
 
 ## decisions[]
 
@@ -213,10 +230,10 @@ Rules:
     },
     {
       "id": "route_outside_pg",
-      "label": "Route outside PG",
-      "kind": "secondary",
+      "label": "Review non-PG route option",
+      "kind": "confirm_required",
       "enabled": true,
-      "requires_confirm": false
+      "requires_confirm": true
     }
   ],
   "scope_text": {
@@ -236,6 +253,8 @@ Rules:
 
 - Standing permissions never render as one-click approve.
 - If `requires_confirm` is true, live UI must show scope text before final grant.
+- Any decision action that triggers a write to a path crossing the `panda_gallery_requires_darrin` boundary must set `requires_confirm: true` and must render `scope_text` before final grant.
+- Allowed `actions[].kind`: `confirm_required`, `secondary`, `disabled`.
 - Blocked rows use `blocked_by` IDs, not prose-only references.
 
 ## routes[]
@@ -259,6 +278,7 @@ Rules:
 
 - Route panel and top summary derive from this list.
 - `held` is not `pass`; it contributes to warning state.
+- `latency_ms` is the most recent successful route-test latency for `pass`, or `null` for `held`, `failed`, and `untested` when no successful check exists. `last_check_iso` records when the current route status was last evaluated.
 
 ## wake
 
@@ -277,6 +297,7 @@ Rules:
 
 - Direct wake remains unsupported.
 - Copying the wake line does not send it anywhere.
+- Top-level `wake` is always derived from `wake_candidates[0]`. If `wake_candidates` is empty, `target_agent`, `line`, and `route_status` are empty strings.
 - `wake_candidate` means a stale unread message is ready for Darrin to wake the target agent.
 
 ## diagnostics
@@ -289,9 +310,33 @@ Rules:
   "checks_warn": 0,
   "checks_fail": 0,
   "actionable_validation_issues": 7,
-  "last_run_iso": "2026-04-28T07:24:18-07:00"
+  "last_run_iso": "2026-04-28T07:24:18-07:00",
+  "relay_health": {
+    "ok": true,
+    "severity": "info",
+    "status_label": "Relay health ok: 3 active row(s), 0 unindexed recent CODEX mail, 15 unread recent incoming, 11 recent Darrin gate(s).",
+    "counts": {
+      "active_rows": 3,
+      "unindexed_recent_codex_mail": 0,
+      "recent_unread_incoming": 15,
+      "recent_darrin_gates": 11
+    },
+    "cache": {
+      "enabled": true,
+      "updated": true,
+      "hits": 38,
+      "misses": 0
+    }
+  }
 }
 ```
+
+Rules:
+
+- `relay_health` is sourced from the read-only relay health checker at `C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1`.
+- `relay_health.severity` uses `info`, `warning`, or `error`; compact UI maps these to `ok`, `warn`, or `err`.
+- `relay_health.counts` may include additional checker counts, but the compact UI must tolerate missing keys.
+- `relay_health.cache` summarizes local `.local.json` cache use. It is performance metadata only, not dispatch authority.
 
 ## git
 
@@ -301,7 +346,9 @@ Rules:
   "tracking": "origin/main",
   "clean": true,
   "status_label": "main synced with origin",
-  "last_commit": "7ca1896"
+  "last_commit": "7ca1896",
+  "last_commit_message": "chore: ship pg_dispatch_lint v0",
+  "last_commit_iso": "2026-04-28T07:48:12-07:00"
 }
 ```
 
@@ -309,11 +356,11 @@ Rules:
 
 ```json
 [
-  {"id": "refresh", "label": "Refresh", "enabled": true},
-  {"id": "validate", "label": "Validate", "enabled": true},
-  {"id": "backup", "label": "Backup", "enabled": true},
-  {"id": "compose", "label": "Compose", "enabled": false, "reason": "disabled in read-only v1"},
-  {"id": "send", "label": "Send", "enabled": false, "reason": "no draft staged in read-only v1"}
+  {"id": "refresh", "label": "Refresh", "enabled": true, "destructive": false},
+  {"id": "validate", "label": "Validate", "enabled": true, "destructive": false},
+  {"id": "backup", "label": "Backup", "enabled": true, "destructive": false},
+  {"id": "compose", "label": "Compose", "enabled": false, "destructive": false, "reason": "disabled in read-only v1"},
+  {"id": "send", "label": "Send", "enabled": false, "destructive": false, "reason": "no draft staged in read-only v1"}
 ]
 ```
 

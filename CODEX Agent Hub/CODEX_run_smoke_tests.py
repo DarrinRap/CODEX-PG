@@ -445,13 +445,80 @@ def test_cockpit_payload_contract() -> None:
     assert_true("action_queue" in payload, "cockpit exposes action queue")
     assert_true("wake_candidates" in payload, "cockpit exposes wake candidates")
     assert_true(payload["routes"], "cockpit exposes route health")
+    held_routes = [route for route in payload["routes"] if route.get("status") == "held"]
+    if held_routes:
+        assert_true(held_routes[0].get("latency_ms") is None, "held route latency is null")
     if payload["feed"]:
         assert_true("age_seconds" in payload["feed"][0], "feed includes age seconds")
         assert_true("stale_unread" in payload["feed"][0], "feed includes stale unread flag")
-        assert_true("wake_candidate_label" in payload["feed"][0], "feed includes wake target label")
+        assert_true("wake_candidate_label" not in payload["feed"][0], "feed derives wake labels from agent IDs")
+    decision_items = [item for item in payload["action_queue"] if item.get("kind") == "decision"]
+    if decision_items:
+        assert_true("scope_text" in decision_items[0], "decision queue carries scope text")
+        assert_true("actions" in decision_items[0], "decision queue carries action metadata")
+    if payload["selected_thread"].get("cards"):
+        assert_true("kind" in payload["selected_thread"]["cards"][0], "selected thread cards are typed")
     actions = {item["id"]: item for item in payload["read_only_actions"]}
     assert_true(not actions["compose"]["enabled"], "compose disabled in read-only cockpit")
     assert_true(not actions["send"]["enabled"], "send disabled in read-only cockpit")
+    assert_true(actions["compose"]["destructive"] is False, "read-only actions carry destructive flag")
+    assert_true("last_commit_message" in payload["git"], "git payload carries commit message field")
+    assert_true("relay_health" in payload["diagnostics"], "cockpit diagnostics carries relay health summary")
+    assert_true("status_label" in payload["diagnostics"]["relay_health"], "relay health summary carries status label")
+    assert_true("cache" in payload["diagnostics"]["relay_health"], "relay health summary carries cache metadata")
+    if (agent_hub.PROJECT_ROOT / ".git").exists():
+        assert_true(payload["git"]["last_commit"], "git payload carries last commit hash when repo metadata is available")
+        assert_true(payload["git"]["last_commit_message"], "git payload carries last commit message when repo metadata is available")
+        assert_true(payload["git"]["last_commit_iso"], "git payload carries last commit timestamp when repo metadata is available")
+    ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    assert_true("unread over 60s" not in ui_text, "UI derives stale threshold labels from cockpit_state")
+
+
+def test_cockpit_action_queue_ordering() -> None:
+    agents = [
+        {"id": "claude_code", "display_name": "Claude Code"},
+        {"id": "claude_desktop", "display_name": "Claude Desktop"},
+    ]
+    feed = [
+        {
+            "id": "new-wake",
+            "message_path": "C:/CODEX PG/new-wake.md",
+            "time_iso": "2026-04-28T10:02:00",
+            "stale_unread": True,
+            "unread": True,
+            "age_seconds": 62,
+            "wake_candidate_agent": "claude_code",
+            "title": "New wake",
+            "sub": "new",
+            "thread_id": "THREAD-NEW",
+        },
+        {
+            "id": "old-wake",
+            "message_path": "C:/CODEX PG/old-wake.md",
+            "time_iso": "2026-04-28T10:01:00",
+            "stale_unread": True,
+            "unread": True,
+            "age_seconds": 122,
+            "wake_candidate_agent": "claude_desktop",
+            "title": "Old wake",
+            "sub": "old",
+            "thread_id": "THREAD-OLD",
+        },
+        {
+            "id": "plain-unread",
+            "message_path": "C:/CODEX PG/plain-unread.md",
+            "time_iso": "2026-04-28T10:03:00",
+            "stale_unread": False,
+            "unread": True,
+            "age_seconds": 20,
+            "wake_candidate_agent": "claude_code",
+            "title": "Plain unread",
+            "sub": "plain",
+            "thread_id": "THREAD-PLAIN",
+        },
+    ]
+    queue = agent_hub.cockpit_action_queue(feed, [], agents)
+    assert_true([item["id"] for item in queue] == ["new-wake", "old-wake", "plain-unread"], "action queue preserves schema order")
 
 
 def test_tray_status_payload_contract() -> None:
@@ -470,6 +537,9 @@ def test_diagnostics() -> None:
     diagnostics = run_communication_diagnostics(write_report=False)
     assert_true("checks" in diagnostics, "diagnostics returns checks")
     assert_true(any(item["name"] == "two_way_file_bridge" for item in diagnostics["checks"]), "diagnostics includes bridge test")
+    relay = next((item for item in diagnostics["checks"] if item["name"] == "relay_health"), None)
+    assert_true(relay is not None, "diagnostics includes relay health check")
+    assert_true("Relay health" in relay["detail"], "relay health check carries summary detail")
 
 
 def test_notification_provider_status() -> None:
@@ -1075,6 +1145,7 @@ def main() -> None:
     test_cross_check_auto_resolution_rule()
     test_routes_and_scope()
     test_cockpit_payload_contract()
+    test_cockpit_action_queue_ordering()
     test_tray_status_payload_contract()
     test_diagnostics()
     test_notification_provider_status()

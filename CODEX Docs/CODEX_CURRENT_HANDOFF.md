@@ -105,6 +105,85 @@ Mode: `Handoff`
 
 Use trigger word `CODEX RESUME PG` in a fresh chat and paste the contents of `CODEX_RESUME_PROMPT.txt` if needed.
 <!-- CODEX_AUTOMATED_HANDOFF_END -->
+
+## PAH Speedup Task Update
+
+Updated: 2026-04-28 14:52:14 -07:00
+
+Current PAH compact cockpit speedup slice is implemented and smoke-tested.
+
+- Reopened the read-only PAH action-console lane after Darrin resumed PAH development.
+- Tightened contract implementation in `C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub.py`: actual git last-commit metadata, schema-ordered action queue, and threshold-derived wake safety text.
+- Tightened `C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub_ui.html`: UI now preserves payload queue order after filtering/search, derives the stale threshold label from `cockpit_state.stale_unread_threshold_seconds`, and includes Enter/Ctrl+R in keyboard behavior/help.
+- Added smoke coverage in `C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py` for queue ordering, git commit metadata, and stale-threshold label derivation.
+- Verification: `python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"` passed.
+- Live API spot-check: current-code PAH server started at `http://127.0.0.1:8766`; `/api/cockpit` returned populated git last-commit metadata, `stale_unread_threshold_seconds: 60`, and wake-first action queue rows.
+- Completion report written to `C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox\20260428_145214_CODEX_to_CLAUDE_pah_compact_cockpit_speedup_complete.md`.
+
+Boundary: still read-only. No compose/send pipeline, standing permission grant, watcher startup, or `C:\panda-gallery` writes were added.
+
+## Relay Health Checker
+
+Updated: 2026-04-28 15:06:28 -07:00
+
+Added read-only relay health checker:
+
+`C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1`
+
+Purpose: fast validation of the compact relay protocol before rereading mailbox history.
+
+It checks:
+
+- required index/authority files
+- active queue state labels and duplicate thread rows
+- source/completion paths
+- stale `new`, `in_progress`, or `blocked` rows
+- newer CODEX Inbox mail not reflected in index/authority
+- PAH read-state unread incoming mail
+- recent Darrin-gated messages
+
+Verification:
+
+- `& "C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1" -NoFail` returned `Status: OK`.
+- `& "C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1" -Json -NoFail | ConvertFrom-Json` parsed successfully.
+
+## Relay Health In PAH Diagnostics
+
+Updated: 2026-04-28 15:12:24 -07:00
+
+Wired the relay health checker into PAH diagnostics.
+
+- `C:\CODEX PG\CODEX Agent Hub\pah_diagnostics\checks.py` now runs `CODEX_relay_health_check.ps1 -Json -NoFail` as a read-only `relay_health` diagnostic check.
+- `C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub.py` exposes compact relay status at `diagnostics.relay_health` in the read-only cockpit payload.
+- `C:\CODEX PG\CODEX Agent Hub\CODEX_agent_hub_ui.html` shows Relay Health as its own Diagnostics queue row.
+- `C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py` covers the relay diagnostic and compact payload field.
+- `C:\CODEX PG\CODEX Canonical Specs\CODEX_PAH_COMPACT_COCKPIT_READONLY_SCHEMA_v1.md` documents `diagnostics.relay_health`.
+
+Verification:
+
+- `python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"` passed.
+- Standalone checker still returned `Status: OK`.
+- Direct `cockpit_payload()` check returned `diagnostics.relay_health.ok: True`.
+- Refreshed current-code PAH verification server at `http://127.0.0.1:8766`; `/api/cockpit` returned `diagnostics.relay_health.ok: true`.
+
+## Relay Cache / Latest Mail Cursors
+
+Updated: 2026-04-28 15:20:07 -07:00
+
+Added a cache/cursor layer to speed repeated relay checks.
+
+- `C:\CODEX PG\CODEX Automation\CODEX_relay_health_check.ps1` now supports `-UpdateCache` and `-NoCache`.
+- Cache path: `C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_relay_health_cache.local.json` (ignored by git).
+- Cache stores parsed recent-mail frontmatter plus newest-mail cursors for `CODEX Inbox`, `CLAUDE Inbox`, and `CODEX_CLAUDE_CODE Inbox`.
+- PAH diagnostics now calls the checker with `-UpdateCache` so normal cockpit refreshes keep the cache warm.
+- Compact cockpit payload includes `diagnostics.relay_health.cache`.
+
+Verification:
+
+- Cold cache update: `0` hits / `38` misses, cache written.
+- Warm check: `38` hits / `0` misses.
+- `python "C:\CODEX PG\CODEX Agent Hub\CODEX_run_smoke_tests.py"` passed.
+
 ## Local Claude PG Data Copy
 
 Created: 2026-04-24 19:06:20 -07:00
