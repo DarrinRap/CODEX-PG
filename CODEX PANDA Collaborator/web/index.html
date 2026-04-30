@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PANDA Collaborator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111614;
+      --surface: #18211f;
+      --surface-2: #202b28;
+      --field: #101715;
+      --line: #33413d;
+      --text: #edf5f0;
+      --muted: #9db0aa;
+      --soft: #c9d6d1;
+      --accent: #f2b36d;
+      --accent-2: #80c7b4;
+      --ok: #87c56f;
+      --warn: #f0c65f;
+      --bad: #ef806f;
+      --shadow: rgba(0, 0, 0, .32);
+      --font-ui: "Segoe UI", Arial, sans-serif;
+      --font-mono: "Cascadia Mono", "Consolas", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      letter-spacing: 0;
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover { border-color: var(--accent); }
+    button:disabled { opacity: .52; cursor: not-allowed; }
+    .primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #1d1710;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(24, 33, 31, .96);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 240px;
+    }
+
+    .mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--accent-2);
+      color: #071311;
+      font-weight: 900;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-strip {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      color: var(--soft);
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      background: var(--field);
+    }
+
+    .chip.ok { color: var(--ok); border-color: rgba(135, 197, 111, .45); }
+    .chip.warn { color: var(--warn); border-color: rgba(240, 198, 95, .45); }
+    .chip.bad { color: var(--bad); border-color: rgba(239, 128, 111, .45); }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
+      min-height: 0;
+    }
+
+    .left,
+    .right {
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .left {
+      border-right: 1px solid var(--line);
+      background: #141c1a;
+    }
+
+    .right {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 8px;
+      box-shadow: 0 14px 28px var(--shadow);
+      min-width: 0;
+    }
+
+    .panel-head {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .panel-body { padding: 14px; }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      background: var(--field);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      outline: none;
+      padding: 10px 11px;
+      min-width: 0;
+    }
+
+    textarea {
+      min-height: 108px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(242, 179, 109, .16);
+    }
+
+    .form-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .rule-list,
+    .file-list,
+    .package-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .rule-list li,
+    .file-item,
+    .package-item {
+      display: grid;
+      gap: 4px;
+      border: 1px solid var(--line);
+      background: var(--field);
+      border-radius: 6px;
+      padding: 9px 10px;
+    }
+
+    .package-item button {
+      justify-self: start;
+      margin-top: 5px;
+      padding: 6px 9px;
+      font-size: 12px;
+    }
+
+    .rule-list code,
+    .path,
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--soft);
+      overflow-wrap: anywhere;
+    }
+
+    .repo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(100px, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: var(--field);
+      border-radius: 7px;
+      padding: 10px;
+      min-height: 70px;
+    }
+
+    .metric b {
+      display: block;
+      font-size: 24px;
+      line-height: 1;
+      margin-bottom: 7px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .result {
+      border-left: 4px solid var(--accent-2);
+      background: rgba(128, 199, 180, .08);
+      padding: 11px 12px;
+      color: var(--soft);
+      line-height: 1.45;
+      border-radius: 6px;
+      overflow-wrap: anywhere;
+    }
+
+    .result.error {
+      border-color: var(--bad);
+      background: rgba(239, 128, 111, .08);
+    }
+
+    .receipt-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(110px, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .receipt-item {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      padding: 8px;
+    }
+
+    .receipt-item b {
+      display: block;
+      color: var(--accent-2);
+      font-size: 18px;
+      margin-bottom: 3px;
+    }
+
+    .handoff-preview {
+      margin-top: 10px;
+      max-height: 240px;
+      overflow: auto;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0c1210;
+      color: var(--soft);
+      padding: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .review-list {
+      display: grid;
+      gap: 7px;
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .review-list li {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      padding: 8px;
+    }
+
+    .empty {
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+      padding: 18px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .section-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    @media (max-width: 1060px) {
+      main { grid-template-columns: 1fr; }
+      .left { border-right: 0; border-bottom: 1px solid var(--line); }
+      .split { grid-template-columns: 1fr; }
+      .repo-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    }
+
+    @media (max-width: 620px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .status-strip { justify-content: flex-start; }
+      .left, .right { padding: 12px; }
+      .repo-grid { grid-template-columns: 1fr; }
+      .receipt-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="mark">PC</div>
+        <div>
+          <h1>PANDA Collaborator</h1>
+          <span>Shared workstation handoff manager</span>
+        </div>
+      </div>
+      <div class="status-strip" id="statusStrip">
+        <span class="chip">Ready</span>
+        <span class="chip ok">No destructive git</span>
+        <span class="chip ok">No stash safety</span>
+      </div>
+    </header>
+
+    <main>
+      <aside class="left">
+        <div class="section-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Repository</h2>
+              <span class="small" id="scanTime">Not scanned</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-stack">
+                <label>Path
+                  <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
+                </label>
+                <div class="actions">
+                  <button class="primary" id="scanBtn">Scan</button>
+                  <button id="packagesBtn">Packages</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Safety Rules</h2>
+              <span class="chip ok">Locked</span>
+            </div>
+            <div class="panel-body">
+              <ul class="rule-list" id="ruleList"></ul>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <section class="right">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Working Tree</h2>
+            <span class="chip" id="branchChip">No repo</span>
+          </div>
+          <div class="panel-body">
+            <div id="repoSummary" class="empty">Scan a repository.</div>
+          </div>
+        </section>
+
+        <section class="split">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Create Handoff</h2>
+              <span class="chip ok">Branch + Patch + Copies</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-stack">
+                <label>Title
+                  <input id="handoffTitle" value="AI workstation handoff" maxlength="90">
+                </label>
+                <label>Agent
+                  <input id="handoffAgent" value="Codex" maxlength="60">
+                </label>
+                <label>Notes
+                  <textarea id="handoffNotes" placeholder="Current intent, risks, next action"></textarea>
+                </label>
+                <div class="actions">
+                  <button class="primary" id="handoffBtn" disabled>Create safe handoff</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Result</h2>
+              <span class="chip" id="resultChip">Idle</span>
+            </div>
+            <div class="panel-body">
+              <div id="resultBox" class="empty">No handoff package created yet.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Changed Files</h2>
+            <span class="chip" id="fileChip">0</span>
+          </div>
+          <div class="panel-body">
+            <ul class="file-list" id="fileList"></ul>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const forbidden = [
+      'git reset --hard',
+      'git clean -fd',
+      'git clean -xdf',
+      'git push --force',
+      'git push -f',
+      'git checkout .',
+      'git restore .',
+      'git branch -D',
+      'git branch -d',
+      'git push origin --delete'
+    ];
+
+    const state = {
+      repo: null,
+      packages: [],
+      packageRoot: ''
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function setBusy(isBusy) {
+      $('scanBtn').disabled = isBusy;
+      $('packagesBtn').disabled = isBusy;
+      $('handoffBtn').disabled = isBusy || !state.repo;
+    }
+
+    async function api(path, payload) {
+      const response = await fetch(path, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed: ${response.status}`);
+      }
+      return data;
+    }
+
+    async function apiGet(path) {
+      const response = await fetch(path);
+      const data = await response.json();
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed: ${response.status}`);
+      }
+      return data;
+    }
+
+    function renderRules() {
+      $('ruleList').innerHTML = forbidden.map(cmd => `<li><code>${escapeHtml(cmd)}</code></li>`).join('');
+    }
+
+    function renderStatusStrip(repo) {
+      if (!repo) {
+        $('statusStrip').innerHTML = `
+          <span class="chip">Ready</span>
+          <span class="chip ok">No destructive git</span>
+          <span class="chip ok">No stash safety</span>
+        `;
+        return;
+      }
+      const dirtyClass = repo.dirty ? 'warn' : 'ok';
+      $('statusStrip').innerHTML = `
+        <span class="chip ${dirtyClass}">${repo.dirty ? 'Uncommitted work' : 'Clean tree'}</span>
+        <span class="chip">HEAD ${escapeHtml(repo.short_head)}</span>
+        <span class="chip ok">Patch + copies armed</span>
+      `;
+    }
+
+    function renderRepo(repo) {
+      state.repo = repo;
+      localStorage.setItem('pandaCollaborator.repoPath', repo.repo_root);
+      $('handoffBtn').disabled = false;
+      $('branchChip').textContent = repo.branch;
+      $('branchChip').className = 'chip';
+      $('scanTime').textContent = new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+      renderStatusStrip(repo);
+
+      const counts = repo.counts || {};
+      $('repoSummary').className = '';
+      $('repoSummary').innerHTML = `
+        <div class="repo-grid">
+          <div class="metric"><b>${counts.staged || 0}</b><span>Staged</span></div>
+          <div class="metric"><b>${counts.unstaged || 0}</b><span>Unstaged</span></div>
+          <div class="metric"><b>${counts.untracked || 0}</b><span>Untracked</span></div>
+          <div class="metric"><b>${counts.deleted || 0}</b><span>Deleted</span></div>
+          <div class="metric"><b>${counts.conflicted || 0}</b><span>Conflicts</span></div>
+        </div>
+        <p class="small path">${escapeHtml(repo.repo_root)}</p>
+      `;
+
+      const files = repo.files || [];
+      $('fileChip').textContent = String(files.length);
+      $('fileList').innerHTML = files.length
+        ? files.slice(0, 140).map(file => `
+            <li class="file-item">
+              <strong>${escapeHtml(file.code)}</strong>
+              <span class="path">${escapeHtml(file.path)}</span>
+            </li>
+          `).join('')
+        : '<li class="empty">No changed files.</li>';
+    }
+
+    function showResult(message, kind = 'ok') {
+      $('resultBox').className = kind === 'error' ? 'result error' : 'result';
+      $('resultBox').innerHTML = message;
+      $('resultChip').textContent = kind === 'error' ? 'Error' : 'Ready';
+      $('resultChip').className = kind === 'error' ? 'chip bad' : 'chip ok';
+    }
+
+    async function scanRepo() {
+      setBusy(true);
+      try {
+        const data = await api('/api/repo/scan', {path: $('repoPath').value});
+        renderRepo(data.repo);
+        showResult('Repository scan complete.');
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function createHandoff() {
+      setBusy(true);
+      try {
+        const data = await api('/api/handoff/create', {
+          path: $('repoPath').value,
+          title: $('handoffTitle').value,
+          agent: $('handoffAgent').value,
+          notes: $('handoffNotes').value
+        });
+        const handoff = data.handoff;
+        const copies = handoff.uncommitted_protection.file_copies.copied.length;
+        const skipped = handoff.uncommitted_protection.file_copies.skipped.length;
+        showResult(`
+          <strong>${escapeHtml(handoff.title)}</strong><br>
+          <span>Branch: <span class="path">${escapeHtml(handoff.committed_protection.branch)}</span></span><br>
+          <span>Package: <span class="path">${escapeHtml(handoff.package_dir)}</span></span><br>
+          <span>Copied files: ${copies}; skipped: ${skipped}</span>
+          <div class="receipt-grid">
+            <div class="receipt-item"><b>Yes</b><span class="small">Branch ref</span></div>
+            <div class="receipt-item"><b>${handoff.uncommitted_protection.patches.length}</b><span class="small">Patch files</span></div>
+            <div class="receipt-item"><b>${copies}</b><span class="small">File copies</span></div>
+            <div class="receipt-item"><b>No</b><span class="small">Stash / restore</span></div>
+          </div>
+        `);
+        await scanRepo();
+        await loadPackages(false);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function loadPackageDetail(packageId) {
+      setBusy(true);
+      try {
+        const data = await apiGet(`/api/package?id=${encodeURIComponent(packageId)}`);
+        const detail = data.package;
+        const manifest = detail.manifest;
+        const copied = manifest.uncommitted_protection.file_copies.copied || [];
+        const skipped = manifest.uncommitted_protection.file_copies.skipped || [];
+        const patches = manifest.uncommitted_protection.patches || [];
+        const receipt = manifest.safety_receipt || {};
+        showResult(`
+          <strong>${escapeHtml(manifest.title)}</strong><br>
+          <span>Created: ${escapeHtml(manifest.created_at)}</span><br>
+          <span>Repo: <span class="path">${escapeHtml(manifest.repo_root)}</span></span><br>
+          <span>Protection branch: <span class="path">${escapeHtml(manifest.committed_protection.branch)}</span></span><br>
+          <span>Branch still present: ${detail.branch_exists === null ? 'unknown' : detail.branch_exists ? 'yes' : 'no'}</span>
+          <div class="receipt-grid">
+            <div class="receipt-item"><b>${patches.length}</b><span class="small">Patch files</span></div>
+            <div class="receipt-item"><b>${detail.counts.patch_bytes}</b><span class="small">Patch bytes</span></div>
+            <div class="receipt-item"><b>${copied.length}</b><span class="small">Copied files</span></div>
+            <div class="receipt-item"><b>${skipped.length}</b><span class="small">Skipped files</span></div>
+          </div>
+          <div class="small">Safety receipt: branch without checkout ${receipt.branch_created_without_checkout ? 'yes' : 'no'}; stash used ${receipt.stash_used ? 'yes' : 'no'}; restore/apply performed ${receipt.restore_or_apply_performed ? 'yes' : 'no'}.</div>
+          <div class="actions" style="margin-top: 10px;">
+            <button type="button" data-restore-package-id="${escapeHtml(detail.id)}">Preview restore safety</button>
+          </div>
+          <div class="handoff-preview">${escapeHtml(detail.handoff_preview || '(HANDOFF.md preview unavailable)')}</div>
+        `);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function renderRestorePlan(plan) {
+      const blockers = plan.blockers || [];
+      const warnings = plan.warnings || [];
+      const patches = plan.patch_checks || [];
+      const copies = plan.copy_checks || [];
+      showResult(`
+        <strong>Restore safety preview: ${escapeHtml(plan.package_title)}</strong><br>
+        <span>Target: <span class="path">${escapeHtml(plan.target_repo)}</span></span><br>
+        <span>Recorded branch: <span class="path">${escapeHtml(plan.protection_branch || '(none)')}</span></span><br>
+        <span>Automated restore: unavailable by design</span>
+        <div class="receipt-grid">
+          <div class="receipt-item"><b>${blockers.length}</b><span class="small">Blockers</span></div>
+          <div class="receipt-item"><b>${warnings.length}</b><span class="small">Warnings</span></div>
+          <div class="receipt-item"><b>${patches.filter(p => p.ok).length}/${patches.length}</b><span class="small">Patch checks</span></div>
+          <div class="receipt-item"><b>${copies.length}</b><span class="small">Copy checks</span></div>
+        </div>
+        <ul class="review-list">
+          ${(blockers.length ? blockers : ['No restore-preview blockers beyond the app-wide manual-review rule.']).map(item => `<li><strong>Blocker</strong><br><span class="small">${escapeHtml(item)}</span></li>`).join('')}
+          ${warnings.map(item => `<li><strong>Warning</strong><br><span class="small">${escapeHtml(item)}</span></li>`).join('')}
+          ${patches.map(item => `<li><strong>Patch ${item.ok ? 'OK' : 'FAILED'}</strong><br><span class="path">${escapeHtml(item.patch_path)}</span><br><span class="small">${escapeHtml(item.stderr || item.stdout || (item.empty ? 'Empty patch.' : 'Check passed.'))}</span></li>`).join('')}
+          ${copies.slice(0, 16).map(item => `<li><strong>${escapeHtml(item.status)}</strong><br><span class="path">${escapeHtml(item.repo_path)}</span></li>`).join('')}
+        </ul>
+      `, blockers.length ? 'error' : 'ok');
+    }
+
+    async function previewRestore(packageId) {
+      setBusy(true);
+      try {
+        const data = await api('/api/restore/preview', {
+          package_id: packageId,
+          path: $('repoPath').value
+        });
+        renderRestorePlan(data.plan);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function loadPackages(showInResult = true) {
+      setBusy(true);
+      try {
+        const data = await apiGet(`/api/packages?path=${encodeURIComponent($('repoPath').value)}`);
+        const packages = data.packages || [];
+        state.packages = packages;
+        state.packageRoot = data.package_root;
+        if (!packages.length) {
+          if (showInResult) {
+            showResult(`Package root: <span class="path">${escapeHtml(data.package_root)}</span><br>No packages for this repository yet.`);
+          }
+          return;
+        }
+        const markup = `
+          <strong>Recent packages</strong>
+          <ul class="package-list">
+            ${packages.slice(0, 8).map(item => `
+              <li class="package-item">
+                <strong>${escapeHtml(item.title)}</strong>
+                <span class="small">${escapeHtml(item.created_at)} - ${escapeHtml(item.branch)}</span>
+                <span class="small">Patches: ${item.patches}; copied: ${item.copied}; skipped: ${item.skipped}</span>
+                <span class="path">${escapeHtml(item.package_dir)}</span>
+                <button type="button" data-package-id="${escapeHtml(item.id)}">Inspect package</button>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+        if (showInResult) showResult(markup);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    $('scanBtn').addEventListener('click', scanRepo);
+    $('handoffBtn').addEventListener('click', createHandoff);
+    $('packagesBtn').addEventListener('click', loadPackages);
+    $('resultBox').addEventListener('click', event => {
+      const button = event.target.closest('button[data-package-id]');
+      if (button) {
+        loadPackageDetail(button.dataset.packageId);
+        return;
+      }
+      const restoreButton = event.target.closest('button[data-restore-package-id]');
+      if (restoreButton) {
+        previewRestore(restoreButton.dataset.restorePackageId);
+      }
+    });
+
+    renderRules();
+    const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
+    if (savedPath) $('repoPath').value = savedPath;
+  </script>
+</body>
+</html>

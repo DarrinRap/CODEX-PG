@@ -1,0 +1,5 @@
+CODEX handoff packages/
+__pycache__/
+*.pyc
+server.out.log
+server.err.log
