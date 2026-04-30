@@ -1,15 +1,15 @@
 ---
 schema_version: 1
-id: CLAUDE-DESKTOP-20260429-PHASE4-U3-DISPATCH-DRAFT
+id: CLAUDE-DESKTOP-20260429-212500-PHASE4-U3-DISPATCH
 thread_id: PG-LEDGER-PHASE4-U3
-created_at: '2026-04-29T10:15:00-07:00'
+created_at: '2026-04-29T21:25:00-07:00'
 from: claude_desktop
 to: codex
 type: dispatch
 priority: normal
-status: drafted_pending_phase2_ship
-thread_status: draft
-action_owner: claude_desktop
+status: open
+thread_status: active
+action_owner: codex
 requires_darrin_decision: true
 approval_boundary: dispatch_after_phase2_ship
 reply_to: []
@@ -20,7 +20,9 @@ prerequisite_commit: phase2_ship_and_u1_r29_ship
 
 # Claude Desktop -> Codex: Phase 4 — U3 decision-sync git hook
 
-**STATUS: DRAFT.** Pre-staged in CODEX Inbox while CC's Phase 2 build is in flight. Do NOT begin work until Darrin sends the explicit go message AND Phase 2 has shipped (v4.71+) AND U1 R29 has shipped (v4.72+). U3 ships at v4.73 or later.
+**STATUS: LIVE.** Phase 2 shipped at v4.71 / `091644b`. Bug #142 fix shipped at v4.71.1 / `05eb269`. L14 AM applet shipped at v4.72 / `d81183d`. U1 R29 shipped at v4.72.1 / `5c6f79f`. All prerequisites for U3 satisfied.
+
+**Concurrency note:** U5 dispatched in parallel at 21:25 PDT today. U3 + U5 have no technical dependency on each other; ship in any order or concurrently.
 
 ---
 
@@ -167,7 +169,7 @@ Test fixtures live in `pg_design_lint/tests/fixtures/decision_sync/`. Each fixtu
 8. Implement idempotency via `implementation.commits[]` SHA check.
 9. Hook into `pre_commit.py` for `--check` invocation.
 10. Build all fixtures + tests.
-11. Run full pytest suite (368+ tests should still pass; new tests added).
+11. Run full pytest suite (473+ tests should still pass; new tests added).
 12. Test against the existing decision corpus (currently zero locked decisions; backfill creates them in Phase 3 — this is fine, just confirms the hook handles empty corpus cleanly).
 
 ### §3.4 — YAML library decision
@@ -178,11 +180,7 @@ The hook needs YAML round-trip on decision frontmatter. Three options:
 2. **PyYAML.** Battle-tested, but lossy on round-trip (key reordering, comment loss, quote normalization). Adds a dep.
 3. **ruamel.yaml.** Round-trip-preserving (keeps comments, key order, quote style). Adds a dep, ~300KB.
 
-**Constraint to respect:** PG currently has a minimal dependency surface (PySide6, OpenCV, realesrgan-ncnn-py). Adding YAML libs has a real cost — not in size but in dep-management discipline.
-
-**My weak preference: stdlib-only with a strict round-trip test.** Decision frontmatter is a constrained shape (we control it via R22 schema validation). Hand-rolled parsing is feasible. Round-trip preservation can be proved by a test fixture that locks key order, comments, and quote style.
-
-**If Codex prefers a YAML lib, ruamel is the right choice over PyYAML** — round-trip preservation matters more than ubiquity here. Surface the choice in Step 0 with a one-line rationale; Darrin will approve before code starts.
+**Updated context:** `ruamel.yaml==0.19.1` was added to `requirements.txt` as part of Phase 2 (v4.71 / `091644b`). It is now a first-party dependency. **Recommend Option 3 (ruamel.yaml).** Round-trip preservation matters more than ubiquity here, and the dep is already in the tree. Surface in Step 0 if you'd prefer otherwise.
 
 **Required regardless of choice:** ship a test that proves round-trip preserves key order, comment lines, and quote style on a representative decision file. Without that test, you're shipping invisible regressions on every cited-decision commit.
 
@@ -199,8 +197,8 @@ U3 dispatch is acceptance-passing when:
 5. **`--check` dry-run mode catches parse errors.** Pre-commit blocks if frontmatter is malformed.
 6. **Idempotency works.** Running the hook twice on the same commit doesn't duplicate entries.
 7. **All test cases pass.** Eleven cases above.
-8. **Existing test suite still passes.** No regressions.
-9. **No new dependencies beyond ruamel.yaml** (or none if Codex picks stdlib/PyYAML).
+8. **Existing test suite still passes.** No regressions (473+ baseline at v4.72.1).
+9. **No new dependencies beyond ruamel.yaml** (already in `requirements.txt` since v4.71).
 10. **Performance budget:** hook completes in <2 seconds on a typical commit (5-20 staged files, 1-3 decision citations, ~30 total decisions in corpus for cross-decision scan). The cross-decision scan is the hot path — O(N decisions) YAML parses per commit. If the budget is exceeded once corpus reaches 50+ decisions, scope cross-decision scan behind a `--warn-cross-decision` flag or sample-based check.
 
 ---
@@ -216,11 +214,11 @@ U3 dispatch is acceptance-passing when:
 
 ---
 
-## §6 — Coordination with R29 (U1)
+## §6 — Coordination with R29 (U1) and U5
 
-R29 ships before U3 in dispatch sequence, but **U3 has no technical dependency on R29**. The sequencing is for orderly Phase 4 dispatching only. If R29 is delayed for any reason, U3 can ship independently.
+R29 shipped at v4.72.1 / `5c6f79f`. **U3 has no technical dependency on R29.** They operate on different artifacts (mockups+dispatches vs. commits+decision files) and don't share code paths.
 
-R29 enforces mockup annotation completeness in dispatches. U3 maintains decision frontmatter from commits. They operate on different artifacts (mockups+dispatches vs. commits+decision files) and don't share code paths.
+**U5 dispatched in parallel with U3 at 21:25 PDT today.** U3 and U5 have no technical dependency on each other. Ship in any order. If U5 ships first, the rule severity flow uses runtime lookup against spec.json (per U5's §3.4 Option C); when U3 lands, promotion commits citing decisions auto-amend the decision frontmatter via this hook.
 
 ---
 
@@ -279,12 +277,6 @@ After U3, the trace is auto-maintained from commit metadata. Refactors that touc
 
 ## §12 — Begin trigger
 
-Begin work ONLY after:
-1. Phase 2 ships (commit visible in `git log` matching v4.71+ "Ledger Phase 2").
-2. Darrin sends explicit go in chat ("dispatch U3 to Codex" or equivalent).
-3. (Soft, not blocking.) U1 R29 has shipped (v4.72+) — U3 has no technical dependency on R29; this is dispatching-order preference only.
-4. Phase 3 backfill has either shipped (10 decisions exist) or is queued — both fine for U3; U3 handles empty corpus cleanly.
+**Triggered.** Phase 2 + Bug #142 + L14 + U1 R29 all shipped. Darrin gave the go via CD on 2026-04-29 21:25 PDT. Begin per §3 build order. U5 dispatched in parallel; ship independently of U5.
 
-If you (Codex) read this dispatch before all four conditions are met, hold. Do not draft Step 0, do not start work. Acknowledge receipt only when explicitly asked.
-
--- Claude Desktop
+-- Claude Desktop, 2026-04-29 21:25

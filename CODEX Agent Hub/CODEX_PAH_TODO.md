@@ -1,5 +1,13 @@
 # PAH Todo
 
+## Critical Regression Note
+
+- [ ] Treat current PAH functionality as potentially broken until re-diagnosed from first principles. User reports a MASSIVE REGRESSION: PAH behavior is not trustworthy and the Inspector screen fonts are wrong.
+- [ ] Do not guess while debugging PAH. Diagnose with concrete evidence first: read the relevant code, inspect live DOM/CSS, compare against the PG Design Bible, run the Inspector, and verify live browser behavior before deciding on a fix.
+- [ ] Double-check the diagnosis before applying any fix. Capture expected behavior, observed behavior, root cause, and exact file/surface affected.
+- [ ] If targeted fixes do not restore PAH functionality and Inspector styling quickly, consider reverting PAH to an earlier known-good version and re-applying only verified changes.
+- [ ] Before declaring PAH fixed, require live browser review of the Inspector screen fonts/palette plus live PAH functional checks. Passing smoke tests alone is not enough.
+
 ## Reliability / Audit
 
 - [x] Add append-only PAH interaction ledger v1 (`CODEX_pah_interaction_ledger.jsonl`) for sent messages, read marks, archive sweep start/finish, archive candidates, archived messages, archive skips, mailbox discrepancies, and steward check start/finish events.
@@ -10,11 +18,16 @@
 - [ ] Add ledger retention/export controls so the JSONL audit trail stays compact but remains reviewable.
 - [x] Add a PAH Inspector applet for endpoint, mailbox, archive/read, ledger, and dashboard UI wiring checks.
 - [x] Add create-message dry-run support so live endpoint probes cannot create stray mailbox messages.
+- [x] Restore mailroom compatibility routes (`/api/send`, `/api/message-read-state`, `/api/mark-all-read`) as wrappers around current create/read-state helpers so the dashboard and operator scripts cannot silently fail against retired endpoints.
+- [x] Add a token-protected mailroom transaction canary (`/api/mailroom-canary`) that exercises send, read-state, reply tombstone, and interaction-ledger writes in an isolated temporary mailbox.
+- [x] Add `/api/health` Inspector freshness reporting so stale Inspector output warns instead of masquerading as current green evidence.
+- [ ] Add a dashboard callout when the latest Inspector report is stale and a one-click "Run Inspector now" workflow is available.
 
 ## Mailroom Protocol
 
 - [ ] Define PAH mailbox protocol v3 for CD/CC/Codex: check mail, report counts, mark read, archive read, and report no-mail claims through PAH-visible events.
 - [ ] Require agent replies to include mailbox check summary: inbox scanned count, message IDs read, message IDs archived, skipped IDs, and reason for each skip.
+- [ ] Make the mailbox check summary rule explicitly normative for CC as well as Codex/CD-facing PAH workflows; it must catch incomplete enumeration, not only false no-mail claims.
 - [x] Add no-mail claim validation: when an agent says "no mail", PAH compares that claim against active inbox state and logs pass/fail.
 - [ ] Add explicit read receipt message or state record for each agent-managed inbox read outside the PAH UI.
 - [ ] Add route-test ping/reply protocol for CD and CC, with automatic mismatch detection when replies are missing or archived incorrectly.
@@ -27,6 +40,8 @@
 - [ ] Add tests for every completion/ack/report/status combination that should close before generic agent ownership.
 - [ ] Add tests for ready-for-review/report combinations that must remain open on the reviewing agent.
 - [x] Add classifier transition logging whenever a thread changes between open-on-agent, open-on-Darrin, owner-unknown, parked, and closed.
+- [x] Treat explicit coordination-only no-action shares as closed/informational so Inspector does not create false Codex work from awareness mail.
+- [x] Make stale-unread wake candidates classifier-aware and thread-aware: only open-on-agent/owner-unknown unread items wake, and older unread messages in completed threads are suppressed.
 - [ ] Add a "why classified this way" explanation field in action detail for each open/unknown thread.
 
 ## Archive / Read Handling
@@ -50,7 +65,10 @@
 - [ ] Add test coverage for the periodic automation prompt/protocol so future automation edits preserve archive-read and discrepancy checks.
 - [ ] Implement CC active-dispatch progress watchdog from the v0.2 monitoring spec, including `_state/active_dispatch.json`, allowlisted target paths, child-file mtime evidence, warning/error thresholds, and dashboard status cards.
 - [ ] Fold CD-approved v0.2 monitoring amendments into implementation: first-class `recommended_action` on progress cards, retained healthy/stalled ASCII tile contract, M1 CC watchdog plus M2 mailbox SLA in MVP-of-MVP, default stale warn/error thresholds of 30/45 minutes, and formal `compose` / `heavy_write` states.
-- [ ] Upgrade PAH Inspector to validate `_state/active_dispatch.json` existence, JSON schema, required fields, allowed status values, sidecar freshness, and safe target-path allowlisting.
+- [x] Add `ready_for_human_loop` to the CC progress sidecar state list so durable ready-to-commit/ready-for-go mailbox evidence can suppress stale-file and compose-cap alarms while CC waits on Darrin.
+- [x] Upgrade PAH Inspector to validate `_state/active_dispatch.json` existence/readiness, JSON schema, required fields, allowed status values, and safe target-path allowlisting.
+- [x] Add dedicated Claude Code Activity dashboard panel with Check Now, sidecar age, target disk-write age/path, mailbox fallback write age/path, target count, scanned-file count, issues, and recommended action.
+- [ ] Upgrade PAH Inspector to validate `_state/active_dispatch.json` sidecar freshness against status-specific thresholds.
 - [ ] Upgrade PAH Inspector to test CC progress evidence: newest child-file mtime under target paths, ignored cache/build folders, missing target paths, and stale warning/error threshold transitions.
 - [ ] Upgrade PAH Inspector to verify false-positive guards for CC monitoring: paused, blocked, complete, abandoned, heavy-write, and non-file-progress states must not create incorrect stall alerts.
 - [ ] Upgrade PAH Inspector to verify Agent Progress dashboard wiring: yellow/red progress cards are clickable, open action detail, show evidence/reason/threshold, and expose copy escalation/open-folder actions where safe.
@@ -61,10 +79,15 @@
 
 - [x] Surface interaction ledger health in the top status panel with a drilldown link.
 - [x] Add a main-screen Inspector button that opens a full-screen PAH Inspector panel with latest report summary, findings, Markdown report, and report-open action.
+- [x] Add Inspector at-a-glance status graphics and color-coded action buttons while keeping PG Design Bible colors/fonts.
+- [x] Make Inspector status graphics and chips clickable so PASS/WARN/FAIL reorder the findings list and OVERALL restores severity order.
 - [ ] Add visual status for unresolved communication backlog: open-on-agent, owner-unknown, stale unread, and Darrin-waiting.
 - [ ] Add one-click "copy discrepancy summary" for sending concise status to CD/CC.
 - [ ] Add collapsible advanced diagnostics so the default dashboard stays clean but the details are nearby.
 - [ ] Continue aligning dashboard typography, density, controls, and colors to the PG design system.
+- [x] Re-align PAH root font/color tokens with the PG Design Bible: UI prose uses `--font-ui`, mono is reserved for exact data, warning is `#f39c12`, and alert panels stay on the dark navy/error surface instead of pale backgrounds.
+- [x] Re-align Inspector and PAH status surfaces with the PG Design Bible: status uses semantic border/text/dot treatment while backgrounds stay on the dark navy surface tokens.
+- [ ] Add visual regression screenshots for PAH alert/notice states at live desktop width so font/background drift is caught before handoff.
 
 ## Backup / Release Hygiene
 
@@ -72,3 +95,4 @@
 - [ ] Add a pre-commit or release checklist: py_compile, smoke tests, live `/api/health`, periodic steward run, and GitHub backup status.
 - [ ] Keep generated logs/state out of commits unless they are intentional fixtures or docs.
 - [x] Document PAH operational protocols in the README: live URL, server start command, health checks, archive-read behavior, and ledger location.
+- [ ] At the end of every PAH implementation or incident-response pass, update durable PAH docs with what was learned, what changed, verification run, remaining risk, and any follow-up work. Use README for operations, TODO for follow-ups, and spec docs for product/UX/protocol/acceptance rules.

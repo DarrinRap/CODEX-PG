@@ -170,9 +170,40 @@ Deep inspector run:
 python "C:\CODEX PG\CODEX Agent Hub\CODEX_pah_inspector.py"
 ```
 
-The inspector checks live endpoints, create-message dry-run behavior, internal mailbox/message contracts, archive-read dry-run behavior, interaction-ledger coverage, dashboard UI/API wiring, and current communication backlog. It writes JSON and Markdown reports to `CODEX logs\CODEX_pah_inspector_latest.json` and `CODEX logs\CODEX_pah_inspector_latest.md`.
+The inspector checks live endpoints, create-message dry-run behavior, a live mailroom transaction canary, internal mailbox/message contracts, archive-read dry-run behavior, interaction-ledger coverage, dashboard UI/API wiring, current communication backlog, and Agent Progress readiness. The mailroom canary is token-protected at `/api/mailroom-canary` and exercises send, read-state, reply tombstone, and interaction-ledger events inside an isolated temporary mailbox so a broken transaction path cannot hide behind a passing dry-run probe. `/api/health` also exposes an `inspector` freshness component; a stale latest Inspector report is a warning because old green checks are not current evidence.
+
+For CC progress, the Inspector distinguishes a present card from live tracking: `cc_active_dispatch` passes the card contract, warns when `C:\panda-gallery\workflows\cc_mailbox\_state\active_dispatch.json` is absent, passes a valid sidecar schema, and fails unsafe/missing target-path evidence. The CC sidecar supports `active`, `compose`, `heavy_write`, `paused`, `blocked`, `ready_for_human_loop`, `complete`, and `abandoned`; `ready_for_human_loop` means CC has filed durable mailbox evidence and is waiting for Darrin's commit/go/ack word, so PAH must not raise stale-file or compose-cap alarms. It writes JSON and Markdown reports to `CODEX logs\CODEX_pah_inspector_latest.json` and `CODEX logs\CODEX_pah_inspector_latest.md`.
+
+The dashboard includes a dedicated Claude Code Activity panel. It shows sidecar status, sidecar age, expected target count, target scanned-file count, latest target disk-write age/path, fallback CC mailbox disk-write age/path, issues, and recommended action. The panel's `Check now` button calls `/api/cc-activity` and recomputes the card directly from disk without waiting for the next full cockpit refresh. If the sidecar is absent, PAH can still show the latest write it can see under the CC mailbox root, but it cannot prove live CC work against target paths until CC writes `active_dispatch.json`.
+
+Classifier/wake note: PAH treats explicit coordination-only "no action required" shares as closed/informational, even when the source message leaves `status: open` for traceability. Stale-unread tray and Inspector warnings are now classifier-aware and thread-aware: they wake only for unread `open_on_agent` or `owner_unknown` messages, and older unread messages are suppressed when the same thread has later completion/shipped/closed evidence. Closed reports, parked drafts, Darrin-waiting items, and no-action shares may remain physically unread without becoming wake candidates.
+
+Mailroom compatibility note: `/api/send`, `/api/message-read-state`, and `/api/mark-all-read` are supported compatibility routes. They must keep mapping to the current create-message/read-state helpers until all dashboard clients and operator habits have migrated. Rejecting these routes makes PAH look healthy while preventing visible mailbox pickup/read cleanup.
+
+PAH visual-token note: PAH inherits the Panda Gallery Design Bible for user-facing surfaces. Body/prose/labels use `--font-ui` (`Segoe UI`, `SF Pro`, `Noto Sans`, sans-serif); mono is reserved for precision data such as paths, IDs, counts, timestamps, shortcuts, and version strings. Backgrounds must stay on the dark navy surface scale (`#14141f`, `#161625`, `#1a1a2e`, `#22223a`, `#2a2a4e`); pale/cream/white alert panels are forbidden. The peach accent remains `#e8a87c`, warning is `#f39c12`, error is `#e74c3c`, and primary text is cream `#e0ddd5`. Inspector and PAH status elements use semantic color only for borders, text, dots, and glyphs; their panel/card/button backgrounds stay on the Bible surface tokens.
 
 `Archive read` is intentionally conservative. It may move read, structured, completed/closed mailbox files into `Archive\Inbox Cleanup\...`; it must not move unread mail, active agent-owned threads, waiting-on-Darrin items, pending dispatches without completion evidence, owner-unknown/unstructured mail, or `status: drafted_pending_*` pre-staged trigger artifacts. The archive-read result reports skip reasons including `active_thread_without_completion_evidence`, `pending_dispatch_without_completion_evidence`, `pre_staged_pending_trigger`, `waiting_on_darrin`, and `owner_unknown_or_unstructured`. If a destination filename already exists, PAH uses a unique destination, does not overwrite the existing file, and reports `archive_conflicts`.
+
+## Documentation Reminder
+
+Every PAH implementation or incident-response pass must update the durable docs before handoff when it changes how PAH behaves, how agents coordinate, or what Darrin should expect.
+
+Document:
+
+- what was learned from the incident, review, inspector result, or user feedback
+- what behavior changed in PAH
+- which files, endpoints, protocols, or UI surfaces were affected
+- what verification was run
+- any remaining risk, deferred work, or approval boundary
+
+Use the nearest durable home:
+
+- `CODEX_README.md` for operational behavior, commands, state files, and support procedures
+- `CODEX_PAH_TODO.md` for follow-up work and recurring reminders
+- `CODEX_PAH_RELIABILITY_AND_DESIGN_SPEC.md` or a successor spec for product, UX, safety, protocol, and acceptance rules
+- mailbox messages only for coordination summaries; they do not replace the durable docs
+
+If a change fixes a mistake Darrin called out, capture the rule that would have prevented it.
 
 Operational logs and state:
 

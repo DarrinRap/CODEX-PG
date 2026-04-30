@@ -8,24 +8,32 @@
 :root {
   --canvas: #14141f;
   --chrome: #161625;
-  --panel: #1a1a2e;
-  --panel-2: #22223a;
-  --field: #22223a;
-  --field-hover: #2a2a4e;
+  --pane: #1a1a2e;
+  --pane-raised: #22223a;
+  --pane-selected: #2a2a4e;
+  --panel: var(--pane);
+  --panel-2: var(--pane-raised);
+  --field: var(--pane-raised);
+  --field-hover: var(--pane-selected);
   --border: #2a2a3e;
   --border-soft: #232336;
+  --border-hover: #3a3a4e;
   --text: #e0ddd5;
-  --muted: #a7a09a;
-  --quiet: #888888;
-  --dim: #555555;
+  --text-muted: #888888;
+  --text-dim: #555555;
+  --muted: var(--text-muted);
+  --quiet: var(--text-dim);
+  --dim: var(--text-dim);
   --accent: #e8a87c;
   --accent-hover: #d4945a;
   --accent-light: #f0b98c;
-  --accent-ink: #14141f;
+  --accent-ink: #1a1a2e;
   --accent-soft: rgba(232, 168, 124, .12);
+  --accent-border: rgba(232, 168, 124, .45);
   --ok: #7fb069;
-  --warn: #d7b86b;
+  --warn: #f39c12;
   --err: #e74c3c;
+  --mode-review: #5fa0a8;
   --ink: #161625;
   --bamboo: #7fb069;
   --focus: rgba(232, 168, 124, .36);
@@ -39,13 +47,14 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--text);
-  font: 12px/1.32 var(--font-ui);
+  font: 13px/1.32 var(--font-ui);
   letter-spacing: 0;
 }
 button,
 select,
 input {
   font: inherit;
+  font-family: var(--font-ui);
 }
 button,
 select,
@@ -65,7 +74,7 @@ button {
 }
 button:hover:not([disabled]) {
   background: var(--field-hover);
-  border-color: #3a3a4e;
+  border-color: var(--border-hover);
 }
 button.primary {
   background: var(--accent);
@@ -75,7 +84,7 @@ button.primary {
 }
 button.primary:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
 button.secondary { background: var(--panel-2); color: var(--muted); }
-button.danger { background: rgba(231, 76, 60, .10); border-color: rgba(231, 76, 60, .48); color: #f0aaa2; }
+button.danger { background: var(--field); border-color: rgba(231, 76, 60, .48); color: var(--err); }
 button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 button[disabled] { opacity: .48; cursor: default; }
 .top-actions #shortcutHelp,
@@ -144,10 +153,10 @@ button[disabled] { opacity: .48; cursor: default; }
   align-items: center;
   gap: 5px;
   padding: 0 7px;
-  border: 1px solid rgba(255, 255, 255, .055);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: #07070d;
-  color: #5f5b66;
+  background: var(--field);
+  color: var(--muted);
   font: 10px/1 var(--font-mono);
   text-transform: uppercase;
   white-space: nowrap;
@@ -155,7 +164,7 @@ button[disabled] { opacity: .48; cursor: default; }
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .55);
 }
 .health-chip:focus-visible {
-  outline: 2px solid rgba(242, 176, 126, .72);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .health-chip:hover {
@@ -165,21 +174,20 @@ button[disabled] { opacity: .48; cursor: default; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #171721;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, .025);
+  background: var(--text-dim);
 }
-.health-chip.ok { border-color: rgba(127, 176, 105, .44); background: rgba(24, 42, 28, .72); color: #d7e8cf; }
-.health-chip.ok .health-dot { background: var(--ok); box-shadow: 0 0 8px rgba(127, 176, 105, .45); }
-.health-chip.warn { border-color: rgba(215, 184, 107, .56); background: rgba(58, 45, 20, .78); color: #f3dc9d; }
-.health-chip.warn .health-dot { background: var(--warn); box-shadow: 0 0 8px rgba(215, 184, 107, .45); }
-.health-chip.err { border-color: rgba(231, 76, 60, .64); background: rgba(63, 24, 31, .82); color: #ffc4bd; }
-.health-chip.err .health-dot { background: var(--err); box-shadow: 0 0 8px rgba(231, 76, 60, .50); }
-.health-chip.unknown { border-color: rgba(255, 255, 255, .04); background: #030306; color: #3e3b45; }
-.health-chip.unknown .health-dot { background: #0d0d13; box-shadow: none; }
+.health-chip.ok { border-color: rgba(127, 176, 105, .45); color: var(--ok); }
+.health-chip.ok .health-dot { background: var(--ok); }
+.health-chip.warn { border-color: rgba(243, 156, 18, .50); color: var(--warn); }
+.health-chip.warn .health-dot { background: var(--warn); }
+.health-chip.err { border-color: rgba(231, 76, 60, .56); color: var(--err); }
+.health-chip.err .health-dot { background: var(--err); }
+.health-chip.unknown { border-color: var(--border-soft); background: var(--chrome); color: var(--text-dim); }
+.health-chip.unknown .health-dot { background: var(--text-dim); box-shadow: none; }
 .topbar .status-line,
 .topbar .meta,
 .topbar .brand-sub {
-  color: #d9d2c2;
+  color: var(--muted);
 }
 .topbar .system-state {
   color: var(--text);
@@ -239,7 +247,7 @@ button[disabled] { opacity: .48; cursor: default; }
   gap: 8px;
   background: var(--chrome);
 }
-.panel-title { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .9px; }
+.panel-title { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.2px; }
 .count { color: var(--text); font: 11px/1.2 var(--font-mono); font-weight: 700; }
 .scroll {
   min-height: 0;
@@ -258,7 +266,7 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 .scroll::-webkit-scrollbar-thumb,
 .message-preview-body::-webkit-scrollbar-thumb {
-  background: #3a3a4e;
+  background: var(--border-hover);
   border: 2px solid var(--chrome);
   border-radius: 8px;
 }
@@ -282,7 +290,7 @@ button[disabled] { opacity: .48; cursor: default; }
   cursor: pointer;
 }
 .agent:hover {
-  border-color: #3a3a4e;
+  border-color: var(--border-hover);
   background: var(--field-hover);
 }
 .agent:focus-visible {
@@ -311,12 +319,11 @@ button[disabled] { opacity: .48; cursor: default; }
   max-width: 100%;
   margin-top: 3px;
   padding: 2px 7px;
-  border: 1px solid rgba(215, 184, 107, .56);
+  border: 1px solid rgba(243, 156, 18, .50);
   border-radius: 5px;
-  background: rgba(58, 45, 20, .78);
-  color: #f3dc9d;
+  background: var(--field);
+  color: var(--warn);
   font-weight: 760;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
 }
 .agent-note.status-ok {
   justify-self: start;
@@ -325,10 +332,9 @@ button[disabled] { opacity: .48; cursor: default; }
   padding: 2px 7px;
   border: 1px solid rgba(127, 176, 105, .48);
   border-radius: 5px;
-  background: rgba(24, 42, 28, .78);
-  color: #d7e8cf;
+  background: var(--field);
+  color: var(--ok);
   font-weight: 760;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
 }
 .agent > .agent-note { grid-column: 2; margin-top: -4px; }
 .agent-count { grid-column: 2; color: var(--muted); font: 10px/1.2 var(--font-mono); }
@@ -345,7 +351,7 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 
 .participants-panel { display: grid; }
-.queue-panel { grid-template-rows: auto auto auto auto auto 1fr; }
+.queue-panel { grid-template-rows: auto auto auto auto auto auto 1fr; }
 .queue-panel > .panel-head .count { display: none; }
 .guide-card {
   margin: 6px 8px 0;
@@ -415,9 +421,9 @@ button.mini-pill.active strong { color: var(--accent-ink); }
   gap: 3px;
   text-align: left;
 }
-.inbox-card:hover { border-color: #3a3a4e; background: var(--field-hover); }
+.inbox-card:hover { border-color: var(--border-hover); background: var(--field-hover); }
 .inbox-card.active { border-color: rgba(232, 168, 124, .72); box-shadow: inset 3px 0 0 var(--accent); }
-.inbox-card.waiting { border-color: rgba(215, 184, 107, .56); }
+.inbox-card.waiting { border-color: rgba(243, 156, 18, .50); }
 .inbox-card.attention { border-color: rgba(231, 76, 60, .62); }
 .inbox-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .inbox-name { min-width: 0; color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -484,13 +490,13 @@ button.filter.active {
   align-items: center;
   gap: 10px;
 }
-.summary:hover { border-color: #3a3a4e; background: var(--field-hover); }
+.summary:hover { border-color: var(--border-hover); background: var(--field-hover); }
 .summary.active { border-color: rgba(232, 168, 124, .72); box-shadow: inset 4px 0 0 var(--accent); }
 .summary strong { display: block; min-width: 30px; font-size: 20px; line-height: 1; }
 .summary span { color: var(--muted); font-size: 11px; line-height: 1.2; }
-.summary.warn { border-color: rgba(185, 120, 24, .56); }
-.summary.err { border-color: rgba(182, 75, 63, .62); }
-.summary.warn.active, .summary.err.active { border-color: rgba(79, 125, 66, .8); }
+.summary.warn { border-color: rgba(243, 156, 18, .50); }
+.summary.err { border-color: rgba(231, 76, 60, .56); }
+.summary.warn.active, .summary.err.active { border-color: var(--accent-border); }
 .steward-panel {
   margin: 8px 12px 0;
   display: grid;
@@ -520,13 +526,14 @@ button.filter.active {
 .steward-card-action {
   margin-top: 2px;
   color: var(--accent);
-  font: 9px/1.2 var(--font-mono);
+  font: 10px/1.2 var(--font-ui);
+  font-weight: 750;
   text-transform: uppercase;
   letter-spacing: .06em;
 }
 .steward-card.ok { border-color: rgba(47, 125, 74, .34); }
-.steward-card.warn { border-color: rgba(215, 184, 107, .42); }
-.steward-card.err { border-color: rgba(182, 75, 63, .58); }
+.steward-card.warn { border-color: rgba(243, 156, 18, .48); }
+.steward-card.err { border-color: rgba(231, 76, 60, .56); }
 .steward-top {
   display: flex;
   align-items: center;
@@ -545,7 +552,7 @@ button.filter.active {
   flex: 0 0 auto;
 }
 .steward-card.ok .steward-dot { background: var(--ok); box-shadow: 0 0 7px rgba(127, 176, 105, .42); }
-.steward-card.warn .steward-dot { background: var(--warn); box-shadow: 0 0 7px rgba(215, 184, 107, .42); }
+.steward-card.warn .steward-dot { background: var(--warn); box-shadow: 0 0 7px rgba(243, 156, 18, .36); }
 .steward-card.err .steward-dot { background: var(--err); box-shadow: 0 0 7px rgba(231, 76, 60, .44); }
 .steward-value {
   min-width: 0;
@@ -558,23 +565,112 @@ button.filter.active {
 .steward-note {
   min-width: 0;
   color: var(--muted);
-  font: 10px/1.2 var(--font-mono);
+  font: 12px/1.2 var(--font-ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.cc-activity-panel {
+  margin: 8px 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+}
+.cc-activity-panel.ok { border-color: rgba(47, 125, 74, .36); }
+.cc-activity-panel.warn { border-color: rgba(243, 156, 18, .48); }
+.cc-activity-panel.err { border-color: rgba(231, 76, 60, .56); }
+.cc-activity-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.cc-activity-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.cc-activity-title .dot { margin-right: 0; }
+.cc-activity-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cc-activity-actions button {
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.cc-activity-status {
+  color: var(--text);
+  font-weight: 760;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-activity-summary {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cc-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.cc-activity-metric {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--field);
+  padding: 6px 7px;
+}
+.cc-activity-label {
+  color: var(--quiet);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.cc-activity-value {
+  margin-top: 3px;
+  color: var(--text);
+  font: 13px/1.2 var(--font-mono);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-activity-path {
+  color: var(--muted);
+  font: 10px/1.25 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.cc-activity-issues {
+  color: var(--warn);
+  font-size: 11px;
+}
 .notice {
   margin: 10px 12px 0;
-  border: 1px solid rgba(182, 75, 63, .56);
-  border-radius: 7px;
-  background: #fff5f2;
+  border: 1px solid rgba(231, 76, 60, .62);
+  border-radius: 4px;
+  background: var(--field);
   color: var(--text);
-  padding: 9px 10px;
-  font-size: 12px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font-ui);
 }
 .notice.ok {
   border-color: rgba(47, 125, 74, .45);
-  background: #e9f3e2;
+  background: var(--field);
+  color: var(--ok);
 }
 .notice[hidden] { display: none; }
 .trust-strip {
@@ -599,6 +695,7 @@ button.filter.active {
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
+  font-family: var(--font-ui);
 }
 .trust-close {
   min-width: 24px;
@@ -624,17 +721,17 @@ button.filter.active {
   color: var(--muted);
   font-size: 11px;
 }
-.trust-row + .trust-row { border-top: 1px solid rgba(255, 255, 255, .06); }
+.trust-row + .trust-row { border-top: 1px solid var(--border-soft); }
 .trust-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--warn);
-  box-shadow: 0 0 0 3px rgba(215, 184, 107, .18);
+  box-shadow: 0 0 0 3px rgba(243, 156, 18, .16);
 }
 .trust-row.err .trust-dot {
   background: var(--err);
-  box-shadow: 0 0 0 3px rgba(182, 75, 63, .16);
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, .14);
 }
 .trust-row.ok .trust-dot {
   background: var(--ok);
@@ -648,9 +745,9 @@ button.filter.active {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.trust-title .muted { color: #c9c0b5; font-weight: 550; }
+.trust-title .muted { color: var(--muted); font-weight: 550; }
 .trust-meta {
-  color: #c9c0b5;
+  color: var(--muted);
   font: 10px/1.2 var(--font-mono);
   white-space: nowrap;
 }
@@ -666,15 +763,16 @@ button.filter.active {
   padding: 8px;
   display: grid;
   gap: 5px;
+  font-family: var(--font-ui);
 }
 .action:hover { background: var(--field-hover); }
 .action.selected { border-color: rgba(232, 168, 124, .72); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
-.action.warn { border-color: rgba(215, 184, 107, .58); }
-.action-title { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action.warn { border-color: rgba(243, 156, 18, .50); }
+.action-title { font-family: var(--font-ui); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action-summary { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action-help { color: var(--quiet); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .action.ok { border-color: rgba(47, 125, 74, .38); }
-.action.err { border-color: rgba(182, 75, 63, .56); }
+.action.err { border-color: rgba(231, 76, 60, .56); }
 .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag {
   min-height: 18px;
@@ -682,18 +780,18 @@ button.filter.active {
   border-radius: 3px;
   padding: 1px 6px;
   color: var(--quiet);
-  background: rgba(255, 255, 255, .06);
+  background: var(--pane-raised);
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .5px;
 }
-.tag.wake { background: rgba(215, 184, 107, .16); color: var(--warn); }
-.tag.urgent { background: rgba(231, 76, 60, .18); color: #f5b4ad; }
-.tag.decision { background: rgba(232, 168, 124, .16); color: var(--accent-light); }
-.tag.unread { background: rgba(255, 255, 255, .08); color: var(--text); }
-.tag.local { background: rgba(127, 176, 105, .14); color: var(--ok); }
-.tag.snoozed { background: rgba(167, 160, 154, .14); color: var(--muted); }
+.tag.wake { border: 1px solid rgba(243, 156, 18, .45); color: var(--warn); }
+.tag.urgent { border: 1px solid rgba(231, 76, 60, .50); color: var(--err); }
+.tag.decision { border: 1px solid var(--accent-border); color: var(--accent); }
+.tag.unread { border: 1px solid var(--border); color: var(--text); }
+.tag.local { border: 1px solid rgba(127, 176, 105, .45); color: var(--ok); }
+.tag.snoozed { border: 1px solid var(--border-soft); color: var(--muted); }
 .empty {
   padding: 28px;
   color: var(--muted);
@@ -783,7 +881,7 @@ button.filter.active {
 .wake-box {
   border: 0;
   border-radius: 0;
-  background: rgba(215, 184, 107, .07);
+  background: var(--field);
   padding: 7px;
   display: grid;
   gap: 6px;
@@ -808,8 +906,8 @@ button.filter.active {
 }
 .scope-box[hidden] { display: none; }
 .scope-box {
-  border-color: rgba(215, 184, 107, .56);
-  background: rgba(215, 184, 107, .06);
+  border-color: rgba(243, 156, 18, .50);
+  background: var(--field);
 }
 .scope-row {
   display: grid;
@@ -879,20 +977,20 @@ button.filter.active {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(12, 12, 25, .96);
+  background: var(--canvas);
   color: var(--text);
   display: grid;
   grid-template-rows: auto auto 1fr;
   min-width: 0;
 }
 .inspector-head {
-  min-height: 60px;
+  min-height: 52px;
   border-bottom: 1px solid var(--border);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(180px, .75fr) minmax(260px, 1.25fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
+  gap: 10px;
+  padding: 8px 14px;
   background: var(--ink);
 }
 .inspector-title {
@@ -903,7 +1001,7 @@ button.filter.active {
 }
 .inspector-title h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.1;
 }
 .inspector-meta {
@@ -911,18 +1009,103 @@ button.filter.active {
   font: 11px/1.2 var(--font-mono);
   white-space: nowrap;
 }
+.inspector-glance {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(70px, 1fr));
+  gap: 6px;
+}
+.inspector-glance-item {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--field);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+}
+button.inspector-glance-item,
+button.inspector-stat {
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+}
+button.inspector-glance-item:hover,
+button.inspector-stat:hover {
+  filter: brightness(1.08);
+}
+button.inspector-glance-item.is-active,
+button.inspector-stat.is-active {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.inspector-glance-icon {
+  width: 24px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font: 10px/1 var(--font-ui);
+  font-weight: 900;
+}
+.inspector-glance-copy {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.inspector-glance-label {
+  color: var(--quiet);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+}
+.inspector-glance-value {
+  color: var(--text);
+  font: 15px/1.05 var(--font-mono);
+  font-weight: 900;
+  white-space: nowrap;
+}
+.inspector-glance-item.pass { border-color: rgba(127, 176, 105, .45); }
+.inspector-glance-item.pass .inspector-glance-icon { background: var(--panel); color: var(--ok); border: 1px solid rgba(127, 176, 105, .45); }
+.inspector-glance-item.warn { border-color: rgba(243, 156, 18, .50); }
+.inspector-glance-item.warn .inspector-glance-icon { background: var(--panel); color: var(--warn); border: 1px solid rgba(243, 156, 18, .50); }
+.inspector-glance-item.fail { border-color: rgba(231, 76, 60, .56); }
+.inspector-glance-item.fail .inspector-glance-icon { background: var(--panel); color: var(--err); border: 1px solid rgba(231, 76, 60, .56); }
 .inspector-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.inspector-actions button { min-height: 34px; }
+.inspector-actions button {
+  min-height: 32px;
+  border-radius: 6px;
+  font-weight: 800;
+}
+.inspector-actions .inspector-action-primary {
+  border-color: rgba(232, 168, 124, .55);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.inspector-actions .inspector-action-secondary {
+  border-color: rgba(136, 136, 136, .36);
+  background: var(--field);
+  color: var(--text);
+}
+.inspector-actions .inspector-action-close {
+  border-color: rgba(231, 76, 60, .42);
+  background: var(--field);
+  color: var(--err);
+}
 .inspector-summary {
   border-bottom: 1px solid var(--border);
-  padding: 10px 18px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
-  gap: 8px;
+  padding: 8px 14px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  overflow-x: auto;
   background: var(--panel);
 }
 .inspector-stat {
@@ -930,18 +1113,20 @@ button.filter.active {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--field);
-  padding: 10px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .inspector-stat-label {
   color: var(--quiet);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .7px;
 }
 .inspector-stat-value {
-  margin-top: 5px;
-  font: 20px/1.1 var(--font-mono);
+  font: 14px/1 var(--font-mono);
   font-weight: 800;
 }
 .inspector-stat.pass .inspector-stat-value { color: var(--ok); }
@@ -967,9 +1152,9 @@ button.filter.active {
   background: var(--panel-2);
   padding: 10px;
 }
-.inspector-finding.pass { border-color: rgba(128, 194, 105, .46); }
-.inspector-finding.warn { border-color: rgba(215, 184, 107, .66); }
-.inspector-finding.fail { border-color: rgba(231, 76, 60, .68); }
+.inspector-finding.pass { border-color: rgba(127, 176, 105, .45); }
+.inspector-finding.warn { border-color: rgba(243, 156, 18, .50); }
+.inspector-finding.fail { border-color: rgba(231, 76, 60, .56); }
 .inspector-finding-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -983,9 +1168,9 @@ button.filter.active {
   font-weight: 900;
   text-transform: uppercase;
 }
-.inspector-badge.pass { background: rgba(128, 194, 105, .15); color: var(--ok); border: 1px solid rgba(128, 194, 105, .45); }
-.inspector-badge.warn { background: rgba(215, 184, 107, .16); color: var(--warn); border: 1px solid rgba(215, 184, 107, .5); }
-.inspector-badge.fail { background: rgba(231, 76, 60, .18); color: #ffc4bd; border: 1px solid rgba(231, 76, 60, .62); }
+.inspector-badge.pass { background: var(--field); color: var(--ok); border: 1px solid rgba(127, 176, 105, .45); }
+.inspector-badge.warn { background: var(--field); color: var(--warn); border: 1px solid rgba(243, 156, 18, .50); }
+.inspector-badge.fail { background: var(--field); color: var(--err); border: 1px solid rgba(231, 76, 60, .56); }
 .inspector-finding-title {
   min-width: 0;
   font-weight: 800;
@@ -1046,15 +1231,15 @@ button.filter.active {
   flex: 0 0 auto;
   min-height: 22px;
   padding: 2px 8px;
-  border: 1px solid rgba(231, 76, 60, .64);
+  border: 1px solid rgba(231, 76, 60, .56);
   border-radius: 5px;
-  background: rgba(63, 24, 31, .82);
-  color: #ffc4bd;
+  background: var(--field);
+  color: var(--err);
   font: 10px/1 var(--font-mono);
   font-weight: 800;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45);
+  box-shadow: none;
 }
 .diag-action:hover { filter: brightness(1.08); }
 .diag-action:focus-visible {
@@ -1128,12 +1313,12 @@ button.filter.active {
   gap: 6px;
 }
 .mailbox-card:hover {
-  border-color: #3a3a4e;
+  border-color: var(--border-hover);
   background: var(--field);
 }
 .mailbox-card.hot {
-  border-color: rgba(215, 184, 107, .72);
-  box-shadow: inset 0 -3px 0 rgba(215, 184, 107, .72);
+  border-color: rgba(243, 156, 18, .50);
+  box-shadow: inset 0 -3px 0 var(--warn);
 }
 .mailbox-card.waiting {
   border-color: rgba(232, 168, 124, .48);
@@ -1295,15 +1480,18 @@ body.quiet-mode .top-actions button[disabled] {
   .brand, .status-line, .top-actions, .diag, .footer strong { min-width: 0; max-width: 100%; }
   .top-actions > * { flex: 1 1 auto; }
   .inbox-strip, .summary-strip, .guide-steps { grid-template-columns: minmax(0, 1fr); }
+  .cc-activity-head { grid-template-columns: minmax(0, 1fr); }
+  .cc-activity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filter-row, .detail-actions { flex-wrap: wrap; }
   .queue-search { display: none; }
   .filter-row .toggle { display: none; }
   .footer { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 44px; padding: 8px 12px; }
   .footer strong { overflow-wrap: anywhere; white-space: normal; }
-  .inspector-head { grid-template-columns: minmax(0, 1fr); }
+  .inspector-head { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
   .inspector-title { display: grid; gap: 4px; }
+  .inspector-glance { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
   .inspector-actions { justify-content: start; flex-wrap: wrap; }
-  .inspector-summary { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+  .inspector-summary { flex-wrap: wrap; overflow-x: visible; }
   .inspector-body { grid-template-columns: minmax(0, 1fr); }
   .inspector-findings { border-right: 0; border-bottom: 1px solid var(--border); }
   .mailbox-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1417,6 +1605,7 @@ body.quiet-mode .top-actions button[disabled] {
       </div>
       <div class="summary-strip" id="summaryStrip"></div>
       <div class="steward-panel" id="stewardPanel" hidden></div>
+      <div class="cc-activity-panel unknown" id="ccActivityPanel" hidden></div>
       <div class="notice" id="notice" hidden></div>
       <div class="trust-strip" id="trustStrip" hidden></div>
       <div class="filter-row">
@@ -1531,10 +1720,11 @@ body.quiet-mode .top-actions button[disabled] {
         <h2>PAH Inspector</h2>
         <span class="inspector-meta" id="inspectorMeta">Latest report not loaded.</span>
       </div>
+      <div class="inspector-glance" id="inspectorGlance" aria-label="Inspector status at a glance"></div>
       <div class="inspector-actions">
-        <button id="refreshInspector">Refresh report</button>
-        <button id="openInspectorReport">Open report</button>
-        <button id="closeInspector">Close</button>
+        <button class="inspector-action-primary" id="refreshInspector" title="Refresh the latest Inspector report">Refresh</button>
+        <button class="inspector-action-secondary" id="openInspectorReport" title="Open the Inspector report file">Open</button>
+        <button class="inspector-action-close" id="closeInspector" title="Close Inspector">Close</button>
       </div>
     </div>
     <div class="inspector-summary" id="inspectorSummary"></div>
@@ -1572,6 +1762,8 @@ let refreshInFlight = false;
 const messagePreviewCache = {};
 let inspectorReport = null;
 let inspectorOpen = false;
+let inspectorFindingOrder = 'all';
+let ccActivityOverride = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1592,6 +1784,9 @@ function fmtAge(seconds) {
   if (hours) return `${hours}h ${minutes}m`;
   if (minutes) return `${minutes}m`;
   return `${total}s`;
+}
+function fmtMaybeAge(seconds) {
+  return seconds === null || seconds === undefined || seconds === '' ? '--' : fmtAge(seconds);
 }
 function compactGitLabel(value) {
   const text = String(value || '');
@@ -1719,6 +1914,30 @@ async function postJson(path, body) {
   if (!res.ok || payload.ok === false) throw new Error(payload.error || `${path} failed ${res.status}`);
   return payload;
 }
+async function checkCcActivityNow() {
+  const button = document.getElementById('checkCcActivityNow');
+  const old = button?.textContent || 'Check now';
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Checking';
+  }
+  try {
+    const res = await fetch('/api/cc-activity');
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || payload.ok === false) throw new Error(payload.error || `CC activity check failed ${res.status}`);
+    ccActivityOverride = payload;
+    renderCcActivityPanel();
+    setNotice('Claude Code activity checked.', 'ok');
+  } catch (err) {
+    setNotice(`Claude Code activity check failed: ${err.message || err}`);
+  } finally {
+    const next = document.getElementById('checkCcActivityNow');
+    if (next) {
+      next.disabled = false;
+      next.textContent = old;
+    }
+  }
+}
 function visibleMessageItems() {
   return currentVisibleQueue.filter(item => item?.message_path);
 }
@@ -1787,6 +2006,26 @@ function inspectorOverall(report) {
   const counts = inspectorCounts(report);
   return String(report?.summary?.overall || (counts.fail ? 'fail' : counts.warn ? 'warn' : 'pass')).toLowerCase();
 }
+function inspectorStatusGlyph(status) {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'pass' || normalized === 'ok') return 'OK';
+  if (normalized === 'warn' || normalized === 'held') return '!';
+  if (normalized === 'fail' || normalized === 'err') return 'X';
+  return '?';
+}
+function inspectorFindingStatus(item) {
+  const status = String(item?.status || 'unknown').toLowerCase();
+  if (status === 'ok') return 'pass';
+  if (status === 'err') return 'fail';
+  if (status === 'held') return 'warn';
+  return status;
+}
+function setInspectorFindingOrder(status) {
+  inspectorFindingOrder = ['pass', 'warn', 'fail'].includes(status) ? status : 'all';
+  renderInspectorPanel();
+  const pane = document.querySelector('.inspector-findings');
+  if (pane) pane.scrollTop = 0;
+}
 async function loadInspectorReport() {
   const res = await fetch('/api/inspector-report');
   const payload = await res.json().catch(() => ({}));
@@ -1821,24 +2060,52 @@ function renderInspectorPanel() {
   document.getElementById('inspectorMeta').textContent = generated
     ? `Latest ${overall.toUpperCase()} report from ${fmtTime(generated)}`
     : 'No inspector report found yet.';
+  document.getElementById('inspectorGlance').innerHTML = [
+    [overall, 'all', 'Overall', overall.toUpperCase()],
+    ['pass', 'pass', 'Pass', counts.pass],
+    ['warn', 'warn', 'Warn', counts.warn],
+    ['fail', 'fail', 'Fail', counts.fail],
+  ].map(([tone, order, label, value]) => {
+    const status = tone === 'overall' ? overall : tone;
+    const active = inspectorFindingOrder === order;
+    const title = order === 'all' ? 'Return findings to severity order' : `Show ${label} findings first`;
+    return `
+      <button type="button" class="inspector-glance-item ${esc(status)}${active ? ' is-active' : ''}" data-inspector-order="${esc(order)}" aria-pressed="${active ? 'true' : 'false'}" title="${esc(title)}">
+        <span class="inspector-glance-icon" aria-hidden="true">${esc(inspectorStatusGlyph(status))}</span>
+        <span class="inspector-glance-copy">
+          <span class="inspector-glance-label">${esc(label)}</span>
+          <span class="inspector-glance-value">${esc(value)}</span>
+        </span>
+      </button>
+    `;
+  }).join('');
   document.getElementById('inspectorSummary').innerHTML = [
-    ['overall', 'Overall', overall.toUpperCase()],
-    ['pass', 'Pass', counts.pass],
-    ['warn', 'Warn', counts.warn],
-    ['fail', 'Fail', counts.fail],
-  ].map(([tone, label, value]) => `
-    <div class="inspector-stat ${tone === 'overall' ? overall : tone}">
+    ['overall', 'all', 'Overall', overall.toUpperCase()],
+    ['pass', 'pass', 'Pass', counts.pass],
+    ['warn', 'warn', 'Warn', counts.warn],
+    ['fail', 'fail', 'Fail', counts.fail],
+  ].map(([tone, order, label, value]) => `
+    <button type="button" class="inspector-stat ${tone === 'overall' ? overall : tone}${inspectorFindingOrder === order ? ' is-active' : ''}" data-inspector-order="${esc(order)}" aria-pressed="${inspectorFindingOrder === order ? 'true' : 'false'}" title="${esc(order === 'all' ? 'Return findings to severity order' : `Show ${label} findings first`)}">
       <div class="inspector-stat-label">${esc(label)}</div>
       <div class="inspector-stat-value">${esc(value)}</div>
-    </div>
+    </button>
   `).join('');
   const findings = Array.isArray(report.findings) ? report.findings : [];
-  const ordered = [...findings].sort((a, b) => {
-    const weight = {fail: 0, err: 0, warn: 1, pass: 2};
-    return (weight[String(a.status || '').toLowerCase()] ?? 3) - (weight[String(b.status || '').toLowerCase()] ?? 3);
-  });
+  const statusOrder = inspectorFindingOrder === 'all'
+    ? ['fail', 'warn', 'pass']
+    : [inspectorFindingOrder, ...['fail', 'warn', 'pass'].filter(status => status !== inspectorFindingOrder)];
+  const weight = Object.fromEntries(statusOrder.map((status, index) => [status, index]));
+  const ordered = findings
+    .map((item, index) => ({item, index}))
+    .sort((a, b) => {
+      const aStatus = inspectorFindingStatus(a.item);
+      const bStatus = inspectorFindingStatus(b.item);
+      const statusDelta = (weight[aStatus] ?? 4) - (weight[bStatus] ?? 4);
+      return statusDelta || a.index - b.index;
+    })
+    .map(entry => entry.item);
   document.getElementById('inspectorFindings').innerHTML = ordered.length ? ordered.map(item => {
-    const status = String(item.status || 'unknown').toLowerCase();
+    const status = inspectorFindingStatus(item);
     return `
       <div class="inspector-finding ${esc(status)}">
         <div class="inspector-finding-head">
@@ -2434,6 +2701,7 @@ function render() {
   renderInboxStatus(cockpit.agents || []);
   renderSummary(counts, cockpit.diagnostics || {});
   renderStewardPanel();
+  renderCcActivityPanel();
   renderTrustStrip(cockpit.interaction_ledger || {});
   currentVisibleQueue = visibleQueue;
   renderFilters();
@@ -2656,6 +2924,71 @@ function renderSummary(counts, diagnostics) {
 function componentLevel(component) {
   const level = String(component?.level || 'unknown');
   return ['ok', 'warn', 'err', 'unknown'].includes(level) ? level : 'unknown';
+}
+function ccActivityCard() {
+  if (ccActivityOverride?.card) return ccActivityOverride.card;
+  const cards = cockpit?.agent_progress?.cards || [];
+  return cards.find(card => card.id === 'cc_active_dispatch') || null;
+}
+function ccActivityMetric(label, value, title = '') {
+  return `
+    <div class="cc-activity-metric" title="${esc(title || value || label)}">
+      <div class="cc-activity-label">${esc(label)}</div>
+      <div class="cc-activity-value">${esc(value || '--')}</div>
+    </div>
+  `;
+}
+function renderCcActivityPanel() {
+  const node = document.getElementById('ccActivityPanel');
+  if (!node) return;
+  const card = ccActivityCard();
+  if (!card) {
+    node.hidden = true;
+    return;
+  }
+  const severity = ['ok', 'warn', 'err'].includes(String(card.severity)) ? String(card.severity) : 'unknown';
+  const sidecarExists = Boolean(card.sidecar_exists);
+  const mailbox = card.mailbox_evidence || {};
+  const targets = Array.isArray(card.targets) ? card.targets : [];
+  const targetCount = targets.length;
+  const newestTarget = targets
+    .filter(target => Number(target.latest_mtime || 0) > 0)
+    .sort((a, b) => Number(b.latest_mtime || 0) - Number(a.latest_mtime || 0))[0] || {};
+  const latestWritePath = card.latest_disk_write_path || newestTarget.latest_path || '';
+  const latestWriteAge = card.latest_disk_write_age_seconds ?? newestTarget.latest_age_seconds;
+  const mailboxPath = mailbox.latest_path || '';
+  const mailboxAge = mailbox.latest_age_seconds;
+  const issues = Array.isArray(card.issues) ? card.issues : [];
+  node.hidden = false;
+  node.className = `cc-activity-panel ${esc(severity)}`;
+  node.innerHTML = `
+    <div class="cc-activity-head">
+      <div>
+        <div class="cc-activity-title"><span class="dot ${esc(statusClass(severity))}"></span>Claude Code Activity</div>
+        <div class="cc-activity-status">${esc(card.phase || card.status || 'No active dispatch')}</div>
+      </div>
+      <div class="cc-activity-actions">
+        <button class="primary" id="checkCcActivityNow" type="button">Check now</button>
+        <button class="secondary" id="openCcMailbox" type="button">CC inbox</button>
+      </div>
+    </div>
+    <div class="cc-activity-summary">${esc(card.evidence_summary || 'No CC activity evidence reported.')}</div>
+    <div class="cc-activity-grid">
+      ${ccActivityMetric('State', card.status || 'unknown')}
+      ${ccActivityMetric('Sidecar', sidecarExists ? fmtMaybeAge(card.sidecar_age_seconds) : 'missing', card.sidecar_path || '')}
+      ${ccActivityMetric('Target write', fmtMaybeAge(latestWriteAge), latestWritePath)}
+      ${ccActivityMetric('Mailbox write', fmtMaybeAge(mailboxAge), mailboxPath)}
+      ${ccActivityMetric('Targets', `${targetCount}`, targets.map(target => target.path || '').join('\n'))}
+      ${ccActivityMetric('Scanned', `${card.scanned_files ?? targets.reduce((total, target) => total + Number(target.scanned_files || 0), 0)}`, 'Files scanned under expected target paths.')}
+      ${ccActivityMetric('Warn/Error', `${card.warn_minutes || '--'}m / ${card.error_minutes || '--'}m`)}
+      ${ccActivityMetric('Checked', fmtTime(ccActivityOverride?.checked_at || card.checked_at || cockpit?.generated_at))}
+    </div>
+    <div class="cc-activity-path">${esc(latestWritePath || mailboxPath || card.sidecar_path || 'No visible disk path yet.')}</div>
+    ${issues.length ? `<div class="cc-activity-issues">Issues: ${esc(issues.join(', '))}</div>` : ''}
+    <div class="cc-activity-summary">${esc(card.recommended_action || '')}</div>
+  `;
+  document.getElementById('checkCcActivityNow')?.addEventListener('click', checkCcActivityNow);
+  document.getElementById('openCcMailbox')?.addEventListener('click', () => focusMailbox('claude-code'));
 }
 function renderStewardPanel() {
   const node = document.getElementById('stewardPanel');
@@ -3329,6 +3662,11 @@ document.getElementById('stateCopied').addEventListener('click', () => setLocalS
 document.getElementById('stateWaiting').addEventListener('click', () => setLocalState('waiting'));
 document.getElementById('stateHandled').addEventListener('click', () => setLocalState('handled'));
 document.getElementById('openInspector').addEventListener('click', () => openInspectorPanel());
+document.getElementById('inspectorPanel').addEventListener('click', event => {
+  const control = event.target.closest('[data-inspector-order]');
+  if (!control) return;
+  setInspectorFindingOrder(control.dataset.inspectorOrder || 'all');
+});
 document.getElementById('refreshInspector').addEventListener('click', async () => {
   try {
     await loadInspectorReport();

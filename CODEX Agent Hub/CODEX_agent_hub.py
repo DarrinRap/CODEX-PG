@@ -25,6 +25,7 @@ from http.cookies import SimpleCookie
 from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
@@ -123,14 +124,11 @@ CC_ACTIVE_DISPATCH_PATH = CC_MAILBOX_ROOT / "_state" / "active_dispatch.json"
 UI_PATH = HUB_ROOT / "CODEX_agent_hub_ui.html"
 WRITE_TOKEN = secrets.token_urlsafe(32)
 ALLOW_SIMULATED_INBOUND = False
-LEGACY_MESSAGE_ENDPOINTS = {
-    "/api/send",
-    "/api/message-read-state",
-    "/api/mark-all-read",
-}
+LEGACY_MESSAGE_ENDPOINTS: set[str] = set()
 MESSAGE_RETENTION_HOURS = 36
 TIMESTAMPED_MESSAGE_RE = re.compile(r"^20\d{6}.*\.md$", re.IGNORECASE)
 NOTIFICATION_LOCK = threading.Lock()
+MAILROOM_CANARY_LOCK = threading.Lock()
 WATCHER_LOCK = threading.Lock()
 MESSAGE_AUDIT_LOCK = threading.Lock()
 WATCHER_SNOOZE_DEFAULT_MINUTES = 15
@@ -142,7 +140,16 @@ DEFAULT_PROGRESS_WARN_MINUTES = 30
 DEFAULT_PROGRESS_ERROR_MINUTES = 45
 MESSAGE_PARSE_CACHE_LOCK = threading.Lock()
 MESSAGE_PARSE_CACHE: dict[str, tuple[tuple[int, int], Message]] = {}
-PROGRESS_MONITOR_STATUSES = {"active", "compose", "heavy_write", "paused", "blocked", "complete", "abandoned"}
+PROGRESS_MONITOR_STATUSES = {
+    "active",
+    "compose",
+    "heavy_write",
+    "paused",
+    "blocked",
+    "ready_for_human_loop",
+    "complete",
+    "abandoned",
+}
 PROGRESS_MONITOR_IGNORE_DIRS = {
     ".git",
     ".venv",
@@ -202,6 +209,42 @@ SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
     "Codex Sent": ({"codex"}, {"claude-desktop", "claude-code"}),
     "Claude Sent": ({"claude-desktop", "claude-code"}, {"codex"}),
 }
+AGENT_ID_ALIASES = {
+    "claude": "claude-desktop",
+    "claude-desktop": "claude-desktop",
+    "claude-code": "claude-code",
+    "codex": "codex",
+    "darrin": "darrin",
+}
+ROUTE_DIRECTION_BY_AGENTS = {
+    ("claude-desktop", "codex"): "Claude -> Codex",
+    ("claude-code", "codex"): "Claude -> Codex",
+    ("codex", "claude-desktop"): "Codex -> Claude",
+    ("codex", "claude-code"): "To Claude Code",
+    ("claude-code", "claude-desktop"): "Claude Code -> Claude",
+    ("claude-desktop", "claude-code"): "To Claude Code",
+}
+
+
+def normalize_agent_id(value: Any) -> str:
+    token = re.sub(r"[\s_]+", "-", str(value or "").strip().lower())
+    if not token:
+        return ""
+    return AGENT_ID_ALIASES.get(token, token)
+
+
+def direction_accepts_agents(direction: str, from_agent: str, to_agent: str) -> bool:
+    contract = SOURCE_ROUTE_CONTRACTS.get(direction)
+    if not contract:
+        return True
+    allowed_from, allowed_to = contract
+    return (not from_agent or from_agent in allowed_from) and (not to_agent or to_agent in allowed_to)
+
+
+def normalize_message_direction(direction: str, from_agent: str, to_agent: str) -> str:
+    if direction_accepts_agents(direction, from_agent, to_agent):
+        return direction
+    return ROUTE_DIRECTION_BY_AGENTS.get((from_agent, to_agent), direction)
 
 AGENT_INBOX_DIRS: dict[str, tuple[Path, ...]] = {
     "codex": (CODEX_INBOX,),
@@ -372,11 +415,12 @@ def parse_message(path: Path, direction: str) -> Message:
     msg.thread_id = str(metadata.get("thread_id", ""))
     msg.thread_status = str(metadata.get("thread_status", ""))
     msg.status = metadata.get("status", "")
-    msg.from_agent = metadata.get("from", "")
-    msg.to_agent = metadata.get("to", "")
+    msg.from_agent = normalize_agent_id(metadata.get("from", ""))
+    msg.to_agent = normalize_agent_id(metadata.get("to", ""))
+    msg.direction = normalize_message_direction(msg.direction, msg.from_agent, msg.to_agent)
     msg.generated = metadata.get("generated", "")
     msg.priority = metadata.get("priority", "")
-    msg.action_owner = metadata.get("action-owner", "") or metadata.get("action_owner", "")
+    msg.action_owner = normalize_agent_id(metadata.get("action-owner", "") or metadata.get("action_owner", ""))
     msg.requires_approval = metadata.get("requires-approval", "") or metadata.get("requires_approval", "")
     msg.requires_darrin_decision = (
         metadata.get("requires-darrin-decision", "") or metadata.get("requires_darrin_decision", "")
@@ -517,7 +561,9 @@ def is_pre_staged_pending_trigger(msg: Message) -> bool:
 
 
 def is_structured_mailbox_message(msg: Message) -> bool:
-    return bool(str(msg.schema_version or "").strip() and str(msg.message_id or "").strip())
+    has_schema_id = bool(str(msg.schema_version or "").strip() and str(msg.message_id or "").strip())
+    has_route_id = bool(str(msg.message_id or "").strip() and msg.from_agent and msg.to_agent)
+    return has_schema_id or has_route_id
 
 
 def reply_tombstone_path(message_path: Path) -> Path:
@@ -554,6 +600,26 @@ def is_completion_evidence_message(msg: Message) -> bool:
 
 def completed_thread_ids(messages: list[Message]) -> set[str]:
     return {msg.stable_thread for msg in messages if is_completion_evidence_message(msg)}
+
+
+def is_no_action_coordination_message(msg: Message) -> bool:
+    msg_type = str(msg.message_type or "").strip().lower()
+    approval_boundary = str(msg.approval_boundary or "").strip().lower()
+    body = str(msg.body or "").lower()
+    title = str(msg.title or "").lower()
+    if msg_type not in {"share", "coordination", "coordination_share", "info", "ack"}:
+        return False
+    if approval_boundary and approval_boundary != "coordination_only":
+        return False
+    if boolish(msg.requires_darrin_decision):
+        return False
+    no_action_tokens = (
+        "no action required",
+        "no reply required",
+        "not a dispatch",
+        "coordination / awareness share",
+    )
+    return any(token in body or token in title for token in no_action_tokens)
 
 
 def load_ledger_text() -> str:
@@ -671,6 +737,8 @@ def classify_thread_state(latest: Message, archived: bool = False) -> str:
         return "open_on_darrin"
     if boolish(latest.requires_darrin_decision):
         return "open_on_darrin"
+    if is_no_action_coordination_message(latest):
+        return "closed"
     if msg_type in COMPLETION_EVIDENCE_TYPES or status in COMPLETION_EVIDENCE_STATUSES:
         if thread_status in {"ready_for_review", "waiting_review"}:
             return "open_on_agent"
@@ -1813,6 +1881,96 @@ def create_message(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_mailroom_transaction_canary(actor: str = "pah_inspector") -> dict[str, Any]:
+    """Exercise send, read-state, reply tombstone, and ledger writes in isolation."""
+    with MAILROOM_CANARY_LOCK, TemporaryDirectory(prefix="pah_mailroom_canary_") as temp_dir:
+        root = Path(temp_dir)
+        inbox = root / "CLAUDE Inbox"
+        ledger_path = root / "CODEX_MAILBOX_LEDGER.md"
+        interaction_ledger_path = root / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
+        read_state_path = root / "read_state.json"
+        original_set_message_read_state = set_message_read_state
+        original_values = {
+            "CLAUDE_INBOX": CLAUDE_INBOX,
+            "LEDGER_PATH": LEDGER_PATH,
+            "INTERACTION_LEDGER_PATH": INTERACTION_LEDGER_PATH,
+            "MESSAGE_DIRS": MESSAGE_DIRS,
+        }
+
+        def isolated_set_message_read_state(
+            path_value: Path | str,
+            message_id: str,
+            text: str,
+            state_name: str,
+            actor: str = "codex",
+            state_path: Path = read_state_path,
+        ) -> dict[str, Any]:
+            return original_set_message_read_state(path_value, message_id, text, state_name, actor=actor, state_path=read_state_path)
+
+        try:
+            globals()["CLAUDE_INBOX"] = inbox
+            globals()["LEDGER_PATH"] = ledger_path
+            globals()["INTERACTION_LEDGER_PATH"] = interaction_ledger_path
+            globals()["MESSAGE_DIRS"] = (("Codex -> Claude", inbox),)
+            globals()["set_message_read_state"] = isolated_set_message_read_state
+            clear_message_parse_cache()
+
+            original = create_message(
+                {
+                    "route": "codex_to_claude",
+                    "status": "Response",
+                    "subject": "PAH mailroom canary source",
+                    "thread_id": "PAH-MAILROOM-CANARY",
+                    "body": "Isolated canary source message.",
+                }
+            )
+            original_path = Path(str(original["path"]))
+            original_exists = original_path.exists()
+            read_result = set_read_state_for_message(str(original_path), READ_STATE, actor=actor)
+            reply = create_message(
+                {
+                    "route": "codex_to_claude",
+                    "status": "Info",
+                    "subject": "PAH mailroom canary reply",
+                    "thread_id": "PAH-MAILROOM-CANARY",
+                    "reply_to": str(original["message_id"]),
+                    "body": "Isolated canary reply message.",
+                }
+            )
+            tombstones = list(reply.get("reply_tombstones", []))
+            tombstone_path = Path(str(tombstones[0].get("tombstone_path", ""))) if tombstones else Path("")
+            ledger_events = []
+            if interaction_ledger_path.exists():
+                for line in interaction_ledger_path.read_text(encoding="utf-8").splitlines():
+                    if line.strip():
+                        ledger_events.append(json.loads(line))
+            event_types = {str(event.get("event_type", "")) for event in ledger_events}
+            checks = {
+                "source_written": original_exists,
+                "read_state_written": read_result.get("state") == READ_STATE and read_state_path.exists(),
+                "reply_written": Path(str(reply["path"])).exists(),
+                "reply_tombstone_written": bool(tombstones) and tombstone_path.exists(),
+                "ledger_sent_event": "message_sent" in event_types,
+                "ledger_read_event": "message_read_marked" in event_types,
+                "ledger_tombstone_event": "message_reply_tombstoned" in event_types,
+            }
+            return {
+                "ok": all(checks.values()),
+                "checks": checks,
+                "source_path": str(original_path),
+                "reply_path": str(reply["path"]),
+                "tombstone_path": str(tombstone_path) if tombstones else "",
+                "read_state_path": str(read_state_path),
+                "interaction_ledger_path": str(interaction_ledger_path),
+                "event_types": sorted(event_types),
+            }
+        finally:
+            for key, value in original_values.items():
+                globals()[key] = value
+            globals()["set_message_read_state"] = original_set_message_read_state
+            clear_message_parse_cache()
+
+
 def dispatch_work_item(item_id: str) -> dict[str, Any]:
     board = work_board_status()
     item = next((row for row in board["items"] if row.get("item_id") == item_id), None)
@@ -2472,6 +2630,9 @@ def inspector_report_payload() -> dict[str, Any]:
     markdown = ""
     json_exists = INSPECTOR_LATEST_JSON_PATH.exists()
     markdown_exists = INSPECTOR_LATEST_MARKDOWN_PATH.exists()
+    max_age_seconds = 10 * 60
+    age_seconds = max(0, int(time.time() - INSPECTOR_LATEST_JSON_PATH.stat().st_mtime)) if json_exists else None
+    stale = bool(age_seconds is not None and age_seconds > max_age_seconds)
     if json_exists:
         try:
             loaded = json.loads(read_text(INSPECTOR_LATEST_JSON_PATH))
@@ -2493,6 +2654,32 @@ def inspector_report_payload() -> dict[str, Any]:
             }
     if markdown_exists:
         markdown = read_text(INSPECTOR_LATEST_MARKDOWN_PATH)
+    if stale and report:
+        report = dict(report)
+        findings = list(report.get("findings", []))
+        findings.insert(
+            0,
+            {
+                "status": "warn",
+                "title": "Inspector report stale",
+                "summary": f"Latest Inspector cache is {human_duration(int(age_seconds or 0))} old.",
+                "check_id": "inspector.report_stale",
+                "recommendation": "Run Inspector now before trusting cached findings.",
+                "detail": {
+                    "age_seconds": age_seconds,
+                    "max_age_seconds": max_age_seconds,
+                    "json_path": str(INSPECTOR_LATEST_JSON_PATH),
+                },
+            },
+        )
+        summary = dict(report.get("summary", {}))
+        counts = dict(summary.get("counts", {}))
+        counts["warn"] = int(counts.get("warn", 0) or 0) + 1
+        if int(counts.get("fail", 0) or 0) == 0:
+            summary["overall"] = "warn"
+        summary["counts"] = counts
+        report["summary"] = summary
+        report["findings"] = findings
     generated = report.get("generated_at") or (
         datetime.fromtimestamp(INSPECTOR_LATEST_JSON_PATH.stat().st_mtime).isoformat(timespec="seconds")
         if json_exists
@@ -2503,6 +2690,10 @@ def inspector_report_payload() -> dict[str, Any]:
         "generated_at": generated,
         "json_exists": json_exists,
         "markdown_exists": markdown_exists,
+        "fresh": not stale,
+        "stale": stale,
+        "age_seconds": age_seconds,
+        "max_age_seconds": max_age_seconds,
         "json_path": str(INSPECTOR_LATEST_JSON_PATH),
         "markdown_path": str(INSPECTOR_LATEST_MARKDOWN_PATH),
         "report": report,
@@ -2601,8 +2792,22 @@ def newest_child_file_evidence(path: Path) -> dict[str, Any]:
     }
 
 
+def mtime_iso(timestamp: float) -> str:
+    if not timestamp:
+        return ""
+    return datetime.fromtimestamp(timestamp).astimezone().isoformat(timespec="seconds")
+
+
 def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
     current = now or datetime.now().astimezone()
+    mailbox_evidence = newest_child_file_evidence(CC_MAILBOX_ROOT)
+    mailbox_latest_mtime = float(mailbox_evidence.get("latest_mtime", 0.0) or 0.0)
+    mailbox_evidence.update(
+        {
+            "latest_mtime_iso": mtime_iso(mailbox_latest_mtime),
+            "latest_age_seconds": max(0, int(current.timestamp() - mailbox_latest_mtime)) if mailbox_latest_mtime else None,
+        }
+    )
     if not CC_ACTIVE_DISPATCH_PATH.exists():
         return {
             "id": "cc_active_dispatch",
@@ -2616,8 +2821,13 @@ def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
             "sidecar_path": str(CC_ACTIVE_DISPATCH_PATH),
             "issues": [],
             "targets": [],
+            "sidecar_exists": False,
+            "checked_at": current.isoformat(timespec="seconds"),
+            "mailbox_evidence": mailbox_evidence,
         }
     raw = read_json(CC_ACTIVE_DISPATCH_PATH, {})
+    sidecar_stat = CC_ACTIVE_DISPATCH_PATH.stat()
+    sidecar_age = max(0, int(current.timestamp() - sidecar_stat.st_mtime))
     if not isinstance(raw, dict) or not raw:
         return {
             "id": "cc_active_dispatch",
@@ -2631,6 +2841,11 @@ def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
             "sidecar_path": str(CC_ACTIVE_DISPATCH_PATH),
             "issues": ["invalid_json_object"],
             "targets": [],
+            "sidecar_exists": True,
+            "sidecar_age_seconds": sidecar_age,
+            "sidecar_mtime_iso": mtime_iso(float(sidecar_stat.st_mtime)),
+            "checked_at": current.isoformat(timespec="seconds"),
+            "mailbox_evidence": mailbox_evidence,
         }
 
     status_name = str(raw.get("status", "active")).strip().lower() or "active"
@@ -2665,6 +2880,9 @@ def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
         }
         evidence["allowed"] = allowed
         evidence["invalid_reason"] = reason
+        latest_mtime = float(evidence.get("latest_mtime", 0.0) or 0.0)
+        evidence["latest_mtime_iso"] = mtime_iso(latest_mtime)
+        evidence["latest_age_seconds"] = max(0, int(current.timestamp() - latest_mtime)) if latest_mtime else None
         targets.append(evidence)
         if not allowed:
             issues.append(f"unsafe_target:{reason}")
@@ -2675,10 +2893,27 @@ def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
             newest_path = str(evidence.get("latest_path", ""))
     if status_name in {"active", "heavy_write"} and not targets:
         issues.append("missing_targets")
+    human_loop_evidence: dict[str, Any] = {}
+    if status_name == "ready_for_human_loop":
+        evidence_path = str(raw.get("human_loop_evidence_path") or raw.get("approval_evidence_path") or "").strip()
+        if evidence_path:
+            evidence_target = Path(evidence_path)
+            allowed, reason = allowed_progress_target_path(evidence_target)
+            human_loop_evidence = {
+                "path": str(evidence_target),
+                "exists": evidence_target.exists(),
+                "allowed": allowed,
+                "invalid_reason": reason,
+            }
+            if not allowed:
+                issues.append(f"unsafe_human_loop_evidence:{reason}")
+            elif not evidence_target.exists():
+                issues.append("missing_human_loop_evidence")
+        else:
+            issues.append("missing_human_loop_evidence")
 
     started_age = seconds_since_iso(str(raw.get("started_at", "")), current)
     updated_age = seconds_since_iso(str(raw.get("updated_at", "")), current)
-    sidecar_age = max(0, int(current.timestamp() - CC_ACTIVE_DISPATCH_PATH.stat().st_mtime))
     evidence_age = max(0, int(current.timestamp() - newest_mtime)) if newest_mtime else max(started_age, updated_age, sidecar_age)
 
     severity = "ok"
@@ -2697,6 +2932,22 @@ def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
         severity = "ok"
         recommended_action = "No action - dispatch is not active."
         evidence_summary = f"CC sidecar status is {status_name}."
+    elif status_name == "ready_for_human_loop":
+        if issues:
+            severity = "warn"
+            recommended_action = "Fix CC human-loop evidence before trusting wait state."
+            evidence_summary = f"Human-loop sidecar issue: {', '.join(sorted(set(issues)))[:120]}"
+        else:
+            severity = "ok"
+            recommended_action = "Wait - human-loop decision pending; do not interrupt for stale file mtimes."
+            evidence_summary = compact(
+                str(
+                    raw.get("human_loop_reason")
+                    or raw.get("last_known_blocker")
+                    or "CC is waiting for Darrin's commit/go/ack word."
+                ),
+                110,
+            )
     elif issues:
         severity = "warn"
         recommended_action = "Fix CC sidecar before trusting progress status."
@@ -2728,14 +2979,33 @@ def cc_active_dispatch_progress(now: datetime | None = None) -> dict[str, Any]:
         "evidence_summary": evidence_summary,
         "recommended_action": recommended_action,
         "sidecar_path": str(CC_ACTIVE_DISPATCH_PATH),
+        "sidecar_exists": True,
+        "sidecar_age_seconds": sidecar_age,
+        "sidecar_mtime_iso": mtime_iso(float(sidecar_stat.st_mtime)),
+        "checked_at": current.isoformat(timespec="seconds"),
         "started_age_seconds": started_age,
         "updated_age_seconds": updated_age,
         "evidence_age_seconds": evidence_age,
+        "latest_disk_write_path": newest_path,
+        "latest_disk_write_iso": mtime_iso(newest_mtime),
+        "latest_disk_write_age_seconds": max(0, int(current.timestamp() - newest_mtime)) if newest_mtime else None,
+        "scanned_files": sum(int(target.get("scanned_files", 0) or 0) for target in targets),
         "warn_minutes": warn_minutes,
         "error_minutes": error_minutes,
         "targets": targets,
+        "human_loop_evidence": human_loop_evidence,
+        "mailbox_evidence": mailbox_evidence,
         "issues": sorted(set(issues)),
         "raw_status": raw,
+    }
+
+
+def cc_activity_payload() -> dict[str, Any]:
+    card = cc_active_dispatch_progress()
+    return {
+        "ok": True,
+        "checked_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "card": card,
     }
 
 
@@ -2908,6 +3178,7 @@ def state() -> dict[str, Any]:
     message_audit = audit_messages_and_thread_states(messages, thread_focus, read_state_data)
     active_threads = [thread for thread in all_threads if not thread.get("archived")]
     archived_threads = [thread for thread in all_threads if thread.get("archived")]
+    completed_threads = completed_thread_ids(messages)
     unread_messages = sum(
         1 for msg in messages if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
     )
@@ -2945,7 +3216,7 @@ def state() -> dict[str, Any]:
             "agent_progress_red": agent_progress.get("counts", {}).get("red", 0),
             "agent_progress_yellow": agent_progress.get("counts", {}).get("yellow", 0),
         },
-        "latest": [message_to_json(msg, read_state_data) for msg in messages[:40]],
+        "latest": [message_to_json(msg, read_state_data, completed_threads) for msg in messages[:40]],
         "mailboxes": build_mailbox_overview(messages, read_state_data),
         "agent_mailboxes": build_agent_mailbox_messages(messages, read_state_data),
         "agent_status": agent_status,
@@ -3044,6 +3315,16 @@ def build_cockpit_routes(status_data: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def summarize_cockpit_routes(routes: list[dict[str, Any]]) -> dict[str, Any]:
+    problem_routes = [
+        {
+            "id": str(route.get("id", "")),
+            "name": str(route.get("name", "")),
+            "status": str(route.get("status", "")),
+            "hold_reason": str(route.get("hold_reason", "")),
+        }
+        for route in routes
+        if str(route.get("status", "")) in {"held", "failed", "untested"}
+    ]
     counts = {
         "total": len(routes),
         "pass": sum(1 for route in routes if route.get("status") == "pass"),
@@ -3069,7 +3350,7 @@ def summarize_cockpit_routes(routes: list[dict[str, Any]]) -> dict[str, Any]:
         label = f"{label}; {', '.join(details)}"
     else:
         label = f"{counts['pass']}/{counts['total']} routes pass"
-    return {**counts, "label": label, "severity": severity}
+    return {**counts, "label": label, "severity": severity, "problem_routes": problem_routes}
 
 
 def health_level(*levels: str) -> str:
@@ -3081,6 +3362,32 @@ def health_level(*levels: str) -> str:
 def health_component(level: str, label: str, detail: str, **extra: Any) -> dict[str, Any]:
     normalized = level if level in {"ok", "warn", "err", "unknown"} else "unknown"
     return {"level": normalized, "label": label, "detail": detail, **extra}
+
+
+def inspector_freshness_component() -> dict[str, Any]:
+    max_age_seconds = 10 * 60
+    if not INSPECTOR_LATEST_JSON_PATH.exists():
+        return health_component(
+            "warn",
+            "Inspector freshness",
+            "No Inspector report has been generated yet.",
+            latest_json_path=str(INSPECTOR_LATEST_JSON_PATH),
+            age_seconds=None,
+            max_age_seconds=max_age_seconds,
+            run_now_hint="Run CODEX_pah_inspector.py or use the PAH Inspector action before trusting cached findings.",
+        )
+    age_seconds = max(0, int(time.time() - INSPECTOR_LATEST_JSON_PATH.stat().st_mtime))
+    return health_component(
+        "ok" if age_seconds <= max_age_seconds else "warn",
+        "Inspector freshness",
+        f"Latest Inspector report is {human_duration(age_seconds)} old.",
+        latest_json_path=str(INSPECTOR_LATEST_JSON_PATH),
+        latest_markdown_path=str(INSPECTOR_LATEST_MARKDOWN_PATH),
+        age_seconds=age_seconds,
+        max_age_seconds=max_age_seconds,
+        stale=age_seconds > max_age_seconds,
+        run_now_hint="Run CODEX_pah_inspector.py or use the PAH Inspector action before trusting cached findings.",
+    )
 
 
 def periodic_health_monitor_summary() -> dict[str, Any]:
@@ -3145,7 +3452,14 @@ def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
 
     components = {
         "server": health_component("ok", "Server API online", f"PAH API generated this payload at {generated_at}."),
-        "routes": health_component(routes_level, "Mailbox routes", str(routes_summary.get("label", "No route summary.")), counts=routes_summary),
+        "routes": health_component(
+            routes_level,
+            "Mailbox routes",
+            str(routes_summary.get("label", "No route summary.")),
+            counts=routes_summary,
+            problem_routes=routes_summary.get("problem_routes", []),
+        ),
+        "inspector": inspector_freshness_component(),
         "mailboxes": health_component(
             "warn" if owner_unknown else "ok",
             "Mailboxes",
@@ -3757,10 +4071,23 @@ def tray_status_payload(cockpit: dict[str, Any] | None = None) -> dict[str, Any]
     }
 
 
-def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None) -> dict[str, Any]:
+def message_to_json(
+    msg: Message,
+    read_state_data: dict[str, Any] | None = None,
+    completed_threads: set[str] | None = None,
+) -> dict[str, Any]:
     read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
     age_seconds = max(0, int(time.time() - msg.modified))
-    stale_unread = bool(read_status["unread"] and age_seconds >= STALE_UNREAD_SECONDS)
+    classifier_state = classify_thread_state(msg)
+    thread_has_completion_evidence = bool(
+        completed_threads is not None and msg.stable_thread in completed_threads and not is_completion_evidence_message(msg)
+    )
+    stale_unread = bool(
+        read_status["unread"]
+        and age_seconds >= STALE_UNREAD_SECONDS
+        and not thread_has_completion_evidence
+        and classifier_state in {"open_on_agent", "owner_unknown"}
+    )
     wake_candidate_agent = safe_slug(msg.to_agent).replace("-", "_") if msg.to_agent else ""
     wake_candidate_label = msg.to_agent or ""
     urgent_codex_request = is_urgent_codex_request_message(msg)
@@ -3787,6 +4114,8 @@ def message_to_json(msg: Message, read_state_data: dict[str, Any] | None = None)
         "wake_candidate_agent": wake_candidate_agent,
         "wake_candidate_label": wake_candidate_label,
         "content_changed_since_read": read_status["content_changed"],
+        "classifier_state": classifier_state,
+        "thread_has_completion_evidence": thread_has_completion_evidence,
         "status_badges": message_status_badges(msg, read_status["unread"]),
         "quarantine_allowed": quarantine_candidate_allowed(msg.path),
         "quarantine_reason": default_quarantine_reason("schema", msg.summary or msg.title),
@@ -4604,6 +4933,9 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/inspector-report":
             self.send_json(inspector_report_payload())
             return
+        if parsed.path == "/api/cc-activity":
+            self.send_json(cc_activity_payload())
+            return
         if parsed.path == "/api/status":
             self.send_json(state())
             return
@@ -4661,15 +4993,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed_path = urlparse(self.path).path
-        if parsed_path in LEGACY_MESSAGE_ENDPOINTS:
-            self.send_json(
-                {
-                    "ok": False,
-                    "error": "Legacy messaging/read-state endpoint retired. PAH uses the thread classifier mailroom now.",
-                },
-                410,
-            )
-            return
         if parsed_path not in {
             "/api/test-notification",
             "/api/write-decision-queue",
@@ -4678,7 +5001,11 @@ class Handler(BaseHTTPRequestHandler):
             "/api/cleanup-inbox-accumulation",
             "/api/archive-read-codex-inbox",
             "/api/agent-no-mail-claim",
+            "/api/send",
             "/api/create-message",
+            "/api/mailroom-canary",
+            "/api/message-read-state",
+            "/api/mark-all-read",
             "/api/create-route-test",
             "/api/quarantine-message",
             "/api/decision-state",
@@ -4767,9 +5094,36 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_json(record)
             return
-        if parsed_path == "/api/create-message":
+        if parsed_path in {"/api/send", "/api/create-message"}:
             try:
                 result = create_message(payload)
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **result})
+            return
+        if parsed_path == "/api/mailroom-canary":
+            try:
+                result = run_mailroom_transaction_canary(actor=str(payload.get("actor") or "pah_inspector"))
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 500)
+                return
+            self.send_json(result, 200 if result.get("ok") else 500)
+            return
+        if parsed_path == "/api/message-read-state":
+            try:
+                path_value = str(payload.get("path") or payload.get("message_path") or "")
+                state_name = str(payload.get("state") or READ_STATE)
+                actor = str(payload.get("actor") or "codex")
+                result = set_read_state_for_message(path_value, state_name, actor=actor)
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
+            self.send_json({"ok": True, **result})
+            return
+        if parsed_path == "/api/mark-all-read":
+            try:
+                result = mark_all_messages_read(actor=str(payload.get("actor") or "codex"))
             except Exception as exc:
                 self.send_json({"ok": False, "error": str(exc)}, 400)
                 return

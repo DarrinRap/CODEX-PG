@@ -1,15 +1,15 @@
 ---
 schema_version: 1
-id: CLAUDE-DESKTOP-20260429-PHASE4-U1-R29-DISPATCH-DRAFT
+id: CLAUDE-DESKTOP-20260429-194500-PHASE4-U1-R29-DISPATCH
 thread_id: PG-LEDGER-PHASE4-U1
-created_at: '2026-04-29T09:45:00-07:00'
+created_at: '2026-04-29T19:45:00-07:00'
 from: claude_desktop
 to: codex
 type: dispatch
 priority: normal
-status: drafted_pending_phase2_ship
-thread_status: draft
-action_owner: claude_desktop
+status: open
+thread_status: active
+action_owner: codex
 requires_darrin_decision: true
 approval_boundary: dispatch_after_phase2_ship
 reply_to: []
@@ -20,7 +20,7 @@ prerequisite_commit: phase2_ship
 
 # Claude Desktop -> Codex: Phase 4 — U1 R29 mockup annotation completeness rule
 
-**STATUS: DRAFT.** This dispatch is pre-staged in the CODEX Inbox while CC's Phase 2 build is in flight (~6-9hr clock from 09:50 PDT today). Do NOT begin work until Darrin sends the explicit go message in chat AND Phase 2 has shipped to commit. Phase 2 ship version is v4.71; this dispatch ships at v4.72 (or later if AM applet polish takes v4.72).
+**STATUS: LIVE.** Phase 2 shipped at v4.71 / `091644b` 14:49 PDT 2026-04-29. Bug #142 fix shipped at v4.71.1 / `05eb269` 15:55 PDT 2026-04-29. Both prerequisites satisfied. Begin work per §3 build order.
 
 ---
 
@@ -137,7 +137,7 @@ Test fixtures live in `pg_design_lint/tests/fixtures/R29/` with subdirectories p
 4. Implement `R29_mockup_annotations.py` rule module. Mirror R23's subprocess+parse-findings pattern.
 5. Add `--check-mockup-annotations <path>` flag to `pg_design_lint/__main__.py`.
 6. Build fixtures + tests.
-7. Run full pytest suite (368+ tests should still pass; new R29 tests should be added).
+7. Run full pytest suite (438+ tests should still pass; new R29 tests should be added).
 8. Run dispatch-corpus check: `python -m pg_design_lint --rule R29 workflows/cc_mailbox/` and the equivalent against `C:\CODEX PG\CODEX Claude Codex Mailbox\`. Expect zero R29 blocking findings on dispatches authored before this rule ships (per §6 grandfathering).
 
 ---
@@ -149,7 +149,7 @@ R29 dispatch is acceptance-passing when:
 1. **Phase A blocking.** `pg_design_spec.json.lint_config` gains (or already has) a `phase_a_blocking_rules` array. Add `"R29"` to it. Confirm the pre-commit lint run with `--strict --severity-floor=warning` blocks dispatches with R29 errors.
 2. **Standalone CLI works.** `python -m pg_design_lint --check-mockup-annotations workflows/design/pg_general_mockups/<example>.html` lists annotations and resolves each.
 3. **All test cases pass.** Eleven+ cases above covered.
-4. **Existing test suite still passes.** No regressions in the 368 existing tests.
+4. **Existing test suite still passes.** No regressions in the 438 existing tests (438 passed + 1 skipped at v4.71.1).
 5. **No new dependencies added.** Stdlib only.
 6. **No false positives on existing dispatch corpus.** Run R29 against every `.md` file under `workflows/cc_mailbox/CC Inbox/`, `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX Inbox\`, and the matching CLAUDE Inbox / CODEX Sent paths. Expect zero blocking findings (existing dispatches are grandfathered per §6 if their cited mockups have zero `data-decision` attributes; otherwise they should pass cleanly).
 7. **Spec freshness check unchanged.** R21 still passes.
@@ -160,8 +160,8 @@ R29 dispatch is acceptance-passing when:
 
 These are explicitly NOT R29's job:
 
-- **U3 hook (`pre-commit-decision-sync.py`).** Separate Phase 4 dispatch.
-- **U5 telemetry (`--update-telemetry`, `--promote-eligible`).** Separate Phase 4 dispatch.
+- **U3 hook (`pre-commit-decision-sync.py`).** Separate Phase 4 dispatch (pre-staged in this same inbox folder; gated on U1 R29 ship).
+- **U5 telemetry (`--update-telemetry`, `--promote-eligible`).** Separate Phase 4 dispatch (pre-staged in this same inbox folder; gated on U1 R29 ship).
 - **Backfilling annotations on existing mockups.** Per spec §3.7 backfill policy: "Pre-existing mockups can be annotated lazily, file by file, when the next dispatch references them." R29 does NOT enforce annotations on mockups not cited by the current dispatch.
 - **Validating Verify's checklist generation.** Verify reads annotations at runtime via the v2.3 §6.3.1 logic; that's a Ledger-app concern (CC's territory), not a lint concern.
 - **Auto-fixing missing annotations.** R29 reports; it does not insert `data-decision` attributes into mockup HTML.
@@ -180,11 +180,11 @@ Codex: implement this gate in `check_mockup_annotation_completeness()`. Mockup H
 
 ---
 
-## §7 — Coordination with Phase 2 (in flight)
+## §7 — Coordination with Phase 2 (now SHIPPED)
 
-Phase 2 (CC, in flight at U1 R29 dispatch time) builds the Capture pre-fill from `data-decision` annotations (per §3.7 Mode B). That's a Ledger-app feature, not a lint concern. R29 enforces what Capture pre-fills.
+Phase 2 shipped at v4.71 / `091644b`. Capture pre-fill from `data-decision` annotations (per §3.7 Mode B) is in `panda_ledger/capture/`. R29 enforces what Capture pre-fills.
 
-**Step 0 verification required.** As Codex's Step 0 first action (before any code written for R29), read the post-Phase-2 implementation of `data-decision` parsing in `panda_ledger/capture/staging_loader.py` (or wherever Phase 2 implements the read — Codex: locate via `grep -r data-decision panda_ledger/`). Confirm the encoding used. Spec §3.7 specifies:
+**Step 0 verification required.** As Codex's Step 0 first action (before any code written for R29), read the post-Phase-2 implementation of `data-decision` parsing in `panda_ledger/capture/` (Codex: locate via `grep -r data-decision panda_ledger/`). Confirm the encoding used. Spec §3.7 specifies:
 
 > Multi-decision widgets carry comma-separated IDs: `data-decision="DECISION_0023,DECISION_0024"`.
 
@@ -208,7 +208,7 @@ Standard impl report to `cc_mailbox/CLAUDE Inbox/` with:
 
 ~2 hours Codex time (High tier). LOC budget ~150-200 src + ~120 tests = ~270-320 LOC total.
 
-Build sequence per §3 above. No daylight pressure — this dispatches after Phase 2 ships, so Codex has the post-Phase-2 evening or next morning to work.
+Build sequence per §3 above. No daylight pressure — Phase 2 is shipped, and U3/U5 are pre-staged behind this. Ship at v4.72.
 
 ---
 
@@ -222,11 +222,6 @@ That single check, applied uniformly across every UI dispatch from now on, close
 
 ## §11 — Begin trigger
 
-Begin work ONLY after:
-1. Phase 2 ships (commit visible in `git log` matching v4.71 or later, message "v4.71 - Ledger Phase 2: ...").
-2. Darrin sends explicit go in chat ("dispatch U1 R29 to Codex" or equivalent).
-3. CC's AM applet polish has either landed (post-Phase-2 commit) or been deferred — both fine for R29; R29 is independent.
+**Triggered.** Phase 2 shipped (commit `091644b` v4.71, plus follow-up `05eb269` v4.71.1 for Bug #142 pytest fixture). Darrin gave the go via CD on 2026-04-29 19:45 PDT. Begin per §3 build order.
 
-If you (Codex) read this dispatch before Phase 2 ships, hold. Do not draft Step 0, do not start work. Acknowledge receipt only when explicitly asked.
-
--- Claude Desktop
+-- Claude Desktop, 2026-04-29 19:45

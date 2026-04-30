@@ -551,6 +551,27 @@ def test_create_message_writes_reply_tombstone_for_active_message() -> None:
             agent_hub.clear_message_parse_cache()
 
 
+def test_mailroom_transaction_canary_is_isolated() -> None:
+    original_values = {
+        "CLAUDE_INBOX": agent_hub.CLAUDE_INBOX,
+        "LEDGER_PATH": agent_hub.LEDGER_PATH,
+        "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
+        "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
+        "set_message_read_state": agent_hub.set_message_read_state,
+    }
+    result = agent_hub.run_mailroom_transaction_canary(actor="smoke")
+    assert_true(result["ok"], "mailroom transaction canary passes")
+    for name, ok in result["checks"].items():
+        assert_true(ok, f"mailroom transaction canary check passes: {name}")
+    assert_true(not Path(str(result["source_path"])).exists(), "mailroom canary cleans up isolated source message")
+    assert_true(
+        {"message_sent", "message_read_marked", "message_reply_tombstoned"}.issubset(set(result["event_types"])),
+        "mailroom canary records send/read/reply ledger events",
+    )
+    for key, value in original_values.items():
+        assert_true(getattr(agent_hub, key) == value, f"mailroom canary restores {key}")
+
+
 def test_cockpit_payload_contract() -> None:
     payload = agent_hub.cockpit_payload()
     assert_true(payload["schema_version"] == 1, "cockpit schema version")
@@ -601,11 +622,76 @@ def test_health_payload_contract() -> None:
     assert_true(payload["overall"] in {"ok", "warn", "err", "unknown"}, "health overall level is normalized")
     assert_true(isinstance(payload["ok"], bool), "health ok is boolean")
     components = payload["components"]
-    for name in ("server", "routes", "mailboxes", "unanswered", "agent_progress", "archive", "diagnostics", "periodic_monitor", "github_backup"):
+    for name in ("server", "routes", "inspector", "mailboxes", "unanswered", "agent_progress", "archive", "diagnostics", "periodic_monitor", "github_backup"):
         assert_true(name in components, f"health carries {name} component")
         assert_true(components[name]["level"] in {"ok", "warn", "err", "unknown"}, f"{name} health level is normalized")
         assert_true(bool(components[name]["label"]), f"{name} health has label")
         assert_true(bool(components[name]["detail"]), f"{name} health has detail")
+    assert_true("problem_routes" in components["routes"], "routes health carries held/failed route detail")
+    assert_true("stale" in components["inspector"], "inspector health carries freshness state")
+
+
+def test_pah_ui_pg_design_bible_tokens() -> None:
+    ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    required_snippets = (
+        "--canvas: #14141f;",
+        "--chrome: #161625;",
+        "--pane: #1a1a2e;",
+        "--pane-raised: #22223a;",
+        "--pane-selected: #2a2a4e;",
+        "--panel: var(--pane);",
+        "--field: var(--pane-raised);",
+        "--field-hover: var(--pane-selected);",
+        "--border: #2a2a3e;",
+        "--border-hover: #3a3a4e;",
+        "--text: #e0ddd5;",
+        "--text-muted: #888888;",
+        "--text-dim: #555555;",
+        "--muted: var(--text-muted);",
+        "--dim: var(--text-dim);",
+        "--accent: #e8a87c;",
+        "--accent-ink: #1a1a2e;",
+        "--warn: #f39c12;",
+        "--mode-review: #5fa0a8;",
+        '--font-ui: "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;',
+        '--font-mono: "Cascadia Mono", Consolas, monospace;',
+        "font: 13px/1.32 var(--font-ui);",
+    )
+    for snippet in required_snippets:
+        assert_true(snippet in ui_text, f"PAH UI keeps PG design bible token: {snippet}")
+    forbidden_palette = (
+        "#d9d2c2",
+        "#f3dc9d",
+        "#d7e8cf",
+        "#ffc4bd",
+        "#f5b4ad",
+        "#c9c0b5",
+        "#f0aaa2",
+        "rgba(58, 45, 20",
+        "rgba(63, 24, 31",
+        "rgba(24, 42, 28",
+        "rgba(215, 184, 107",
+        "rgba(182, 75, 63",
+    )
+    for snippet in forbidden_palette:
+        assert_true(snippet not in ui_text, f"PAH UI avoids non-Bible/ad-hoc palette value: {snippet}")
+    assert_true(".notice" in ui_text and "background: var(--field);" in ui_text, "PAH notice uses a Bible surface token")
+    assert_true("font: 12px/1.2 var(--font-ui);" in ui_text, "PAH progress card prose does not use mono")
+    assert_true("inspector-glance" in ui_text, "PAH Inspector has an at-a-glance status strip")
+    assert_true(".inspector-overlay" in ui_text and "background: var(--canvas);" in ui_text, "PAH Inspector overlay uses the Bible canvas token")
+    assert_true(".inspector-glance-item.warn { border-color: rgba(243, 156, 18, .50); }" in ui_text, "PAH Inspector warning status uses semantic border, not a tinted panel fill")
+    assert_true(".inspector-badge.fail { background: var(--field); color: var(--err);" in ui_text, "PAH Inspector fail badge stays on a Bible surface token")
+    assert_true("inspector-action-primary" in ui_text, "PAH Inspector keeps a colored primary refresh action")
+    assert_true("inspector-action-close" in ui_text, "PAH Inspector close action has distinct status color")
+    assert_true("grid-template-columns: minmax(180px, .75fr) minmax(260px, 1.25fr) auto;" in ui_text, "PAH Inspector uses the top screen band for status")
+    assert_true("data-inspector-order" in ui_text, "PAH Inspector status tiles are actionable ordering controls")
+    assert_true("let inspectorFindingOrder = 'all';" in ui_text, "PAH Inspector tracks selected findings order")
+    assert_true("function setInspectorFindingOrder(status)" in ui_text, "PAH Inspector can reorder findings from status controls")
+    assert_true('aria-pressed="' in ui_text, "PAH Inspector status ordering controls expose active state")
+    assert_true('id="ccActivityPanel"' in ui_text, "PAH UI includes a dedicated Claude Code activity panel")
+    assert_true("async function checkCcActivityNow()" in ui_text, "PAH UI includes a Claude Code check-now action")
+    assert_true("fetch('/api/cc-activity')" in ui_text, "PAH UI checks Claude Code activity through the live endpoint")
+    assert_true("latest_disk_write_age_seconds" in ui_text, "PAH UI surfaces latest Claude Code target disk-write age")
 
 
 def test_agent_progress_monitor_contract() -> None:
@@ -657,6 +743,11 @@ def test_agent_progress_monitor_contract() -> None:
             fresh = agent_hub.cc_active_dispatch_progress()
             assert_true(fresh["severity"] == "ok", "recent target mtime becomes green")
             assert_true(fresh["recommended_action"], "fresh progress card still has a recommended action")
+            assert_true(fresh["sidecar_exists"], "fresh progress reports sidecar existence")
+            assert_true(fresh["latest_disk_write_path"] == str(file_path), "fresh progress reports latest target disk write path")
+            assert_true(fresh["latest_disk_write_age_seconds"] is not None, "fresh progress reports latest target disk write age")
+            assert_true(fresh["scanned_files"] >= 1, "fresh progress reports scanned file count")
+            assert_true("mailbox_evidence" in fresh, "fresh progress includes CC mailbox fallback disk evidence")
 
             sidecar.write_text(
                 json.dumps(
@@ -676,6 +767,131 @@ def test_agent_progress_monitor_contract() -> None:
             compose = agent_hub.cc_active_dispatch_progress()
             assert_true(compose["severity"] == "err", "overlong compose state becomes red")
             assert_true("compose state exceeded" in compose["recommended_action"], "compose state explains action")
+
+            human_loop_report = state_dir / "20260429_141000_CC_to_CLAUDE_phase2_commit_go_ack.md"
+            human_loop_report.write_text("ready for human loop\n", encoding="utf-8")
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "agent": "claude-code",
+                        "dispatch_id": "PG-LEDGER-PHASE2",
+                        "phase": "Awaiting commit/go word",
+                        "status": "ready_for_human_loop",
+                        "started_at": old_iso,
+                        "updated_at": old_iso,
+                        "human_loop_evidence_path": str(human_loop_report),
+                        "human_loop_reason": "Awaiting Darrin commit/go confirmation.",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            human_loop = agent_hub.cc_active_dispatch_progress()
+            assert_true(human_loop["severity"] == "ok", "human-loop wait state stays green")
+            assert_true(
+                "do not interrupt" in human_loop["recommended_action"],
+                "human-loop wait state avoids stale interruption",
+            )
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
+
+
+def test_pah_inspector_cc_progress_sidecar_contract() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        pg_root = root / "panda-gallery"
+        target = pg_root / "panda_ledger" / "shared"
+        state_dir = pg_root / "workflows" / "cc_mailbox" / "_state"
+        target.mkdir(parents=True)
+        state_dir.mkdir(parents=True)
+        sidecar = state_dir / "active_dispatch.json"
+        file_path = target / "ipc.py"
+        file_path.write_text("print('ok')\n", encoding="utf-8")
+        original_values = {
+            "CC_ACTIVE_DISPATCH_PATH": agent_hub.CC_ACTIVE_DISPATCH_PATH,
+            "PANDA_GALLERY_ROOT": agent_hub.PANDA_GALLERY_ROOT,
+        }
+        try:
+            agent_hub.CC_ACTIVE_DISPATCH_PATH = sidecar
+            agent_hub.PANDA_GALLERY_ROOT = pg_root
+            idle_card = agent_hub.cc_active_dispatch_progress()
+            idle_findings = {finding.check_id: finding for finding in inspector.inspect_cc_active_dispatch_contract(idle_card)}
+            assert_true(
+                idle_findings["endpoint.cc_active_dispatch_sidecar_readiness"].status == "warn",
+                "inspector warns when CC sidecar is absent",
+            )
+
+            now_iso = agent_hub.datetime.now().astimezone().isoformat(timespec="seconds")
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "agent": "claude-code",
+                        "dispatch_id": "PG-LEDGER-PHASE2",
+                        "phase": "Layer 1 shared/",
+                        "status": "active",
+                        "started_at": now_iso,
+                        "updated_at": now_iso,
+                        "expected_target_paths": [str(target)],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            live_card = agent_hub.cc_active_dispatch_progress()
+            live_findings = {finding.check_id: finding for finding in inspector.inspect_cc_active_dispatch_contract(live_card)}
+            assert_true(
+                live_findings["endpoint.cc_active_dispatch_sidecar_readiness"].status == "pass",
+                "inspector passes valid CC sidecar schema",
+            )
+            assert_true(
+                live_findings["endpoint.cc_active_dispatch_target_safety"].status == "pass",
+                "inspector passes allowlisted CC target evidence",
+            )
+
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "agent": "claude-code",
+                        "dispatch_id": "PG-LEDGER-PHASE2",
+                        "status": "active",
+                        "updated_at": now_iso,
+                        "expected_target_paths": [str(root / "outside")],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            unsafe_card = agent_hub.cc_active_dispatch_progress()
+            unsafe_findings = {finding.check_id: finding for finding in inspector.inspect_cc_active_dispatch_contract(unsafe_card)}
+            assert_true(
+                unsafe_findings["endpoint.cc_active_dispatch_target_safety"].status == "fail",
+                "inspector fails unsafe CC target paths",
+            )
+
+            report_path = state_dir / "20260429_141000_CC_to_CLAUDE_phase2_commit_go_ack.md"
+            report_path.write_text("ready for human loop\n", encoding="utf-8")
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "agent": "claude-code",
+                        "dispatch_id": "PG-LEDGER-PHASE2",
+                        "status": "ready_for_human_loop",
+                        "updated_at": now_iso,
+                        "human_loop_evidence_path": str(report_path),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            human_loop_card = agent_hub.cc_active_dispatch_progress()
+            human_loop_findings = {
+                finding.check_id: finding for finding in inspector.inspect_cc_active_dispatch_contract(human_loop_card)
+            }
+            assert_true(
+                human_loop_findings["endpoint.cc_active_dispatch_sidecar_readiness"].status == "pass",
+                "inspector accepts ready_for_human_loop sidecar state",
+            )
         finally:
             for key, value in original_values.items():
                 setattr(agent_hub, key, value)
@@ -796,7 +1012,7 @@ def test_periodic_steward_schedule_metadata() -> None:
             periodic_health.os.environ["PAH_PERIODIC_HEALTH_INTERVAL_MINUTES"] = original
 
 
-def test_pah_inspector_detects_retired_ui_routes() -> None:
+def test_pah_inspector_accepts_mailroom_compatibility_routes() -> None:
     with TemporaryDirectory() as temp_dir:
         ui_path = Path(temp_dir) / "ui.html"
         ui_path.write_text(
@@ -809,7 +1025,10 @@ def test_pah_inspector_detects_retired_ui_routes() -> None:
             findings = inspector.inspect_ui_wiring()
             by_id = {finding.check_id: finding for finding in findings}
             assert_true(by_id["ui.required_controls"].status == "pass", "inspector sees required controls")
-            assert_true(by_id["ui.no_retired_routes"].status == "fail", "inspector flags retired UI endpoint")
+            assert_true(
+                by_id["ui.compatible_mailroom_routes"].status == "pass",
+                "inspector accepts supported mailroom compatibility endpoints",
+            )
         finally:
             inspector.agent_hub.UI_PATH = original
 
@@ -2461,6 +2680,89 @@ def test_classifier_completion_messages_close_before_agent_owner() -> None:
     assert_true(state == "open_on_agent", "ready-for-review report remains open on the reviewing agent")
 
 
+def test_classifier_no_action_coordination_share_closes() -> None:
+    message = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/no_action_share.md"),
+        name="no_action_share.md",
+        modified=1.0,
+        title="CC share for awareness",
+        message_id="PAH-CLASSIFIER-NO-ACTION-SHARE",
+        thread_id="PAH-CLASSIFIER-NO-ACTION-SHARE",
+        thread_status="active",
+        status="open",
+        from_agent="claude-code",
+        to_agent="codex",
+        action_owner="codex",
+        requires_darrin_decision=False,
+        approval_boundary="coordination_only",
+        message_type="share",
+        schema_version="1",
+        body="This is a coordination / awareness share. No action required and no reply required.",
+    )
+    state = agent_hub.classify_thread_state(message)
+    assert_true(state == "closed", "explicit no-action coordination shares do not create open Codex work")
+
+
+def test_stale_unread_only_wakes_actionable_agent_threads() -> None:
+    stale_time = time.time() - agent_hub.STALE_UNREAD_SECONDS - 5
+    no_action_share = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/no_action_stale.md"),
+        name="no_action_stale.md",
+        modified=stale_time,
+        title="CC share for awareness",
+        message_id="PAH-STALE-NO-ACTION-SHARE",
+        thread_id="PAH-STALE-NO-ACTION-SHARE",
+        thread_status="active",
+        status="open",
+        from_agent="claude-code",
+        to_agent="codex",
+        action_owner="codex",
+        requires_darrin_decision=False,
+        approval_boundary="coordination_only",
+        message_type="share",
+        schema_version="1",
+        body="No action required.",
+    )
+    no_action_row = agent_hub.message_to_json(no_action_share, {})
+    assert_true(no_action_row["classifier_state"] == "closed", "no-action share classifier is exposed")
+    assert_true(not no_action_row["stale_unread"], "closed no-action shares do not become wake candidates")
+
+    open_request = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/open_request_stale.md"),
+        name="open_request_stale.md",
+        modified=stale_time,
+        title="Open request",
+        message_id="PAH-STALE-OPEN-REQUEST",
+        thread_id="PAH-STALE-OPEN-REQUEST",
+        thread_status="active",
+        status="open",
+        from_agent="claude-desktop",
+        to_agent="codex",
+        action_owner="codex",
+        requires_darrin_decision=False,
+        approval_boundary="coordination_only",
+        message_type="response_request",
+        schema_version="1",
+        body="Please review.",
+    )
+    request_row = agent_hub.message_to_json(open_request, {})
+    assert_true(request_row["classifier_state"] == "open_on_agent", "open request classifier is exposed")
+    assert_true(request_row["stale_unread"], "open agent-owned stale unread messages remain wake candidates")
+
+    completed_thread_row = agent_hub.message_to_json(open_request, {}, {open_request.stable_thread})
+    assert_true(
+        completed_thread_row["thread_has_completion_evidence"],
+        "message row exposes later thread completion evidence",
+    )
+    assert_true(
+        not completed_thread_row["stale_unread"],
+        "older unread messages in completed threads do not become wake candidates",
+    )
+
+
 def test_classifier_unstructured_inbox_message_is_owner_unknown() -> None:
     with TemporaryDirectory() as temp_dir:
         inbox = Path(temp_dir) / "CODEX Inbox"
@@ -2602,14 +2904,17 @@ def main() -> None:
     test_routes_and_scope()
     test_create_message_dry_run_does_not_write_mail()
     test_create_message_writes_reply_tombstone_for_active_message()
+    test_mailroom_transaction_canary_is_isolated()
     test_cockpit_payload_contract()
     test_health_payload_contract()
+    test_pah_ui_pg_design_bible_tokens()
     test_agent_progress_monitor_contract()
+    test_pah_inspector_cc_progress_sidecar_contract()
     test_codex_mailbox_sla_progress()
     test_health_payload_unanswered_component()
     test_periodic_archive_sweep_contract()
     test_periodic_steward_schedule_metadata()
-    test_pah_inspector_detects_retired_ui_routes()
+    test_pah_inspector_accepts_mailroom_compatibility_routes()
     test_pah_inspector_summary_and_markdown_report()
     test_interaction_ledger_helper_writes_jsonl()
     test_interaction_ledger_recent_events_and_summary()
@@ -2638,6 +2943,8 @@ def main() -> None:
     test_classifier_darrin_precedence_beats_completion_fallback()
     test_classifier_pre_staged_pending_trigger_is_parked()
     test_classifier_completion_messages_close_before_agent_owner()
+    test_classifier_no_action_coordination_share_closes()
+    test_stale_unread_only_wakes_actionable_agent_threads()
     test_classifier_unstructured_inbox_message_is_owner_unknown()
     test_thread_archive_state_reopens_on_new_activity()
     test_decision_state()

@@ -1,0 +1,17 @@
+{
+  "actor": "codex",
+  "original_message_id": "PAH-URGENT-20260429-142500-claude-desktop-to-codex-unread-mail-recurring-pattern",
+  "original_path": "C:\\CODEX PG\\CODEX Claude Codex Mailbox\\CODEX Inbox\\20260429_142500_CLAUDE_DESKTOP_to_CODEX_URGENT_unread_mail_recurring_pattern.md",
+  "original_thread_id": "PAH-MAILBOX-PROTOCOL-V3",
+  "reason": "reply_sent",
+  "replied_at": "2026-04-29T15:52:22-07:00",
+  "reply_from": "codex",
+  "reply_message_id": "PAH-20260429-155222-codex-to-claude-desktop-codex-sla-cleanup-complete-and-pickup-gap-",
+  "reply_path": "C:\\CODEX PG\\CODEX Claude Codex Mailbox\\CLAUDE Inbox\\20260429_155222_CODEX_to_CLAUDE_DESKTOP_codex-sla-cleanup-complete-and-pickup-gap-.md",
+  "reply_ref": "PAH-URGENT-20260429-142500-claude-desktop-to-codex-unread-mail-recurring-pattern",
+  "reply_thread_id": "PAH-MAILBOX-PROTOCOL-V3",
+  "reply_to": "claude-desktop",
+  "route": "codex_to_claude",
+  "schema_version": 1,
+  "tombstone_type": "replied"
+}

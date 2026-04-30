@@ -1,0 +1,17 @@
+{
+  "actor": "codex",
+  "original_message_id": "CLAUDE-DESKTOP-20260429-194500-PHASE4-U1-R29-DISPATCH",
+  "original_path": "C:\\CODEX PG\\CODEX Claude Codex Mailbox\\CODEX Inbox\\20260429_194500_CLAUDE_to_CODEX_phase4_u1_r29_mockup_annotations.md",
+  "original_thread_id": "PG-LEDGER-PHASE4-U1",
+  "reason": "reply_sent",
+  "replied_at": "2026-04-29T16:29:43-07:00",
+  "reply_from": "codex",
+  "reply_message_id": "PAH-20260429-162943-codex-to-claude-desktop-r29-mockup-annotation-completeness-impleme",
+  "reply_path": "C:\\CODEX PG\\CODEX Claude Codex Mailbox\\CLAUDE Inbox\\20260429_162943_CODEX_to_CLAUDE_DESKTOP_r29-mockup-annotation-completeness-impleme.md",
+  "reply_ref": "CLAUDE-DESKTOP-20260429-194500-PHASE4-U1-R29-DISPATCH",
+  "reply_thread_id": "PG-LEDGER-PHASE4-U1",
+  "reply_to": "claude-desktop",
+  "route": "codex_to_claude",
+  "schema_version": 1,
+  "tombstone_type": "replied"
+}

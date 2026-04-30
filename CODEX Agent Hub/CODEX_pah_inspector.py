@@ -120,6 +120,160 @@ def fail(check_id: str, title: str, summary: str, recommendation: str = "", **de
     return Finding(check_id, title, "fail", summary, detail, recommendation)
 
 
+CC_PROGRESS_CARD_REQUIRED_FIELDS = {
+    "id",
+    "agent",
+    "label",
+    "severity",
+    "status",
+    "phase",
+    "evidence_summary",
+    "recommended_action",
+    "sidecar_path",
+    "issues",
+    "targets",
+}
+CC_PROGRESS_ALLOWED_STATUSES = {
+    "idle",
+    "invalid",
+    "active",
+    "compose",
+    "heavy_write",
+    "paused",
+    "blocked",
+    "ready_for_human_loop",
+    "complete",
+    "abandoned",
+}
+CC_PROGRESS_REQUIRED_SIDECAR_FIELDS = {
+    "schema_version",
+    "agent",
+    "dispatch_id",
+    "status",
+    "updated_at",
+}
+
+
+def inspect_cc_active_dispatch_contract(card: dict[str, Any] | None) -> list[Finding]:
+    findings: list[Finding] = []
+    if not isinstance(card, dict):
+        return [
+            fail(
+                "endpoint.cc_active_dispatch_card_contract",
+                "CC progress card contract",
+                "Cockpit does not expose a structured CC progress card.",
+                "Restore the cc_active_dispatch card in cockpit agent_progress.",
+            )
+        ]
+
+    missing_fields = sorted(field for field in CC_PROGRESS_CARD_REQUIRED_FIELDS if field not in card)
+    status_name = str(card.get("status", "")).strip().lower()
+    severity = str(card.get("severity", "")).strip().lower()
+    bad_status = status_name not in CC_PROGRESS_ALLOWED_STATUSES
+    bad_severity = severity not in {"ok", "warn", "err"}
+    findings.append(
+        check(
+            not missing_fields and not bad_status and not bad_severity,
+            "endpoint.cc_active_dispatch_card_contract",
+            "CC progress card contract",
+            "CC progress card exposes required fields, status, severity, and recommended action.",
+            "CC progress card is missing required fields or exposes an unsupported status/severity.",
+            missing_fields=missing_fields,
+            card_status=status_name,
+            card_severity=severity,
+            allowed_statuses=sorted(CC_PROGRESS_ALLOWED_STATUSES),
+        )
+    )
+
+    sidecar_path = Path(str(card.get("sidecar_path") or agent_hub.CC_ACTIVE_DISPATCH_PATH))
+    if not sidecar_path.exists():
+        findings.append(
+            warn(
+                "endpoint.cc_active_dispatch_sidecar_readiness",
+                "CC sidecar readiness",
+                "CC progress card is present, but active_dispatch.json is absent; PAH can only report CC as idle until CC writes the sidecar.",
+                "Have the CC sidecar writer create active_dispatch.json before treating CC activity as live-monitored.",
+                sidecar_path=str(sidecar_path),
+                status=status_name,
+            )
+        )
+        return findings
+
+    try:
+        sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        findings.append(
+            fail(
+                "endpoint.cc_active_dispatch_sidecar_readiness",
+                "CC sidecar readiness",
+                "active_dispatch.json exists but cannot be read as JSON.",
+                "Repair or replace the CC active dispatch sidecar.",
+                sidecar_path=str(sidecar_path),
+                error=str(exc),
+            )
+        )
+        return findings
+
+    if not isinstance(sidecar, dict):
+        findings.append(
+            fail(
+                "endpoint.cc_active_dispatch_sidecar_readiness",
+                "CC sidecar readiness",
+                "active_dispatch.json exists but is not a JSON object.",
+                "Write the CC active dispatch sidecar as a JSON object.",
+                sidecar_path=str(sidecar_path),
+                value_type=type(sidecar).__name__,
+            )
+        )
+        return findings
+
+    sidecar_status = str(sidecar.get("status", "active")).strip().lower() or "active"
+    required = set(CC_PROGRESS_REQUIRED_SIDECAR_FIELDS)
+    if sidecar_status in {"active", "heavy_write"}:
+        required.add("expected_target_paths")
+    if sidecar_status == "ready_for_human_loop":
+        required.add("human_loop_evidence_path")
+    missing_sidecar_fields = sorted(field for field in required if field not in sidecar)
+    bad_sidecar_status = sidecar_status not in (CC_PROGRESS_ALLOWED_STATUSES - {"idle", "invalid"})
+    findings.append(
+        check(
+            not missing_sidecar_fields and not bad_sidecar_status,
+            "endpoint.cc_active_dispatch_sidecar_readiness",
+            "CC sidecar readiness",
+            "active_dispatch.json has the required fields for live CC progress monitoring.",
+            "active_dispatch.json is missing required fields or uses an unsupported status.",
+            sidecar_path=str(sidecar_path),
+            missing_fields=missing_sidecar_fields,
+            sidecar_status=sidecar_status,
+            allowed_statuses=sorted(CC_PROGRESS_ALLOWED_STATUSES - {"idle", "invalid"}),
+        )
+    )
+
+    targets = card.get("targets", [])
+    if not isinstance(targets, list):
+        targets = []
+    unsafe_targets = [
+        {"path": target.get("path"), "reason": target.get("invalid_reason", "unknown")}
+        for target in targets
+        if isinstance(target, dict) and not bool(target.get("allowed", False))
+    ]
+    issues = [str(issue) for issue in card.get("issues", [])] if isinstance(card.get("issues", []), list) else []
+    safety_issues = [issue for issue in issues if issue.startswith("unsafe_target") or issue in {"missing_targets", "missing_target"}]
+    findings.append(
+        check(
+            not unsafe_targets and not safety_issues,
+            "endpoint.cc_active_dispatch_target_safety",
+            "CC progress target safety",
+            "CC progress targets are allowlisted and usable for file-mtime evidence.",
+            "CC progress targets are missing or outside the safe allowlist.",
+            sidecar_path=str(sidecar_path),
+            unsafe_targets=unsafe_targets,
+            safety_issues=safety_issues,
+        )
+    )
+    return findings
+
+
 def passed(check_id: str, title: str, summary: str, **detail: Any) -> Finding:
     return Finding(check_id, title, "pass", summary, detail)
 
@@ -145,6 +299,7 @@ def inspect_live_endpoints(url: str) -> tuple[list[Finding], dict[str, Any]]:
         "health": "/api/health",
         "tray": "/api/tray-status",
         "inspector_report": "/api/inspector-report",
+        "cc_activity": "/api/cc-activity",
     }
     for name, path in endpoints.items():
         started = time.perf_counter()
@@ -225,6 +380,37 @@ def inspect_live_endpoints(url: str) -> tuple[list[Finding], dict[str, Any]]:
                 "endpoint.create_message_dry_run",
                 "Create-message dry-run endpoint",
                 "/api/create-message dry-run probe failed.",
+                error=str(exc),
+            )
+        )
+
+    try:
+        canary = post_json_with_write_cookie(
+            url,
+            "/api/mailroom-canary",
+            {"actor": "pah_inspector"},
+            timeout=20,
+        )
+        checks = canary.get("checks", {}) if isinstance(canary.get("checks"), dict) else {}
+        missing_checks = sorted(name for name, ok in checks.items() if not ok)
+        findings.append(
+            check(
+                bool(canary.get("ok")) and not missing_checks,
+                "endpoint.mailroom_transaction_canary",
+                "Mailroom transaction canary",
+                "Live PAH can send, mark read, write reply tombstones, and ledger the transaction in an isolated mailbox.",
+                "PAH mailroom transaction canary failed; send/read/reply-tombstone/ledger may be unreliable.",
+                response=canary,
+                missing_checks=missing_checks,
+            )
+        )
+    except Exception as exc:
+        findings.append(
+            fail(
+                "endpoint.mailroom_transaction_canary",
+                "Mailroom transaction canary",
+                "Could not run the live PAH mailroom transaction canary.",
+                "Check /api/mailroom-canary and PAH server stderr/stdout before trusting mailroom status.",
                 error=str(exc),
             )
         )
@@ -324,7 +510,7 @@ def inspect_live_endpoints(url: str) -> tuple[list[Finding], dict[str, Any]]:
             )
         )
     if health:
-        required = {"server", "routes", "mailboxes", "archive", "interaction_ledger", "periodic_monitor", "agent_progress"}
+        required = {"server", "routes", "mailboxes", "archive", "interaction_ledger", "periodic_monitor", "agent_progress", "inspector"}
         components = set((health.get("components") or {}).keys())
         missing = sorted(required - components)
         findings.append(
@@ -355,7 +541,8 @@ def inspect_live_endpoints(url: str) -> tuple[list[Finding], dict[str, Any]]:
     if cockpit:
         progress = cockpit.get("agent_progress", {})
         cards = progress.get("cards", []) if isinstance(progress, dict) else []
-        card_ids = {str(card.get("id", "")) for card in cards if isinstance(card, dict)}
+        card_by_id = {str(card.get("id", "")): card for card in cards if isinstance(card, dict)}
+        card_ids = set(card_by_id)
         missing_cards = sorted({"cc_active_dispatch", "codex_mailbox_sla"} - card_ids)
         missing_actions = [
             str(card.get("id", "unknown"))
@@ -374,6 +561,7 @@ def inspect_live_endpoints(url: str) -> tuple[list[Finding], dict[str, Any]]:
                 card_ids=sorted(card_ids),
             )
         )
+        findings.extend(inspect_cc_active_dispatch_contract(card_by_id.get("cc_active_dispatch")))
     return findings, payloads
 
 
@@ -580,7 +768,10 @@ def supported_post_routes() -> set[str]:
         "/api/cleanup-inbox-accumulation",
         "/api/archive-read-codex-inbox",
         "/api/agent-no-mail-claim",
+        "/api/send",
         "/api/create-message",
+        "/api/message-read-state",
+        "/api/mark-all-read",
         "/api/create-route-test",
         "/api/quarantine-message",
         "/api/decision-state",
@@ -601,6 +792,7 @@ def supported_get_routes() -> set[str]:
         "/api/health",
         "/api/tray-status",
         "/api/inspector-report",
+        "/api/cc-activity",
         "/api/open",
         "/api/message",
         "/api/interaction-ledger",
@@ -687,15 +879,17 @@ def inspect_ui_wiring() -> list[Finding]:
             fetch_paths=sorted(static_fetch_paths),
         )
     )
-    retired = sorted({"/api/send", "/api/message-read-state", "/api/mark-all-read"} & (post_paths | static_fetch_paths))
+    compatibility_routes = sorted({"/api/send", "/api/message-read-state", "/api/mark-all-read"} & (post_paths | static_fetch_paths))
+    unsupported_compatibility = sorted(path for path in compatibility_routes if path not in supported_post_routes())
     findings.append(
         check(
-            not retired,
-            "ui.no_retired_routes",
-            "Retired endpoint hygiene",
-            "Dashboard UI does not call retired messaging/read-state endpoints.",
-            "Dashboard UI still references retired endpoints.",
-            retired_routes=retired,
+            not unsupported_compatibility,
+            "ui.compatible_mailroom_routes",
+            "Mailroom route compatibility",
+            "Dashboard mailroom compatibility routes are supported by the backend.",
+            "Dashboard calls mailroom compatibility routes the backend does not support.",
+            compatibility_routes=compatibility_routes,
+            unsupported_compatibility=unsupported_compatibility,
         )
     )
     inspector_panel_tokens = [
@@ -733,6 +927,12 @@ def inspect_ui_wiring() -> list[Finding]:
         "diag-periodic-monitor",
         "diag-archive-sweep",
         "diag-discrepancy",
+        'id="ccActivityPanel"',
+        "function renderCcActivityPanel",
+        "async function checkCcActivityNow",
+        "fetch('/api/cc-activity')",
+        "latest_disk_write_age_seconds",
+        "mailbox_evidence",
         "label: 'Queue'",
         "focusPanel('all')",
         "focusQueueItem('diagnostics'",
@@ -818,12 +1018,11 @@ def inspect_ui_wiring() -> list[Finding]:
     agent_status_tokens = [
         ".agent-note.status-warn",
         ".agent-note.status-ok",
-        "border: 1px solid rgba(215, 184, 107, .56)",
+        "border: 1px solid rgba(243, 156, 18, .50)",
         "border: 1px solid rgba(127, 176, 105, .48)",
-        "background: rgba(58, 45, 20, .78)",
-        "background: rgba(24, 42, 28, .78)",
-        "color: #f3dc9d",
-        "color: #d7e8cf",
+        "background: var(--field)",
+        "color: var(--warn)",
+        "color: var(--ok)",
         "const mailboxWaiting",
         "function mailboxWaitingCount",
         "const statusPillClass",
@@ -839,7 +1038,7 @@ def inspect_ui_wiring() -> list[Finding]:
             not missing_agent_status_tokens,
             "ui.agent_status_explains_mailbox_waiting",
             "Participant status label clarity",
-            "Participant cards explain yellow mailbox-waiting states and style unread-mail labels as amber status pills.",
+            "Participant cards explain mailbox-waiting states with Bible-compliant semantic border/text treatment.",
             "Participant cards may show warning lights without clear unread-mail pill treatment.",
             missing_tokens=missing_agent_status_tokens,
         )

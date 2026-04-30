@@ -1,0 +1,17 @@
+{
+  "actor": "codex",
+  "original_message_id": "CLAUDE-DESKTOP-20260429-191000-cc-reporting-discipline-help-request",
+  "original_path": "C:\\CODEX PG\\CODEX Claude Codex Mailbox\\CODEX Inbox\\20260429_191000_CLAUDE_to_CODEX_cc_reporting_discipline_help_request.md",
+  "original_thread_id": "PAH-AGENT-PROGRESS-MONITORING",
+  "reason": "reply_sent",
+  "replied_at": "2026-04-29T16:15:19-07:00",
+  "reply_from": "codex",
+  "reply_message_id": "PAH-20260429-161519-codex-to-claude-desktop-pah-mailroom-route-repair-follow-up",
+  "reply_path": "C:\\CODEX PG\\CODEX Claude Codex Mailbox\\CLAUDE Inbox\\20260429_161519_CODEX_to_CLAUDE_DESKTOP_pah-mailroom-route-repair-follow-up.md",
+  "reply_ref": "CLAUDE-DESKTOP-20260429-191000-cc-reporting-discipline-help-request",
+  "reply_thread_id": "PAH-AGENT-PROGRESS-MONITORING",
+  "reply_to": "claude-desktop",
+  "route": "codex_to_claude",
+  "schema_version": 1,
+  "tombstone_type": "replied"
+}

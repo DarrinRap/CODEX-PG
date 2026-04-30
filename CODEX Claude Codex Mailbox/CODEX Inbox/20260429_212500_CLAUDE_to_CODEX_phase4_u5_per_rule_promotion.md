@@ -1,15 +1,15 @@
 ---
 schema_version: 1
-id: CLAUDE-DESKTOP-20260429-PHASE4-U5-DISPATCH-DRAFT
+id: CLAUDE-DESKTOP-20260429-212500-PHASE4-U5-DISPATCH
 thread_id: PG-LEDGER-PHASE4-U5
-created_at: '2026-04-29T10:30:00-07:00'
+created_at: '2026-04-29T21:25:00-07:00'
 from: claude_desktop
 to: codex
 type: dispatch
 priority: normal
-status: drafted_pending_phase2_ship
-thread_status: draft
-action_owner: claude_desktop
+status: open
+thread_status: active
+action_owner: codex
 requires_darrin_decision: true
 approval_boundary: dispatch_after_phase2_ship
 reply_to: []
@@ -20,7 +20,9 @@ prerequisite_commit: phase2_ship_and_u1_r29_ship
 
 # Claude Desktop -> Codex: Phase 4 — U5 per-rule auto-promotion based on telemetry
 
-**STATUS: DRAFT.** Pre-staged in CODEX Inbox while CC's Phase 2 build is in flight. Do NOT begin work until Darrin sends the explicit go AND Phase 2 has shipped (v4.71+) AND U1 R29 has shipped (v4.72+). U5 ships at v4.74 or later (after U3 v4.73, OR concurrent with U3 if Darrin parallelizes — both are Codex-owned, no overlap).
+**STATUS: LIVE.** Phase 2 shipped at v4.71 / `091644b`. Bug #142 fix shipped at v4.71.1 / `05eb269`. L14 AM applet shipped at v4.72 / `d81183d`. U1 R29 shipped at v4.72.1 / `5c6f79f`. All prerequisites for U5 satisfied.
+
+**Concurrency note:** U3 dispatched in parallel at 21:25 PDT today. U3 + U5 have no technical dependency on each other; ship in any order or concurrently.
 
 ---
 
@@ -156,7 +158,7 @@ Test fixtures live in `pg_design_lint/tests/fixtures/telemetry/`. Use temp direc
 
 - `panda_ledger/shared/contracts.py` — FROZEN.
 - Rule logic (any rule's `check_file()` method body). U5 only changes severity, not behavior.
-- `pg_design_lint/rules/R29` (if R29 has shipped — likely yes). U5 may set R29's severity, but doesn't touch its check logic.
+- `pg_design_lint/rules/R29` (shipped at v4.72.1). U5 may set R29's severity, but doesn't touch its check logic.
 - `panda_ledger/` — Phase 2/3 territory.
 
 ---
@@ -172,7 +174,7 @@ Test fixtures live in `pg_design_lint/tests/fixtures/telemetry/`. Use temp direc
 7. Implement `promote_rule` and `demote_rule` (rule module mutation). See §3.4 for mutation strategy.
 8. Wire CLI flags in `__main__.py`.
 9. Build all fixtures + tests.
-10. Run full pytest suite (368+ tests should still pass).
+10. Run full pytest suite (473+ tests should still pass at v4.72.1 baseline).
 11. Run `pg_design_lint --update-telemetry` against the live codebase. Verify spec.json updated. Run `--promote-eligible` — list any eligible rules (probably none today; codebase has no `pg-lint:allow` exemptions yet).
 
 ### §3.4 — Rule severity mutation strategy
@@ -212,7 +214,7 @@ class R01ForbiddenColors(Rule):
     _default_severity = Severity.ERROR  # default; runtime lookup overrides
 ```
 
-This is a one-line mechanical edit per existing rule module (29 rules at the time of writing this dispatch — R01–R28 + R03b. If R29 ships first per Phase 4 sequencing, the count is 30; either way, scriptize the migration.)
+This is a one-line mechanical edit per existing rule module. R29 shipped at v4.72.1 brings the rule count to 30 (R01–R28 + R03b + R29); scriptize the migration.
 
 **If Codex disagrees:** Option A or B work, just less elegant. The textual patch in Option A might be the most pragmatic if you'd rather not touch every rule module. Surface in Step 0.
 
@@ -228,7 +230,7 @@ U5 dispatch is acceptance-passing when:
 4. **`--promote` refuses ineligible rules.** Clear error message, nothing modified.
 5. **`--demote R01` demotes correctly.** Verify rule shows WARNING after demote.
 6. **All test cases pass.** Twelve cases above.
-7. **Existing test suite still passes.** No regressions in the 368 existing tests.
+7. **Existing test suite still passes.** No regressions in the 473+ baseline at v4.72.1.
 8. **No new dependencies** beyond what's already in PG.
 9. **Performance.** `--update-telemetry` should complete in a reasonable time on the full codebase. Codex Step 0 task: measure on the live codebase, surface the actual time. If >10 seconds, scope down (e.g., parallel scan, or `.gitignore`-style exclusions). `--promote-eligible` is essentially instant (no I/O beyond spec.json read).
 10. **`--update-telemetry` is idempotent.** Running it twice doesn't change anything beyond the timestamp.
@@ -249,9 +251,9 @@ U5 dispatch is acceptance-passing when:
 
 ## §6 — Coordination with R29 (U1) and U3
 
-Dispatch sequence is R29 → U3 → U5, but **U5 has no technical dependency on R29 or U3**. Each Phase 4 dispatch ships independently; the sequencing is dispatching-order preference for Darrin's convenience.
+R29 shipped at v4.72.1. U3 dispatched in parallel with U5 at 21:25 PDT today. **U5 has no technical dependency on R29 or U3.** Each Phase 4 dispatch ships independently; the sequencing is dispatching-order preference for Darrin's convenience.
 
-U5 operates on the rule severity layer, orthogonal to what each rule checks (R29) and orthogonal to commit-decision tracing (U3). If R29 hasn't shipped, U5's `--update-telemetry` simply doesn't see R29 in the rule list — no harm. If U3 hasn't shipped, U5 promotion commits don't auto-amend decision frontmatter — promotions can be tracked manually until U3 lands.
+U5 operates on the rule severity layer, orthogonal to what each rule checks (R29) and orthogonal to commit-decision tracing (U3). If U3 hasn't shipped yet when U5 lands, U5 promotion commits won't auto-amend decision frontmatter — promotions can be tracked manually until U3 ships.
 
 If U5 ships before U3, the rule severity flow is: rule has default in module + override in spec.json → telemetry update tracks exemption count → promotion eligibility surfaces → manual `--promote` promotes. Already complete and useful without U3.
 
@@ -318,11 +320,6 @@ After U5, the rule-promotion pipeline is data-driven, opt-in, and reversible. Ne
 
 ## §12 — Begin trigger
 
-Begin work ONLY after:
-1. Phase 2 ships (commit visible in `git log` matching v4.71+).
-2. Darrin sends explicit go in chat ("dispatch U5 to Codex" or equivalent).
-3. (Soft, not blocking.) U1 R29 has shipped (v4.72+) and U3 has shipped (v4.73+) — U5 has no technical dependency on either; this is dispatching-order preference only.
+**Triggered.** Phase 2 + Bug #142 + L14 + U1 R29 all shipped. Darrin gave the go via CD on 2026-04-29 21:25 PDT. Begin per §3 build order. U3 dispatched in parallel; ship independently of U3.
 
-If you (Codex) read this dispatch before conditions 1 and 2 are met, hold. Do not draft Step 0, do not start work. Acknowledge receipt only when explicitly asked.
-
--- Claude Desktop
+-- Claude Desktop, 2026-04-29 21:25

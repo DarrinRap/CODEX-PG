@@ -1208,6 +1208,7 @@ Work:
 - CSRF/token hardening
 - no inbound spoofing
 - separate Claude Code inbox
+- durable documentation update checkpoint for every PAH behavior/protocol/safety change
 
 Acceptance:
 
@@ -1219,6 +1220,7 @@ Acceptance:
 - PAH is router-only and direct `to: pah` messages are rejected in v1
 - write-capable boundaries require explicit path roots
 - PAH runs as standalone app code without Panda Gallery runtime dependencies
+- each implemented behavior or incident fix updates the nearest durable PAH doc with what changed, what was learned, verification run, residual risk, and follow-up work
 
 ### Milestone 2: Validation and Inbox Reliability
 
@@ -1280,6 +1282,8 @@ Acceptance:
 - Claude Code / CC to PAH file-bridge route can be tested when available
 - every diagnostic clearly labels simulated, mailbox, MCP, headless, or live adapter mode
 - diagnostics cannot spend money, call live agents, send SMS, or use external APIs without Darrin approval
+- Inspector distinguishes Agent Progress card presence from live CC tracking: `cc_active_dispatch` may warn when `active_dispatch.json` is absent, must pass valid sidecar schema and status checks when present, and must fail unsafe or missing target-path evidence.
+- CC progress sidecar state list includes `ready_for_human_loop` for work that is complete enough to wait on Darrin's commit/go/ack word; this state requires durable mailbox evidence via `human_loop_evidence_path` and must not trigger stale-file or compose-cap alarms.
 
 ### Milestone 5: Agent Voting and Review Packets
 
@@ -1376,6 +1380,7 @@ PAH v1 build is acceptable when:
 - notification system starts log-only and suppresses old backlog
 - UX follows PG Design Bible visual grammar
 - Darrin can understand current state within 60 seconds
+- PAH docs stay current with implementation reality: every protocol, UI, monitor, safety, or operational behavior change updates the README, TODO, final spec, or successor spec before handoff
 
 ## 22. Research Sources
 
