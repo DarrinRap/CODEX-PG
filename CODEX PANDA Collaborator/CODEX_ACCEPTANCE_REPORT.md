@@ -1,6 +1,6 @@
 # PANDA Collaborator Acceptance Report
 
-Accepted version: `0.4.0`
+Accepted version: `0.5.0`
 
 Date: 2026-04-30
 
@@ -15,6 +15,7 @@ PANDA Collaborator is accepted as a safety-first Windows shared AI coding workst
 - list handoff packages;
 - inspect handoff manifests without arbitrary path reads;
 - preview restore safety without mutating the target repository;
+- guide setup for exactly two customizable local user profiles;
 - run locally through a Windows start script;
 - verify itself through a Windows test script.
 
@@ -38,10 +39,10 @@ The implementation also blocks stash, merge, rebase, checkout, restore, and clea
 ## Verification Performed
 
 - Python syntax check: passed.
-- Unit tests: `4/4` passed.
+- Unit tests: `7/7` passed.
 - Windows test runner: passed.
 - Local health endpoint: passed.
-- Browser smoke: passed with zero console errors.
+- Browser smoke: passed with zero console errors, including two-user setup save/switch/apply flow.
 - Git checkpoint: committed and pushed.
 
 ## Current Runtime

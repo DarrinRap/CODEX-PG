@@ -2,7 +2,7 @@
 
 Windows shared AI coding workstation handoff manager.
 
-Current version: `0.4.1`.
+Current version: `0.5.0`.
 
 ## Safety Model
 
@@ -93,6 +93,25 @@ The web UI can list recent packages and inspect a package manifest. This is read
 - previews `HANDOFF.md`.
 
 It does not apply patches, restore files, delete packages, or switch branches.
+
+## Two-User Setup
+
+The web UI includes a guided setup panel for exactly two local user profiles.
+
+Each profile stores:
+
+- custom display name;
+- default repository path;
+- default handoff agent name;
+- default handoff title.
+
+Settings are saved locally outside git:
+
+```text
+C:\CODEX PG\CODEX PANDA Collaborator\CODEX settings\panda_collaborator_settings.local.json
+```
+
+Before replacing an existing settings file, the app writes a timestamped backup beside it.
 
 ## Restore Safety Preview
 

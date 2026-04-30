@@ -30,10 +30,11 @@ from typing import Any
 
 
 APP_TITLE = "PANDA Collaborator"
-APP_VERSION = "0.4.1"
+APP_VERSION = "0.5.0"
 APP_ROOT = Path(__file__).resolve().parent
 WEB_ROOT = APP_ROOT / "web"
 DEFAULT_PACKAGE_ROOT = APP_ROOT / "CODEX handoff packages"
+DEFAULT_SETTINGS_PATH = APP_ROOT / "CODEX settings" / "panda_collaborator_settings.local.json"
 
 FORBIDDEN_GIT_COMMANDS = [
     "git reset --hard",
@@ -89,6 +90,118 @@ def slugify(value: str, fallback: str = "handoff") -> str:
 
 def package_root_path() -> Path:
     return Path(os.environ.get("PANDA_COLLABORATOR_PACKAGE_ROOT", DEFAULT_PACKAGE_ROOT)).resolve()
+
+
+def settings_path() -> Path:
+    return Path(os.environ.get("PANDA_COLLABORATOR_SETTINGS_PATH", DEFAULT_SETTINGS_PATH)).resolve()
+
+
+def default_settings() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "setup_completed": False,
+        "active_user_id": "user1",
+        "users": [
+            {
+                "id": "user1",
+                "display_name": "User 1",
+                "default_repo_path": r"C:\CODEX PG",
+                "handoff_agent": "Codex",
+                "handoff_title": "AI workstation handoff",
+            },
+            {
+                "id": "user2",
+                "display_name": "User 2",
+                "default_repo_path": r"C:\CODEX PG",
+                "handoff_agent": "Claude",
+                "handoff_title": "AI workstation handoff",
+            },
+        ],
+    }
+
+
+def clean_setting_text(value: Any, fallback: str, max_length: int) -> str:
+    cleaned = str(value if value is not None else "").replace("\0", "").strip()
+    return (cleaned or fallback)[:max_length]
+
+
+def normalize_settings(payload: dict[str, Any], *, strict: bool = True, mark_completed: bool = False) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise CollaboratorError("Settings request must be an object.")
+
+    defaults = default_settings()
+    incoming_users = payload.get("users", defaults["users"])
+    if not isinstance(incoming_users, list):
+        raise CollaboratorError("Settings users must be a list.")
+    if strict and len(incoming_users) != 2:
+        raise CollaboratorError("Settings must contain exactly two user profiles.")
+
+    normalized_users: list[dict[str, str]] = []
+    for index, default_user in enumerate(defaults["users"]):
+        source = incoming_users[index] if index < len(incoming_users) and isinstance(incoming_users[index], dict) else {}
+        display_name = clean_setting_text(source.get("display_name"), default_user["display_name"], 40)
+        normalized_users.append(
+            {
+                "id": default_user["id"],
+                "display_name": display_name,
+                "default_repo_path": clean_setting_text(
+                    source.get("default_repo_path"), default_user["default_repo_path"], 260
+                ),
+                "handoff_agent": clean_setting_text(source.get("handoff_agent"), display_name, 60),
+                "handoff_title": clean_setting_text(
+                    source.get("handoff_title"), default_user["handoff_title"], 90
+                ),
+            }
+        )
+
+    active_user_id = clean_setting_text(payload.get("active_user_id"), defaults["active_user_id"], 16)
+    if active_user_id not in {"user1", "user2"}:
+        active_user_id = defaults["active_user_id"]
+
+    names_ready = all(user["display_name"] for user in normalized_users)
+    setup_completed = bool(payload.get("setup_completed")) and names_ready
+    if mark_completed:
+        setup_completed = names_ready
+
+    normalized = {
+        "schema_version": 1,
+        "setup_completed": setup_completed,
+        "active_user_id": active_user_id,
+        "users": normalized_users,
+    }
+    updated_at = payload.get("updated_at")
+    if isinstance(updated_at, str) and updated_at.strip():
+        normalized["updated_at"] = updated_at.strip()[:64]
+    return normalized
+
+
+def load_settings() -> dict[str, Any]:
+    path = settings_path()
+    if not path.exists():
+        return default_settings()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise CollaboratorError(f"Could not read settings: {exc}") from exc
+    return normalize_settings(data, strict=False)
+
+
+def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
+    settings = normalize_settings(payload, strict=True, mark_completed=True)
+    settings["updated_at"] = local_timestamp()
+    path = settings_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        backup = path.with_name(f"{path.stem}.{utc_stamp()}.bak{path.suffix}")
+        counter = 1
+        while backup.exists():
+            backup = path.with_name(f"{path.stem}.{utc_stamp()}.{counter}.bak{path.suffix}")
+            counter += 1
+        shutil.copy2(path, backup)
+    temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temp_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    os.replace(temp_path, path)
+    return settings
 
 
 def run_command(args: list[str], cwd: Path | None = None, timeout: int = 30) -> CommandResult:
@@ -698,6 +811,8 @@ class PandaHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/favicon.ico":
+            return text_response(self, b"", "image/x-icon", HTTPStatus.NO_CONTENT)
         if parsed.path == "/api/health":
             return json_response(
                 self,
@@ -706,9 +821,15 @@ class PandaHandler(BaseHTTPRequestHandler):
                     "app": APP_TITLE,
                     "version": APP_VERSION,
                     "package_root": str(package_root_path()),
+                    "settings_path": str(settings_path()),
                     "generated_at": local_timestamp(),
                 },
             )
+        if parsed.path == "/api/settings":
+            try:
+                return json_response(self, {"ok": True, "settings": load_settings()})
+            except CollaboratorError as exc:
+                return json_response(self, {"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
         if parsed.path == "/api/packages":
             params = urllib.parse.parse_qs(parsed.query)
             repo = params.get("path", [""])[0] or None
@@ -731,6 +852,8 @@ class PandaHandler(BaseHTTPRequestHandler):
         try:
             payload = self.read_json()
             parsed = urllib.parse.urlparse(self.path)
+            if parsed.path == "/api/settings":
+                return json_response(self, {"ok": True, "settings": save_settings(payload)})
             if parsed.path == "/api/repo/scan":
                 return json_response(self, {"ok": True, "repo": repo_status(str(payload.get("path", "")))})
             if parsed.path == "/api/handoff/create":

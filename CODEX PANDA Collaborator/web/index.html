@@ -258,6 +258,63 @@
       gap: 6px;
     }
 
+    .setup-flow {
+      display: grid;
+      gap: 7px;
+    }
+
+    .setup-step {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 6px;
+      align-items: start;
+    }
+
+    .step-num {
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--surface-selected);
+      color: var(--accent);
+      border: 1px solid var(--line);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .setup-names,
+    .profile-defaults {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .profile-title {
+      grid-column: 1 / -1;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .segmented button {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .segmented button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
     .rule-list,
     .file-list,
     .package-list {
@@ -413,13 +470,14 @@
 
     .section-grid {
       display: grid;
-      grid-template-rows: 132px minmax(0, 1fr);
+      grid-template-rows: 126px 244px minmax(0, 1fr);
       gap: 10px;
       height: 100%;
       min-height: 0;
     }
 
     .repo-panel { grid-column: 1 / -1; }
+    .setup-panel { min-height: 0; }
     .handoff-panel { min-height: 0; }
     .status-panel { min-height: 0; }
     .files-panel {
@@ -445,7 +503,7 @@
       main { grid-template-columns: 210px minmax(0, 1fr); height: 100%; overflow: hidden; }
       .left { border-right: 1px solid var(--line); border-bottom: 0; }
       .left, .right { overflow: hidden; padding: 8px; }
-      .section-grid { height: 100%; grid-template-rows: 126px minmax(0, 1fr); }
+      .section-grid { height: 100%; grid-template-rows: 118px 236px minmax(0, 1fr); }
       .right {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: 86px minmax(0, 1fr) minmax(120px, .72fr);
@@ -472,7 +530,8 @@
       .panel-body { padding: 6px 7px; }
       .repo-grid { grid-template-columns: repeat(5, minmax(34px, 1fr)); gap: 4px; }
       .receipt-grid { grid-template-columns: repeat(2, minmax(58px, 1fr)); }
-      .section-grid { grid-template-rows: 118px minmax(0, 1fr); gap: 6px; }
+      .section-grid { grid-template-rows: 108px 228px minmax(0, 1fr); gap: 6px; }
+      .setup-names, .profile-defaults { grid-template-columns: minmax(0, 1fr); }
       .right { gap: 6px; grid-template-rows: 80px minmax(0, 1fr) minmax(105px, .64fr); }
       .split { gap: 6px; grid-template-rows: minmax(0, 1fr) 128px; }
     }
@@ -511,6 +570,53 @@
                 <div class="actions">
                   <button class="primary" id="scanBtn">Scan</button>
                   <button id="packagesBtn">Packages</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel setup-panel">
+            <div class="panel-head">
+              <h2>Setup</h2>
+              <span class="chip warn" id="setupChip">Needed</span>
+            </div>
+            <div class="panel-body">
+              <div class="setup-flow">
+                <div class="setup-step">
+                  <span class="step-num">1</span>
+                  <div class="setup-names">
+                    <label>User A
+                      <input id="user1Name" maxlength="40" autocomplete="off">
+                    </label>
+                    <label>User B
+                      <input id="user2Name" maxlength="40" autocomplete="off">
+                    </label>
+                  </div>
+                </div>
+                <div class="setup-step">
+                  <span class="step-num">2</span>
+                  <div class="segmented" id="userToggleGroup">
+                    <button type="button" data-user-toggle="user1">User 1</button>
+                    <button type="button" data-user-toggle="user2">User 2</button>
+                  </div>
+                </div>
+                <div class="setup-step">
+                  <span class="step-num">3</span>
+                  <div class="profile-defaults">
+                    <label>Repo
+                      <input id="profileRepoPath" spellcheck="false">
+                    </label>
+                    <label>Agent
+                      <input id="profileAgent" maxlength="60" autocomplete="off">
+                    </label>
+                    <label class="profile-title">Title
+                      <input id="profileTitle" maxlength="90" autocomplete="off">
+                    </label>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button class="primary" id="saveSettingsBtn">Save setup</button>
+                  <button id="applyProfileBtn">Apply defaults</button>
                 </div>
               </div>
             </div>
@@ -604,7 +710,8 @@
     const state = {
       repo: null,
       packages: [],
-      packageRoot: ''
+      packageRoot: '',
+      settings: null
     };
 
     const $ = id => document.getElementById(id);
@@ -623,6 +730,11 @@
       $('scanBtn').disabled = isBusy;
       $('packagesBtn').disabled = isBusy;
       $('handoffBtn').disabled = isBusy || !state.repo;
+      $('saveSettingsBtn').disabled = isBusy;
+      $('applyProfileBtn').disabled = isBusy || !state.settings;
+      document.querySelectorAll('[data-user-toggle]').forEach(button => {
+        button.disabled = isBusy;
+      });
     }
 
     async function api(path, payload) {
@@ -651,9 +763,104 @@
       $('ruleList').innerHTML = forbidden.map(cmd => `<li><code>${escapeHtml(cmd)}</code></li>`).join('');
     }
 
+    function activeProfile() {
+      const settings = state.settings;
+      if (!settings || !Array.isArray(settings.users)) return null;
+      return settings.users.find(user => user.id === settings.active_user_id) || settings.users[0] || null;
+    }
+
+    function syncProfileNamesToState() {
+      if (!state.settings) return;
+      const [user1, user2] = state.settings.users;
+      if (user1) user1.display_name = $('user1Name').value.trim() || 'User 1';
+      if (user2) user2.display_name = $('user2Name').value.trim() || 'User 2';
+    }
+
+    function syncActiveProfileFieldsToState() {
+      const profile = activeProfile();
+      if (!profile) return;
+      profile.default_repo_path = $('profileRepoPath').value.trim();
+      profile.handoff_agent = $('profileAgent').value.trim() || profile.display_name;
+      profile.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
+    }
+
+    function updateActiveButtons() {
+      const profileNames = {};
+      (state.settings?.users || []).forEach(user => {
+        profileNames[user.id] = user.display_name;
+      });
+      document.querySelectorAll('[data-user-toggle]').forEach(button => {
+        const userId = button.dataset.userToggle;
+        button.textContent = profileNames[userId] || userId;
+        button.classList.toggle('active', state.settings?.active_user_id === userId);
+      });
+    }
+
+    function applyActiveProfileDefaults({forceRepo = true} = {}) {
+      const profile = activeProfile();
+      if (!profile) return;
+      if (forceRepo && profile.default_repo_path) {
+        $('repoPath').value = profile.default_repo_path;
+        localStorage.setItem('pandaCollaborator.repoPath', profile.default_repo_path);
+      }
+      $('handoffAgent').value = profile.handoff_agent || profile.display_name;
+      $('handoffTitle').value = profile.handoff_title || 'AI workstation handoff';
+      $('profileTitle').value = profile.handoff_title || 'AI workstation handoff';
+    }
+
+    function renderSettings() {
+      const settings = state.settings;
+      if (!settings) return;
+      const [user1, user2] = settings.users;
+      $('user1Name').value = user1?.display_name || 'User 1';
+      $('user2Name').value = user2?.display_name || 'User 2';
+      const profile = activeProfile();
+      $('profileRepoPath').value = profile?.default_repo_path || '';
+      $('profileAgent').value = profile?.handoff_agent || profile?.display_name || '';
+      $('profileTitle').value = profile?.handoff_title || 'AI workstation handoff';
+      $('setupChip').textContent = settings.setup_completed ? 'Ready' : 'Needed';
+      $('setupChip').className = settings.setup_completed ? 'chip ok' : 'chip warn';
+      updateActiveButtons();
+      renderStatusStrip(state.repo);
+    }
+
+    async function loadSettings() {
+      const data = await apiGet('/api/settings');
+      state.settings = data.settings;
+      renderSettings();
+      const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
+      applyActiveProfileDefaults({forceRepo: !savedPath});
+      if (!state.settings.setup_completed) {
+        showResult('Setup: enter both user names, choose the active user, then save setup.');
+      }
+    }
+
+    async function saveSettings() {
+      setBusy(true);
+      try {
+        syncProfileNamesToState();
+        syncActiveProfileFieldsToState();
+        const data = await api('/api/settings', state.settings);
+        state.settings = data.settings;
+        renderSettings();
+        applyActiveProfileDefaults({forceRepo: true});
+        const names = state.settings.users.map(user => user.display_name).join(' / ');
+        showResult(`Setup saved for <strong>${escapeHtml(names)}</strong>. Active user: <strong>${escapeHtml(activeProfile()?.display_name || '')}</strong>.`);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
     function renderStatusStrip(repo) {
+      const profile = activeProfile();
+      const profileChip = profile
+        ? `<span class="chip ${state.settings?.setup_completed ? 'ok' : 'warn'}">${escapeHtml(profile.display_name)}</span>`
+        : '';
       if (!repo) {
         $('statusStrip').innerHTML = `
+          ${profileChip}
           <span class="chip">Ready</span>
           <span class="chip ok">No destructive git</span>
           <span class="chip ok">No stash safety</span>
@@ -662,6 +869,7 @@
       }
       const dirtyClass = repo.dirty ? 'warn' : 'ok';
       $('statusStrip').innerHTML = `
+        ${profileChip}
         <span class="chip ${dirtyClass}">${repo.dirty ? 'Uncommitted work' : 'Clean tree'}</span>
         <span class="chip">HEAD ${escapeHtml(repo.short_head)}</span>
         <span class="chip ok">Patch + copies armed</span>
@@ -725,6 +933,8 @@
     async function createHandoff() {
       setBusy(true);
       try {
+        syncProfileNamesToState();
+        syncActiveProfileFieldsToState();
         const data = await api('/api/handoff/create', {
           path: $('repoPath').value,
           title: $('handoffTitle').value,
@@ -868,6 +1078,20 @@
     $('scanBtn').addEventListener('click', scanRepo);
     $('handoffBtn').addEventListener('click', createHandoff);
     $('packagesBtn').addEventListener('click', loadPackages);
+    $('saveSettingsBtn').addEventListener('click', saveSettings);
+    $('applyProfileBtn').addEventListener('click', () => {
+      applyActiveProfileDefaults({forceRepo: true});
+      showResult(`Defaults applied for <strong>${escapeHtml(activeProfile()?.display_name || 'active user')}</strong>.`);
+    });
+    document.querySelectorAll('[data-user-toggle]').forEach(button => {
+      button.addEventListener('click', () => {
+        syncProfileNamesToState();
+        syncActiveProfileFieldsToState();
+        state.settings.active_user_id = button.dataset.userToggle;
+        renderSettings();
+        applyActiveProfileDefaults({forceRepo: true});
+      });
+    });
     $('resultBox').addEventListener('click', event => {
       const button = event.target.closest('button[data-package-id]');
       if (button) {
@@ -880,9 +1104,18 @@
       }
     });
 
-    renderRules();
-    const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
-    if (savedPath) $('repoPath').value = savedPath;
+    async function init() {
+      renderRules();
+      const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
+      if (savedPath) $('repoPath').value = savedPath;
+      try {
+        await loadSettings();
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>

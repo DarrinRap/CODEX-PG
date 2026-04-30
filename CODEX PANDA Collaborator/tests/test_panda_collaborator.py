@@ -67,6 +67,64 @@ class PandaCollaboratorSafetyTests(unittest.TestCase):
             shutil.rmtree(repo, ignore_errors=True)
 
 
+class PandaCollaboratorSettingsTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-settings-"))
+        self.settings_path = self.tmp / "settings.local.json"
+        self.old_settings_path = pc.os.environ.get("PANDA_COLLABORATOR_SETTINGS_PATH")
+        pc.os.environ["PANDA_COLLABORATOR_SETTINGS_PATH"] = str(self.settings_path)
+
+    def tearDown(self):
+        if self.old_settings_path is None:
+            pc.os.environ.pop("PANDA_COLLABORATOR_SETTINGS_PATH", None)
+        else:
+            pc.os.environ["PANDA_COLLABORATOR_SETTINGS_PATH"] = self.old_settings_path
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_default_settings_have_two_user_profiles(self):
+        settings = pc.load_settings()
+
+        self.assertFalse(settings["setup_completed"])
+        self.assertEqual(settings["active_user_id"], "user1")
+        self.assertEqual([user["id"] for user in settings["users"]], ["user1", "user2"])
+        self.assertEqual(settings["users"][0]["display_name"], "User 1")
+
+    def test_save_settings_persists_two_custom_names(self):
+        saved = pc.save_settings(
+            {
+                "active_user_id": "user2",
+                "users": [
+                    {
+                        "display_name": "Darrin",
+                        "default_repo_path": str(self.tmp / "repo-a"),
+                        "handoff_agent": "Codex",
+                        "handoff_title": "Darrin handoff",
+                    },
+                    {
+                        "display_name": "CD",
+                        "default_repo_path": str(self.tmp / "repo-b"),
+                        "handoff_agent": "Claude",
+                        "handoff_title": "CD handoff",
+                    },
+                ],
+            }
+        )
+
+        self.assertTrue(saved["setup_completed"])
+        self.assertEqual(saved["active_user_id"], "user2")
+        self.assertEqual([user["display_name"] for user in saved["users"]], ["Darrin", "CD"])
+        loaded = pc.load_settings()
+        self.assertEqual(loaded["users"][1]["handoff_title"], "CD handoff")
+
+        pc.save_settings(saved)
+        backups = list(self.tmp.glob("settings.local.*.bak.json"))
+        self.assertGreaterEqual(len(backups), 1)
+
+    def test_save_settings_requires_exactly_two_profiles(self):
+        with self.assertRaises(pc.CollaboratorError):
+            pc.save_settings({"users": [{"display_name": "Only one"}]})
+
+
 class PandaCollaboratorHandoffTests(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-test-"))

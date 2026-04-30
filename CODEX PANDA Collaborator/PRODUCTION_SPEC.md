@@ -64,6 +64,21 @@ The package inspector:
 - reports protection branch presence when the source repository is available;
 - performs no restore, apply, delete, checkout, merge, or branch operation.
 
+## Implemented Two-User Setup
+
+PANDA Collaborator supports exactly two local user profiles.
+
+The setup flow:
+
+- guides the operator through naming both users;
+- lets the operator choose the active user;
+- stores per-user defaults for repository path, handoff agent, and handoff title;
+- applies the active user's defaults to the repository and handoff controls;
+- persists settings in a local ignored `CODEX settings` file;
+- writes a timestamped backup before replacing an existing settings file.
+
+The settings API rejects payloads that do not contain exactly two profiles. Settings persistence is separate from repository handoff packages and never runs git operations.
+
 ## Implemented Restore Safety Preview
 
 PANDA Collaborator can preview restore safety for a handoff package and target repository.

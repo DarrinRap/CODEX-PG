@@ -1,6 +1,8 @@
 CODEX handoff packages/
+CODEX settings/
 __pycache__/
 *.pyc
 server.out.log
 server.err.log
 CODEX_compact_ui_smoke.png
+CODEX_user_setup_smoke.png
