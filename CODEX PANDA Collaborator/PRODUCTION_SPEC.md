@@ -79,6 +79,13 @@ The preview:
 
 The preview is explicitly non-mutating. It does not apply patches, copy files into the repo, switch branches, delete data, or perform conflict resolution.
 
+## Implemented Operator Scripts
+
+The project includes Windows helper scripts:
+
+- `CODEX_start_panda_collaborator.ps1` starts the local server and checks `/api/health`.
+- `CODEX_test_panda_collaborator.ps1` runs syntax checks, unit tests, and a live health probe when the server is running.
+
 ## Non-Goals For This MVP
 
 - No restore automation.

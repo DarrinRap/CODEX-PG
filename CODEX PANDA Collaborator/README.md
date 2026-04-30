@@ -2,7 +2,7 @@
 
 Windows shared AI coding workstation handoff manager.
 
-Current version: `0.3.0`.
+Current version: `0.4.0`.
 
 ## Safety Model
 
@@ -38,6 +38,12 @@ Open:
 
 ```text
 http://127.0.0.1:8788/
+```
+
+Or use the Windows launcher:
+
+```powershell
+& "C:\CODEX PG\CODEX PANDA Collaborator\CODEX_start_panda_collaborator.ps1"
 ```
 
 ## CLI
@@ -106,4 +112,10 @@ The preview does not modify the target repository.
 
 ```powershell
 python -m unittest discover -s "C:\CODEX PG\CODEX PANDA Collaborator\tests"
+```
+
+Or use the Windows test runner:
+
+```powershell
+& "C:\CODEX PG\CODEX PANDA Collaborator\CODEX_test_panda_collaborator.ps1"
 ```
