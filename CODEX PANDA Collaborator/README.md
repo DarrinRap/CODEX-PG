@@ -30,6 +30,18 @@ git push origin --delete
 
 ## Run
 
+For plain-language setup and daily-use steps, read:
+
+```text
+C:\CODEX PG\CODEX PANDA Collaborator\PANDA_COLLABORATOR_SETUP_STEPS.md
+```
+
+The Desktop shortcut is:
+
+```text
+C:\Users\drrap\OneDrive\Desktop\PANDA Collaborator.lnk
+```
+
 ```powershell
 python "C:\CODEX PG\CODEX PANDA Collaborator\panda_collaborator.py" --port 8788
 ```
