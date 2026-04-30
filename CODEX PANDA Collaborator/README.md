@@ -2,7 +2,7 @@
 
 Windows shared AI coding workstation handoff manager.
 
-Current version: `0.5.0`.
+Current version: `0.6.0`.
 
 ## Safety Model
 
@@ -108,7 +108,7 @@ It does not apply patches, restore files, delete packages, or switch branches.
 
 ## Two-User Setup
 
-The web UI includes a guided setup panel for exactly two local user profiles.
+The web UI includes a guided setup wizard for exactly two local user profiles.
 
 Each profile stores:
 
@@ -116,6 +116,10 @@ Each profile stores:
 - default repository path;
 - default handoff agent name;
 - default handoff title.
+
+The active user is shown in large text at the top of the screen. User 1 uses a warm amber/coral theme. User 2 uses a cool cyan/teal theme. The color change is intentional so the operator can tell which user is active at a glance.
+
+On first run, the setup wizard opens automatically. The app blocks scan and handoff actions until both names and the active user's defaults are complete.
 
 Settings are saved locally outside git:
 

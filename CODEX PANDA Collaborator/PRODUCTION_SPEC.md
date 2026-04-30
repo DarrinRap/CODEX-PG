@@ -70,10 +70,16 @@ PANDA Collaborator supports exactly two local user profiles.
 
 The setup flow:
 
+- opens a full setup wizard automatically when setup is incomplete;
 - guides the operator through naming both users;
 - lets the operator choose the active user;
+- shows the active user's custom name in large uppercase text at the top of the screen;
+- uses clearly different complementary color themes for User 1 and User 2;
+- provides a checklist that shows which setup steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;
 - applies the active user's defaults to the repository and handoff controls;
+- blocks scan and handoff actions until required setup fields are complete;
+- offers a save-and-scan action that saves setup, applies defaults, and scans the repository;
 - persists settings in a local ignored `CODEX settings` file;
 - writes a timestamped backup before replacing an existing settings file.
 

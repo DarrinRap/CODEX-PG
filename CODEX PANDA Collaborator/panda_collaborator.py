@@ -30,7 +30,7 @@ from typing import Any
 
 
 APP_TITLE = "PANDA Collaborator"
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 APP_ROOT = Path(__file__).resolve().parent
 WEB_ROOT = APP_ROOT / "web"
 DEFAULT_PACKAGE_ROOT = APP_ROOT / "CODEX handoff packages"

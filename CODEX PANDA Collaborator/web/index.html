@@ -27,6 +27,12 @@
       --accent-soft: rgba(232, 168, 124, .12);
       --accent-border: rgba(232, 168, 124, .45);
       --accent-2: #5fa0a8;
+      --user-accent: #e8a87c;
+      --user-accent-2: #f0b98c;
+      --user-bg: #1f1725;
+      --user-surface: #2a2030;
+      --user-ink: #1a1a2e;
+      --user-ring: rgba(232, 168, 124, .46);
       --ok: #7fb069;
       --warn: #f39c12;
       --bad: #e74c3c;
@@ -48,6 +54,34 @@
       color: var(--text);
       font: 12px/1.28 var(--font-ui);
       letter-spacing: 0;
+    }
+
+    body.user-one {
+      --user-accent: #f0b98c;
+      --user-accent-2: #e86f68;
+      --user-bg: #211725;
+      --user-surface: #322033;
+      --user-ink: #1a1018;
+      --user-ring: rgba(240, 185, 140, .52);
+      --accent: #f0b98c;
+      --accent-hover: #e8a87c;
+      --accent-light: #ffd2a8;
+      --accent-border: rgba(240, 185, 140, .56);
+      --accent-soft: rgba(240, 185, 140, .14);
+    }
+
+    body.user-two {
+      --user-accent: #68d8e8;
+      --user-accent-2: #7fb069;
+      --user-bg: #0f2430;
+      --user-surface: #163242;
+      --user-ink: #071820;
+      --user-ring: rgba(104, 216, 232, .52);
+      --accent: #68d8e8;
+      --accent-hover: #5fa0a8;
+      --accent-light: #a5edf5;
+      --accent-border: rgba(104, 216, 232, .56);
+      --accent-soft: rgba(104, 216, 232, .14);
     }
 
     button, input, textarea {
@@ -77,7 +111,7 @@
     .shell {
       height: 100vh;
       display: grid;
-      grid-template-rows: 46px minmax(0, 1fr);
+      grid-template-rows: 72px minmax(0, 1fr);
       overflow: hidden;
     }
 
@@ -85,10 +119,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      padding: 7px 12px;
+      gap: 10px;
+      padding: 8px 12px;
       border-bottom: 1px solid var(--line);
-      background: var(--surface);
+      background: linear-gradient(90deg, var(--user-bg), var(--surface) 58%);
       z-index: 2;
       min-width: 0;
     }
@@ -97,7 +131,7 @@
       display: flex;
       align-items: center;
       gap: 9px;
-      min-width: 220px;
+      min-width: 205px;
     }
 
     .mark {
@@ -124,6 +158,43 @@
       font-weight: 700;
     }
 
+    .active-user-banner {
+      flex: 1;
+      min-width: 220px;
+      display: grid;
+      gap: 1px;
+      align-content: center;
+      padding: 8px 12px;
+      border: 1px solid var(--user-ring);
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--user-surface), rgba(26, 26, 46, .78));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .025);
+    }
+
+    .active-user-banner span {
+      color: var(--soft);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .active-user-banner strong {
+      color: var(--user-accent);
+      font-size: 26px;
+      line-height: 1;
+      font-weight: 950;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .active-user-banner small {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
     .status-strip {
       display: flex;
       align-items: center;
@@ -147,6 +218,11 @@
     .chip.ok { color: var(--ok); border-color: rgba(135, 197, 111, .45); }
     .chip.warn { color: var(--warn); border-color: rgba(240, 198, 95, .45); }
     .chip.bad { color: var(--bad); border-color: rgba(239, 128, 111, .45); }
+    .chip.user-chip {
+      color: var(--user-accent);
+      border-color: var(--user-ring);
+      background: var(--user-surface);
+    }
 
     main {
       display: grid;
@@ -166,7 +242,7 @@
 
     .left {
       border-right: 1px solid var(--line);
-      background: var(--surface);
+      background: linear-gradient(180deg, var(--user-bg), var(--surface) 48%);
     }
 
     .right {
@@ -260,7 +336,76 @@
 
     .setup-flow {
       display: grid;
-      gap: 7px;
+      gap: 8px;
+    }
+
+    .setup-control {
+      display: grid;
+      gap: 8px;
+    }
+
+    .active-mini {
+      border: 1px solid var(--user-ring);
+      border-radius: 5px;
+      padding: 8px;
+      background: var(--user-surface);
+    }
+
+    .active-mini span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .active-mini strong {
+      display: block;
+      color: var(--user-accent);
+      font-size: 18px;
+      line-height: 1.05;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .setup-checklist {
+      display: grid;
+      gap: 5px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .setup-checklist li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 5px 6px;
+      background: var(--field);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .setup-checklist li.done {
+      color: var(--ok);
+      border-color: rgba(127, 176, 105, .42);
+    }
+
+    .setup-checklist li.current {
+      color: var(--user-accent);
+      border-color: var(--user-ring);
+      background: var(--user-surface);
+    }
+
+    .setup-checklist b {
+      color: inherit;
+      font-size: 10px;
     }
 
     .setup-step {
@@ -277,7 +422,7 @@
       height: 18px;
       border-radius: 999px;
       background: var(--surface-selected);
-      color: var(--accent);
+      color: var(--user-accent);
       border: 1px solid var(--line);
       font-size: 10px;
       font-weight: 900;
@@ -313,6 +458,31 @@
       background: var(--accent);
       border-color: var(--accent);
       color: var(--accent-ink);
+    }
+
+    .user-choice {
+      min-height: 42px;
+      border-width: 2px;
+    }
+
+    .user-choice[data-user-toggle="user1"] {
+      border-color: rgba(240, 185, 140, .5);
+    }
+
+    .user-choice[data-user-toggle="user2"] {
+      border-color: rgba(104, 216, 232, .5);
+    }
+
+    .user-choice.active[data-user-toggle="user1"] {
+      background: #f0b98c;
+      border-color: #f0b98c;
+      color: #1a1018;
+    }
+
+    .user-choice.active[data-user-toggle="user2"] {
+      background: #68d8e8;
+      border-color: #68d8e8;
+      color: #071820;
     }
 
     .rule-list,
@@ -470,7 +640,7 @@
 
     .section-grid {
       display: grid;
-      grid-template-rows: 126px 244px minmax(0, 1fr);
+      grid-template-rows: 126px 224px minmax(0, 1fr);
       gap: 10px;
       height: 100%;
       min-height: 0;
@@ -495,6 +665,127 @@
     .file-list {
       max-height: none;
       overflow: auto;
+    }
+
+    .setup-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(8, 8, 14, .72);
+      backdrop-filter: blur(6px);
+    }
+
+    .setup-overlay.hidden {
+      display: none;
+    }
+
+    .setup-dialog {
+      width: min(1120px, 100%);
+      max-height: calc(100vh - 36px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      border: 1px solid var(--user-ring);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .48);
+      overflow: hidden;
+    }
+
+    .setup-dialog-head,
+    .setup-dialog-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+      background: linear-gradient(90deg, var(--user-bg), var(--surface));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .setup-dialog-foot {
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .setup-dialog-head h2 {
+      margin: 2px 0 0;
+      color: var(--user-accent);
+      font-size: 24px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .setup-dialog-head span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .wizard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .wizard-step {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .wizard-step.wide {
+      grid-column: 1 / -1;
+    }
+
+    .wizard-step-head {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .025);
+    }
+
+    .wizard-step-head h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.1;
+    }
+
+    .wizard-step-head p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .wizard-step-body {
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .wizard-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .setup-warning {
+      color: var(--warn);
+      font-size: 11px;
+      font-weight: 800;
     }
 
     @media (max-width: 1060px) {
@@ -522,6 +813,9 @@
       .mark { width: 24px; height: 24px; font-size: 10px; }
       .brand h1 { font-size: 13px; }
       .brand span { display: none; }
+      .active-user-banner { min-width: 112px; padding: 6px 7px; }
+      .active-user-banner strong { font-size: 18px; }
+      .active-user-banner small { display: none; }
       .status-strip { justify-content: flex-end; gap: 4px; }
       .chip { font-size: 9px; padding: 2px 5px; }
       main { grid-template-columns: 155px minmax(0, 1fr); }
@@ -534,6 +828,7 @@
       .setup-names, .profile-defaults { grid-template-columns: minmax(0, 1fr); }
       .right { gap: 6px; grid-template-rows: 80px minmax(0, 1fr) minmax(105px, .64fr); }
       .split { gap: 6px; grid-template-rows: minmax(0, 1fr) 128px; }
+      .wizard-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -546,6 +841,11 @@
           <h1>PANDA Collaborator</h1>
           <span>Shared workstation handoff manager</span>
         </div>
+      </div>
+      <div class="active-user-banner" id="activeUserBanner">
+        <span>Active user</span>
+        <strong id="activeUserName">SETUP NEEDED</strong>
+        <small id="activeUserTheme">Complete setup before handoff work</small>
       </div>
       <div class="status-strip" id="statusStrip">
         <span class="chip">Ready</span>
@@ -577,45 +877,22 @@
 
           <section class="panel setup-panel">
             <div class="panel-head">
-              <h2>Setup</h2>
+              <h2>User Control</h2>
               <span class="chip warn" id="setupChip">Needed</span>
             </div>
             <div class="panel-body">
-              <div class="setup-flow">
-                <div class="setup-step">
-                  <span class="step-num">1</span>
-                  <div class="setup-names">
-                    <label>User A
-                      <input id="user1Name" maxlength="40" autocomplete="off">
-                    </label>
-                    <label>User B
-                      <input id="user2Name" maxlength="40" autocomplete="off">
-                    </label>
-                  </div>
+              <div class="setup-control">
+                <div class="active-mini">
+                  <span>Now working as</span>
+                  <strong id="sideActiveName">SETUP NEEDED</strong>
                 </div>
-                <div class="setup-step">
-                  <span class="step-num">2</span>
-                  <div class="segmented" id="userToggleGroup">
-                    <button type="button" data-user-toggle="user1">User 1</button>
-                    <button type="button" data-user-toggle="user2">User 2</button>
-                  </div>
+                <div class="segmented" id="sideUserToggleGroup">
+                  <button type="button" class="user-choice" data-user-toggle="user1">User 1</button>
+                  <button type="button" class="user-choice" data-user-toggle="user2">User 2</button>
                 </div>
-                <div class="setup-step">
-                  <span class="step-num">3</span>
-                  <div class="profile-defaults">
-                    <label>Repo
-                      <input id="profileRepoPath" spellcheck="false">
-                    </label>
-                    <label>Agent
-                      <input id="profileAgent" maxlength="60" autocomplete="off">
-                    </label>
-                    <label class="profile-title">Title
-                      <input id="profileTitle" maxlength="90" autocomplete="off">
-                    </label>
-                  </div>
-                </div>
+                <ul class="setup-checklist" id="setupChecklist"></ul>
                 <div class="actions">
-                  <button class="primary" id="saveSettingsBtn">Save setup</button>
+                  <button class="primary" id="openSetupBtn">Setup wizard</button>
                   <button id="applyProfileBtn">Apply defaults</button>
                 </div>
               </div>
@@ -691,6 +968,100 @@
         </section>
       </section>
     </main>
+
+    <div class="setup-overlay hidden" id="setupOverlay" aria-modal="true" role="dialog">
+      <section class="setup-dialog">
+        <div class="setup-dialog-head">
+          <div>
+            <span>Guided setup</span>
+            <h2 id="setupWizardTitle">SET UP TWO USERS</h2>
+          </div>
+          <button id="closeSetupBtn" type="button">Close</button>
+        </div>
+        <div class="wizard-grid">
+          <section class="wizard-step">
+            <div class="wizard-step-head">
+              <span class="step-num">1</span>
+              <div>
+                <h3>Name both users</h3>
+                <p>These names appear in huge letters when a user is active.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <div class="setup-names">
+                <label>User 1 name
+                  <input id="user1Name" maxlength="40" autocomplete="off">
+                </label>
+                <label>User 2 name
+                  <input id="user2Name" maxlength="40" autocomplete="off">
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="wizard-step">
+            <div class="wizard-step-head">
+              <span class="step-num">2</span>
+              <div>
+                <h3>Choose who is active</h3>
+                <p>User 1 is warm amber. User 2 is cool cyan.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <div class="segmented" id="wizardUserToggleGroup">
+                <button type="button" class="user-choice" data-user-toggle="user1">User 1</button>
+                <button type="button" class="user-choice" data-user-toggle="user2">User 2</button>
+              </div>
+              <div class="active-mini">
+                <span>Preview</span>
+                <strong id="wizardActiveName">SETUP NEEDED</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="wizard-step wide">
+            <div class="wizard-step-head">
+              <span class="step-num">3</span>
+              <div>
+                <h3>Confirm this user's defaults</h3>
+                <p>These fill in automatically when this user is selected.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <div class="profile-defaults">
+                <label>Repository path
+                  <input id="profileRepoPath" spellcheck="false">
+                </label>
+                <label>Handoff agent name
+                  <input id="profileAgent" maxlength="60" autocomplete="off">
+                </label>
+                <label class="profile-title">Default handoff title
+                  <input id="profileTitle" maxlength="90" autocomplete="off">
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="wizard-step wide">
+            <div class="wizard-step-head">
+              <span class="step-num">4</span>
+              <div>
+                <h3>Save and start</h3>
+                <p>The app saves setup, applies defaults, and can scan the repo for you.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <ul class="setup-checklist" id="wizardChecklist"></ul>
+              <div class="setup-warning" id="setupWarning"></div>
+            </div>
+          </section>
+        </div>
+        <div class="setup-dialog-foot">
+          <button id="saveSettingsBtn" type="button">Save setup</button>
+          <button class="primary" id="saveAndScanBtn" type="button">Save setup and scan</button>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script>
@@ -711,7 +1082,8 @@
       repo: null,
       packages: [],
       packageRoot: '',
-      settings: null
+      settings: null,
+      busy: false
     };
 
     const $ = id => document.getElementById(id);
@@ -727,14 +1099,15 @@
     }
 
     function setBusy(isBusy) {
+      state.busy = isBusy;
       $('scanBtn').disabled = isBusy;
       $('packagesBtn').disabled = isBusy;
-      $('handoffBtn').disabled = isBusy || !state.repo;
-      $('saveSettingsBtn').disabled = isBusy;
-      $('applyProfileBtn').disabled = isBusy || !state.settings;
+      $('handoffBtn').disabled = isBusy || !state.repo || !setupReady().allReady;
+      $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
       document.querySelectorAll('[data-user-toggle]').forEach(button => {
         button.disabled = isBusy;
       });
+      updateSetupGuide();
     }
 
     async function api(path, payload) {
@@ -763,6 +1136,84 @@
       $('ruleList').innerHTML = forbidden.map(cmd => `<li><code>${escapeHtml(cmd)}</code></li>`).join('');
     }
 
+    function userThemeLabel(userId) {
+      return userId === 'user2' ? 'USER 2 COOL CYAN MODE' : 'USER 1 WARM AMBER MODE';
+    }
+
+    function applyUserTheme() {
+      const profile = activeProfile();
+      const activeUserId = state.settings?.active_user_id || 'user1';
+      document.body.classList.toggle('user-one', activeUserId !== 'user2');
+      document.body.classList.toggle('user-two', activeUserId === 'user2');
+      const name = profile?.display_name || 'Setup Needed';
+      $('activeUserName').textContent = name;
+      $('activeUserTheme').textContent = userThemeLabel(activeUserId);
+      $('sideActiveName').textContent = name;
+      $('wizardActiveName').textContent = name;
+      $('setupWizardTitle').textContent = state.settings?.setup_completed ? `${name} SETUP` : 'SET UP TWO USERS';
+    }
+
+    function setupReady() {
+      const user1Name = $('user1Name')?.value.trim() || '';
+      const user2Name = $('user2Name')?.value.trim() || '';
+      const repoPath = $('profileRepoPath')?.value.trim() || '';
+      const agent = $('profileAgent')?.value.trim() || '';
+      const title = $('profileTitle')?.value.trim() || '';
+      const namesReady = Boolean(user1Name && user2Name && user1Name !== 'User 1' && user2Name !== 'User 2');
+      const activeReady = state.settings?.active_user_id === 'user1' || state.settings?.active_user_id === 'user2';
+      const defaultsReady = Boolean(repoPath && agent && title);
+      return {
+        namesReady,
+        activeReady,
+        defaultsReady,
+        allReady: namesReady && activeReady && defaultsReady
+      };
+    }
+
+    function checklistMarkup(readiness) {
+      const rows = [
+        ['namesReady', 'Name both users'],
+        ['activeReady', 'Choose active user'],
+        ['defaultsReady', 'Confirm repo and handoff defaults'],
+        ['allReady', 'Save setup']
+      ];
+      const firstOpen = rows.find(([key]) => !readiness[key])?.[0] || '';
+      return rows.map(([key, label]) => {
+        const done = readiness[key];
+        const status = done ? 'Done' : key === firstOpen ? 'Now' : 'Next';
+        const klass = done ? 'done' : key === firstOpen ? 'current' : '';
+        return `<li class="${klass}"><span>${escapeHtml(label)}</span><b>${status}</b></li>`;
+      }).join('');
+    }
+
+    function updateSetupGuide() {
+      if (!$('setupChecklist') || !$('wizardChecklist')) return;
+      const readiness = setupReady();
+      const markup = checklistMarkup(readiness);
+      $('setupChecklist').innerHTML = markup;
+      $('wizardChecklist').innerHTML = markup;
+      $('setupWarning').textContent = readiness.allReady ? '' : 'Finish the highlighted step before saving setup.';
+      $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
+      $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
+      $('saveSettingsBtn').disabled = state.busy || !readiness.allReady;
+      $('saveAndScanBtn').disabled = state.busy || !readiness.allReady;
+      $('handoffBtn').disabled = state.busy || !state.repo || !readiness.allReady;
+    }
+
+    function openSetupWizard() {
+      $('setupOverlay').classList.remove('hidden');
+      updateSetupGuide();
+      setTimeout(() => {
+        const readiness = setupReady();
+        const target = !readiness.namesReady ? 'user1Name' : !readiness.defaultsReady ? 'profileRepoPath' : 'saveAndScanBtn';
+        $(target)?.focus();
+      }, 0);
+    }
+
+    function closeSetupWizard() {
+      $('setupOverlay').classList.add('hidden');
+    }
+
     function activeProfile() {
       const settings = state.settings;
       if (!settings || !Array.isArray(settings.users)) return null;
@@ -772,8 +1223,14 @@
     function syncProfileNamesToState() {
       if (!state.settings) return;
       const [user1, user2] = state.settings.users;
-      if (user1) user1.display_name = $('user1Name').value.trim() || 'User 1';
-      if (user2) user2.display_name = $('user2Name').value.trim() || 'User 2';
+      if (user1) {
+        user1.display_name = $('user1Name').value.trim() || 'User 1';
+        if (!user1.handoff_agent || user1.handoff_agent === 'User 1') user1.handoff_agent = user1.display_name;
+      }
+      if (user2) {
+        user2.display_name = $('user2Name').value.trim() || 'User 2';
+        if (!user2.handoff_agent || user2.handoff_agent === 'User 2') user2.handoff_agent = user2.display_name;
+      }
     }
 
     function syncActiveProfileFieldsToState() {
@@ -806,6 +1263,9 @@
       $('handoffAgent').value = profile.handoff_agent || profile.display_name;
       $('handoffTitle').value = profile.handoff_title || 'AI workstation handoff';
       $('profileTitle').value = profile.handoff_title || 'AI workstation handoff';
+      $('profileAgent').value = profile.handoff_agent || profile.display_name;
+      $('profileRepoPath').value = profile.default_repo_path || '';
+      updateSetupGuide();
     }
 
     function renderSettings() {
@@ -818,9 +1278,9 @@
       $('profileRepoPath').value = profile?.default_repo_path || '';
       $('profileAgent').value = profile?.handoff_agent || profile?.display_name || '';
       $('profileTitle').value = profile?.handoff_title || 'AI workstation handoff';
-      $('setupChip').textContent = settings.setup_completed ? 'Ready' : 'Needed';
-      $('setupChip').className = settings.setup_completed ? 'chip ok' : 'chip warn';
       updateActiveButtons();
+      applyUserTheme();
+      updateSetupGuide();
       renderStatusStrip(state.repo);
     }
 
@@ -831,21 +1291,28 @@
       const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
       applyActiveProfileDefaults({forceRepo: !savedPath});
       if (!state.settings.setup_completed) {
-        showResult('Setup: enter both user names, choose the active user, then save setup.');
+        showResult('Setup needed. The wizard is open: name both users, choose the active user, confirm defaults, then save.');
+        openSetupWizard();
       }
     }
 
-    async function saveSettings() {
+    async function saveSettings({scanAfter = false, closeAfter = false} = {}) {
       setBusy(true);
       try {
         syncProfileNamesToState();
         syncActiveProfileFieldsToState();
+        if (!setupReady().allReady) {
+          openSetupWizard();
+          throw new Error('Finish the highlighted setup step before saving.');
+        }
         const data = await api('/api/settings', state.settings);
         state.settings = data.settings;
         renderSettings();
         applyActiveProfileDefaults({forceRepo: true});
         const names = state.settings.users.map(user => user.display_name).join(' / ');
         showResult(`Setup saved for <strong>${escapeHtml(names)}</strong>. Active user: <strong>${escapeHtml(activeProfile()?.display_name || '')}</strong>.`);
+        if (closeAfter) closeSetupWizard();
+        if (scanAfter) await scanRepo();
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
@@ -856,7 +1323,7 @@
     function renderStatusStrip(repo) {
       const profile = activeProfile();
       const profileChip = profile
-        ? `<span class="chip ${state.settings?.setup_completed ? 'ok' : 'warn'}">${escapeHtml(profile.display_name)}</span>`
+        ? `<span class="chip user-chip">${escapeHtml(profile.display_name)}</span>`
         : '';
       if (!repo) {
         $('statusStrip').innerHTML = `
@@ -920,6 +1387,10 @@
     async function scanRepo() {
       setBusy(true);
       try {
+        if (!setupReady().allReady) {
+          openSetupWizard();
+          throw new Error('Finish setup before scanning so the active user is clear.');
+        }
         const data = await api('/api/repo/scan', {path: $('repoPath').value});
         renderRepo(data.repo);
         showResult('Repository scan complete.');
@@ -933,6 +1404,10 @@
     async function createHandoff() {
       setBusy(true);
       try {
+        if (!setupReady().allReady) {
+          openSetupWizard();
+          throw new Error('Finish setup before creating a handoff.');
+        }
         syncProfileNamesToState();
         syncActiveProfileFieldsToState();
         const data = await api('/api/handoff/create', {
@@ -1078,7 +1553,10 @@
     $('scanBtn').addEventListener('click', scanRepo);
     $('handoffBtn').addEventListener('click', createHandoff);
     $('packagesBtn').addEventListener('click', loadPackages);
-    $('saveSettingsBtn').addEventListener('click', saveSettings);
+    $('openSetupBtn').addEventListener('click', openSetupWizard);
+    $('closeSetupBtn').addEventListener('click', closeSetupWizard);
+    $('saveSettingsBtn').addEventListener('click', () => saveSettings({closeAfter: true}));
+    $('saveAndScanBtn').addEventListener('click', () => saveSettings({scanAfter: true, closeAfter: true}));
     $('applyProfileBtn').addEventListener('click', () => {
       applyActiveProfileDefaults({forceRepo: true});
       showResult(`Defaults applied for <strong>${escapeHtml(activeProfile()?.display_name || 'active user')}</strong>.`);
@@ -1090,7 +1568,22 @@
         state.settings.active_user_id = button.dataset.userToggle;
         renderSettings();
         applyActiveProfileDefaults({forceRepo: true});
+        showResult(`Active user is now <strong>${escapeHtml(activeProfile()?.display_name || '')}</strong>. The screen color changed to match.`);
       });
+    });
+    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle'].forEach(id => {
+      $(id).addEventListener('input', () => {
+        syncProfileNamesToState();
+        syncActiveProfileFieldsToState();
+        updateActiveButtons();
+        applyUserTheme();
+        updateSetupGuide();
+      });
+    });
+    $('setupOverlay').addEventListener('click', event => {
+      if (event.target.id === 'setupOverlay' && setupReady().allReady) {
+        closeSetupWizard();
+      }
     });
     $('resultBox').addEventListener('click', event => {
       const button = event.target.closest('button[data-package-id]');

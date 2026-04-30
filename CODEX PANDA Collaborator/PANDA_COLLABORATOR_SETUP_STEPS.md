@@ -18,30 +18,34 @@ Nothing is sent to the internet by the app just because you open it.
 
 1. Double-click the **PANDA Collaborator** icon on your Desktop.
 2. Wait a few seconds for your browser to open.
-3. In the **Setup** panel, type the name for the first user.
-4. Type the name for the second user.
-5. Click the user button for the person who is using the app right now.
-6. Check the repo path. For this project it is usually:
+3. The setup wizard should open automatically if setup is not finished.
+4. Type the name for the first user.
+5. Type the name for the second user.
+6. Click the user button for the person who is using the app right now.
+7. Check the repo path. For this project it is usually:
 
 ```text
 C:\CODEX PG
 ```
 
-7. Check the agent name. This is the name that will be written into handoff packages.
-8. Check the handoff title. This is the default title for a new handoff.
-9. Click **Save setup**.
+8. Check the agent name. This is the name that will be written into handoff packages.
+9. Check the handoff title. This is the default title for a new handoff.
+10. Click **Save setup and scan**.
 
 When setup is saved, the setup badge changes to **Ready**.
+
+The active user's name appears in big letters at the top of the screen. User 1 uses a warm amber color theme. User 2 uses a cool cyan color theme.
 
 ## Daily Use
 
 1. Open PANDA Collaborator from the desktop icon.
 2. Make sure the correct user is selected in the **Setup** panel.
-3. Click **Apply defaults** if you want to load that user's saved repo and handoff defaults.
-4. Click **Scan**.
-5. Review the **Working Tree** numbers and **Changed Files** list.
-6. If you need to hand work to another AI or another user, fill in the handoff notes.
-7. Click **Create safe handoff**.
+3. Confirm that the big name at the top of the screen matches the person using the app.
+4. Click **Apply defaults** if you want to load that user's saved repo and handoff defaults.
+5. Click **Scan**.
+6. Review the **Working Tree** numbers and **Changed Files** list.
+7. If you need to hand work to another AI or another user, fill in the handoff notes.
+8. Click **Create safe handoff**.
 
 The app creates a handoff package with:
 
