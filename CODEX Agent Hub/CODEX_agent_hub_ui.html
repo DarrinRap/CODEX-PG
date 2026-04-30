@@ -121,7 +121,7 @@ button[disabled] { opacity: .48; cursor: default; }
   font-weight: 800;
 }
 .brand-title { font-size: 13px; font-weight: 700; }
-.brand-sub { color: var(--quiet); font: 10px/1.15 var(--font-mono); margin-top: 1px; }
+.brand-sub { color: var(--quiet); font: 10px/1.15 var(--font-ui); margin-top: 1px; }
 .status-line {
   min-width: 0;
   display: flex;
@@ -138,7 +138,7 @@ button[disabled] { opacity: .48; cursor: default; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.meta { color: var(--quiet); font: 10px/1.2 var(--font-mono); }
+.meta { color: var(--quiet); font: 10px/1.2 var(--font-ui); }
 .server-health {
   min-width: 0;
   display: inline-flex;
@@ -157,7 +157,7 @@ button[disabled] { opacity: .48; cursor: default; }
   border-radius: 4px;
   background: var(--field);
   color: var(--muted);
-  font: 10px/1 var(--font-mono);
+  font: 10px/1 var(--font-ui);
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
@@ -248,7 +248,7 @@ button[disabled] { opacity: .48; cursor: default; }
   background: var(--chrome);
 }
 .panel-title { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.2px; }
-.count { color: var(--text); font: 11px/1.2 var(--font-mono); font-weight: 700; }
+.count { color: var(--text); font: 11px/1.2 var(--font-ui); font-weight: 700; }
 .scroll {
   min-height: 0;
   overflow: auto;
@@ -309,7 +309,7 @@ button[disabled] { opacity: .48; cursor: default; }
   background: var(--panel-2);
   display: grid;
   place-items: center;
-  font: 11px/1 var(--font-mono);
+  font: 11px/1 var(--font-ui);
   font-weight: 700;
 }
 .agent-name { font-weight: 650; }
@@ -337,7 +337,7 @@ button[disabled] { opacity: .48; cursor: default; }
   font-weight: 760;
 }
 .agent > .agent-note { grid-column: 2; margin-top: -4px; }
-.agent-count { grid-column: 2; color: var(--muted); font: 10px/1.2 var(--font-mono); }
+.agent-count { grid-column: 2; color: var(--muted); font: 10px/1.2 var(--font-ui); }
 .agent-action { grid-column: 2; color: var(--accent); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--quiet); margin-right: 6px; }
 .dot.ok { background: var(--ok); }
@@ -831,7 +831,7 @@ button.filter.active {
   border: 1px solid var(--border);
   border-radius: 3px;
   color: var(--muted);
-  font: 11px/1 var(--font-mono);
+  font: 11px/1 var(--font-ui);
 }
 .detail-section[open] > summary::before { content: "-"; color: var(--accent); border-color: rgba(232, 168, 124, .48); }
 .detail-section > summary:hover { background: var(--field-hover); }
@@ -972,6 +972,301 @@ button.filter.active {
   font-weight: 700;
 }
 .detail-actions button[hidden] { display: none; }
+.mail-overlay[hidden] { display: none; }
+.mail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--canvas);
+  color: var(--text);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+.mail-head {
+  min-height: 52px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--ink);
+}
+.mail-title {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.mail-title h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+}
+.mail-meta {
+  color: var(--quiet);
+  font: 11px/1.25 var(--font-ui);
+  white-space: nowrap;
+}
+.mail-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mail-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+}
+.mail-list-pane {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  border-right: 1px solid var(--border);
+  background: var(--chrome);
+}
+.mail-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.mail-tab {
+  min-width: 0;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  color: var(--muted);
+}
+.mail-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.mail-search {
+  margin: 10px;
+  min-width: 0;
+  width: calc(100% - 20px);
+  padding: 0 8px;
+}
+.mail-list {
+  min-height: 0;
+  overflow: auto;
+  padding: 0 8px 10px;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.mail-row {
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 9px;
+  box-shadow: none;
+}
+.mail-row:hover {
+  border-color: var(--border-hover);
+  background: var(--pane-raised);
+}
+.mail-row.selected {
+  border-color: var(--accent);
+  background: var(--pane-selected);
+}
+.mail-row-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  background: var(--text-dim);
+}
+.mail-row.unread .mail-row-dot { background: var(--accent); }
+.mail-row-title {
+  min-width: 0;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mail-row-summary {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mail-row-route {
+  color: var(--quiet);
+  font: 10px/1.25 var(--font-ui);
+  white-space: nowrap;
+}
+.mail-reader {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--canvas);
+}
+.mail-reader-head {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--pane);
+}
+.mail-reader-title {
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mail-reader-title.high-priority { color: var(--accent); }
+.mail-reader-meta {
+  color: var(--muted);
+  font: 11px/1.3 var(--font-ui);
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mail-reader-actions {
+  display: flex;
+  align-items: start;
+  gap: 6px;
+}
+.mail-content {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+}
+.mail-rendered {
+  color: var(--text);
+  font: 13px/1.45 var(--font-ui);
+}
+.mail-rendered h1,
+.mail-rendered h2,
+.mail-rendered h3 {
+  margin: 0 0 8px;
+  color: var(--text);
+  line-height: 1.18;
+}
+.mail-rendered h1 { font-size: 18px; }
+.mail-rendered h2 { font-size: 15px; }
+.mail-rendered h3 { font-size: 13px; }
+.mail-rendered p { margin: 0 0 9px; }
+.mail-rendered ul,
+.mail-rendered ol {
+  margin: 0 0 10px 20px;
+  padding: 0;
+}
+.mail-rendered li { margin: 3px 0; }
+.mail-rendered blockquote {
+  margin: 0 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent-border);
+  color: var(--muted);
+}
+.mail-rendered code {
+  font-family: var(--font-mono);
+  color: var(--accent-light);
+}
+.mail-rendered pre {
+  margin: 0 0 10px;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--field);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 11px/1.4 var(--font-mono);
+}
+.mail-frontmatter {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  color: var(--muted);
+}
+.mail-frontmatter summary {
+  cursor: pointer;
+  color: var(--quiet);
+  font: 11px/1.2 var(--font-ui);
+}
+.mail-frontmatter pre {
+  margin-top: 8px;
+}
+.mail-empty {
+  color: var(--quiet);
+  font: 13px/1.45 var(--font-ui);
+}
+.mail-reply {
+  border-top: 1px solid var(--border);
+  background: var(--chrome);
+  padding: 10px 14px 12px;
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+.mail-reply label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.mail-reply input,
+.mail-reply select,
+.mail-reply textarea {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--field);
+  color: var(--text);
+  font: 12px/1.35 var(--font-ui);
+  color-scheme: dark;
+}
+.mail-reply input:focus,
+.mail-reply select:focus,
+.mail-reply textarea:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  border-color: var(--accent-border);
+}
+.mail-reply input,
+.mail-reply select {
+  min-height: 28px;
+  padding: 0 8px;
+}
+.mail-reply textarea {
+  height: 72px;
+  resize: vertical;
+  padding: 7px 8px;
+}
+.mail-reply-text {
+  grid-column: 1 / -2;
+}
+.mail-reply-status {
+  min-height: 18px;
+  color: var(--muted);
+  font: 11px/1.2 var(--font-ui);
+}
+.mail-reply-status.ok { color: var(--ok); }
+.mail-reply-status.err { color: var(--err); }
 .inspector-overlay[hidden] { display: none; }
 .inspector-overlay {
   position: fixed;
@@ -1006,7 +1301,7 @@ button.filter.active {
 }
 .inspector-meta {
   color: var(--quiet);
-  font: 11px/1.2 var(--font-mono);
+  font: 11px/1.2 var(--font-ui);
   white-space: nowrap;
 }
 .inspector-glance {
@@ -1064,7 +1359,7 @@ button.inspector-stat.is-active {
 }
 .inspector-glance-value {
   color: var(--text);
-  font: 15px/1.05 var(--font-mono);
+  font: 15px/1.05 var(--font-ui);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1126,7 +1421,7 @@ button.inspector-stat.is-active {
   letter-spacing: .7px;
 }
 .inspector-stat-value {
-  font: 14px/1 var(--font-mono);
+  font: 14px/1 var(--font-ui);
   font-weight: 800;
 }
 .inspector-stat.pass .inspector-stat-value { color: var(--ok); }
@@ -1164,7 +1459,7 @@ button.inspector-stat.is-active {
 .inspector-badge {
   border-radius: 999px;
   padding: 4px 8px;
-  font: 10px/1 var(--font-mono);
+  font: 10px/1 var(--font-ui);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -1215,7 +1510,7 @@ button.inspector-stat.is-active {
   gap: 10px;
   padding: 0 10px;
   color: var(--quiet);
-  font: 10px/1.2 var(--font-mono);
+  font: 10px/1.2 var(--font-ui);
 }
 .diag {
   min-width: 0;
@@ -1235,7 +1530,7 @@ button.inspector-stat.is-active {
   border-radius: 5px;
   background: var(--field);
   color: var(--err);
-  font: 10px/1 var(--font-mono);
+  font: 10px/1 var(--font-ui);
   font-weight: 800;
   text-transform: uppercase;
   cursor: pointer;
@@ -1357,7 +1652,7 @@ button.inspector-stat.is-active {
   display: none;
 }
 .mailbox-number {
-  font: 34px/1 var(--font-mono);
+  font: 34px/1 var(--font-ui);
   line-height: 1;
   font-weight: 700;
 }
@@ -1455,6 +1750,10 @@ body.quiet-mode .top-actions button[disabled] {
   }
   .participants-panel { max-height: 220px; }
   .detail-panel { grid-column: 1 / -1; min-height: 0; }
+  .mail-body { grid-template-columns: 1fr; grid-template-rows: minmax(180px, 38vh) minmax(0, 1fr); }
+  .mail-list-pane { border-right: 0; border-bottom: 1px solid var(--border); }
+  .mail-reply { grid-template-columns: 1fr; }
+  .mail-reply-text { grid-column: auto; }
   .summary-strip { grid-template-columns: 1fr; }
   .guide-steps { grid-template-columns: 1fr; }
   .summary { min-height: 40px; }
@@ -1557,7 +1856,7 @@ body.quiet-mode .top-actions button[disabled] {
       <button id="cleanupInboxes">Clean inboxes</button>
       <button id="archiveRead">Archive read</button>
       <button id="shortcutHelp">Shortcuts</button>
-      <button disabled>Compose</button>
+      <button class="primary" id="openSimpleMail">Mail</button>
     </div>
   </header>
 
@@ -1714,6 +2013,64 @@ body.quiet-mode .top-actions button[disabled] {
     <div><strong id="gitState">git</strong></div>
   </footer>
 
+  <section class="mail-overlay" id="simpleMailPanel" hidden aria-label="PAH Mail" role="dialog" aria-modal="true">
+    <div class="mail-head">
+      <div class="mail-title">
+        <h2>Mail</h2>
+        <span class="mail-meta" id="simpleMailMeta">Loading</span>
+      </div>
+      <div class="mail-actions">
+        <button id="simpleMailRefresh" type="button">Refresh</button>
+        <button id="simpleMailClose" type="button">Close</button>
+      </div>
+    </div>
+    <div class="mail-body">
+      <aside class="mail-list-pane">
+        <div class="mail-tabs" id="simpleMailTabs">
+          <button class="mail-tab active" type="button" data-mail-filter="inbox">Inbox</button>
+          <button class="mail-tab" type="button" data-mail-filter="unread">Unread</button>
+          <button class="mail-tab" type="button" data-mail-filter="needs">Needs Me</button>
+          <button class="mail-tab" type="button" data-mail-filter="cd">CD</button>
+          <button class="mail-tab" type="button" data-mail-filter="cc">CC</button>
+          <button class="mail-tab" type="button" data-mail-filter="all">All</button>
+        </div>
+        <input class="mail-search" id="simpleMailSearch" placeholder="Find mail" aria-label="Find mail">
+        <div class="mail-list" id="simpleMailList"></div>
+      </aside>
+      <section class="mail-reader">
+        <div class="mail-reader-head">
+          <div>
+            <div class="mail-reader-title" id="simpleMailTitle">No message selected</div>
+            <div class="mail-reader-meta" id="simpleMailRoute">Select a message.</div>
+          </div>
+          <div class="mail-reader-actions">
+            <button class="secondary" id="simpleMailReadToggle" type="button">Mark as read</button>
+            <button class="secondary" id="simpleMailOpenFile" type="button">Open</button>
+          </div>
+        </div>
+        <div class="mail-content">
+          <div class="mail-empty" id="simpleMailContent">Select a message.</div>
+        </div>
+        <div class="mail-reply">
+          <label>To
+            <select id="simpleMailRouteSelect">
+              <option value="codex_to_claude">Claude Desktop</option>
+              <option value="codex_to_claude_code">Claude Code</option>
+            </select>
+          </label>
+          <label>Subject
+            <input id="simpleMailSubject" type="text" placeholder="Reply subject">
+          </label>
+          <button class="primary" id="simpleMailSend" type="button">Send</button>
+          <label class="mail-reply-text">Reply
+            <textarea id="simpleMailReply" placeholder="Write reply"></textarea>
+          </label>
+          <div class="mail-reply-status" id="simpleMailReplyStatus"></div>
+        </div>
+      </section>
+    </div>
+  </section>
+
   <section class="inspector-overlay" id="inspectorPanel" hidden aria-label="PAH Inspector panel" role="dialog" aria-modal="true">
     <div class="inspector-head">
       <div class="inspector-title">
@@ -1764,6 +2121,12 @@ let inspectorReport = null;
 let inspectorOpen = false;
 let inspectorFindingOrder = 'all';
 let ccActivityOverride = null;
+let simpleMailOpen = false;
+let simpleMailFilter = 'inbox';
+let simpleMailSearch = '';
+let simpleMailSelectedPath = '';
+let simpleMailDraftPath = '';
+const simpleMailContentCache = {};
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1773,6 +2136,22 @@ function fmtTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
   return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+}
+function fmtMailTime(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDelta = Math.round((startToday - startDate) / 86400000);
+  const clock = date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+  if (dayDelta === 0) return clock;
+  if (dayDelta === 1) return `Yesterday ${clock}`;
+  if (dayDelta > 1 && dayDelta < 7) {
+    return `${date.toLocaleDateString([], {weekday: 'short'})} ${clock}`;
+  }
+  return date.toLocaleDateString([], {month: 'short', day: 'numeric'});
 }
 function fmtAge(seconds) {
   const total = Math.max(0, Number(seconds || 0));
@@ -1936,6 +2315,336 @@ async function checkCcActivityNow() {
       next.disabled = false;
       next.textContent = old;
     }
+  }
+}
+function simpleMailAdd(map, item) {
+  if (!item) return;
+  const path = String(item.path || item.message_path || '');
+  if (!path || map.has(path)) return;
+  map.set(path, {...item, path, message_path: path});
+}
+function simpleMailRows() {
+  const map = new Map();
+  (cockpit?.simple_mail?.latest || []).forEach(item => simpleMailAdd(map, item));
+  (cockpit?.simple_mail?.mailboxes || []).forEach(box => {
+    (box.messages || []).forEach(item => simpleMailAdd(map, item));
+  });
+  Object.values(cockpit?.simple_mail?.agent_mailboxes || {}).forEach(rows => {
+    (rows || []).forEach(item => simpleMailAdd(map, item));
+  });
+  (cockpit?.latest || []).forEach(item => simpleMailAdd(map, item));
+  (cockpit?.feed || []).forEach(item => simpleMailAdd(map, item));
+  (cockpit?.mailboxes || []).forEach(box => {
+    (box.messages || []).forEach(item => simpleMailAdd(map, item));
+  });
+  Object.values(cockpit?.mailbox_messages || {}).forEach(rows => {
+    (rows || []).forEach(item => simpleMailAdd(map, item));
+  });
+  return Array.from(map.values()).sort((a, b) => {
+    const left = Date.parse(a.modified || a.time_iso || '') || 0;
+    const right = Date.parse(b.modified || b.time_iso || '') || 0;
+    return right - left;
+  });
+}
+function simpleMailMatchesFilter(item) {
+  const from = String(item.from_agent || '').toLowerCase();
+  const to = String(item.to_agent || '').toLowerCase();
+  const path = String(item.path || '').toLowerCase();
+  const classifier = String(item.classifier_state || '').toLowerCase();
+  const status = `${item.thread_status || ''} ${item.status || ''}`.toLowerCase();
+  if (simpleMailFilter === 'inbox') return to === 'codex' || path.includes('codex inbox');
+  if (simpleMailFilter === 'unread') return Boolean(item.unread);
+  if (simpleMailFilter === 'needs') return classifier === 'open_on_darrin' || status.includes('waiting_on_darrin') || status.includes('blocked');
+  if (simpleMailFilter === 'cd') return from === 'claude-desktop' || to === 'claude-desktop';
+  if (simpleMailFilter === 'cc') return from === 'claude-code' || to === 'claude-code';
+  return true;
+}
+function simpleMailVisibleRows() {
+  const query = simpleMailSearch.trim().toLowerCase();
+  return simpleMailRows().filter(item => {
+    if (!simpleMailMatchesFilter(item)) return false;
+    if (!query) return true;
+    const haystack = [
+      item.title,
+      item.summary,
+      item.from_agent,
+      item.to_agent,
+      item.thread_id,
+      item.message_id,
+      item.path,
+    ].join(' ').toLowerCase();
+    return haystack.includes(query);
+  });
+}
+function simpleMailSelected(rows = simpleMailVisibleRows()) {
+  return rows.find(item => item.path === simpleMailSelectedPath) || rows[0] || null;
+}
+function simpleMailReplyRoute(item) {
+  const from = String(item?.from_agent || '').toLowerCase();
+  const to = String(item?.to_agent || '').toLowerCase();
+  const other = from === 'codex' ? to : from;
+  return other === 'claude-code' ? 'codex_to_claude_code' : 'codex_to_claude';
+}
+function simpleMailReplySubject(item) {
+  const title = String(item?.title || 'Mail reply').replace(/^[A-Z _-]+ -> [A-Z _-]+:\s*/i, '').trim();
+  return title.toLowerCase().startsWith('re:') ? title : `Re: ${title || 'Mail reply'}`;
+}
+function syncSimpleMailDraft(item) {
+  if (!item?.path || simpleMailDraftPath === item.path) return;
+  simpleMailDraftPath = item.path;
+  document.getElementById('simpleMailRouteSelect').value = simpleMailReplyRoute(item);
+  document.getElementById('simpleMailSubject').value = simpleMailReplySubject(item);
+  document.getElementById('simpleMailReply').value = '';
+  const status = document.getElementById('simpleMailReplyStatus');
+  status.textContent = '';
+  status.className = 'mail-reply-status';
+}
+function splitMailSource(raw) {
+  const text = String(raw || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+  const match = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) return {frontmatter: '', body: text};
+  return {frontmatter: match[1].trim(), body: match[2].trim()};
+}
+function inlineMailMarkdown(text) {
+  return esc(text)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+function closeMailList(listType) {
+  return listType ? `</${listType}>` : '';
+}
+function renderMailMarkdown(text) {
+  const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  let html = '';
+  let listType = '';
+  let inCode = false;
+  let codeLines = [];
+  for (const line of lines) {
+    if (line.trim().startsWith('```')) {
+      if (inCode) {
+        html += `<pre><code>${esc(codeLines.join('\n'))}</code></pre>`;
+        codeLines = [];
+        inCode = false;
+      } else {
+        html += closeMailList(listType);
+        listType = '';
+        inCode = true;
+      }
+      continue;
+    }
+    if (inCode) {
+      codeLines.push(line);
+      continue;
+    }
+    const trimmed = line.trim();
+    if (!trimmed) {
+      html += closeMailList(listType);
+      listType = '';
+      continue;
+    }
+    const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      html += closeMailList(listType);
+      listType = '';
+      const level = heading[1].length;
+      html += `<h${level}>${inlineMailMarkdown(heading[2])}</h${level}>`;
+      continue;
+    }
+    const unordered = trimmed.match(/^[-*]\s+(.+)$/);
+    if (unordered) {
+      if (listType !== 'ul') {
+        html += closeMailList(listType);
+        html += '<ul>';
+        listType = 'ul';
+      }
+      html += `<li>${inlineMailMarkdown(unordered[1])}</li>`;
+      continue;
+    }
+    const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+    if (ordered) {
+      if (listType !== 'ol') {
+        html += closeMailList(listType);
+        html += '<ol>';
+        listType = 'ol';
+      }
+      html += `<li>${inlineMailMarkdown(ordered[1])}</li>`;
+      continue;
+    }
+    const quote = trimmed.match(/^>\s?(.+)$/);
+    if (quote) {
+      html += closeMailList(listType);
+      listType = '';
+      html += `<blockquote>${inlineMailMarkdown(quote[1])}</blockquote>`;
+      continue;
+    }
+    html += closeMailList(listType);
+    listType = '';
+    html += `<p>${inlineMailMarkdown(trimmed)}</p>`;
+  }
+  if (inCode) html += `<pre><code>${esc(codeLines.join('\n'))}</code></pre>`;
+  html += closeMailList(listType);
+  return html || '<p>No message body.</p>';
+}
+function renderMailBodyHtml(raw) {
+  const parts = splitMailSource(raw);
+  const body = parts.body || raw || '';
+  const frontmatter = parts.frontmatter
+    ? `<details class="mail-frontmatter"><summary>Show details</summary><pre>${esc(parts.frontmatter)}</pre></details>`
+    : '';
+  return `${renderMailMarkdown(body)}${frontmatter}`;
+}
+function renderSimpleMailContent(item) {
+  const content = document.getElementById('simpleMailContent');
+  if (!item?.path) {
+    content.className = 'mail-empty';
+    content.textContent = 'No message selected.';
+    return;
+  }
+  const cached = simpleMailContentCache[item.path];
+  if (cached?.ok) {
+    content.className = 'mail-rendered';
+    content.innerHTML = renderMailBodyHtml(cached.content || '');
+    return;
+  }
+  if (cached?.loading) {
+    content.className = 'mail-empty';
+    content.textContent = 'Loading message.';
+    return;
+  }
+  simpleMailContentCache[item.path] = {loading: true};
+  content.className = 'mail-empty';
+  content.textContent = 'Loading message.';
+  fetch(`/api/message?path=${encodeURIComponent(item.path)}`, { cache: 'no-store' })
+    .then(res => res.json().then(payload => ({res, payload})))
+    .then(({res, payload}) => {
+      if (!res.ok || payload.ok === false) throw new Error(payload.error || `message failed ${res.status}`);
+      simpleMailContentCache[item.path] = {ok: true, content: String(payload.content || '')};
+      if (simpleMailOpen && simpleMailSelectedPath === item.path) renderSimpleMailContent(item);
+    })
+    .catch(err => {
+      simpleMailContentCache[item.path] = {ok: false, error: err.message || String(err)};
+      if (simpleMailOpen && simpleMailSelectedPath === item.path) {
+        content.className = 'mail-empty';
+        content.textContent = `Message unavailable: ${err.message || err}`;
+      }
+    });
+}
+function renderSimpleMail() {
+  const panel = document.getElementById('simpleMailPanel');
+  if (!simpleMailOpen) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  const rows = simpleMailVisibleRows();
+  const selectedMail = simpleMailSelected(rows);
+  simpleMailSelectedPath = selectedMail?.path || '';
+  document.querySelectorAll('button.mail-tab[data-mail-filter]').forEach(button => {
+    button.classList.toggle('active', button.dataset.mailFilter === simpleMailFilter);
+  });
+  const search = document.getElementById('simpleMailSearch');
+  if (document.activeElement !== search) search.value = simpleMailSearch;
+  const unread = simpleMailRows().filter(item => item.unread).length;
+  document.getElementById('simpleMailMeta').textContent = `${rows.length} shown / ${unread} unread`;
+  setHTML('simpleMailList', rows.length ? rows.map(item => {
+    const selectedClass = item.path === simpleMailSelectedPath ? 'selected' : '';
+    const unreadClass = item.unread ? 'unread' : '';
+    const route = `${item.from_agent || '?'} -> ${item.to_agent || '?'} · ${fmtMailTime(item.modified)}`;
+    return `
+      <button class="mail-row ${selectedClass} ${unreadClass}" type="button" data-mail-path="${esc(item.path)}" title="${esc(item.title || item.name || 'Message')}">
+        <span class="mail-row-dot"></span>
+        <span>
+          <span class="mail-row-title">${esc(item.title || item.name || 'Message')}</span>
+          <span class="mail-row-summary">${esc(item.summary || '')}</span>
+        </span>
+        <span class="mail-row-route">${esc(route)}</span>
+      </button>
+    `;
+  }).join('') : '<div class="mail-empty">No mail in this view.</div>');
+  document.querySelectorAll('button.mail-row[data-mail-path]').forEach(button => {
+    button.addEventListener('click', () => {
+      simpleMailSelectedPath = button.dataset.mailPath || '';
+      simpleMailDraftPath = '';
+      renderSimpleMail();
+    });
+  });
+  const titleNode = document.getElementById('simpleMailTitle');
+  const highPriority = selectedMail && (
+    String(selectedMail.priority || '').toLowerCase() === 'high'
+    || String(selectedMail.type || '').toLowerCase().includes('decision')
+    || String(selectedMail.title || '').toLowerCase().includes('decision')
+  );
+  titleNode.className = `mail-reader-title${highPriority ? ' high-priority' : ''}`;
+  titleNode.textContent = selectedMail?.title || selectedMail?.name || 'No message selected';
+  document.getElementById('simpleMailRoute').textContent = selectedMail
+    ? `${selectedMail.from_agent || '?'} -> ${selectedMail.to_agent || '?'} · ${selectedMail.type || 'message'} · ${selectedMail.priority || 'normal'} · ${fmtMailTime(selectedMail.modified)}`
+    : 'Select a message.';
+  ['simpleMailReadToggle', 'simpleMailOpenFile', 'simpleMailSend'].forEach(id => {
+    document.getElementById(id).disabled = !selectedMail;
+  });
+  if (selectedMail) {
+    document.getElementById('simpleMailReadToggle').textContent = selectedMail.unread ? 'Mark as read' : 'Mark as unread';
+    syncSimpleMailDraft(selectedMail);
+  }
+  renderSimpleMailContent(selectedMail);
+}
+function openSimpleMail() {
+  simpleMailOpen = true;
+  if (!cockpit) {
+    loadCockpit();
+    return;
+  }
+  renderSimpleMail();
+}
+function closeSimpleMail() {
+  simpleMailOpen = false;
+  renderSimpleMail();
+}
+async function setSimpleMailReadState(state) {
+  const item = simpleMailSelected();
+  if (!item?.path) return;
+  await postJson('/api/message-read-state', {path: item.path, state, actor: 'darrin_or_codex'});
+  await loadCockpit();
+  renderSimpleMail();
+}
+async function sendSimpleMailReply() {
+  const item = simpleMailSelected();
+  if (!item?.path) return;
+  const body = document.getElementById('simpleMailReply').value.trim();
+  const status = document.getElementById('simpleMailReplyStatus');
+  if (!body) {
+    status.textContent = 'Reply is empty.';
+    status.className = 'mail-reply-status err';
+    return;
+  }
+  const button = document.getElementById('simpleMailSend');
+  button.disabled = true;
+  status.textContent = 'Sending.';
+  status.className = 'mail-reply-status';
+  try {
+    const replyRefs = [item.message_id || '', item.path || ''].filter(Boolean).join('\n');
+    const payload = {
+      route: document.getElementById('simpleMailRouteSelect').value,
+      status: 'Info',
+      subject: document.getElementById('simpleMailSubject').value || simpleMailReplySubject(item),
+      thread_id: item.thread_id || item.message_id || '',
+      reply_to: replyRefs,
+      body,
+    };
+    await postJson('/api/create-message', payload);
+    await postJson('/api/message-read-state', {path: item.path, state: 'read', actor: 'darrin_or_codex'});
+    document.getElementById('simpleMailReply').value = '';
+    status.textContent = 'Sent.';
+    status.className = 'mail-reply-status ok';
+    simpleMailDraftPath = '';
+    await loadCockpit();
+    renderSimpleMail();
+  } catch (err) {
+    status.textContent = `Send failed: ${err.message || err}`;
+    status.className = 'mail-reply-status err';
+  } finally {
+    button.disabled = false;
   }
 }
 function visibleMessageItems() {
@@ -2710,6 +3419,7 @@ function render() {
   renderRoutes(cockpit.routes || []);
   renderDiagnostics(cockpit.diagnostics || {});
   renderActivity();
+  renderSimpleMail();
 }
 function renderGuide(openOnYou, openOnAgents) {
   const title = queueFilter === 'diagnostics'
@@ -3593,6 +4303,49 @@ function renderDiagnostics(diagnostics) {
   node.textContent = text;
 }
 document.getElementById('refresh').addEventListener('click', loadCockpit);
+document.getElementById('openSimpleMail').addEventListener('click', openSimpleMail);
+document.getElementById('simpleMailClose').addEventListener('click', closeSimpleMail);
+document.getElementById('simpleMailRefresh').addEventListener('click', async () => {
+  await loadCockpit();
+  renderSimpleMail();
+});
+document.getElementById('simpleMailTabs').addEventListener('click', event => {
+  const button = event.target.closest('button.mail-tab[data-mail-filter]');
+  if (!button) return;
+  simpleMailFilter = button.dataset.mailFilter || 'inbox';
+  simpleMailSelectedPath = '';
+  simpleMailDraftPath = '';
+  renderSimpleMail();
+});
+document.getElementById('simpleMailSearch').addEventListener('input', event => {
+  simpleMailSearch = event.target.value || '';
+  simpleMailSelectedPath = '';
+  simpleMailDraftPath = '';
+  renderSimpleMail();
+});
+document.getElementById('simpleMailReadToggle').addEventListener('click', async () => {
+  const item = simpleMailSelected();
+  if (!item?.path) return;
+  const nextState = item.unread ? 'read' : 'unread';
+  try {
+    await setSimpleMailReadState(nextState);
+  } catch (err) {
+    document.getElementById('simpleMailReplyStatus').textContent = `Read-state update failed: ${err.message || err}`;
+    document.getElementById('simpleMailReplyStatus').className = 'mail-reply-status err';
+  }
+});
+document.getElementById('simpleMailOpenFile').addEventListener('click', async () => {
+  const item = simpleMailSelected();
+  if (!item?.path) return;
+  try {
+    const res = await fetch(`/api/open?path=${encodeURIComponent(item.path)}`);
+    if (!res.ok) throw new Error(`open failed ${res.status}`);
+  } catch (err) {
+    document.getElementById('simpleMailReplyStatus').textContent = `Open failed: ${err.message || err}`;
+    document.getElementById('simpleMailReplyStatus').className = 'mail-reply-status err';
+  }
+});
+document.getElementById('simpleMailSend').addEventListener('click', sendSimpleMailReply);
 document.querySelectorAll('button.filter').forEach(button => {
   button.addEventListener('click', () => {
     queueFilter = button.dataset.filter || 'you';
@@ -3910,6 +4663,11 @@ document.addEventListener('keydown', event => {
   const target = event.target;
   const isTyping = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
   if (event.key === 'Escape') {
+    if (simpleMailOpen) {
+      event.preventDefault();
+      closeSimpleMail();
+      return;
+    }
     if (inspectorOpen) {
       event.preventDefault();
       closeInspectorPanel();

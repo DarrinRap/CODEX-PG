@@ -134,6 +134,23 @@ C:\CODEX PG\CODEX Agent Hub\CODEX state\CODEX_route_test_state.local.json
 
 The test passes only when PAH later sees a matching reply in `CODEX Inbox` by `Thread-ID`, `Reply-To`, or test ID reference.
 
+
+## CD Project Manager Coordination
+
+Darrin direction recorded 2026-04-30: Claude Desktop (CD) is Codex's project manager for all PAH work. Codex automatically loops CD in on PAH matters, including diagnostics, incidents, speed/reliability findings, architecture choices, implementation plans, verification results, blockers, and handoff/status updates.
+
+For PAH work, file a concise CD-visible mailbox update before substantive code changes when practical, and after verification before claiming completion. CD guidance coordinates PAH work, but Darrin remains the approval gate for protected actions, commits, pushes, writes to `C:\panda-gallery`, external services, and approval-sensitive operations.
+
+## PAH Operating Efficiency Rules
+
+Darrin direction recorded 2026-04-30:
+
+- Treat PAH speed and reliability claims as unproven until current verification evidence exists.
+- Before claiming PAH work complete, run smoke tests, Inspector, server smoke, `/api/health`, and any relevant latency/performance probe.
+- Mailbox write and pickup should feel near-instant; full dashboard refresh over a few hundred milliseconds is a performance concern and should be profiled before guessing.
+- Smoke tests alone are not proof of reliability; PAH needs pickup-latency, concurrency, endurance, and failure-injection harness coverage.
+- For PAH work, keep CD in the loop before substantive changes when practical and after verification.
+
 ## Operational Protocol
 
 Live local URL:
@@ -387,3 +404,4 @@ This starts PAH hidden, checks `/api/status`, prints a compact JSON result, and 
 4. Add file/diff preview for deliverables.
 5. Add approval-record creation/revocation UI.
 6. Add notification UX polish.
+

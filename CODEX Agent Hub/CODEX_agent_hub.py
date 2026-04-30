@@ -138,6 +138,10 @@ MAILBOX_SLA_URGENT_SECONDS = 2 * 60
 COMPOSE_STATE_MAX_SECONDS = 20 * 60
 DEFAULT_PROGRESS_WARN_MINUTES = 30
 DEFAULT_PROGRESS_ERROR_MINUTES = 45
+EXPENSIVE_STATUS_CACHE_SECONDS = 5.0
+GIT_STATUS_CACHE_SECONDS = 5.0
+EXPENSIVE_STATUS_CACHE_LOCK = threading.Lock()
+EXPENSIVE_STATUS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 MESSAGE_PARSE_CACHE_LOCK = threading.Lock()
 MESSAGE_PARSE_CACHE: dict[str, tuple[tuple[int, int], Message]] = {}
 PROGRESS_MONITOR_STATUSES = {
@@ -3162,6 +3166,30 @@ def git_status() -> dict[str, str]:
         }
 
 
+def cached_expensive_status(name: str, ttl_seconds: float, builder: Any) -> dict[str, Any]:
+    now = time.monotonic()
+    with EXPENSIVE_STATUS_CACHE_LOCK:
+        cached = EXPENSIVE_STATUS_CACHE.get(name)
+        if cached and now - cached[0] <= ttl_seconds:
+            return dict(cached[1])
+    value = builder()
+    with EXPENSIVE_STATUS_CACHE_LOCK:
+        EXPENSIVE_STATUS_CACHE[name] = (now, dict(value))
+    return value
+
+
+def cached_communication_diagnostics() -> dict[str, Any]:
+    return cached_expensive_status(
+        "communication_diagnostics",
+        EXPENSIVE_STATUS_CACHE_SECONDS,
+        lambda: run_communication_diagnostics(write_report=False),
+    )
+
+
+def cached_git_status() -> dict[str, Any]:
+    return cached_expensive_status("git_status", GIT_STATUS_CACHE_SECONDS, git_status)
+
+
 def state() -> dict[str, Any]:
     messages = load_messages()
     read_state_data = load_read_state()
@@ -3182,7 +3210,7 @@ def state() -> dict[str, Any]:
     unread_messages = sum(
         1 for msg in messages if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
     )
-    diagnostics = run_communication_diagnostics(write_report=False)
+    diagnostics = cached_communication_diagnostics()
     route_tests = route_test_status(refresh=True)
     work_board = work_board_status()
     approvals = approval_status()
@@ -3244,7 +3272,7 @@ def state() -> dict[str, Any]:
         "adapters": adapters,
         "quarantine": quarantine,
         "notifications": notification_status(),
-        "git": git_status(),
+        "git": cached_git_status(),
     }
 
 
@@ -3928,6 +3956,11 @@ def cockpit_payload() -> dict[str, Any]:
         "thread_focus": thread_focus,
         "urgent_codex_requests": urgent_codex_requests,
         "agent_progress": agent_progress,
+        "simple_mail": {
+            "latest": status_data.get("latest", [])[:120],
+            "mailboxes": status_data.get("mailboxes", []),
+            "agent_mailboxes": status_data.get("agent_mailboxes", {}),
+        },
         "mailbox_messages": status_data.get("agent_mailboxes", {}),
         "agents": agents,
         "action_queue": action_queue,

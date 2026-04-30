@@ -1,6 +1,6 @@
 # CODEX Project Memory
 
-Last updated: 2026-04-24 23:00:00 -07:00
+Last updated: 2026-04-30 07:45:00 -07:00
 
 This file is the durable memory for Codex work on the PG Testing + Audit desktop project. Future Codex chats should read this file first before making plans or edits.
 
@@ -12,6 +12,40 @@ This file is the durable memory for Codex work on the PG Testing + Audit desktop
 - Claude / existing Panda Gallery workspace: C:\panda-gallery
 - Treat C:\panda-gallery as read-only reference unless Darrin explicitly says otherwise.
 - Keep Codex files separate from Claude files.
+
+
+## PAH Coordination Rule
+
+Updated: 2026-04-30 07:45:00 -07:00
+
+Claude Desktop (CD) is Codex's project manager for all PANDA Agent Hub (PAH) work. Codex must automatically communicate with CD on all PAH-related matters, including diagnostics, incidents, speed/reliability findings, architecture decisions, implementation plans, verification results, blockers, and handoff/status updates.
+
+Operational rule: for PAH work, Codex should file a concise CD-visible mailbox update before making substantive code changes when practical, and after verification before claiming completion. This coordination rule does not override Darrin's approval gate for protected actions, commits, pushes, writes to `C:\panda-gallery`, external services, or other approval-sensitive work.
+
+## PAH Mail And Inspector UX Canon
+
+Updated: 2026-04-30 07:45:00 -07:00
+
+The canonical detailed PAH Mail + Inspector UX spec is:
+
+`C:\CODEX PG\CODEX Agent Hub\CODEX_PAH_MAIL_AND_INSPECTOR_UX_SPEC.md`
+
+It includes current live screenshots, the Mail-first user-console direction, Inspector redesign requirements, performance targets, data contracts, safety rules, and CC collaboration guidance. Future PAH/Inspector UI work should read this spec before implementation.
+
+## Codex Operating Efficiency Rules
+
+Updated: 2026-04-30 07:50:00 -07:00
+
+- Evidence before confidence: never claim PAH or other coordination infrastructure is fixed, fast, or reliable without current verification evidence.
+- PAH performance expectation: mailbox write and pickup should feel near-instant. Treat full dashboard refresh over a few hundred milliseconds as a performance concern and profile before guessing.
+- Default PAH verification gate: before calling PAH work complete, run `CODEX_run_smoke_tests.py`, `CODEX_pah_inspector.py`, server smoke, `/api/health`, and any relevant latency/perf probe.
+- Commit-go discipline: Codex must not commit or push without an explicit Darrin trigger such as `go`, `approved`, `ship it`, `fire`, or named-task confirmation. Generic `ok`, `continue`, `yes`, or similar replies are not commit authorization.
+- PAH/CD reporting pattern: for PAH, notify CD before substantive changes when practical, then send CD a concise verification summary after testing.
+- Resume priority order: check current mail first, read the latest handoff/resume context, check git status, check PAH/relay health when PAH is relevant, then work the highest-priority active dispatch.
+- Definition of done: work is not done until code, docs, tests, mailbox reports, and git state match the actual state, with remaining risk named plainly.
+- Communication style preference: be direct, brief, evidence-based, and do not overstate certainty. Say `not proven yet` when that is the truth.
+- Safety hygiene: never write credentials, tokens, PHI, patient data, or approval-sensitive secrets into memory, mailbox, logs, reports, or test fixtures.
+- PAH performance harness direction: PAH needs a real pickup-latency, concurrency, endurance, and failure-injection harness. Smoke tests alone are not sufficient proof of reliability.
 
 ## Product Direction
 
@@ -305,6 +339,7 @@ Latest schema decisions sent to Claude through mailbox:
 - Q1 = Option B: structured `warnings[]` is canonical; no `missing_sources[]` in new Stage 1 output.
 - Q2 = Option A: shortened package/folder IDs with 8-character SHA256 suffix; full session_id/run_id remain in manifest.
 - Q3 = Option A: absolute local paths acceptable for Stage 1 local-only output, deferred redaction/relativization before external transfer.
+
 
 
 

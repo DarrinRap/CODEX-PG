@@ -1,11 +1,19 @@
 # PAH Reliability and Design Spec
 
 Status: active reminder spec
-Last updated: 2026-04-29
+Last updated: 2026-04-30
 
 ## Purpose
 
 PAH must not look healthy while the communication path is stale, partially broken, or visually misleading. This spec records the rules learned from the 2026-04-29 communication and styling incident.
+
+For detailed product/UX direction, including live screenshots and the Mail-first user-console target, use:
+
+```text
+C:\CODEX PG\CODEX Agent Hub\CODEX_PAH_MAIL_AND_INSPECTOR_UX_SPEC.md
+```
+
+That file is now the canonical PAH Mail + Inspector UX reference. This reliability/design spec remains the compact rulebook for health, safety, and visual guardrails.
 
 ## Critical Regression Rule
 
@@ -70,6 +78,18 @@ PAH inherits the Panda Gallery Design Bible for user-facing surfaces:
 9. Colored buttons are allowed only when they encode action meaning: primary refresh/accent, secondary open/report, close/danger. Do not turn every control into a rainbow.
 10. Visual changes that touch fonts, colors, borders, animation, or background require live visual review; headless checks are useful but not sign-off.
 
+## Mail And Inspector UX Rule
+
+Darrin's 2026-04-30 direction is that PAH must become a simple way to see mail and respond to it. The default user experience should be Mail-first:
+
+1. Mail is the primary surface: inbox, unread, needs-me, CD, CC, all, reader, and reply composer.
+2. Inspector is the health/evidence surface: pass/warn/fail counts, freshness, actionable findings, and raw report as secondary evidence.
+3. The legacy cockpit is Advanced: useful, preserved, but not the default first screen for Darrin.
+4. Every visual PAH/Inspector change must update or validate against `CODEX_PAH_MAIL_AND_INSPECTOR_UX_SPEC.md`.
+5. Screenshots are required evidence for meaningful PAH/Inspector UX changes.
+
+2026-04-30 Bible polish addendum: Simple Mail must not use monospace for prose; the reader must show subject/meta/body before raw frontmatter; read/unread must be one neutral state-aware toggle; Reply/Send is the primary peach action; timestamps must follow today/yesterday/weekday/older-date formatting. Full details live in `CODEX_PAH_MAIL_AND_INSPECTOR_UX_SPEC.md`.
+
 ## Documentation Rule
 
 Every PAH incident-response or implementation pass must update durable docs before handoff:
@@ -77,5 +97,6 @@ Every PAH incident-response or implementation pass must update durable docs befo
 - README for operational behavior and support procedures.
 - TODO for reminders and deferred work.
 - This spec or its successor for product, reliability, UX, safety, protocol, and acceptance rules.
+- `CODEX_PAH_MAIL_AND_INSPECTOR_UX_SPEC.md` for Mail/Inspector product behavior, UI structure, screenshots, and CC/CD collaboration context.
 
 Mailbox messages are coordination artifacts. They do not replace durable docs.
