@@ -2,7 +2,7 @@
 
 Windows shared AI coding workstation handoff manager.
 
-Current version: `0.4.0`.
+Current version: `0.4.1`.
 
 ## Safety Model
 

@@ -7,102 +7,120 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #111614;
-      --surface: #18211f;
-      --surface-2: #202b28;
-      --field: #101715;
-      --line: #33413d;
-      --text: #edf5f0;
-      --muted: #9db0aa;
-      --soft: #c9d6d1;
-      --accent: #f2b36d;
-      --accent-2: #80c7b4;
-      --ok: #87c56f;
-      --warn: #f0c65f;
-      --bad: #ef806f;
-      --shadow: rgba(0, 0, 0, .32);
-      --font-ui: "Segoe UI", Arial, sans-serif;
+      --bg: #14141f;
+      --surface: #1a1a2e;
+      --surface-2: #22223a;
+      --surface-selected: #2a2a4e;
+      --field: #22223a;
+      --field-hover: #2a2a4e;
+      --line: #2a2a3e;
+      --line-soft: #232336;
+      --line-hover: #3a3a4e;
+      --text: #e0ddd5;
+      --muted: #888888;
+      --quiet: #555555;
+      --soft: #c8c1b5;
+      --accent: #e8a87c;
+      --accent-hover: #d4945a;
+      --accent-light: #f0b98c;
+      --accent-ink: #1a1a2e;
+      --accent-soft: rgba(232, 168, 124, .12);
+      --accent-border: rgba(232, 168, 124, .45);
+      --accent-2: #5fa0a8;
+      --ok: #7fb069;
+      --warn: #f39c12;
+      --bad: #e74c3c;
+      --shadow: rgba(0, 0, 0, .22);
+      --font-ui: "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;
       --font-mono: "Cascadia Mono", "Consolas", monospace;
     }
 
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      overflow: hidden;
+    }
     body {
-      min-height: 100vh;
       background: var(--bg);
       color: var(--text);
-      font-family: var(--font-ui);
+      font: 12px/1.28 var(--font-ui);
       letter-spacing: 0;
     }
 
     button, input, textarea {
       font: inherit;
+      font-family: var(--font-ui);
     }
 
     button {
       border: 1px solid var(--line);
       background: var(--surface-2);
       color: var(--text);
-      border-radius: 6px;
-      padding: 9px 12px;
+      border-radius: 4px;
+      min-height: 24px;
+      padding: 0 8px;
       cursor: pointer;
       font-weight: 700;
     }
 
-    button:hover { border-color: var(--accent); }
+    button:hover { border-color: var(--accent-border); background: var(--field-hover); }
     button:disabled { opacity: .52; cursor: not-allowed; }
     .primary {
       background: var(--accent);
       border-color: var(--accent);
-      color: #1d1710;
+      color: var(--accent-ink);
     }
 
     .shell {
-      min-height: 100vh;
+      height: 100vh;
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: 46px minmax(0, 1fr);
+      overflow: hidden;
     }
 
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 18px;
-      padding: 14px 20px;
+      gap: 12px;
+      padding: 7px 12px;
       border-bottom: 1px solid var(--line);
-      background: rgba(24, 33, 31, .96);
-      position: sticky;
-      top: 0;
+      background: var(--surface);
       z-index: 2;
+      min-width: 0;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
-      min-width: 240px;
+      gap: 9px;
+      min-width: 220px;
     }
 
     .mark {
-      width: 36px;
-      height: 36px;
+      width: 30px;
+      height: 30px;
       display: grid;
       place-items: center;
-      border-radius: 8px;
-      background: var(--accent-2);
-      color: #071311;
+      border-radius: 5px;
+      background: linear-gradient(180deg, var(--accent-light), var(--accent) 55%, var(--accent-hover));
+      color: var(--accent-ink);
       font-weight: 900;
+      font-size: 12px;
     }
 
     .brand h1 {
       margin: 0;
-      font-size: 20px;
+      font-size: 16px;
       line-height: 1.1;
     }
 
     .brand span {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
     }
 
@@ -110,18 +128,20 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
+      min-width: 0;
     }
 
     .chip {
       border: 1px solid var(--line);
       color: var(--soft);
       border-radius: 999px;
-      padding: 6px 9px;
-      font-size: 12px;
+      padding: 3px 7px;
+      font-size: 10px;
       font-weight: 800;
       background: var(--field);
+      white-space: nowrap;
     }
 
     .chip.ok { color: var(--ok); border-color: rgba(135, 197, 111, .45); }
@@ -130,56 +150,74 @@
 
     main {
       display: grid;
-      grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
+      grid-template-columns: 290px minmax(0, 1fr);
       min-height: 0;
+      height: 100%;
+      overflow: hidden;
     }
 
     .left,
     .right {
-      padding: 18px;
+      padding: 10px;
       min-width: 0;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .left {
       border-right: 1px solid var(--line);
-      background: #141c1a;
+      background: var(--surface);
     }
 
     .right {
       display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: 16px;
+      grid-template-rows: 96px minmax(0, 1fr);
+      grid-template-columns: minmax(360px, .9fr) minmax(390px, 1.1fr);
+      gap: 10px;
     }
 
     .panel {
       border: 1px solid var(--line);
       background: var(--surface);
-      border-radius: 8px;
-      box-shadow: 0 14px 28px var(--shadow);
+      border-radius: 6px;
+      box-shadow: 0 10px 22px var(--shadow);
       min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 34px minmax(0, 1fr);
     }
 
     .panel-head {
-      padding: 13px 14px;
+      padding: 8px 10px;
       border-bottom: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      min-width: 0;
     }
 
     .panel-head h2 {
       margin: 0;
-      font-size: 15px;
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      white-space: nowrap;
     }
 
-    .panel-body { padding: 14px; }
+    .panel-body {
+      padding: 9px 10px;
+      min-height: 0;
+      overflow: auto;
+    }
 
     label {
       display: grid;
-      gap: 6px;
+      gap: 4px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
     }
@@ -190,16 +228,17 @@
       background: var(--field);
       color: var(--text);
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 4px;
       outline: none;
-      padding: 10px 11px;
+      padding: 5px 7px;
       min-width: 0;
     }
 
     textarea {
-      min-height: 108px;
+      min-height: 54px;
+      max-height: 74px;
       resize: vertical;
-      line-height: 1.45;
+      line-height: 1.3;
     }
 
     input:focus,
@@ -210,20 +249,20 @@
 
     .form-stack {
       display: grid;
-      gap: 12px;
+      gap: 8px;
     }
 
     .actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
     }
 
     .rule-list,
     .file-list,
     .package-list {
       display: grid;
-      gap: 8px;
+      gap: 6px;
       margin: 0;
       padding: 0;
       list-style: none;
@@ -236,22 +275,22 @@
       gap: 4px;
       border: 1px solid var(--line);
       background: var(--field);
-      border-radius: 6px;
-      padding: 9px 10px;
+      border-radius: 4px;
+      padding: 5px 7px;
     }
 
     .package-item button {
       justify-self: start;
-      margin-top: 5px;
-      padding: 6px 9px;
-      font-size: 12px;
+      margin-top: 3px;
+      padding: 0 7px;
+      font-size: 10px;
     }
 
     .rule-list code,
     .path,
     .mono {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 10px;
       color: var(--soft);
       overflow-wrap: anywhere;
     }
@@ -259,44 +298,45 @@
     .repo-grid {
       display: grid;
       grid-template-columns: repeat(5, minmax(100px, 1fr));
-      gap: 10px;
+      gap: 7px;
     }
 
     .metric {
       border: 1px solid var(--line);
       background: var(--field);
-      border-radius: 7px;
-      padding: 10px;
-      min-height: 70px;
+      border-radius: 5px;
+      padding: 7px;
+      min-height: 58px;
     }
 
     .metric b {
       display: block;
-      font-size: 24px;
+      font-size: 19px;
       line-height: 1;
-      margin-bottom: 7px;
+      margin-bottom: 5px;
     }
 
     .metric span {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 800;
     }
 
     .split {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      grid-template-rows: minmax(0, 1fr) 184px;
+      gap: 10px;
       min-width: 0;
+      min-height: 0;
     }
 
     .result {
-      border-left: 4px solid var(--accent-2);
-      background: rgba(128, 199, 180, .08);
-      padding: 11px 12px;
+      border-left: 3px solid var(--accent-2);
+      background: rgba(95, 160, 168, .08);
+      padding: 7px 8px;
       color: var(--soft);
-      line-height: 1.45;
-      border-radius: 6px;
+      line-height: 1.3;
+      border-radius: 4px;
       overflow-wrap: anywhere;
     }
 
@@ -308,87 +348,133 @@
     .receipt-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(110px, 1fr));
-      gap: 8px;
-      margin: 10px 0;
+      gap: 6px;
+      margin: 7px 0;
     }
 
     .receipt-item {
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 4px;
       background: var(--field);
-      padding: 8px;
+      padding: 6px;
     }
 
     .receipt-item b {
       display: block;
       color: var(--accent-2);
-      font-size: 18px;
-      margin-bottom: 3px;
+      font-size: 15px;
+      margin-bottom: 2px;
     }
 
     .handoff-preview {
-      margin-top: 10px;
-      max-height: 240px;
+      margin-top: 7px;
+      max-height: 150px;
       overflow: auto;
       white-space: pre-wrap;
       border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #0c1210;
+      border-radius: 4px;
+      background: #10101a;
       color: var(--soft);
-      padding: 10px;
+      padding: 7px;
       font-family: var(--font-mono);
-      font-size: 12px;
-      line-height: 1.45;
+      font-size: 10px;
+      line-height: 1.35;
     }
 
     .review-list {
       display: grid;
-      gap: 7px;
-      margin: 10px 0 0;
+      gap: 5px;
+      margin: 7px 0 0;
       padding: 0;
       list-style: none;
     }
 
     .review-list li {
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 4px;
       background: var(--field);
-      padding: 8px;
+      padding: 6px;
     }
 
     .empty {
       color: var(--muted);
       border: 1px dashed var(--line);
-      border-radius: 6px;
-      padding: 18px;
+      border-radius: 4px;
+      padding: 10px;
       text-align: center;
       font-weight: 700;
     }
 
     .small {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
     }
 
     .section-grid {
       display: grid;
-      gap: 16px;
+      grid-template-rows: 132px minmax(0, 1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .repo-panel { grid-column: 1 / -1; }
+    .handoff-panel { min-height: 0; }
+    .status-panel { min-height: 0; }
+    .files-panel {
+      grid-column: 2;
+      grid-row: 2;
+      min-height: 0;
+    }
+    .status-window {
+      height: 100%;
+      min-height: 110px;
+      max-height: none;
+      overflow: auto;
+      font-size: 11px;
+    }
+    .file-list {
+      max-height: none;
+      overflow: auto;
     }
 
     @media (max-width: 1060px) {
-      main { grid-template-columns: 1fr; }
-      .left { border-right: 0; border-bottom: 1px solid var(--line); }
-      .split { grid-template-columns: 1fr; }
-      .repo-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      html, body { overflow: hidden; }
+      .shell { height: 100vh; min-height: 0; overflow: hidden; }
+      main { grid-template-columns: 210px minmax(0, 1fr); height: 100%; overflow: hidden; }
+      .left { border-right: 1px solid var(--line); border-bottom: 0; }
+      .left, .right { overflow: hidden; padding: 8px; }
+      .section-grid { height: 100%; grid-template-rows: 126px minmax(0, 1fr); }
+      .right {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: 86px minmax(0, 1fr) minmax(120px, .72fr);
+      }
+      .repo-panel, .files-panel { grid-column: 1; grid-row: auto; }
+      .split { grid-template-rows: minmax(0, 1fr) 150px; }
+      .repo-grid { grid-template-columns: repeat(5, minmax(48px, 1fr)); }
+      .metric { min-height: 46px; padding: 5px; }
+      .metric b { font-size: 15px; }
+      .metric span { font-size: 9px; }
     }
 
     @media (max-width: 620px) {
-      header { align-items: flex-start; flex-direction: column; }
-      .status-strip { justify-content: flex-start; }
-      .left, .right { padding: 12px; }
-      .repo-grid { grid-template-columns: 1fr; }
-      .receipt-grid { grid-template-columns: 1fr; }
+      header { gap: 6px; padding: 6px 8px; }
+      .brand { min-width: 148px; gap: 6px; }
+      .mark { width: 24px; height: 24px; font-size: 10px; }
+      .brand h1 { font-size: 13px; }
+      .brand span { display: none; }
+      .status-strip { justify-content: flex-end; gap: 4px; }
+      .chip { font-size: 9px; padding: 2px 5px; }
+      main { grid-template-columns: 155px minmax(0, 1fr); }
+      .left, .right { padding: 6px; }
+      .panel-head { padding: 6px 7px; }
+      .panel-body { padding: 6px 7px; }
+      .repo-grid { grid-template-columns: repeat(5, minmax(34px, 1fr)); gap: 4px; }
+      .receipt-grid { grid-template-columns: repeat(2, minmax(58px, 1fr)); }
+      .section-grid { grid-template-rows: 118px minmax(0, 1fr); gap: 6px; }
+      .right { gap: 6px; grid-template-rows: 80px minmax(0, 1fr) minmax(105px, .64fr); }
+      .split { gap: 6px; grid-template-rows: minmax(0, 1fr) 128px; }
     }
   </style>
 </head>
@@ -443,7 +529,7 @@
       </aside>
 
       <section class="right">
-        <section class="panel">
+        <section class="panel repo-panel">
           <div class="panel-head">
             <h2>Working Tree</h2>
             <span class="chip" id="branchChip">No repo</span>
@@ -454,7 +540,7 @@
         </section>
 
         <section class="split">
-          <div class="panel">
+          <div class="panel handoff-panel">
             <div class="panel-head">
               <h2>Create Handoff</h2>
               <span class="chip ok">Branch + Patch + Copies</span>
@@ -477,18 +563,18 @@
             </div>
           </div>
 
-          <div class="panel">
+          <div class="panel status-panel">
             <div class="panel-head">
-              <h2>Result</h2>
+              <h2>Status Messages</h2>
               <span class="chip" id="resultChip">Idle</span>
             </div>
             <div class="panel-body">
-              <div id="resultBox" class="empty">No handoff package created yet.</div>
+              <div id="resultBox" class="empty status-window">Ready. No handoff package created yet.</div>
             </div>
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel files-panel">
           <div class="panel-head">
             <h2>Changed Files</h2>
             <span class="chip" id="fileChip">0</span>
@@ -617,7 +703,7 @@
     }
 
     function showResult(message, kind = 'ok') {
-      $('resultBox').className = kind === 'error' ? 'result error' : 'result';
+      $('resultBox').className = kind === 'error' ? 'result error status-window' : 'result status-window';
       $('resultBox').innerHTML = message;
       $('resultChip').textContent = kind === 'error' ? 'Error' : 'Ready';
       $('resultChip').className = kind === 'error' ? 'chip bad' : 'chip ok';
