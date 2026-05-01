@@ -325,6 +325,16 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.panel-head h2\s*\{.*?font-size:\s*10px;")
         self.assertRegex(html, r"(?s)\.hub-card strong\s*\{.*?font-size:\s*12px;")
 
+    def test_setup_dialog_is_centered_and_shows_three_setup_columns(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertRegex(html, r"(?s)\.setup-dialog\s*\{.*?width:\s*min\(1380px, calc\(100vw - 96px\)\);")
+        self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);")
+        self.assertNotIn('registration-panel hidden" data-registration-stage="user2"', html)
+        self.assertNotIn('registration-panel hidden" data-registration-stage="hub"', html)
+        self.assertIn("panel.classList.toggle('is-current'", html)
+        self.assertIn("panel.classList.toggle('is-locked'", html)
+
     def test_main_screen_orders_controls_left_to_right_by_workflow(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
         main = html.split('<main class="workflow-layout">', 1)[1].split('<div class="setup-overlay', 1)[0]

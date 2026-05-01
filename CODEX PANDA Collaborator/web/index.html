@@ -1106,7 +1106,7 @@
       z-index: 20;
       display: grid;
       place-items: center;
-      padding: 18px;
+      padding: 36px 48px;
       background: rgba(8, 8, 14, .72);
       backdrop-filter: blur(6px);
     }
@@ -1116,8 +1116,8 @@
     }
 
     .setup-dialog {
-      width: min(1120px, 100%);
-      max-height: calc(100vh - 36px);
+      width: min(1380px, calc(100vw - 96px));
+      max-height: calc(100vh - 72px);
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
       border: 1px solid var(--user-ring);
@@ -1161,9 +1161,10 @@
 
     .wizard-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      padding: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: 8px;
+      padding: 10px;
       min-height: 0;
       overflow: auto;
     }
@@ -1204,9 +1205,26 @@
     }
 
     .wizard-step-body {
-      padding: 10px;
+      padding: 8px;
       display: grid;
-      gap: 8px;
+      gap: 7px;
+    }
+
+    .registration-panel {
+      align-self: stretch;
+    }
+
+    .registration-panel.is-current {
+      border-color: var(--user-ring);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+    }
+
+    .registration-panel.is-locked {
+      opacity: .62;
+    }
+
+    .registration-panel.is-locked .wizard-step-body {
+      filter: saturate(.7);
     }
 
     .wizard-actions {
@@ -1279,6 +1297,8 @@
       .handoff-fields { grid-template-columns: minmax(0, 1fr); }
       .handoff-fields label:nth-child(2) { grid-column: 1 / -1; }
       .wizard-grid { grid-template-columns: 1fr; }
+      .setup-overlay { padding: 18px; }
+      .setup-dialog { width: min(1120px, 100%); max-height: calc(100vh - 36px); }
     }
   </style>
 </head>
@@ -1526,7 +1546,7 @@
             </div>
           </section>
 
-          <section class="wizard-step wide registration-panel" data-registration-stage="user1">
+          <section class="wizard-step registration-panel" data-registration-stage="user1">
             <div class="wizard-step-head">
               <div>
                 <h3>Register User 1</h3>
@@ -1585,7 +1605,7 @@
             </div>
           </section>
 
-          <section class="wizard-step wide registration-panel hidden" data-registration-stage="user2">
+          <section class="wizard-step registration-panel" data-registration-stage="user2">
             <div class="wizard-step-head">
               <div>
                 <h3>Register User 2</h3>
@@ -1644,7 +1664,7 @@
             </div>
           </section>
 
-          <section class="wizard-step wide registration-panel hidden" data-registration-stage="hub">
+          <section class="wizard-step registration-panel" data-registration-stage="hub">
             <div class="wizard-step-head">
               <div>
                 <h3>Collaborator Hub</h3>
@@ -1964,7 +1984,12 @@
       if (stage === 'user1') loadCommonProfileFields('user1');
       if (stage === 'user2') loadUser2ProfileFields();
       document.querySelectorAll('[data-registration-stage]').forEach(panel => {
-        panel.classList.toggle('hidden', panel.dataset.registrationStage !== stage);
+        const panelStage = panel.dataset.registrationStage;
+        const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
+        const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
+        const locked = (panelStage === 'user2' && !user1Ready) || (panelStage === 'hub' && !(user1Ready && user2Ready));
+        panel.classList.toggle('is-current', panelStage === stage);
+        panel.classList.toggle('is-locked', locked);
       });
       const title = {
         user1: 'REGISTER USER 1',
