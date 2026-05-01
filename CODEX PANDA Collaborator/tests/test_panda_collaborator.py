@@ -155,6 +155,14 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn(".panda-step.current", html)
         self.assertIn(".panda-step.done", html)
 
+    def test_setup_checklist_reveals_steps_progressively(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertRegex(html, r"\['user1Ready', 'Register User 1', user1Ready, true\]")
+        self.assertRegex(html, r"\['user2Ready', 'Register User 2', user2Ready, user1Ready\]")
+        self.assertRegex(html, r"\['allReady', 'Open Collaborator Hub', readiness\.allReady, user1Ready && user2Ready\]")
+        self.assertIn("].filter(([, , , visible]) => visible)", html)
+
     def test_user_one_registration_uses_warm_amber_theme(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
         user_one_match = re.search(r"body\.user-one\s*\{(?P<body>.*?)\n\s*\}", html, re.S)

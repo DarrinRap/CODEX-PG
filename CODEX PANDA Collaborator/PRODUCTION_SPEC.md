@@ -79,6 +79,7 @@ The setup and hub flow:
 - shows the active user's custom name in large uppercase text at the top of the screen;
 - uses clearly different complementary color themes for User 1 and User 2;
 - follows the PANDA-wide header rule: the header must contain large step text with arrow separators, show the whole workflow path, and visually mark each step as current or done;
+- keeps setup instructions progressive: while registering User 1, do not show User 2 or Collaborator Hub checklist rows; reveal User 2 only after User 1 is registered, then reveal the Hub only after User 2 is registered;
 - provides a checklist that shows which registration steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;
 - requires per-user Codex account label, Claude account label, Git author name, and Git author email during registration;

@@ -1687,16 +1687,14 @@
     }
 
     function checklistMarkup(readiness) {
+      const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
+      const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
       const rows = [
-        ['user1Ready', 'Register User 1'],
-        ['user2Ready', 'Register User 2'],
-        ['allReady', 'Open Collaborator Hub']
-      ];
-      const rowState = {
-        user1Ready: storedUserReady('user1') || registrationFieldReady('user1'),
-        user2Ready: storedUserReady('user2') || registrationFieldReady('user2'),
-        allReady: readiness.allReady
-      };
+        ['user1Ready', 'Register User 1', user1Ready, true],
+        ['user2Ready', 'Register User 2', user2Ready, user1Ready],
+        ['allReady', 'Open Collaborator Hub', readiness.allReady, user1Ready && user2Ready]
+      ].filter(([, , , visible]) => visible);
+      const rowState = Object.fromEntries(rows.map(([key, , done]) => [key, done]));
       const firstOpen = rows.find(([key]) => !rowState[key])?.[0] || '';
       return rows.map(([key, label]) => {
         const done = rowState[key];
@@ -1708,11 +1706,13 @@
 
     function updateRegistrationProgress() {
       if (!$('registrationProgress')) return;
+      const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
+      const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
       const rows = [
-        ['user1', '1. Register User 1', storedUserReady('user1') || registrationFieldReady('user1')],
-        ['user2', '2. Register User 2', storedUserReady('user2') || registrationFieldReady('user2')],
-        ['hub', '3. Collaborator Hub', setupReady().allReady]
-      ];
+        ['user1', '1. Register User 1', user1Ready, true],
+        ['user2', '2. Register User 2', user2Ready, user1Ready],
+        ['hub', '3. Collaborator Hub', setupReady().allReady, user1Ready && user2Ready]
+      ].filter(([, , , visible]) => visible);
       $('registrationProgress').innerHTML = rows.map(([stage, label, done]) => {
         const klass = done ? 'done' : stage === state.registrationStage ? 'current' : '';
         return `<li class="${klass}">${escapeHtml(label)}</li>`;
