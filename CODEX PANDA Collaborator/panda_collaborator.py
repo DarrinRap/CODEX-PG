@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import glob
 import hashlib
 import html
 import json
@@ -37,6 +38,7 @@ DEFAULT_PACKAGE_ROOT = APP_ROOT / "CODEX handoff packages"
 DEFAULT_SETTINGS_PATH = APP_ROOT / "CODEX settings" / "panda_collaborator_settings.local.json"
 DEFAULT_HISTORY_ROOT = APP_ROOT / "CODEX project history"
 DEFAULT_PROJECT_FILES_DIRECTORY = r"C:\panda-gallery"
+DEFAULT_CLAUDE_CODE_INBOX = Path(r"C:\panda-gallery\workflows\cc_mailbox\CC Inbox")
 
 FORBIDDEN_GIT_COMMANDS = [
     "git reset --hard",
@@ -244,6 +246,302 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
     temp_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
     os.replace(temp_path, path)
     return settings
+
+
+def dedupe_paths(paths: list[Path]) -> list[Path]:
+    seen: set[str] = set()
+    unique: list[Path] = []
+    for path in paths:
+        try:
+            resolved = path.expanduser().resolve()
+        except Exception:
+            continue
+        key = str(resolved).lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(resolved)
+    return unique
+
+
+def path_if_exists(path_text: str | Path | None) -> str:
+    if not path_text:
+        return ""
+    try:
+        path = Path(path_text).expanduser()
+        return str(path.resolve()) if path.exists() else ""
+    except OSError:
+        return ""
+
+
+def configured_search_roots(settings: dict[str, Any] | None = None, extra: list[str] | None = None) -> list[Path]:
+    roots: list[Path] = []
+    if extra:
+        roots.extend(Path(value) for value in extra if str(value).strip())
+    for raw in os.environ.get("PANDA_COLLABORATOR_SEARCH_ROOTS", "").split(os.pathsep):
+        if raw.strip():
+            roots.append(Path(raw.strip()))
+    if settings:
+        roots.append(Path(settings.get("project_files_directory") or DEFAULT_PROJECT_FILES_DIRECTORY))
+        for user in settings.get("users", []):
+            if isinstance(user, dict) and user.get("default_repo_path"):
+                roots.append(Path(user["default_repo_path"]))
+    roots.extend([Path(r"C:\CODEX PG"), APP_ROOT, APP_ROOT.parent, Path.cwd()])
+    return [path for path in dedupe_paths(roots) if path.exists()]
+
+
+def find_git_repositories(roots: list[Path], max_depth: int = 3, limit: int = 8) -> list[str]:
+    found: list[Path] = []
+    excluded = {".git", "node_modules", "__pycache__", ".venv", "venv", "CODEX handoff packages"}
+    for root in roots:
+        if (root / ".git").exists():
+            found.append(root)
+            continue
+        base_depth = len(root.parts)
+        try:
+            for current, dirs, _files in os.walk(root):
+                current_path = Path(current)
+                depth = len(current_path.parts) - base_depth
+                dirs[:] = [name for name in dirs if name not in excluded and not name.startswith(".")]
+                if depth >= max_depth:
+                    dirs[:] = []
+                if (current_path / ".git").exists():
+                    found.append(current_path)
+                    dirs[:] = []
+                    if len(found) >= limit:
+                        break
+        except OSError:
+            continue
+        if len(found) >= limit:
+            break
+    return [str(path) for path in dedupe_paths(found)[:limit]]
+
+
+def git_config_value(repo: Path | None, key: str) -> str:
+    candidates: list[list[str]] = []
+    if repo:
+        candidates.append(["config", "--get", key])
+    candidates.append(["config", "--global", "--get", key])
+    for args in candidates:
+        try:
+            result = safe_git(repo or Path.cwd(), args, allow_failure=True)
+        except CollaboratorError:
+            continue
+        value = result.stdout.strip()
+        if value:
+            return value[:160]
+    return ""
+
+
+def find_project_files_directory(roots: list[Path]) -> str:
+    direct = Path(DEFAULT_PROJECT_FILES_DIRECTORY)
+    for root in roots:
+        try:
+            if str(root.resolve()).lower() == str(direct.resolve()).lower():
+                continue
+        except OSError:
+            pass
+        marker = root / "skills" / "pg-project-sync" / "MANIFEST.md"
+        if marker.exists():
+            return str(root.resolve())
+    for root in roots:
+        try:
+            for marker in root.glob("**/skills/pg-project-sync/MANIFEST.md"):
+                return str(marker.parents[2].resolve())
+        except OSError:
+            continue
+    if (direct / "skills" / "pg-project-sync" / "MANIFEST.md").exists():
+        return str(direct.resolve())
+    return path_if_exists(direct) or DEFAULT_PROJECT_FILES_DIRECTORY
+
+
+def first_existing_glob(patterns: list[str]) -> str:
+    for pattern in patterns:
+        for raw_match in sorted(glob.glob(pattern)):
+            match = Path(raw_match)
+            if match.exists():
+                return str(match.resolve())
+    return ""
+
+
+def find_claude_desktop_path() -> str:
+    local = os.environ.get("LOCALAPPDATA", "")
+    program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+    candidates = [
+        Path(local) / "AnthropicClaude" / "Claude.exe",
+        Path(local) / "Programs" / "Claude" / "Claude.exe",
+        Path(program_files) / "Claude" / "Claude.exe",
+    ]
+    existing = path_if_exists(next((path for path in candidates if path.exists()), ""))
+    if existing:
+        return existing
+    if local:
+        return first_existing_glob([str(Path(local) / "AnthropicClaude" / "app-*" / "Claude.exe")])
+    return ""
+
+
+def find_claude_code_path() -> str:
+    for executable in ("claude", "claude.cmd", "claude.exe"):
+        found = shutil.which(executable)
+        if found:
+            return found
+    home = Path.home()
+    candidates = [
+        home / ".claude" / "local" / "claude.exe",
+        home / ".claude" / "local" / "claude.cmd",
+        Path(os.environ.get("APPDATA", "")) / "npm" / "claude.cmd",
+    ]
+    return path_if_exists(next((path for path in candidates if path.exists()), ""))
+
+
+def fill_if_empty(user: dict[str, str], key: str, value: str, applied: list[str], label: str) -> None:
+    if value and not str(user.get(key, "")).strip():
+        user[key] = value[:260]
+        applied.append(label)
+
+
+def write_claude_setup_help_request(report: dict[str, Any]) -> dict[str, Any]:
+    inbox = Path(os.environ.get("PANDA_COLLABORATOR_CC_INBOX", str(DEFAULT_CLAUDE_CODE_INBOX)))
+    if not inbox.exists():
+        return {
+            "created": False,
+            "message_path": "",
+            "wake_line": f"Read {inbox} now. Darrin asks you to help verify PANDA Collaborator setup auto-fill.",
+            "reason": "Claude Code inbox was not found.",
+        }
+    inbox.mkdir(parents=True, exist_ok=True)
+    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    message_id = f"CODEX-{stamp}-panda-setup-autofill"
+    message_path = inbox / f"{stamp}_CODEX_to_CLAUDE_CODE_panda_setup_autofill_help.md"
+    unresolved = report.get("unresolved", [])
+    suggestions = report.get("suggestions", {})
+    body = [
+        "---",
+        "schema_version: 1",
+        f"id: {message_id}",
+        "thread_id: PANDA-COLLABORATOR-SETUP",
+        f"created_at: '{local_timestamp()}'",
+        "from: codex",
+        "to: claude_code",
+        "type: request",
+        "priority: normal",
+        "status: open",
+        "thread_status: active",
+        "approval_boundary: coordination_only",
+        "requires_darrin_decision: false",
+        "---",
+        "",
+        "# PANDA Collaborator Setup Auto-fill Help",
+        "",
+        "## Summary",
+        "",
+        "PANDA Collaborator auto-filled every safe local setup value it could find. Please review the unresolved items and reply with any likely paths or account labels you can identify. Do not make repo writes, commits, pushes, destructive filesystem changes, or install anything.",
+        "",
+        "## Auto-fill Findings",
+        "",
+        "```json",
+        json.dumps(suggestions, indent=2),
+        "```",
+        "",
+        "## Needs Help",
+        "",
+    ]
+    if unresolved:
+        body.extend(f"- {item}" for item in unresolved)
+    else:
+        body.append("- No unresolved fields detected. Please sanity-check the suggested values.")
+    body.extend(
+        [
+            "",
+            "## Approval Boundary",
+            "",
+            "Coordination only. Report findings back through the mailbox. Do not perform protected actions.",
+            "",
+        ]
+    )
+    message_path.write_text("\n".join(body), encoding="utf-8")
+    return {
+        "created": True,
+        "message_path": str(message_path),
+        "wake_line": f"Read {message_path} now. Darrin asks you to help verify PANDA Collaborator setup auto-fill.",
+        "reason": "",
+    }
+
+
+def setup_autofill(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    base_settings = payload.get("settings") if isinstance(payload.get("settings"), dict) else load_settings()
+    settings = normalize_settings(base_settings, strict=False)
+    extra_roots = [str(payload.get("repo_path", "")), str(payload.get("project_folder", ""))]
+    roots = configured_search_roots(settings, extra_roots)
+    repositories = find_git_repositories(roots)
+    preferred_repo = ""
+    try:
+        preferred_repo = str(resolve_git_root(str(payload.get("repo_path", ""))))
+    except CollaboratorError:
+        preferred_repo = ""
+    if preferred_repo:
+        repositories = [preferred_repo, *[repo for repo in repositories if repo.lower() != preferred_repo.lower()]]
+    repo_path = preferred_repo or (repositories[0] if repositories else settings["users"][0]["default_repo_path"])
+    repo = Path(repo_path) if repo_path and Path(repo_path).exists() else None
+    project_files = find_project_files_directory(roots)
+    claude_desktop = find_claude_desktop_path()
+    claude_code = find_claude_code_path()
+    git_name = git_config_value(repo, "user.name")
+    git_email = git_config_value(repo, "user.email")
+    windows_user = os.environ.get("USERNAME") or os.environ.get("USER") or ""
+    applied: list[str] = []
+
+    settings["project_files_directory"] = project_files
+    for index, user in enumerate(settings["users"]):
+        user_id = user["id"]
+        if repo_path:
+            user["default_repo_path"] = repo_path
+            applied.append(f"{user_id} repository path")
+        fill_if_empty(user, "claude_desktop_path", claude_desktop, applied, f"{user_id} Claude Desktop path")
+        fill_if_empty(user, "claude_code_path", claude_code, applied, f"{user_id} Claude Code path")
+        fill_if_empty(user, "handoff_title", "AI workstation handoff", applied, f"{user_id} handoff title")
+        if user_id == "user1":
+            if user.get("display_name") == "User 1" and (git_name or windows_user):
+                user["display_name"] = git_name or windows_user
+                applied.append("user1 display name")
+            fill_if_empty(user, "git_author_name", git_name or user.get("display_name", ""), applied, "user1 git author name")
+            fill_if_empty(user, "git_author_email", git_email, applied, "user1 git author email")
+            fill_if_empty(user, "handoff_agent", "Codex", applied, "user1 handoff agent")
+            fill_if_empty(user, "codex_account", f"Codex ({user.get('display_name') or 'User 1'})", applied, "user1 Codex account label")
+            fill_if_empty(user, "claude_account", f"Claude ({user.get('display_name') or 'User 1'})", applied, "user1 Claude account label")
+        else:
+            if user.get("display_name") == "User 2":
+                user["display_name"] = "Claude"
+                applied.append("user2 display name")
+            fill_if_empty(user, "handoff_agent", "Claude", applied, "user2 handoff agent")
+            fill_if_empty(user, "codex_account", "Codex (Claude)", applied, "user2 Codex account label")
+            fill_if_empty(user, "claude_account", "Claude (Claude)", applied, "user2 Claude account label")
+
+    unresolved: list[str] = []
+    for user in settings["users"]:
+        for field in USER_PROFILE_REQUIRED_FIELDS:
+            if not user.get(field):
+                unresolved.append(f"{user['id']} needs {field.replace('_', ' ')}")
+    if not project_files:
+        unresolved.append("Project Files Tracker directory was not found.")
+
+    report = {
+        "ok": True,
+        "suggestions": settings,
+        "applied": sorted(set(applied)),
+        "unresolved": unresolved,
+        "found": {
+            "repositories": repositories,
+            "project_files_directory": project_files,
+            "claude_desktop_path": claude_desktop,
+            "claude_code_path": claude_code,
+            "git_author_name": git_name,
+            "git_author_email": git_email,
+        },
+    }
+    if payload.get("ask_claude", True):
+        report["claude_request"] = write_claude_setup_help_request(report)
+    return report
 
 
 def history_file(name: str) -> Path:
@@ -1479,6 +1777,8 @@ class PandaHandler(BaseHTTPRequestHandler):
             parsed = urllib.parse.urlparse(self.path)
             if parsed.path == "/api/settings":
                 return json_response(self, {"ok": True, "settings": save_settings(payload)})
+            if parsed.path == "/api/setup/autofill":
+                return json_response(self, setup_autofill(payload))
             if parsed.path == "/api/repo/scan":
                 return json_response(self, {"ok": True, "repo": repo_status(str(payload.get("path", "")))})
             if parsed.path == "/api/handoff/create":

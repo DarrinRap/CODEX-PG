@@ -1519,6 +1519,9 @@
                   <button type="button" data-path-picker="setupProjectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
                 </div>
               </label>
+              <div class="actions">
+                <button class="primary" id="autoFillSetupBtn" type="button">Auto-fill setup</button>
+              </div>
               <div class="identity-note">PANDA should point here for the existing project-file tracker. Current default: C:\panda-gallery. Manifest: skills\pg-project-sync\MANIFEST.md. Sync bundles: workflows\project_knowledge_sync_YYYY-MM-DD.</div>
             </div>
           </section>
@@ -1738,6 +1741,7 @@
       $('clearPauseBtn').disabled = isBusy;
       $('searchBtn').disabled = isBusy;
       $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
+      $('autoFillSetupBtn').disabled = isBusy || !state.settings;
       $('switchUserBtn').disabled = isBusy;
       document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
         button.disabled = isBusy;
@@ -2256,6 +2260,40 @@
       state.settings = data.settings;
       renderSettings();
       return data.settings;
+    }
+
+    function autoFillSummary(data) {
+      const applied = data.applied?.length
+        ? `<ul>${data.applied.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+        : '<p>No empty fields were changed.</p>';
+      const unresolved = data.unresolved?.length
+        ? `<p><strong>Still needs confirmation:</strong></p><ul>${data.unresolved.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+        : '<p><strong>All required setup fields now have values.</strong></p>';
+      const claude = data.claude_request?.created
+        ? `<p>Claude help request created:<br><code>${escapeHtml(data.claude_request.message_path)}</code></p><p class="small">${escapeHtml(data.claude_request.wake_line)}</p>`
+        : `<p class="small">Claude help request not written: ${escapeHtml(data.claude_request?.reason || 'No mailbox response.')}</p>`;
+      return `<strong>Auto-fill complete.</strong><p>PANDA searched local project folders, common Claude install locations, Project Files Tracker markers, and Git identity.</p>${applied}${unresolved}${claude}`;
+    }
+
+    async function autoFillSetup() {
+      setBusy(true);
+      try {
+        syncAllRegistrationFieldsToState();
+        const data = await api('/api/setup/autofill', {
+          settings: state.settings,
+          repo_path: $('repoPath').value,
+          project_folder: $('projectFilesDirectory').value,
+          ask_claude: true
+        });
+        state.settings = data.suggestions;
+        renderSettings();
+        setRegistrationStage(storedUserReady('user1') ? (storedUserReady('user2') ? 'hub' : 'user2') : 'user1');
+        showResult(autoFillSummary(data));
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
     }
 
     async function registerUser1AndContinue() {
@@ -2790,6 +2828,7 @@
     $('openSetupBtn').addEventListener('click', openSetupWizard);
     $('switchUserBtn').addEventListener('click', openSetupWizard);
     $('closeSetupBtn').addEventListener('click', closeSetupWizard);
+    $('autoFillSetupBtn').addEventListener('click', autoFillSetup);
     $('registerBackBtn').addEventListener('click', () => {
       setRegistrationStage(state.registrationStage === 'hub' ? 'user2' : 'user1');
     });

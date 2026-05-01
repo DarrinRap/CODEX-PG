@@ -148,6 +148,63 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         with self.assertRaises(pc.CollaboratorError):
             pc.save_settings({"users": [{"display_name": "Only one"}]})
 
+    def test_setup_autofill_finds_paths_and_drafts_claude_help(self):
+        repo = self.tmp / "repo"
+        repo.mkdir()
+        run(["git", "init"], repo)
+        run(["git", "config", "user.name", "Darrin"], repo)
+        run(["git", "config", "user.email", "darrin@example.invalid"], repo)
+        project_files = self.tmp / "panda-gallery"
+        (project_files / "skills" / "pg-project-sync").mkdir(parents=True)
+        (project_files / "skills" / "pg-project-sync" / "MANIFEST.md").write_text("# manifest\n", encoding="utf-8")
+        local_app = self.tmp / "localapp"
+        claude_desktop = local_app / "AnthropicClaude" / "Claude.exe"
+        claude_desktop.parent.mkdir(parents=True)
+        claude_desktop.write_text("", encoding="utf-8")
+        bin_dir = self.tmp / "bin"
+        bin_dir.mkdir()
+        claude_code = bin_dir / "claude.cmd"
+        claude_code.write_text("@echo off\n", encoding="utf-8")
+        cc_inbox = self.tmp / "cc-inbox"
+        cc_inbox.mkdir()
+
+        old_search = pc.os.environ.get("PANDA_COLLABORATOR_SEARCH_ROOTS")
+        old_inbox = pc.os.environ.get("PANDA_COLLABORATOR_CC_INBOX")
+        old_local = pc.os.environ.get("LOCALAPPDATA")
+        old_path = pc.os.environ.get("PATH")
+        pc.os.environ["PANDA_COLLABORATOR_SEARCH_ROOTS"] = str(self.tmp)
+        pc.os.environ["PANDA_COLLABORATOR_CC_INBOX"] = str(cc_inbox)
+        pc.os.environ["LOCALAPPDATA"] = str(local_app)
+        pc.os.environ["PATH"] = str(bin_dir) + pc.os.pathsep + (old_path or "")
+        try:
+            result = pc.setup_autofill({"settings": pc.default_settings(), "ask_claude": True})
+        finally:
+            if old_search is None:
+                pc.os.environ.pop("PANDA_COLLABORATOR_SEARCH_ROOTS", None)
+            else:
+                pc.os.environ["PANDA_COLLABORATOR_SEARCH_ROOTS"] = old_search
+            if old_inbox is None:
+                pc.os.environ.pop("PANDA_COLLABORATOR_CC_INBOX", None)
+            else:
+                pc.os.environ["PANDA_COLLABORATOR_CC_INBOX"] = old_inbox
+            if old_local is None:
+                pc.os.environ.pop("LOCALAPPDATA", None)
+            else:
+                pc.os.environ["LOCALAPPDATA"] = old_local
+            if old_path is None:
+                pc.os.environ.pop("PATH", None)
+            else:
+                pc.os.environ["PATH"] = old_path
+
+        self.assertEqual(result["suggestions"]["project_files_directory"], str(project_files))
+        self.assertEqual(result["suggestions"]["users"][0]["default_repo_path"], str(repo))
+        self.assertEqual(result["suggestions"]["users"][0]["git_author_name"], "Darrin")
+        self.assertEqual(result["suggestions"]["users"][0]["git_author_email"], "darrin@example.invalid")
+        self.assertEqual(result["suggestions"]["users"][0]["claude_desktop_path"], str(claude_desktop))
+        self.assertEqual(result["suggestions"]["users"][0]["claude_code_path"].lower(), str(claude_code).lower())
+        self.assertTrue(result["claude_request"]["created"])
+        self.assertTrue(Path(result["claude_request"]["message_path"]).exists())
+
     def test_path_picker_rejects_invalid_mode_before_opening_gui(self):
         with self.assertRaises(pc.CollaboratorError):
             pc.pick_local_path({"mode": "branch"})
@@ -229,6 +286,15 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn(r"C:\panda-gallery", html)
         self.assertIn(r"skills\pg-project-sync\MANIFEST.md", html)
         self.assertIn("project_knowledge_sync_YYYY-MM-DD", html)
+
+    def test_setup_has_auto_fill_and_claude_help_action(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="autoFillSetupBtn"', html)
+        self.assertIn("async function autoFillSetup()", html)
+        self.assertIn("'/api/setup/autofill'", html)
+        self.assertIn("ask_claude: true", html)
+        self.assertIn("Claude help request", html)
 
     def test_switch_user_entry_points_are_visible_and_not_dead_before_setup(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
