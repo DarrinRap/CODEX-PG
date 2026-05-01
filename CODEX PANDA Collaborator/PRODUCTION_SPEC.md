@@ -83,6 +83,8 @@ The setup and hub flow:
 - provides a checklist that shows which registration steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;
 - requires per-user Codex account label, Claude account label, Git author name, and Git author email during registration;
+- requires per-user Claude Desktop path and Claude Code path during registration so each user profile identifies the local tools it is meant to use;
+- provides Browse buttons for Claude Desktop and Claude Code paths so users can pick Windows paths instead of typing them by hand;
 - stores only account labels, usernames, and emails, never passwords, tokens, API keys, recovery codes, or browser credentials;
 - clearly records whether the two users are using the same repository path, which means they share the same git working tree and commit history;
 - records Git author identity as context but does not switch Git credentials or perform Git hosting login;
@@ -102,6 +104,7 @@ The recorded context includes:
 - active PANDA user slot and custom display name;
 - Codex account label;
 - Claude account label;
+- Claude Desktop path and Claude Code path;
 - Git author name and email;
 - repository path and whether the path is shared with the other user;
 - branch, `HEAD`, status snapshot, operator notes, and safety receipt.

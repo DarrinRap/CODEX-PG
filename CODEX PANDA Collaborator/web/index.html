@@ -629,6 +629,10 @@
       align-items: start;
     }
 
+    .setup-step.flow-note {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .step-num {
       display: grid;
       place-items: center;
@@ -657,6 +661,19 @@
 
     .account-defaults {
       padding-top: 2px;
+    }
+
+    .inline-picker {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .inline-picker button {
+      min-width: 58px;
+      padding-inline: 8px;
+      white-space: nowrap;
     }
 
     .identity-note {
@@ -1364,6 +1381,18 @@
                 <label>Claude account label
                   <input id="claudeAccount" maxlength="120" autocomplete="off">
                 </label>
+                <label>Claude Desktop path
+                  <div class="inline-picker">
+                    <input id="claudeDesktopPath" maxlength="260" spellcheck="false">
+                    <button type="button" data-path-picker="claudeDesktopPath" data-path-mode="file" data-path-title="Select Claude Desktop app">Browse</button>
+                  </div>
+                </label>
+                <label>Claude Code path
+                  <div class="inline-picker">
+                    <input id="claudeCodePath" maxlength="260" spellcheck="false">
+                    <button type="button" data-path-picker="claudeCodePath" data-path-mode="file" data-path-title="Select Claude Code executable">Browse</button>
+                  </div>
+                </label>
                 <label>Git author name
                   <input id="gitAuthorName" maxlength="80" autocomplete="off">
                 </label>
@@ -1409,6 +1438,18 @@
                 <label>Claude account label
                   <input id="claudeAccountUser2" maxlength="120" autocomplete="off">
                 </label>
+                <label>Claude Desktop path
+                  <div class="inline-picker">
+                    <input id="claudeDesktopPathUser2" maxlength="260" spellcheck="false">
+                    <button type="button" data-path-picker="claudeDesktopPathUser2" data-path-mode="file" data-path-title="Select Claude Desktop app for User 2">Browse</button>
+                  </div>
+                </label>
+                <label>Claude Code path
+                  <div class="inline-picker">
+                    <input id="claudeCodePathUser2" maxlength="260" spellcheck="false">
+                    <button type="button" data-path-picker="claudeCodePathUser2" data-path-mode="file" data-path-title="Select Claude Code executable for User 2">Browse</button>
+                  </div>
+                </label>
                 <label>Git author name
                   <input id="gitAuthorNameUser2" maxlength="80" autocomplete="off">
                 </label>
@@ -1447,8 +1488,7 @@
 
           <section class="wizard-step wide">
             <div class="wizard-step-head">
-              <span class="step-num">4</span>
-              <div>
+              <div class="setup-step flow-note">
                 <h3>Required flow</h3>
                 <p>User 1 registration, then User 2 registration, then the Collaborator Hub.</p>
               </div>
@@ -1521,6 +1561,9 @@
       document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
         button.disabled = isBusy;
       });
+      document.querySelectorAll('[data-path-picker]').forEach(button => {
+        button.disabled = isBusy;
+      });
       updateSetupGuide();
     }
 
@@ -1588,6 +1631,8 @@
         user.handoff_title &&
         user.codex_account &&
         user.claude_account &&
+        user.claude_desktop_path &&
+        user.claude_code_path &&
         user.git_author_name &&
         user.git_author_email
       );
@@ -1603,6 +1648,8 @@
           $('profileTitle')?.value.trim() &&
           $('codexAccount')?.value.trim() &&
           $('claudeAccount')?.value.trim() &&
+          $('claudeDesktopPath')?.value.trim() &&
+          $('claudeCodePath')?.value.trim() &&
           $('gitAuthorName')?.value.trim() &&
           $('gitAuthorEmail')?.value.trim()
         );
@@ -1615,6 +1662,8 @@
         $('profileTitleUser2')?.value.trim() &&
         $('codexAccountUser2')?.value.trim() &&
         $('claudeAccountUser2')?.value.trim() &&
+        $('claudeDesktopPathUser2')?.value.trim() &&
+        $('claudeCodePathUser2')?.value.trim() &&
         $('gitAuthorNameUser2')?.value.trim() &&
         $('gitAuthorEmailUser2')?.value.trim()
       );
@@ -1748,6 +1797,8 @@
       $('profileTitle').value = user.handoff_title || 'AI workstation handoff';
       $('codexAccount').value = user.codex_account || '';
       $('claudeAccount').value = user.claude_account || '';
+      $('claudeDesktopPath').value = user.claude_desktop_path || '';
+      $('claudeCodePath').value = user.claude_code_path || '';
       $('gitAuthorName').value = user.git_author_name || '';
       $('gitAuthorEmail').value = user.git_author_email || '';
     }
@@ -1760,6 +1811,8 @@
       $('profileTitleUser2').value = user.handoff_title || 'AI workstation handoff';
       $('codexAccountUser2').value = user.codex_account || '';
       $('claudeAccountUser2').value = user.claude_account || '';
+      $('claudeDesktopPathUser2').value = user.claude_desktop_path || '';
+      $('claudeCodePathUser2').value = user.claude_code_path || '';
       $('gitAuthorNameUser2').value = user.git_author_name || '';
       $('gitAuthorEmailUser2').value = user.git_author_email || '';
     }
@@ -1771,7 +1824,7 @@
       $('setupChecklist').innerHTML = markup;
       $('wizardChecklist').innerHTML = markup;
       updateRegistrationProgress();
-      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Register User 1 first, then User 2. Include Codex, Claude, and Git identity labels for each user.';
+      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Register User 1 first, then User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
       $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
@@ -1824,6 +1877,8 @@
       profile.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
       profile.codex_account = $('codexAccount').value.trim();
       profile.claude_account = $('claudeAccount').value.trim();
+      profile.claude_desktop_path = $('claudeDesktopPath').value.trim();
+      profile.claude_code_path = $('claudeCodePath').value.trim();
       profile.git_author_name = $('gitAuthorName').value.trim();
       profile.git_author_email = $('gitAuthorEmail').value.trim();
     }
@@ -1839,6 +1894,8 @@
         user.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
         user.codex_account = $('codexAccount').value.trim();
         user.claude_account = $('claudeAccount').value.trim();
+        user.claude_desktop_path = $('claudeDesktopPath').value.trim();
+        user.claude_code_path = $('claudeCodePath').value.trim();
         user.git_author_name = $('gitAuthorName').value.trim();
         user.git_author_email = $('gitAuthorEmail').value.trim();
         return;
@@ -1849,6 +1906,8 @@
       user.handoff_title = $('profileTitleUser2').value.trim() || 'AI workstation handoff';
       user.codex_account = $('codexAccountUser2').value.trim();
       user.claude_account = $('claudeAccountUser2').value.trim();
+      user.claude_desktop_path = $('claudeDesktopPathUser2').value.trim();
+      user.claude_code_path = $('claudeCodePathUser2').value.trim();
       user.git_author_name = $('gitAuthorNameUser2').value.trim();
       user.git_author_email = $('gitAuthorEmailUser2').value.trim();
     }
@@ -1908,6 +1967,8 @@
       $('profileRepoPath').value = profile.default_repo_path || '';
       $('codexAccount').value = profile.codex_account || '';
       $('claudeAccount').value = profile.claude_account || '';
+      $('claudeDesktopPath').value = profile.claude_desktop_path || '';
+      $('claudeCodePath').value = profile.claude_code_path || '';
       $('gitAuthorName').value = profile.git_author_name || '';
       $('gitAuthorEmail').value = profile.git_author_email || '';
       updateSetupGuide();
@@ -1925,6 +1986,8 @@
       $('profileTitle').value = profile?.handoff_title || 'AI workstation handoff';
       $('codexAccount').value = profile?.codex_account || '';
       $('claudeAccount').value = profile?.claude_account || '';
+      $('claudeDesktopPath').value = profile?.claude_desktop_path || '';
+      $('claudeCodePath').value = profile?.claude_code_path || '';
       $('gitAuthorName').value = profile?.git_author_name || '';
       $('gitAuthorEmail').value = profile?.git_author_email || '';
       $('profileRepoPathUser2').value = user2?.default_repo_path || '';
@@ -1932,6 +1995,8 @@
       $('profileTitleUser2').value = user2?.handoff_title || 'AI workstation handoff';
       $('codexAccountUser2').value = user2?.codex_account || '';
       $('claudeAccountUser2').value = user2?.claude_account || '';
+      $('claudeDesktopPathUser2').value = user2?.claude_desktop_path || '';
+      $('claudeCodePathUser2').value = user2?.claude_code_path || '';
       $('gitAuthorNameUser2').value = user2?.git_author_name || '';
       $('gitAuthorEmailUser2').value = user2?.git_author_email || '';
       updateActiveButtons();
@@ -1994,7 +2059,7 @@
         state.settings.active_user_id = 'user1';
         syncRegistrationFieldsToState('user1');
         if (!storedUserReady('user1')) {
-          throw new Error('Finish User 1 name, repo, agent, title, Codex account, Claude account, and Git author identity before continuing.');
+          throw new Error('Finish User 1 name, repo, agent, title, Codex account, Claude account, Claude paths, and Git author identity before continuing.');
         }
         renderSettings();
         setRegistrationStage('user2');
@@ -2012,7 +2077,7 @@
         syncRegistrationFieldsToState('user2');
         if (!storedUserReady('user1')) setRegistrationStage('user1');
         if (!storedUserReady('user1')) throw new Error('Register User 1 first.');
-        if (!storedUserReady('user2')) throw new Error('Finish User 2 name, repo, agent, title, Codex account, Claude account, and Git author identity before opening the Hub.');
+        if (!storedUserReady('user2')) throw new Error('Finish User 2 name, repo, agent, title, Codex account, Claude account, Claude paths, and Git author identity before opening the Hub.');
         state.settings.active_user_id = 'user2';
         await saveCurrentSettings();
         setRegistrationStage('hub');
@@ -2139,6 +2204,8 @@
         display_name: profile.display_name || '',
         codex_account: profile.codex_account || '',
         claude_account: profile.claude_account || '',
+        claude_desktop_path: profile.claude_desktop_path || '',
+        claude_code_path: profile.claude_code_path || '',
         git_author_name: profile.git_author_name || '',
         git_author_email: profile.git_author_email || '',
         repo_path: activeRepoPath,
@@ -2480,6 +2547,30 @@
       }
     }
 
+    async function pickPath(inputId, mode, title) {
+      const input = $(inputId);
+      if (!input) return;
+      setBusy(true);
+      try {
+        const data = await api('/api/path/pick', {
+          mode,
+          title,
+          initial_path: input.value.trim() || $('repoPath').value.trim()
+        });
+        if (!data.path) {
+          showResult('Path selection cancelled.');
+          return;
+        }
+        input.value = data.path;
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+        showResult(`Selected path: <span class="path">${escapeHtml(data.path)}</span>`);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
     $('scanBtn').addEventListener('click', scanRepo);
     $('handoffBtn').addEventListener('click', createHandoff);
     $('startSessionBtn').addEventListener('click', startSessionWorkflow);
@@ -2506,13 +2597,18 @@
         performGoSwitch(button.dataset.switchGo);
       });
     });
+    document.querySelectorAll('[data-path-picker]').forEach(button => {
+      button.addEventListener('click', () => {
+        pickPath(button.dataset.pathPicker, button.dataset.pathMode || 'file', button.dataset.pathTitle || 'Select path');
+      });
+    });
     document.querySelectorAll('[data-side-view]').forEach(button => {
       button.addEventListener('click', () => {
         state.sideView = button.dataset.sideView;
         renderSideView();
       });
     });
-    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
+    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'claudeDesktopPath', 'claudeCodePath', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'claudeDesktopPathUser2', 'claudeCodePathUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
       $(id).addEventListener('input', () => {
         syncAllRegistrationFieldsToState();
         updateActiveButtons();

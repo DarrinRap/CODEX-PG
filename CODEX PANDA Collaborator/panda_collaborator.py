@@ -58,6 +58,8 @@ USER_PROFILE_REQUIRED_FIELDS = (
     "handoff_title",
     "codex_account",
     "claude_account",
+    "claude_desktop_path",
+    "claude_code_path",
     "git_author_name",
     "git_author_email",
 )
@@ -125,6 +127,8 @@ def default_settings() -> dict[str, Any]:
                 "handoff_title": "AI workstation handoff",
                 "codex_account": "",
                 "claude_account": "",
+                "claude_desktop_path": "",
+                "claude_code_path": "",
                 "git_author_name": "",
                 "git_author_email": "",
             },
@@ -136,6 +140,8 @@ def default_settings() -> dict[str, Any]:
                 "handoff_title": "AI workstation handoff",
                 "codex_account": "",
                 "claude_account": "",
+                "claude_desktop_path": "",
+                "claude_code_path": "",
                 "git_author_name": "",
                 "git_author_email": "",
             },
@@ -176,6 +182,8 @@ def normalize_settings(payload: dict[str, Any], *, strict: bool = True, mark_com
                 ),
                 "codex_account": clean_setting_text(source.get("codex_account"), "", 120),
                 "claude_account": clean_setting_text(source.get("claude_account"), "", 120),
+                "claude_desktop_path": clean_setting_text(source.get("claude_desktop_path"), "", 260),
+                "claude_code_path": clean_setting_text(source.get("claude_code_path"), "", 260),
                 "git_author_name": clean_setting_text(source.get("git_author_name"), "", 80),
                 "git_author_email": clean_setting_text(source.get("git_author_email"), "", 120),
             }
@@ -368,6 +376,8 @@ def normalize_operator_context(value: Any, repo_root: str = "") -> dict[str, Any
         "display_name": clean_setting_text(source.get("display_name"), "", 80),
         "codex_account": clean_setting_text(source.get("codex_account"), "", 120),
         "claude_account": clean_setting_text(source.get("claude_account"), "", 120),
+        "claude_desktop_path": clean_setting_text(source.get("claude_desktop_path"), "", 260),
+        "claude_code_path": clean_setting_text(source.get("claude_code_path"), "", 260),
         "git_author_name": clean_setting_text(source.get("git_author_name"), "", 80),
         "git_author_email": clean_setting_text(source.get("git_author_email"), "", 120),
         "repo_path": clean_setting_text(source.get("repo_path"), repo_root, 260),
@@ -376,6 +386,43 @@ def normalize_operator_context(value: Any, repo_root: str = "") -> dict[str, Any
         "history_context_rule": "Continue from HANDOFF.md plus manifest.json so branch, HEAD, status, notes, and operator context are not lost.",
     }
     return context
+
+
+def pick_local_path(payload: dict[str, Any]) -> dict[str, Any]:
+    mode = clean_setting_text(payload.get("mode"), "file", 16).lower()
+    if mode not in {"file", "folder"}:
+        raise CollaboratorError("Path picker mode must be file or folder.")
+
+    title = clean_setting_text(payload.get("title"), "Select path", 120)
+    initial_path = clean_setting_text(payload.get("initial_path"), "", 260)
+    initial_dir = Path.home()
+    if initial_path:
+        candidate = Path(initial_path)
+        initial_dir = candidate if candidate.is_dir() else candidate.parent
+        if not initial_dir.exists():
+            initial_dir = Path.home()
+
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except Exception as exc:  # pragma: no cover - depends on local Windows GUI availability
+        raise CollaboratorError(f"Windows path picker is unavailable: {exc}") from exc
+
+    root = None
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        if mode == "folder":
+            selected = filedialog.askdirectory(title=title, initialdir=str(initial_dir))
+        else:
+            selected = filedialog.askopenfilename(title=title, initialdir=str(initial_dir))
+        return {"ok": True, "path": selected or ""}
+    except Exception as exc:  # pragma: no cover - depends on local Windows GUI availability
+        raise CollaboratorError(f"Could not open path picker: {exc}") from exc
+    finally:
+        if root is not None:
+            root.destroy()
 
 
 def run_command(args: list[str], cwd: Path | None = None, timeout: int = 30) -> CommandResult:
@@ -657,6 +704,8 @@ def handoff_markdown(manifest: dict[str, Any]) -> str:
             f"- PANDA user slot: {operator.get('user_id') or '(not recorded)'}",
             f"- Codex account label: {operator.get('codex_account') or '(not recorded)'}",
             f"- Claude account label: {operator.get('claude_account') or '(not recorded)'}",
+            f"- Claude Desktop path: `{operator.get('claude_desktop_path') or '(not recorded)'}`",
+            f"- Claude Code path: `{operator.get('claude_code_path') or '(not recorded)'}`",
             f"- Git author identity: {git_author_line}",
             f"- Git working tree: `{operator.get('repo_path') or manifest['repo_root']}`",
             f"- Shared git working tree: {'yes' if operator.get('shared_git_working_tree', True) else 'no'}",
@@ -1440,6 +1489,8 @@ class PandaHandler(BaseHTTPRequestHandler):
                 return json_response(self, set_pause(payload, True))
             if parsed.path == "/api/pause/clear":
                 return json_response(self, set_pause(payload, False))
+            if parsed.path == "/api/path/pick":
+                return json_response(self, pick_local_path(payload))
             if parsed.path == "/api/restore/preview":
                 plan = preview_restore_plan(str(payload.get("package_id", "")), str(payload.get("path", "")))
                 return json_response(self, {"ok": True, "plan": plan})

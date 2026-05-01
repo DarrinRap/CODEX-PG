@@ -91,6 +91,8 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         self.assertEqual(settings["users"][0]["display_name"], "User 1")
         self.assertEqual(settings["users"][0]["codex_account"], "")
         self.assertEqual(settings["users"][0]["claude_account"], "")
+        self.assertEqual(settings["users"][0]["claude_desktop_path"], "")
+        self.assertEqual(settings["users"][0]["claude_code_path"], "")
 
     def test_save_settings_persists_two_custom_names(self):
         saved = pc.save_settings(
@@ -104,6 +106,8 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
                         "handoff_title": "Darrin handoff",
                         "codex_account": "darrin-codex@example.invalid",
                         "claude_account": "darrin-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "claude-desktop-a.exe"),
+                        "claude_code_path": str(self.tmp / "claude-code-a"),
                         "git_author_name": "Darrin",
                         "git_author_email": "darrin@example.invalid",
                     },
@@ -114,6 +118,8 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
                         "handoff_title": "CD handoff",
                         "codex_account": "cd-codex@example.invalid",
                         "claude_account": "cd-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "claude-desktop-b.exe"),
+                        "claude_code_path": str(self.tmp / "claude-code-b"),
                         "git_author_name": "CD",
                         "git_author_email": "cd@example.invalid",
                     },
@@ -127,6 +133,8 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         loaded = pc.load_settings()
         self.assertEqual(loaded["users"][1]["handoff_title"], "CD handoff")
         self.assertEqual(loaded["users"][0]["codex_account"], "darrin-codex@example.invalid")
+        self.assertEqual(loaded["users"][0]["claude_desktop_path"], str(self.tmp / "claude-desktop-a.exe"))
+        self.assertEqual(loaded["users"][1]["claude_code_path"], str(self.tmp / "claude-code-b"))
         self.assertEqual(loaded["users"][1]["git_author_email"], "cd@example.invalid")
 
         pc.save_settings(saved)
@@ -136,6 +144,10 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
     def test_save_settings_requires_exactly_two_profiles(self):
         with self.assertRaises(pc.CollaboratorError):
             pc.save_settings({"users": [{"display_name": "Only one"}]})
+
+    def test_path_picker_rejects_invalid_mode_before_opening_gui(self):
+        with self.assertRaises(pc.CollaboratorError):
+            pc.pick_local_path({"mode": "branch"})
 
 
 class PandaCollaboratorWebThemeTests(unittest.TestCase):
@@ -182,6 +194,18 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
             "Registration stage changes must immediately retheme the wizard.",
         )
 
+    def test_setup_collects_claude_paths_with_browse_buttons(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        for element_id in ("claudeDesktopPath", "claudeCodePath", "claudeDesktopPathUser2", "claudeCodePathUser2"):
+            self.assertIn(f'id="{element_id}"', html)
+            self.assertIn(f'data-path-picker="{element_id}"', html)
+        self.assertIn("async function pickPath", html)
+        self.assertIn("'/api/path/pick'", html)
+        self.assertIn("claude_desktop_path", html)
+        self.assertIn("claude_code_path", html)
+        self.assertNotIn('<span class="step-num">4</span>', html)
+
 
 class PandaCollaboratorHandoffTests(unittest.TestCase):
     def setUp(self):
@@ -226,6 +250,8 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
                 "display_name": "Darrin",
                 "codex_account": "darrin-codex@example.invalid",
                 "claude_account": "darrin-claude@example.invalid",
+                "claude_desktop_path": str(self.tmp / "Claude Desktop.exe"),
+                "claude_code_path": str(self.tmp / "Claude Code"),
                 "git_author_name": "Darrin",
                 "git_author_email": "darrin@example.invalid",
                 "repo_path": str(self.repo),
@@ -247,6 +273,7 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertTrue(manifest["committed_protection"]["created_without_checkout"])
         self.assertEqual(manifest["operator_context"]["display_name"], "Darrin")
         self.assertEqual(manifest["operator_context"]["codex_account"], "darrin-codex@example.invalid")
+        self.assertEqual(manifest["operator_context"]["claude_desktop_path"], str(self.tmp / "Claude Desktop.exe"))
 
         branch = manifest["committed_protection"]["branch"]
         refs = run(["git", "show-ref", "--verify", f"refs/heads/{branch}"], self.repo)
@@ -272,6 +299,7 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertIn("# handoff test", detail["handoff_preview"])
         self.assertIn("## Session / Account Context", detail["handoff_preview"])
         self.assertIn("Codex account label: darrin-codex@example.invalid", detail["handoff_preview"])
+        self.assertIn("Claude Desktop path:", detail["handoff_preview"])
         self.assertIn("If both users use the same repository path", detail["handoff_preview"])
 
         before_preview_status = run(["git", "status", "--porcelain=v1", "-uall"], self.repo).stdout
@@ -289,6 +317,8 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
             "display_name": "Darrin",
             "codex_account": "darrin-codex@example.invalid",
             "claude_account": "darrin-claude@example.invalid",
+            "claude_desktop_path": str(self.tmp / "Claude Desktop.exe"),
+            "claude_code_path": str(self.tmp / "Claude Code"),
             "git_author_name": "Darrin",
             "git_author_email": "darrin@example.invalid",
             "repo_path": str(self.repo),
