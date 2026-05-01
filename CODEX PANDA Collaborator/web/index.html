@@ -113,14 +113,13 @@
     .shell {
       height: 100vh;
       display: grid;
-      grid-template-rows: 92px minmax(0, 1fr);
+      grid-template-rows: 60px minmax(0, 1fr);
       overflow: hidden;
     }
 
     header {
-      display: grid;
-      grid-template-rows: 44px 32px;
-      gap: 6px;
+      display: flex;
+      align-items: center;
       padding: 8px 12px;
       border-bottom: 1px solid var(--line);
       background: linear-gradient(90deg, var(--user-bg), var(--surface) 58%);
@@ -134,6 +133,7 @@
       justify-content: space-between;
       gap: 10px;
       min-width: 0;
+      width: 100%;
     }
 
     .brand {
@@ -214,74 +214,6 @@
       white-space: nowrap;
     }
 
-    .panda-step-guide {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 7px;
-      min-width: 0;
-      align-items: stretch;
-    }
-
-    .panda-step {
-      display: grid;
-      grid-template-columns: 18px minmax(0, 1fr) 13px;
-      align-items: center;
-      gap: 4px;
-      min-width: 0;
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      background: var(--field);
-      color: var(--muted);
-      padding: 4px 5px;
-      font-size: 11px;
-      font-weight: 950;
-      line-height: 1;
-      text-transform: uppercase;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    .panda-step .num {
-      display: grid;
-      place-items: center;
-      width: 18px;
-      height: 18px;
-      border-radius: 5px;
-      background: rgba(255, 255, 255, .06);
-      color: inherit;
-      font-size: 9px;
-      font-weight: 950;
-    }
-
-    .panda-step .label {
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .panda-step .arrow {
-      color: inherit;
-      font-size: 15px;
-      font-weight: 950;
-      text-align: right;
-    }
-
-    .panda-step.current {
-      color: var(--user-accent);
-      border-color: var(--user-ring);
-      background: var(--user-surface);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
-    }
-
-    .panda-step.done {
-      color: var(--ok);
-      border-color: rgba(127, 176, 105, .52);
-      background: rgba(127, 176, 105, .1);
-    }
-
-    .panda-step.todo {
-      opacity: .72;
-    }
-
     .status-strip {
       display: flex;
       align-items: center;
@@ -359,7 +291,7 @@
       background: linear-gradient(180deg, var(--surface), rgba(32, 32, 55, .92));
     }
 
-    .sequence-panel.is-active {
+    .sequence-panel.is-current {
       border-color: var(--user-ring);
       box-shadow: 0 0 0 1px var(--user-ring), 0 10px 22px var(--shadow);
     }
@@ -377,6 +309,26 @@
       background: rgba(255, 255, 255, .025);
     }
 
+    .sequence-panel.is-current .panel-head {
+      background: var(--user-surface);
+      border-bottom-color: var(--user-ring);
+    }
+
+    .sequence-panel.is-ready .panel-head {
+      background: rgba(127, 176, 105, .13);
+      border-bottom-color: rgba(127, 176, 105, .42);
+    }
+
+    .sequence-panel.is-pending .panel-head {
+      background: rgba(240, 198, 95, .13);
+      border-bottom-color: rgba(240, 198, 95, .42);
+    }
+
+    .sequence-panel.is-locked .panel-head {
+      background: rgba(255, 255, 255, .018);
+      border-bottom-color: var(--line);
+    }
+
     .sequence-step {
       display: grid;
       place-items: center;
@@ -391,6 +343,24 @@
       font-weight: 950;
     }
 
+    .sequence-panel.is-ready .sequence-step {
+      color: var(--ok);
+      border-color: rgba(127, 176, 105, .58);
+      background: rgba(127, 176, 105, .16);
+    }
+
+    .sequence-panel.is-pending .sequence-step {
+      color: var(--warn);
+      border-color: rgba(240, 198, 95, .58);
+      background: rgba(240, 198, 95, .16);
+    }
+
+    .sequence-panel.is-locked .sequence-step {
+      color: var(--muted);
+      border-color: var(--line);
+      background: rgba(255, 255, 255, .045);
+    }
+
     .sequence-panel h2 {
       display: flex;
       align-items: center;
@@ -402,6 +372,19 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+    .sequence-arrow {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .sequence-panel.is-current .sequence-arrow { color: var(--user-accent); }
+    .sequence-panel.is-ready .sequence-arrow { color: var(--ok); }
+    .sequence-panel.is-pending .sequence-arrow { color: var(--warn); }
+    .sequence-panel.is-locked .sequence-arrow { color: var(--muted); }
 
     .register-card {
       border: 1px solid var(--user-ring);
@@ -1311,6 +1294,26 @@
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
     }
 
+    .registration-panel.is-current .wizard-step-head {
+      background: var(--user-surface);
+      border-bottom-color: var(--user-ring);
+    }
+
+    .registration-panel.is-ready .wizard-step-head {
+      background: rgba(127, 176, 105, .13);
+      border-bottom-color: rgba(127, 176, 105, .42);
+    }
+
+    .registration-panel.is-pending .wizard-step-head {
+      background: rgba(240, 198, 95, .13);
+      border-bottom-color: rgba(240, 198, 95, .42);
+    }
+
+    .registration-panel.is-locked .wizard-step-head {
+      background: rgba(255, 255, 255, .018);
+      border-bottom-color: var(--line);
+    }
+
     .registration-panel.is-locked {
       opacity: .62;
     }
@@ -1357,20 +1360,17 @@
     }
 
     @media (max-width: 620px) {
-      .shell { grid-template-rows: 100px minmax(0, 1fr); }
-      header { grid-template-rows: 50px 34px; gap: 6px; padding: 6px 8px; }
+      .shell { grid-template-rows: 54px minmax(0, 1fr); }
+      header { padding: 6px 8px; }
       .brand { min-width: 148px; gap: 6px; }
       .mark { width: 24px; height: 24px; font-size: 10px; }
       .brand h1 { font-size: 13px; }
       .brand span { display: none; }
-      .active-user-banner { min-width: 112px; padding: 6px 7px; }
+      .active-user-banner { min-width: 112px; height: 34px; padding: 4px 7px; grid-template-columns: minmax(0, 1fr); }
+      .active-user-banner span { display: none; }
       .active-user-banner strong { font-size: 18px; }
       .active-user-banner small { display: none; }
       .status-strip { justify-content: flex-end; gap: 4px; }
-      .panda-step-guide { gap: 4px; }
-      .panda-step { grid-template-columns: 14px minmax(0, 1fr) 9px; gap: 3px; padding: 4px; font-size: 9px; }
-      .panda-step .num { width: 14px; height: 14px; font-size: 8px; }
-      .panda-step .arrow { font-size: 12px; }
       .chip { font-size: 9px; padding: 2px 5px; }
       main {
         grid-template-columns: minmax(0, 1fr);
@@ -1423,7 +1423,6 @@
         </div>
         <button id="switchUserBtn" class="switch-user-btn" type="button">Setup users</button>
       </div>
-      <nav class="panda-step-guide" id="pandaStepGuide" aria-label="PANDA workflow steps"></nav>
     </header>
 
     <main class="workflow-layout">
@@ -1431,6 +1430,7 @@
         <section class="panel sequence-panel setup-panel" data-flow-panel="user1">
           <div class="panel-head">
             <h2><span class="sequence-step">1</span><span>Register User 1</span></h2>
+            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
             <span class="chip warn" id="setupChip">Needed</span>
           </div>
           <div class="panel-body">
@@ -1448,6 +1448,7 @@
         <section class="panel sequence-panel" data-flow-panel="user2">
           <div class="panel-head">
             <h2><span class="sequence-step">2</span><span>Register User 2</span></h2>
+            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
             <span class="chip">Next</span>
           </div>
           <div class="panel-body">
@@ -1464,6 +1465,7 @@
         <section class="panel sequence-panel" data-flow-panel="hub">
           <div class="panel-head">
             <h2><span class="sequence-step">3</span><span>Collaborator Hub / Switch Users</span></h2>
+            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
             <span class="chip">GO</span>
           </div>
           <div class="panel-body">
@@ -1491,6 +1493,7 @@
         <section class="panel sequence-panel" data-flow-panel="start">
           <div class="panel-head">
             <h2><span class="sequence-step">4</span><span>Start Session</span></h2>
+            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
             <span class="chip" id="scanTime">Not scanned</span>
           </div>
           <div class="panel-body">
@@ -1617,12 +1620,6 @@
           <button id="closeSetupBtn" type="button">Close</button>
         </div>
         <div class="wizard-grid">
-          <section class="wizard-step wide">
-            <div class="wizard-step-body">
-              <ul class="registration-progress" id="registrationProgress"></ul>
-            </div>
-          </section>
-
           <section class="wizard-step wide">
             <div class="wizard-step-head">
               <div>
@@ -2155,30 +2152,25 @@
 
     function updateWorkflowLocks() {
       const availability = workflowAvailability();
-      const currentStep = pandaStepGuideState().find(step => step.current)?.id || 'user1';
+      const steps = pandaStepGuideState();
+      const currentStep = steps.find(step => step.current)?.id || 'user1';
       document.querySelectorAll('[data-flow-panel]').forEach(panel => {
         const id = panel.dataset.flowPanel;
         const available = Boolean(availability[id]);
+        const step = steps.find(item => item.id === id) || {};
+        const isCurrent = available && id === currentStep;
+        const isReady = available && Boolean(step.done);
+        const isPending = available && !isCurrent && !isReady;
         panel.classList.toggle('is-locked', !available);
-        panel.classList.toggle('is-active', available && id === currentStep);
+        panel.classList.toggle('is-current', isCurrent);
+        panel.classList.toggle('is-ready', isReady);
+        panel.classList.toggle('is-pending', isPending);
         panel.setAttribute('aria-disabled', available ? 'false' : 'true');
+        panel.dataset.flowState = !available ? 'locked' : isCurrent ? 'current' : isReady ? 'ready' : 'pending';
       });
     }
 
     function renderPandaStepGuide() {
-      const guide = $('pandaStepGuide');
-      if (!guide) return;
-      guide.innerHTML = pandaStepGuideState().map((step, index) => {
-        const klass = step.done ? 'done' : step.current ? 'current' : 'todo';
-        const stateLabel = step.done ? 'done' : step.current ? 'current' : 'next';
-        return `
-          <div class="panda-step ${klass}" data-panda-step="${step.id}" aria-label="${escapeHtml(step.label)} ${stateLabel}">
-            <span class="num">${index + 1}</span>
-            <span class="label">${escapeHtml(step.label)}</span>
-            <span class="arrow">${step.arrow}</span>
-          </div>
-        `;
-      }).join('');
       updateWorkflowLocks();
     }
 
@@ -2223,9 +2215,14 @@
         const panelStage = panel.dataset.registrationStage;
         const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
         const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
+        const panelReady = panelStage === 'user1' ? user1Ready : panelStage === 'user2' ? user2Ready : setupReady().allReady;
         const locked = (panelStage === 'user2' && !user1Ready) || (panelStage === 'hub' && !(user1Ready && user2Ready));
-        panel.classList.toggle('is-current', panelStage === stage);
+        const isCurrent = panelStage === stage && !locked;
+        panel.classList.toggle('is-current', isCurrent);
+        panel.classList.toggle('is-ready', !isCurrent && !locked && panelReady);
+        panel.classList.toggle('is-pending', !isCurrent && !locked && !panelReady);
         panel.classList.toggle('is-locked', locked);
+        panel.dataset.registrationState = locked ? 'locked' : isCurrent ? 'current' : panelReady ? 'ready' : 'pending';
       });
       const title = {
         user1: 'REGISTER USER 1',

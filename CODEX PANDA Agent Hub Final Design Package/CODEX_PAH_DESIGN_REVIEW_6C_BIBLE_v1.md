@@ -236,6 +236,7 @@ Control-shape rule for all PANDA/PG operational apps:
 - A pill must be passive and must not perform work on click.
 - Any control that opens, saves, scans, switches, creates, previews, searches, starts, pauses, or otherwise changes state must keep rectangular action-button shape, including disabled future actions and compact tab/segmented controls.
 - Every action button and every passive pill/status chip must have a plain-language tooltip explaining what it means or what will happen if clicked.
+- Workflow step guides must avoid duplicate text rows. When the main panels already form the left-to-right workflow, their panel headers should serve as the stepper with arrow separators and semantic state color: current/user accent, yellow pending, green ready/done, and muted locked/future.
 
 The global primary action issue was fixed before final review.
 

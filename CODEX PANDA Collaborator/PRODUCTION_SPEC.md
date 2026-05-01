@@ -80,7 +80,7 @@ The setup and hub flow:
 - makes GO / Switch automate the full switch process: save active user, apply that user's defaults, update the theme, and scan the repository;
 - shows the active user's custom name in large uppercase text at the top of the screen;
 - uses clearly different complementary color themes for User 1 and User 2;
-- follows the PANDA-wide header rule: the header must contain large step text with arrow separators, show the whole workflow path, and visually mark each step as current or done;
+- follows the PANDA-wide workflow rule without duplicating text: the five left-to-right workflow panels are the visible step guide, use arrow separators in their headers, and visually mark state with semantic header colors: user/current accent for the active step, yellow for pending, green for ready/done, and muted treatment for locked future steps;
 - keeps setup instructions progressive: while registering User 1, do not show User 2 or Collaborator Hub checklist rows; reveal User 2 only after User 1 is registered, then reveal the Hub only after User 2 is registered;
 - provides a checklist that shows which registration steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;

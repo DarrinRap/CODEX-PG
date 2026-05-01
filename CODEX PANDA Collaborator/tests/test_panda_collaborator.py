@@ -211,11 +211,11 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
 
 
 class PandaCollaboratorWebThemeTests(unittest.TestCase):
-    def test_header_uses_large_arrow_step_guide(self):
+    def test_workflow_panels_are_single_state_colored_step_guide(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertIn('class="panda-step-guide"', html)
-        self.assertIn('id="pandaStepGuide"', html)
+        self.assertNotIn('class="panda-step-guide"', html)
+        self.assertNotIn('id="pandaStepGuide"', html)
         self.assertIn("function pandaStepGuideState()", html)
         self.assertIn("function renderPandaStepGuide()", html)
         self.assertIn("Register User 1", html)
@@ -223,9 +223,11 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("Collaborator Hub", html)
         self.assertIn("Start Session", html)
         self.assertIn("Create Handoff", html)
-        self.assertIn("arrow: index === rows.length - 1 ? '' : '>'", html)
-        self.assertIn(".panda-step.current", html)
-        self.assertIn(".panda-step.done", html)
+        self.assertIn('class="sequence-arrow" aria-hidden="true">&gt;</span>', html)
+        self.assertIn(".sequence-panel.is-current .panel-head", html)
+        self.assertIn(".sequence-panel.is-ready .panel-head", html)
+        self.assertIn(".sequence-panel.is-pending .panel-head", html)
+        self.assertIn("panel.dataset.flowState", html)
 
     def test_setup_checklist_reveals_steps_progressively(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -312,7 +314,8 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertNotIn('<span class="step-num">1</span>', html)
         self.assertNotIn('<span class="step-num">2</span>', html)
         self.assertNotIn('<span class="step-num">3</span>', html)
-        self.assertIn('class="panda-step-guide"', html)
+        self.assertNotIn('class="panda-step-guide"', html)
+        self.assertIn('class="sequence-step">1</span>', html)
 
     def test_heading_fonts_stay_compact_for_single_screen_fit(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -320,7 +323,7 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.setup-dialog-head h2\s*\{.*?font-size:\s*18px;")
         self.assertRegex(html, r"(?s)\.registration-title strong\s*\{.*?font-size:\s*18px;")
         self.assertRegex(html, r"(?s)\.active-user-banner strong\s*\{.*?font-size:\s*20px;")
-        self.assertRegex(html, r"(?s)\.panda-step\s*\{.*?font-size:\s*11px;")
+        self.assertRegex(html, r"(?s)\.sequence-panel h2\s*\{.*?gap:\s*6px;")
         self.assertRegex(html, r"(?s)\.brand h1\s*\{.*?font-size:\s*14px;")
         self.assertRegex(html, r"(?s)\.panel-head h2\s*\{.*?font-size:\s*10px;")
         self.assertRegex(html, r"(?s)\.hub-card strong\s*\{.*?font-size:\s*12px;")
@@ -328,8 +331,8 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
     def test_active_user_banner_stays_inside_header_row(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertRegex(html, r"(?s)\.shell\s*\{.*?grid-template-rows:\s*92px minmax\(0, 1fr\);")
-        self.assertRegex(html, r"(?s)header\s*\{.*?grid-template-rows:\s*44px 32px;")
+        self.assertRegex(html, r"(?s)\.shell\s*\{.*?grid-template-rows:\s*60px minmax\(0, 1fr\);")
+        self.assertRegex(html, r"(?s)header\s*\{.*?display:\s*flex;")
         self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?height:\s*38px;")
         self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?overflow:\s*hidden;")
         self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?grid-template-columns:\s*auto minmax\(120px, 320px\) minmax\(0, 1fr\);")
@@ -362,6 +365,11 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
 
         self.assertRegex(html, r"(?s)\.setup-dialog\s*\{.*?width:\s*min\(1380px, calc\(100vw - 96px\)\);")
         self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);")
+        self.assertNotIn('id="registrationProgress"', html)
+        self.assertIn(".registration-panel.is-current .wizard-step-head", html)
+        self.assertIn(".registration-panel.is-ready .wizard-step-head", html)
+        self.assertIn(".registration-panel.is-pending .wizard-step-head", html)
+        self.assertIn("panel.dataset.registrationState", html)
         self.assertNotIn('registration-panel hidden" data-registration-stage="user2"', html)
         self.assertNotIn('registration-panel hidden" data-registration-stage="hub"', html)
         self.assertIn("panel.classList.toggle('is-current'", html)
