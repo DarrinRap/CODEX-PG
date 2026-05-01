@@ -1210,6 +1210,12 @@
                     <button type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder">Browse</button>
                   </div>
                 </label>
+                <label>Project files directory
+                  <div class="inline-picker">
+                    <input id="projectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
+                    <button type="button" data-path-picker="projectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
+                  </div>
+                </label>
                 <div class="actions">
                   <button class="primary" id="scanBtn">Scan</button>
                   <button id="packagesBtn">Packages</button>
@@ -1356,6 +1362,24 @@
           <section class="wizard-step wide">
             <div class="wizard-step-body">
               <ul class="registration-progress" id="registrationProgress"></ul>
+            </div>
+          </section>
+
+          <section class="wizard-step wide">
+            <div class="wizard-step-head">
+              <div>
+                <h3>Project Files Tracker</h3>
+                <p>Use the existing pgsync manifest and bundle workflow.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <label>Project files directory
+                <div class="inline-picker">
+                  <input id="setupProjectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
+                  <button type="button" data-path-picker="setupProjectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
+                </div>
+              </label>
+              <div class="identity-note">PANDA should point here for the existing project-file tracker. Current default: C:\panda-gallery. Manifest: skills\pg-project-sync\MANIFEST.md. Sync bundles: workflows\project_knowledge_sync_YYYY-MM-DD.</div>
             </div>
           </section>
 
@@ -1655,6 +1679,10 @@
       );
     }
 
+    function projectFilesReady() {
+      return Boolean(state.settings?.project_files_directory || $('projectFilesDirectory')?.value.trim() || $('setupProjectFilesDirectory')?.value.trim());
+    }
+
     function registrationFieldReady(userId) {
       if (userId === 'user1') {
         return Boolean(
@@ -1690,11 +1718,13 @@
       const namesReady = Boolean(storedUserReady('user1') && storedUserReady('user2'));
       const activeReady = state.settings?.active_user_id === 'user1' || state.settings?.active_user_id === 'user2';
       const defaultsReady = Boolean(storedUserReady('user1') && storedUserReady('user2'));
+      const projectFiles = projectFilesReady();
       return {
         namesReady,
         activeReady,
         defaultsReady,
-        allReady: namesReady && activeReady && defaultsReady
+        projectFilesReady: projectFiles,
+        allReady: namesReady && activeReady && defaultsReady && projectFiles
       };
     }
 
@@ -1841,7 +1871,7 @@
       $('setupChecklist').innerHTML = markup;
       $('wizardChecklist').innerHTML = markup;
       updateRegistrationProgress();
-      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Register User 1 first, then User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
+      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Confirm the Project Files Tracker directory, then register User 1 and User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
       $('switchUserBtn').textContent = readiness.allReady ? 'Switch User' : 'Setup Users';
@@ -1887,9 +1917,23 @@
       }
     }
 
+    function syncProjectFilesDirectoryToState(sourceId = '') {
+      if (!state.settings) return;
+      const main = $('projectFilesDirectory');
+      const setup = $('setupProjectFilesDirectory');
+      const value = (sourceId === 'setupProjectFilesDirectory' ? setup?.value : main?.value)?.trim()
+        || setup?.value.trim()
+        || main?.value.trim()
+        || 'C:\\panda-gallery';
+      state.settings.project_files_directory = value;
+      if (main && main.value !== value) main.value = value;
+      if (setup && setup.value !== value) setup.value = value;
+    }
+
     function syncActiveProfileFieldsToState() {
       const profile = activeProfile();
       if (!profile) return;
+      syncProjectFilesDirectoryToState();
       profile.default_repo_path = $('profileRepoPath').value.trim();
       profile.handoff_agent = $('profileAgent').value.trim() || profile.display_name;
       profile.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
@@ -1930,7 +1974,8 @@
       user.git_author_email = $('gitAuthorEmailUser2').value.trim();
     }
 
-    function syncAllRegistrationFieldsToState() {
+    function syncAllRegistrationFieldsToState(sourceId = '') {
+      syncProjectFilesDirectoryToState(sourceId);
       syncRegistrationFieldsToState('user1');
       syncRegistrationFieldsToState('user2');
     }
@@ -1996,6 +2041,8 @@
       const settings = state.settings;
       if (!settings) return;
       const [user1, user2] = settings.users;
+      $('projectFilesDirectory').value = settings.project_files_directory || 'C:\\panda-gallery';
+      $('setupProjectFilesDirectory').value = settings.project_files_directory || 'C:\\panda-gallery';
       $('user1Name').value = user1?.display_name || 'User 1';
       $('user2Name').value = user2?.display_name || 'User 2';
       const profile = activeProfile();
@@ -2214,6 +2261,7 @@
     function activeOperatorContext() {
       const profile = activeProfile() || {};
       const activeRepoPath = $('repoPath').value.trim() || profile.default_repo_path || '';
+      const projectFilesDirectory = state.settings?.project_files_directory || $('projectFilesDirectory').value.trim() || 'C:\\panda-gallery';
       const sharedRepo = (state.settings?.users || [])
         .filter(user => user.default_repo_path && activeRepoPath)
         .some(user => user.id !== profile.id && user.default_repo_path.trim().toLowerCase() === activeRepoPath.toLowerCase());
@@ -2224,6 +2272,7 @@
         claude_account: profile.claude_account || '',
         claude_desktop_path: profile.claude_desktop_path || '',
         claude_code_path: profile.claude_code_path || '',
+        project_files_directory: projectFilesDirectory,
         git_author_name: profile.git_author_name || '',
         git_author_email: profile.git_author_email || '',
         repo_path: activeRepoPath,
@@ -2627,9 +2676,9 @@
         renderSideView();
       });
     });
-    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'claudeDesktopPath', 'claudeCodePath', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'claudeDesktopPathUser2', 'claudeCodePathUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
+    ['projectFilesDirectory', 'setupProjectFilesDirectory', 'user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'claudeDesktopPath', 'claudeCodePath', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'claudeDesktopPathUser2', 'claudeCodePathUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
       $(id).addEventListener('input', () => {
-        syncAllRegistrationFieldsToState();
+        syncAllRegistrationFieldsToState(id);
         updateActiveButtons();
         applyUserTheme();
         updateSetupGuide();

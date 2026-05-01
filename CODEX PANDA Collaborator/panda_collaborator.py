@@ -36,6 +36,7 @@ WEB_ROOT = APP_ROOT / "web"
 DEFAULT_PACKAGE_ROOT = APP_ROOT / "CODEX handoff packages"
 DEFAULT_SETTINGS_PATH = APP_ROOT / "CODEX settings" / "panda_collaborator_settings.local.json"
 DEFAULT_HISTORY_ROOT = APP_ROOT / "CODEX project history"
+DEFAULT_PROJECT_FILES_DIRECTORY = r"C:\panda-gallery"
 
 FORBIDDEN_GIT_COMMANDS = [
     "git reset --hard",
@@ -118,6 +119,7 @@ def default_settings() -> dict[str, Any]:
         "schema_version": 1,
         "setup_completed": False,
         "active_user_id": "user1",
+        "project_files_directory": DEFAULT_PROJECT_FILES_DIRECTORY,
         "users": [
             {
                 "id": "user1",
@@ -194,14 +196,19 @@ def normalize_settings(payload: dict[str, Any], *, strict: bool = True, mark_com
         active_user_id = defaults["active_user_id"]
 
     profiles_ready = all(all(user.get(field) for field in USER_PROFILE_REQUIRED_FIELDS) for user in normalized_users)
-    setup_completed = bool(payload.get("setup_completed")) and profiles_ready
+    project_files_directory = clean_setting_text(
+        payload.get("project_files_directory"), defaults["project_files_directory"], 260
+    )
+    project_files_ready = bool(project_files_directory)
+    setup_completed = bool(payload.get("setup_completed")) and profiles_ready and project_files_ready
     if mark_completed:
-        setup_completed = profiles_ready
+        setup_completed = profiles_ready and project_files_ready
 
     normalized = {
         "schema_version": 1,
         "setup_completed": setup_completed,
         "active_user_id": active_user_id,
+        "project_files_directory": project_files_directory,
         "users": normalized_users,
     }
     updated_at = payload.get("updated_at")
@@ -378,6 +385,9 @@ def normalize_operator_context(value: Any, repo_root: str = "") -> dict[str, Any
         "claude_account": clean_setting_text(source.get("claude_account"), "", 120),
         "claude_desktop_path": clean_setting_text(source.get("claude_desktop_path"), "", 260),
         "claude_code_path": clean_setting_text(source.get("claude_code_path"), "", 260),
+        "project_files_directory": clean_setting_text(
+            source.get("project_files_directory"), DEFAULT_PROJECT_FILES_DIRECTORY, 260
+        ),
         "git_author_name": clean_setting_text(source.get("git_author_name"), "", 80),
         "git_author_email": clean_setting_text(source.get("git_author_email"), "", 120),
         "repo_path": clean_setting_text(source.get("repo_path"), repo_root, 260),
@@ -706,6 +716,7 @@ def handoff_markdown(manifest: dict[str, Any]) -> str:
             f"- Claude account label: {operator.get('claude_account') or '(not recorded)'}",
             f"- Claude Desktop path: `{operator.get('claude_desktop_path') or '(not recorded)'}`",
             f"- Claude Code path: `{operator.get('claude_code_path') or '(not recorded)'}`",
+            f"- Project files directory: `{operator.get('project_files_directory') or DEFAULT_PROJECT_FILES_DIRECTORY}`",
             f"- Git author identity: {git_author_line}",
             f"- Git working tree: `{operator.get('repo_path') or manifest['repo_root']}`",
             f"- Shared git working tree: {'yes' if operator.get('shared_git_working_tree', True) else 'no'}",

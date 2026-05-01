@@ -87,6 +87,7 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
 
         self.assertFalse(settings["setup_completed"])
         self.assertEqual(settings["active_user_id"], "user1")
+        self.assertEqual(settings["project_files_directory"], r"C:\panda-gallery")
         self.assertEqual([user["id"] for user in settings["users"]], ["user1", "user2"])
         self.assertEqual(settings["users"][0]["display_name"], "User 1")
         self.assertEqual(settings["users"][0]["codex_account"], "")
@@ -98,6 +99,7 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         saved = pc.save_settings(
             {
                 "active_user_id": "user2",
+                "project_files_directory": str(self.tmp / "panda-gallery"),
                 "users": [
                     {
                         "display_name": "Darrin",
@@ -129,6 +131,7 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
 
         self.assertTrue(saved["setup_completed"])
         self.assertEqual(saved["active_user_id"], "user2")
+        self.assertEqual(saved["project_files_directory"], str(self.tmp / "panda-gallery"))
         self.assertEqual([user["display_name"] for user in saved["users"]], ["Darrin", "CD"])
         loaded = pc.load_settings()
         self.assertEqual(loaded["users"][1]["handoff_title"], "CD handoff")
@@ -216,6 +219,17 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn('data-path-title="Select User 1 local Git repository folder"', html)
         self.assertIn('data-path-title="Select User 2 local Git repository folder"', html)
 
+    def test_project_files_directory_uses_existing_pgsync_location(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="projectFilesDirectory"', html)
+        self.assertIn('id="setupProjectFilesDirectory"', html)
+        self.assertIn('data-path-picker="projectFilesDirectory"', html)
+        self.assertIn('data-path-picker="setupProjectFilesDirectory"', html)
+        self.assertIn(r"C:\panda-gallery", html)
+        self.assertIn(r"skills\pg-project-sync\MANIFEST.md", html)
+        self.assertIn("project_knowledge_sync_YYYY-MM-DD", html)
+
     def test_switch_user_entry_points_are_visible_and_not_dead_before_setup(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
@@ -280,6 +294,7 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
                 "claude_account": "darrin-claude@example.invalid",
                 "claude_desktop_path": str(self.tmp / "Claude Desktop.exe"),
                 "claude_code_path": str(self.tmp / "Claude Code"),
+                "project_files_directory": str(self.tmp / "panda-gallery"),
                 "git_author_name": "Darrin",
                 "git_author_email": "darrin@example.invalid",
                 "repo_path": str(self.repo),
@@ -302,6 +317,7 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertEqual(manifest["operator_context"]["display_name"], "Darrin")
         self.assertEqual(manifest["operator_context"]["codex_account"], "darrin-codex@example.invalid")
         self.assertEqual(manifest["operator_context"]["claude_desktop_path"], str(self.tmp / "Claude Desktop.exe"))
+        self.assertEqual(manifest["operator_context"]["project_files_directory"], str(self.tmp / "panda-gallery"))
 
         branch = manifest["committed_protection"]["branch"]
         refs = run(["git", "show-ref", "--verify", f"refs/heads/{branch}"], self.repo)
@@ -328,6 +344,7 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertIn("## Session / Account Context", detail["handoff_preview"])
         self.assertIn("Codex account label: darrin-codex@example.invalid", detail["handoff_preview"])
         self.assertIn("Claude Desktop path:", detail["handoff_preview"])
+        self.assertIn("Project files directory:", detail["handoff_preview"])
         self.assertIn("If both users use the same repository path", detail["handoff_preview"])
 
         before_preview_status = run(["git", "status", "--porcelain=v1", "-uall"], self.repo).stdout
@@ -347,6 +364,7 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
             "claude_account": "darrin-claude@example.invalid",
             "claude_desktop_path": str(self.tmp / "Claude Desktop.exe"),
             "claude_code_path": str(self.tmp / "Claude Code"),
+            "project_files_directory": str(self.tmp / "panda-gallery"),
             "git_author_name": "Darrin",
             "git_author_email": "darrin@example.invalid",
             "repo_path": str(self.repo),
