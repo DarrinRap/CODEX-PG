@@ -1235,8 +1235,8 @@
     }
 
     .setup-dialog {
-      width: min(1380px, calc(100vw - 96px));
-      max-height: calc(100vh - 72px);
+      width: min(1240px, calc(100vw - 72px));
+      max-height: calc(100vh - 48px);
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
       border: 1px solid var(--user-ring);
@@ -1252,7 +1252,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 10px 12px;
+      padding: 8px 12px;
       background: linear-gradient(90deg, var(--user-bg), var(--surface));
       border-bottom: 1px solid var(--line);
     }
@@ -1260,7 +1260,8 @@
     .setup-dialog-foot {
       border-top: 1px solid var(--line);
       border-bottom: 0;
-      justify-content: flex-end;
+      align-items: stretch;
+      justify-content: space-between;
     }
 
     .setup-dialog-head h2 {
@@ -1281,11 +1282,12 @@
     .wizard-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-rows: auto;
       align-items: start;
       gap: 8px;
-      padding: 10px;
+      padding: 8px;
       min-height: 0;
-      overflow: auto;
+      overflow: hidden;
     }
 
     .wizard-step {
@@ -1329,13 +1331,39 @@
       gap: 7px;
     }
 
+    .setup-project-step .wizard-step-body {
+      grid-template-columns: minmax(0, 1fr) auto minmax(240px, .72fr);
+      align-items: end;
+      gap: 8px;
+      padding: 7px 8px;
+    }
+
+    .setup-project-step .actions {
+      align-self: end;
+    }
+
+    .setup-project-step .identity-note {
+      padding: 5px 7px;
+      line-height: 1.2;
+    }
+
     .registration-panel {
       align-self: stretch;
+      min-height: 0;
     }
 
     .registration-panel.is-current {
+      grid-column: 1 / -1;
       border-color: var(--user-ring);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+    }
+
+    .registration-panel:not(.is-current) .wizard-step-body {
+      display: none;
+    }
+
+    .registration-panel:not(.is-current) .wizard-step-head {
+      border-bottom: 0;
     }
 
     .registration-panel.is-current .wizard-step-head {
@@ -1359,11 +1387,38 @@
     }
 
     .registration-panel.is-locked {
-      opacity: .62;
+      display: none;
     }
 
     .registration-panel.is-locked .wizard-step-body {
       filter: saturate(.7);
+    }
+
+    .setup-dialog-status {
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      min-width: 0;
+      width: min(760px, 100%);
+    }
+
+    .setup-dialog-status .setup-checklist {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .setup-dialog-status .setup-checklist li {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .setup-dialog-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: max-content;
     }
 
     .wizard-actions {
@@ -1435,10 +1490,15 @@
       .panel-body { padding: 6px 7px; }
       .repo-grid { grid-template-columns: repeat(5, minmax(34px, 1fr)); gap: 4px; }
       .receipt-grid { grid-template-columns: repeat(2, minmax(58px, 1fr)); }
-      .setup-names, .profile-defaults { grid-template-columns: minmax(0, 1fr); }
+      .setup-names, .profile-defaults, .account-defaults { grid-template-columns: minmax(0, 1fr); }
       .handoff-fields { grid-template-columns: minmax(0, 1fr); }
       .handoff-fields label:nth-child(2) { grid-column: 1 / -1; }
       .wizard-grid { grid-template-columns: 1fr; }
+      .setup-project-step .wizard-step-body { grid-template-columns: minmax(0, 1fr); }
+      .setup-dialog-foot { display: grid; gap: 8px; }
+      .setup-dialog-status { width: 100%; }
+      .setup-dialog-status .setup-checklist { grid-template-columns: minmax(0, 1fr); }
+      .setup-dialog-actions { min-width: 0; justify-content: flex-end; flex-wrap: wrap; }
       .setup-overlay { padding: 18px; }
       .setup-dialog { width: min(1120px, 100%); max-height: calc(100vh - 36px); }
     }
@@ -1666,7 +1726,7 @@
           <button id="closeSetupBtn" type="button">Close</button>
         </div>
         <div class="wizard-grid">
-          <section class="wizard-step wide">
+          <section class="wizard-step wide setup-project-step">
             <div class="wizard-step-head">
               <div>
                 <h3>Project Files Tracker</h3>
@@ -1830,24 +1890,18 @@
             </div>
           </section>
 
-          <section class="wizard-step wide">
-            <div class="wizard-step-head">
-              <div class="setup-step flow-note">
-                <h3>Required flow</h3>
-                <p>User 1 registration, then User 2 registration, then the Collaborator Hub.</p>
-              </div>
-            </div>
-            <div class="wizard-step-body">
-              <ul class="setup-checklist" id="wizardChecklist"></ul>
-              <div class="setup-warning" id="setupWarning"></div>
-            </div>
-          </section>
         </div>
         <div class="setup-dialog-foot">
-          <button id="registerBackBtn" type="button">Back</button>
-          <button id="registerUser1NextBtn" class="primary" type="button">Register User 1 and continue</button>
-          <button id="registerUser2FinishBtn" class="primary" type="button">Register User 2 and open Hub</button>
-          <button id="openHubBtn" class="primary" type="button">Open Collaborator Hub</button>
+          <div class="setup-dialog-status">
+            <ul class="setup-checklist" id="wizardChecklist"></ul>
+            <div class="setup-warning" id="setupWarning"></div>
+          </div>
+          <div class="setup-dialog-actions">
+            <button id="registerBackBtn" type="button">Back</button>
+            <button id="registerUser1NextBtn" class="primary" type="button">Register User 1 and continue</button>
+            <button id="registerUser2FinishBtn" class="primary" type="button">Register User 2 and open Hub</button>
+            <button id="openHubBtn" class="primary" type="button">Open Collaborator Hub</button>
+          </div>
         </div>
       </section>
     </div>

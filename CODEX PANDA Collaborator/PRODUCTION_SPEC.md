@@ -82,6 +82,7 @@ The setup and hub flow:
 - uses clearly different complementary color themes for User 1 and User 2;
 - follows the PANDA-wide workflow rule without duplicating text: the five left-to-right workflow panels are the visible step guide, use arrow separators in their headers, and visually mark state with semantic header colors: user/current accent for the active step, yellow for pending, green for ready/done, and muted treatment for locked future steps;
 - keeps setup instructions progressive: while registering User 1, do not show User 2 or Collaborator Hub checklist rows; reveal User 2 only after User 1 is registered, then reveal the Hub only after User 2 is registered;
+- keeps the setup wizard visually compact: the current registration step owns the available width, completed prior steps collapse to headers, locked future steps are hidden, and setup status lives in a compact footer strip instead of a duplicate full card;
 - provides a checklist that shows which registration steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;
 - provides Browse buttons for the main repository path and each user's default repository path so users can pick the local Git repository folder instead of typing a Windows path;
