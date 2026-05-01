@@ -53,9 +53,14 @@ If User 1 and User 2 both use the same repo path, they share the same git workin
 2. Use the **Collaborator Hub**.
 3. Press **GO / Switch** for the person who is using the app.
 4. Confirm that the big name at the top of the screen matches that person.
-5. Review the **Working Tree** numbers and **Changed Files** list after the automatic scan.
-6. If you need to hand work to another AI or another user, fill in the handoff notes.
-7. Click **Create safe handoff**.
+5. Press **Start Session / Start Work**.
+6. Let PANDA run the automatic checklist.
+7. Review the plain-English latest handoff summary, concerns, achievements, and recommended next action.
+8. Review the **Working Tree** numbers and **Changed Files** list after the automatic scan.
+9. Use the quick message box for short notes, concerns, achievements, or next steps.
+10. If something looks unsafe, click **Emergency Pause**.
+11. When work is done, fill in handoff notes if useful.
+12. Click **End Session / Handoff**.
 
 The app creates a handoff package with:
 
@@ -66,6 +71,16 @@ The app creates a handoff package with:
 - a `manifest.json` record with the active user, Codex account label, Claude account label, Git author identity, repo path, branch, `HEAD`, current status, and your notes.
 
 That handoff record is what the next Claude or Codex session should read first so history and context are not lost.
+
+PANDA also saves:
+
+- project messages;
+- timeline events;
+- daily reports;
+- plain-English summaries;
+- technical summaries.
+
+Use the **Manager**, **Timeline**, and **Search** views to review old context without digging through folders.
 
 ## Reading Old Handoffs
 

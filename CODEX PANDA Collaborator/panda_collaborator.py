@@ -30,11 +30,12 @@ from typing import Any
 
 
 APP_TITLE = "PANDA Collaborator"
-APP_VERSION = "0.8.0"
+APP_VERSION = "0.9.0"
 APP_ROOT = Path(__file__).resolve().parent
 WEB_ROOT = APP_ROOT / "web"
 DEFAULT_PACKAGE_ROOT = APP_ROOT / "CODEX handoff packages"
 DEFAULT_SETTINGS_PATH = APP_ROOT / "CODEX settings" / "panda_collaborator_settings.local.json"
+DEFAULT_HISTORY_ROOT = APP_ROOT / "CODEX project history"
 
 FORBIDDEN_GIT_COMMANDS = [
     "git reset --hard",
@@ -104,6 +105,10 @@ def package_root_path() -> Path:
 
 def settings_path() -> Path:
     return Path(os.environ.get("PANDA_COLLABORATOR_SETTINGS_PATH", DEFAULT_SETTINGS_PATH)).resolve()
+
+
+def history_root_path() -> Path:
+    return Path(os.environ.get("PANDA_COLLABORATOR_HISTORY_ROOT", DEFAULT_HISTORY_ROOT)).resolve()
 
 
 def default_settings() -> dict[str, Any]:
@@ -224,6 +229,131 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
     temp_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
     os.replace(temp_path, path)
     return settings
+
+
+def history_file(name: str) -> Path:
+    root = history_root_path()
+    root.mkdir(parents=True, exist_ok=True)
+    return root / name
+
+
+def read_jsonl(path: Path, limit: int = 100) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.strip():
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            rows.append(value)
+    return rows[-limit:]
+
+
+def append_jsonl(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    row = dict(payload)
+    row.setdefault("id", f"{utc_stamp()}-{hashlib.sha1(json.dumps(row, sort_keys=True, default=str).encode('utf-8')).hexdigest()[:10]}")
+    row.setdefault("created_at", local_timestamp())
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(row, sort_keys=True) + "\n")
+    return row
+
+
+def backup_existing_file(path: Path) -> None:
+    if not path.exists():
+        return
+    backup = path.with_name(f"{path.stem}.{utc_stamp()}.bak{path.suffix}")
+    counter = 1
+    while backup.exists():
+        backup = path.with_name(f"{path.stem}.{utc_stamp()}.{counter}.bak{path.suffix}")
+        counter += 1
+    shutil.copy2(path, backup)
+
+
+def control_state_path() -> Path:
+    return history_file("control_state.local.json")
+
+
+def load_control_state() -> dict[str, Any]:
+    path = control_state_path()
+    if not path.exists():
+        return {
+            "schema_version": 1,
+            "paused": False,
+            "pause_reason": "",
+            "start_work_enabled": False,
+            "last_started_at": "",
+            "last_ended_at": "",
+            "updated_at": "",
+        }
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    return {
+        "schema_version": 1,
+        "paused": bool(data.get("paused", False)),
+        "pause_reason": clean_setting_text(data.get("pause_reason"), "", 240),
+        "start_work_enabled": bool(data.get("start_work_enabled", False)),
+        "last_started_at": clean_setting_text(data.get("last_started_at"), "", 64),
+        "last_ended_at": clean_setting_text(data.get("last_ended_at"), "", 64),
+        "updated_at": clean_setting_text(data.get("updated_at"), "", 64),
+    }
+
+
+def save_control_state(state: dict[str, Any]) -> dict[str, Any]:
+    normalized = {
+        "schema_version": 1,
+        "paused": bool(state.get("paused", False)),
+        "pause_reason": clean_setting_text(state.get("pause_reason"), "", 240),
+        "start_work_enabled": bool(state.get("start_work_enabled", False)),
+        "last_started_at": clean_setting_text(state.get("last_started_at"), "", 64),
+        "last_ended_at": clean_setting_text(state.get("last_ended_at"), "", 64),
+        "updated_at": local_timestamp(),
+    }
+    path = control_state_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    backup_existing_file(path)
+    temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temp_path.write_text(json.dumps(normalized, indent=2) + "\n", encoding="utf-8")
+    os.replace(temp_path, path)
+    return normalized
+
+
+def record_event(kind: str, title: str, detail: str = "", context: dict[str, Any] | None = None, severity: str = "info") -> dict[str, Any]:
+    context = normalize_operator_context(context or {})
+    event = {
+        "kind": clean_setting_text(kind, "event", 40),
+        "title": clean_setting_text(title, "PANDA event", 160),
+        "detail": clean_setting_text(detail, "", 1200),
+        "severity": clean_setting_text(severity, "info", 16),
+        "operator_context": context,
+    }
+    return append_jsonl(history_file("timeline.jsonl"), event)
+
+
+def create_message(payload: dict[str, Any]) -> dict[str, Any]:
+    text = clean_setting_text(payload.get("text"), "", 2000)
+    if not text:
+        raise CollaboratorError("Message text is required.")
+    context = normalize_operator_context(payload.get("operator_context", {}))
+    message = append_jsonl(
+        history_file("messages.jsonl"),
+        {
+            "kind": clean_setting_text(payload.get("kind"), "note", 32),
+            "author": clean_setting_text(payload.get("author"), context.get("display_name") or "PANDA", 80),
+            "text": text,
+            "operator_context": context,
+        },
+    )
+    record_event("message", f"Message from {message['author']}", text, context, "info")
+    return message
 
 
 def normalize_operator_context(value: Any, repo_root: str = "") -> dict[str, Any]:
@@ -627,8 +757,14 @@ def create_handoff_package(
         },
     }
 
+    plain_summary = summarize_handoff_plain(manifest)
+    technical_summary = summarize_handoff_technical(manifest)
+    manifest["plain_summary"] = plain_summary
+    manifest["technical_summary"] = technical_summary
     write_text_no_overwrite(package_dir / "manifest.json", json.dumps(manifest, indent=2))
     write_text_no_overwrite(package_dir / "HANDOFF.md", handoff_markdown(manifest))
+    write_text_no_overwrite(package_dir / "PLAIN_SUMMARY.md", plain_summary_markdown(plain_summary))
+    write_text_no_overwrite(package_dir / "TECHNICAL_SUMMARY.md", technical_summary_markdown(technical_summary))
     return manifest
 
 
@@ -691,6 +827,138 @@ def read_package_detail(package_id: str) -> dict[str, Any]:
             "skipped": len(copies.get("skipped", [])),
         },
     }
+
+
+def latest_package_detail(path_text: str) -> dict[str, Any] | None:
+    packages = list_packages(path_text).get("packages", [])
+    if not packages:
+        return None
+    return read_package_detail(packages[0]["id"])
+
+
+def summarize_handoff_plain(manifest: dict[str, Any]) -> dict[str, Any]:
+    status = manifest.get("status_at_creation", {})
+    counts = status.get("counts", {})
+    copies = manifest.get("uncommitted_protection", {}).get("file_copies", {})
+    copied = copies.get("copied", [])
+    skipped = copies.get("skipped", [])
+    patches = manifest.get("uncommitted_protection", {}).get("patches", [])
+    operator = manifest.get("operator_context", {})
+    notes = str(manifest.get("notes", "")).strip()
+
+    achievements = [
+        f"Protected committed work with branch {manifest.get('committed_protection', {}).get('branch', '(unknown)')}.",
+        f"Saved {len(patches)} patch files and copied {len(copied)} changed/new files.",
+    ]
+    if notes:
+        achievements.append("Captured operator notes for the next session.")
+
+    concerns: list[str] = []
+    if counts.get("conflicted", 0):
+        concerns.append(f"{counts.get('conflicted')} conflicted file(s) need human review.")
+    if skipped:
+        concerns.append(f"{len(skipped)} changed path(s) were skipped during file copy protection.")
+    if status.get("dirty"):
+        concerns.append("The working tree had uncommitted work when the handoff was created.")
+    if not concerns:
+        concerns.append("No major handoff concerns were recorded.")
+
+    next_steps = [
+        "Read this plain-English summary first.",
+        "Review the technical details before applying any patch or copied file.",
+        "Run a fresh repository scan before making changes.",
+    ]
+
+    return {
+        "title": manifest.get("title", "PANDA handoff"),
+        "created_at": manifest.get("created_at", ""),
+        "active_user": operator.get("display_name", ""),
+        "major_events": [
+            f"Created handoff for repo {manifest.get('repo_root', '(unknown repo)')}.",
+            f"Recorded branch {manifest.get('branch_at_creation', '(unknown)')} at HEAD {manifest.get('short_head', '')}.",
+        ],
+        "achievements": achievements,
+        "concerns": concerns,
+        "next_steps": next_steps,
+        "notes": notes or "(none)",
+    }
+
+
+def summarize_handoff_technical(manifest: dict[str, Any]) -> dict[str, Any]:
+    protection = manifest.get("committed_protection", {})
+    uncommitted = manifest.get("uncommitted_protection", {})
+    copies = uncommitted.get("file_copies", {})
+    return {
+        "package_dir": manifest.get("package_dir", ""),
+        "repo_root": manifest.get("repo_root", ""),
+        "branch_at_creation": manifest.get("branch_at_creation", ""),
+        "head": manifest.get("head", ""),
+        "short_head": manifest.get("short_head", ""),
+        "protection_branch": protection.get("branch", ""),
+        "created_without_checkout": bool(protection.get("created_without_checkout")),
+        "patch_count": len(uncommitted.get("patches", [])),
+        "copied_count": len(copies.get("copied", [])),
+        "skipped_count": len(copies.get("skipped", [])),
+        "safety_receipt": manifest.get("safety_receipt", {}),
+    }
+
+
+def plain_summary_markdown(summary: dict[str, Any]) -> str:
+    def bullets(items: list[str]) -> list[str]:
+        return [f"- {item}" for item in items]
+
+    return "\n".join(
+        [
+            f"# Plain-English Summary: {summary.get('title', 'PANDA handoff')}",
+            "",
+            f"Created: {summary.get('created_at', '')}",
+            f"Active user: {summary.get('active_user') or '(not recorded)'}",
+            "",
+            "## Major Events",
+            "",
+            *bullets(summary.get("major_events", [])),
+            "",
+            "## Achievements",
+            "",
+            *bullets(summary.get("achievements", [])),
+            "",
+            "## Concerns",
+            "",
+            *bullets(summary.get("concerns", [])),
+            "",
+            "## Recommended Next Steps",
+            "",
+            *bullets(summary.get("next_steps", [])),
+            "",
+            "## Notes",
+            "",
+            str(summary.get("notes", "(none)")),
+        ]
+    )
+
+
+def technical_summary_markdown(summary: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            "# Technical Summary",
+            "",
+            f"Package: `{summary.get('package_dir', '')}`",
+            f"Repository: `{summary.get('repo_root', '')}`",
+            f"Branch at creation: `{summary.get('branch_at_creation', '')}`",
+            f"HEAD: `{summary.get('head', '')}`",
+            f"Protection branch: `{summary.get('protection_branch', '')}`",
+            f"Created without checkout: {summary.get('created_without_checkout')}",
+            f"Patch count: {summary.get('patch_count', 0)}",
+            f"Copied files: {summary.get('copied_count', 0)}",
+            f"Skipped files: {summary.get('skipped_count', 0)}",
+            "",
+            "## Safety Receipt",
+            "",
+            "```json",
+            json.dumps(summary.get("safety_receipt", {}), indent=2),
+            "```",
+        ]
+    )
 
 
 def file_sha256(path: Path) -> str:
@@ -859,6 +1127,206 @@ def list_packages(path_text: str | None = None) -> dict[str, Any]:
     return {"package_root": str(package_root), "packages": packages[:50]}
 
 
+def recent_messages(limit: int = 20) -> list[dict[str, Any]]:
+    return read_jsonl(history_file("messages.jsonl"), limit)
+
+
+def recent_timeline(limit: int = 30) -> list[dict[str, Any]]:
+    return read_jsonl(history_file("timeline.jsonl"), limit)
+
+
+def dashboard_for(path_text: str, operator_context: dict[str, Any] | None = None) -> dict[str, Any]:
+    context = normalize_operator_context(operator_context or {}, path_text)
+    state = load_control_state()
+    repo: dict[str, Any] | None = None
+    latest: dict[str, Any] | None = None
+    warnings: list[str] = []
+    blockers: list[str] = []
+
+    if state["paused"]:
+        blockers.append(f"Emergency Pause is active: {state['pause_reason'] or 'No reason recorded.'}")
+
+    try:
+        repo = repo_status(path_text)
+    except CollaboratorError as exc:
+        warnings.append(str(exc))
+
+    if repo:
+        if repo["dirty"]:
+            warnings.append("Repository has uncommitted work. Create a safe handoff before switching away.")
+        if repo["counts"].get("conflicted", 0):
+            blockers.append("Repository has conflicted files that need manual review.")
+        try:
+            latest = latest_package_detail(repo["repo_root"])
+        except CollaboratorError as exc:
+            warnings.append(f"Latest handoff could not be read: {exc}")
+    else:
+        blockers.append("Repository scan has not passed.")
+
+    if repo and latest is None:
+        warnings.append("No handoff package found for this repository yet.")
+
+    messages = recent_messages(12)
+    timeline = recent_timeline(16)
+    concern_count = sum(1 for item in messages + timeline if str(item.get("kind", "")).lower() == "concern")
+    achievement_count = sum(1 for item in messages + timeline if str(item.get("kind", "")).lower() == "achievement")
+
+    if blockers:
+        next_action = "Stop and resolve the blocker before starting work."
+    elif warnings:
+        next_action = "Review the warning, then use Start Session before editing files."
+    elif not state["start_work_enabled"]:
+        next_action = "Press Start Session / Start Work to run the automated checklist."
+    else:
+        next_action = "Work may begin. Keep notes, then use End Session / Create Handoff when finished."
+
+    latest_manifest = latest.get("manifest") if latest else None
+    return {
+        "ok": True,
+        "version": APP_VERSION,
+        "control_state": state,
+        "operator_context": context,
+        "repo": repo,
+        "latest_handoff": {
+            "id": latest.get("id"),
+            "plain": summarize_handoff_plain(latest_manifest),
+            "technical": summarize_handoff_technical(latest_manifest),
+        } if latest and latest_manifest else None,
+        "warnings": warnings,
+        "blockers": blockers,
+        "project_manager": {
+            "active_user": context.get("display_name") or "(not recorded)",
+            "repo_health": "Blocked" if blockers else "Needs review" if warnings else "Ready",
+            "latest_achievements": [item.get("text") or item.get("title") for item in messages + timeline if str(item.get("kind", "")).lower() == "achievement"][-3:],
+            "current_concerns": [item.get("text") or item.get("title") for item in messages + timeline if str(item.get("kind", "")).lower() == "concern"][-3:],
+            "recommended_next_action": next_action,
+            "collaborator_activity": {
+                "latest_agent": latest_manifest.get("agent", "") if latest_manifest else "",
+                "recent_messages": len(messages),
+                "recent_concerns": concern_count,
+                "recent_achievements": achievement_count,
+            },
+        },
+        "messages": messages,
+        "timeline": timeline,
+    }
+
+
+def start_session(payload: dict[str, Any]) -> dict[str, Any]:
+    path_text = str(payload.get("path", ""))
+    context = normalize_operator_context(payload.get("operator_context", {}), path_text)
+    dashboard = dashboard_for(path_text, context)
+    checklist = [
+        {"label": "Active user profile recorded", "ok": bool(context.get("display_name"))},
+        {"label": "Repository scan completed", "ok": dashboard.get("repo") is not None},
+        {"label": "Latest handoff reviewed or absence noted", "ok": True},
+        {"label": "Emergency Pause is not active", "ok": not dashboard["control_state"]["paused"]},
+        {"label": "No conflicted files detected", "ok": not any("conflicted" in item.lower() for item in dashboard["blockers"])},
+    ]
+    passed = all(item["ok"] for item in checklist)
+    state = dashboard["control_state"]
+    state["start_work_enabled"] = passed
+    state["last_started_at"] = local_timestamp()
+    save_control_state(state)
+    record_event("start-session", "Start session checklist ran", "Start Work enabled." if passed else "Start Work blocked.", context, "info" if passed else "warning")
+    dashboard = dashboard_for(path_text, context)
+    dashboard["checklist"] = checklist
+    dashboard["start_work_enabled"] = passed
+    return dashboard
+
+
+def write_daily_report(context: dict[str, Any], handoff: dict[str, Any] | None = None) -> dict[str, Any]:
+    root = history_root_path() / "daily_reports"
+    root.mkdir(parents=True, exist_ok=True)
+    day = dt.datetime.now().astimezone().strftime("%Y-%m-%d")
+    day_dir = root / day
+    day_dir.mkdir(parents=True, exist_ok=True)
+    path = day_dir / f"{utc_stamp()}-daily-report.md"
+    messages = recent_messages(50)
+    timeline = recent_timeline(80)
+    achievements = [item.get("text") or item.get("title", "") for item in messages + timeline if str(item.get("kind", "")).lower() == "achievement"]
+    concerns = [item.get("text") or item.get("title", "") for item in messages + timeline if str(item.get("kind", "")).lower() == "concern"]
+    content = "\n".join(
+        [
+            f"# PANDA Daily Report - {day}",
+            "",
+            f"Generated: {local_timestamp()}",
+            f"Active user: {context.get('display_name') or '(not recorded)'}",
+            "",
+            "## Major Events",
+            "",
+            *[f"- {item.get('title', item.get('kind', 'Event'))}: {item.get('detail', '')}" for item in timeline[-12:]],
+            "",
+            "## Achievements",
+            "",
+            *(f"- {item}" for item in (achievements[-8:] or ["No achievements recorded yet."])),
+            "",
+            "## Concerns",
+            "",
+            *(f"- {item}" for item in (concerns[-8:] or ["No concerns recorded yet."])),
+            "",
+            "## Latest Handoff",
+            "",
+            f"- {handoff.get('title', 'No handoff created in this report.') if handoff else 'No handoff created in this report.'}",
+        ]
+    )
+    write_text_no_overwrite(path, content)
+    event = record_event("daily-report", "Daily report created", str(path), context, "info")
+    return {"path": str(path), "event": event}
+
+
+def end_session(payload: dict[str, Any]) -> dict[str, Any]:
+    path_text = str(payload.get("path", ""))
+    context = normalize_operator_context(payload.get("operator_context", {}), path_text)
+    title = clean_setting_text(payload.get("title"), "PANDA end-session handoff", 90)
+    notes = clean_setting_text(payload.get("notes"), "", 4000)
+    agent = clean_setting_text(payload.get("agent"), context.get("display_name") or "PANDA", 80)
+    manifest = create_handoff_package(path_text, title, agent, notes, context)
+    state = load_control_state()
+    state["start_work_enabled"] = False
+    state["last_ended_at"] = local_timestamp()
+    save_control_state(state)
+    report = write_daily_report(context, manifest)
+    record_event("handoff", f"Handoff created: {manifest['title']}", manifest["package_dir"], context, "info")
+    return {"ok": True, "handoff": manifest, "daily_report": report, "control_state": load_control_state()}
+
+
+def set_pause(payload: dict[str, Any], paused: bool) -> dict[str, Any]:
+    context = normalize_operator_context(payload.get("operator_context", {}))
+    state = load_control_state()
+    state["paused"] = paused
+    state["pause_reason"] = clean_setting_text(payload.get("reason"), "", 240) if paused else ""
+    if paused:
+        state["start_work_enabled"] = False
+    state = save_control_state(state)
+    record_event("pause" if paused else "pause-clear", "Emergency Pause activated" if paused else "Emergency Pause cleared", state["pause_reason"], context, "warning" if paused else "info")
+    return {"ok": True, "control_state": state}
+
+
+def search_history(query: str) -> dict[str, Any]:
+    needle = query.strip().lower()
+    results: list[dict[str, Any]] = []
+    sources = [
+        ("message", history_file("messages.jsonl")),
+        ("timeline", history_file("timeline.jsonl")),
+    ]
+    for source, path in sources:
+        for item in read_jsonl(path, 500):
+            text = json.dumps(item, sort_keys=True).lower()
+            if not needle or needle in text:
+                item = dict(item)
+                item["source"] = source
+                results.append(item)
+    reports_root = history_root_path() / "daily_reports"
+    if reports_root.exists():
+        for report in reports_root.glob("*/*.md"):
+            text = report.read_text(encoding="utf-8", errors="replace")
+            if not needle or needle in text.lower():
+                results.append({"source": "daily-report", "path": str(report), "created_at": local_timestamp(), "text": text[:1200]})
+    results.sort(key=lambda item: item.get("created_at", ""), reverse=True)
+    return {"query": query, "results": results[:50]}
+
+
 def json_response(handler: BaseHTTPRequestHandler, payload: Any, status: int = 200) -> None:
     data = json.dumps(payload, indent=2).encode("utf-8")
     handler.send_response(status)
@@ -910,6 +1378,30 @@ class PandaHandler(BaseHTTPRequestHandler):
                 return json_response(self, list_packages(repo))
             except CollaboratorError as exc:
                 return json_response(self, {"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        if parsed.path == "/api/control-center":
+            params = urllib.parse.parse_qs(parsed.query)
+            repo = params.get("path", [""])[0]
+            context = {
+                "user_id": params.get("user_id", [""])[0],
+                "display_name": params.get("display_name", [""])[0],
+                "codex_account": params.get("codex_account", [""])[0],
+                "claude_account": params.get("claude_account", [""])[0],
+                "git_author_name": params.get("git_author_name", [""])[0],
+                "git_author_email": params.get("git_author_email", [""])[0],
+                "repo_path": repo,
+            }
+            try:
+                return json_response(self, dashboard_for(repo, context))
+            except CollaboratorError as exc:
+                return json_response(self, {"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        if parsed.path == "/api/messages":
+            return json_response(self, {"ok": True, "messages": recent_messages(50)})
+        if parsed.path == "/api/timeline":
+            return json_response(self, {"ok": True, "timeline": recent_timeline(80)})
+        if parsed.path == "/api/search":
+            params = urllib.parse.parse_qs(parsed.query)
+            query = params.get("q", [""])[0]
+            return json_response(self, {"ok": True, **search_history(query)})
         if parsed.path == "/api/package":
             params = urllib.parse.parse_qs(parsed.query)
             package_id = params.get("id", [""])[0]
@@ -938,6 +1430,16 @@ class PandaHandler(BaseHTTPRequestHandler):
                     payload.get("operator_context", {}),
                 )
                 return json_response(self, {"ok": True, "handoff": manifest})
+            if parsed.path == "/api/session/start":
+                return json_response(self, {"ok": True, "session": start_session(payload)})
+            if parsed.path == "/api/session/end":
+                return json_response(self, end_session(payload))
+            if parsed.path == "/api/message":
+                return json_response(self, {"ok": True, "message": create_message(payload)})
+            if parsed.path == "/api/pause":
+                return json_response(self, set_pause(payload, True))
+            if parsed.path == "/api/pause/clear":
+                return json_response(self, set_pause(payload, False))
             if parsed.path == "/api/restore/preview":
                 plan = preview_restore_plan(str(payload.get("package_id", "")), str(payload.get("path", "")))
                 return json_response(self, {"ok": True, "plan": plan})

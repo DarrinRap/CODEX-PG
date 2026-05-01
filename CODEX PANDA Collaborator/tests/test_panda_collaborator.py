@@ -142,6 +142,7 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-test-"))
         self.repo = self.tmp / "repo"
         self.package_root = self.tmp / "packages"
+        self.history_root = self.tmp / "history"
         self.repo.mkdir()
         run(["git", "init"], self.repo)
         run(["git", "config", "user.name", "PANDA Test"], self.repo)
@@ -150,13 +151,19 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         run(["git", "add", "tracked.txt"], self.repo)
         run(["git", "commit", "-m", "base"], self.repo)
         self.old_package_root = pc.os.environ.get("PANDA_COLLABORATOR_PACKAGE_ROOT")
+        self.old_history_root = pc.os.environ.get("PANDA_COLLABORATOR_HISTORY_ROOT")
         pc.os.environ["PANDA_COLLABORATOR_PACKAGE_ROOT"] = str(self.package_root)
+        pc.os.environ["PANDA_COLLABORATOR_HISTORY_ROOT"] = str(self.history_root)
 
     def tearDown(self):
         if self.old_package_root is None:
             pc.os.environ.pop("PANDA_COLLABORATOR_PACKAGE_ROOT", None)
         else:
             pc.os.environ["PANDA_COLLABORATOR_PACKAGE_ROOT"] = self.old_package_root
+        if self.old_history_root is None:
+            pc.os.environ.pop("PANDA_COLLABORATOR_HISTORY_ROOT", None)
+        else:
+            pc.os.environ["PANDA_COLLABORATOR_HISTORY_ROOT"] = self.old_history_root
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_handoff_protects_committed_and_uncommitted_work(self):
@@ -184,6 +191,8 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertTrue(package_dir.exists())
         self.assertTrue((package_dir / "manifest.json").exists())
         self.assertTrue((package_dir / "HANDOFF.md").exists())
+        self.assertTrue((package_dir / "PLAIN_SUMMARY.md").exists())
+        self.assertTrue((package_dir / "TECHNICAL_SUMMARY.md").exists())
         self.assertTrue((package_dir / "patches" / "unstaged-working-tree.patch").exists())
         self.assertTrue((package_dir / "patches" / "staged-index.patch").exists())
         self.assertTrue((package_dir / "file_copies" / "tracked.txt").exists())
@@ -228,6 +237,47 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertGreaterEqual(len(plan["patch_checks"]), 1)
         self.assertEqual(len(plan["copy_checks"]), 2)
         self.assertIn("Target repository has uncommitted work; automated restore must stay unavailable.", plan["blockers"])
+
+        context = {
+            "user_id": "user1",
+            "display_name": "Darrin",
+            "codex_account": "darrin-codex@example.invalid",
+            "claude_account": "darrin-claude@example.invalid",
+            "git_author_name": "Darrin",
+            "git_author_email": "darrin@example.invalid",
+            "repo_path": str(self.repo),
+            "shared_git_working_tree": True,
+        }
+        message = pc.create_message({"kind": "concern", "text": "Watch the working change.", "operator_context": context})
+        self.assertEqual(message["kind"], "concern")
+        dashboard = pc.dashboard_for(str(self.repo), context)
+        self.assertIn("project_manager", dashboard)
+        self.assertIn("recommended_next_action", dashboard["project_manager"])
+
+        start = pc.start_session({"path": str(self.repo), "operator_context": context})
+        self.assertIn("checklist", start)
+        self.assertTrue((self.history_root / "timeline.jsonl").exists())
+
+        paused = pc.set_pause({"reason": "Need review", "operator_context": context}, True)
+        self.assertTrue(paused["control_state"]["paused"])
+        self.assertFalse(paused["control_state"]["start_work_enabled"])
+        cleared = pc.set_pause({"operator_context": context}, False)
+        self.assertFalse(cleared["control_state"]["paused"])
+
+        search = pc.search_history("working change")
+        self.assertGreaterEqual(len(search["results"]), 1)
+
+        ended = pc.end_session(
+            {
+                "path": str(self.repo),
+                "title": "guided closeout",
+                "agent": "Codex",
+                "notes": "Optional closeout note.",
+                "operator_context": context,
+            }
+        )
+        self.assertTrue(Path(ended["daily_report"]["path"]).exists())
+        self.assertTrue(Path(ended["handoff"]["package_dir"], "PLAIN_SUMMARY.md").exists())
 
 
 if __name__ == "__main__":

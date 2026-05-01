@@ -2,7 +2,7 @@
 
 Windows shared AI coding workstation handoff manager.
 
-Current version: `0.8.0`.
+Current version: `0.9.0`.
 
 ## Safety Model
 
@@ -90,6 +90,12 @@ Default package root:
 C:\CODEX PG\CODEX PANDA Collaborator\CODEX handoff packages
 ```
 
+Default project history root:
+
+```text
+C:\CODEX PG\CODEX PANDA Collaborator\CODEX project history
+```
+
 Override with:
 
 ```powershell
@@ -130,6 +136,25 @@ If both users use the same repository path, they share the same git working tree
 The active user is shown in large text at the top of the screen. User 1 uses a warm amber/coral theme. User 2 uses a cool cyan/teal theme. The color change is intentional so the operator can tell which user is active at a glance.
 
 On first run, registration opens automatically. The required order is User 1 registration, then User 2 registration, then the Collaborator Hub. The Hub has GO / Switch buttons for both users. A GO / Switch action saves the active user, applies that user's defaults, changes the screen theme, and scans the repository automatically.
+
+## v0.9 Control Center
+
+PANDA now includes a one-project control center.
+
+The control center adds:
+
+- Start Session / Start Work automation;
+- End Session / Handoff automation;
+- plain-English and technical handoff summary views;
+- saved project messages;
+- Project Manager view;
+- project timeline;
+- daily report archive;
+- search across messages, timeline, and reports;
+- Claude/Codex activity context;
+- Emergency Pause / Stop Work mode.
+
+PANDA automates safe actions such as scanning, reading handoffs, summarizing, logging, and creating safe handoff packages. It still does not automate destructive Git work, branch switching, credential entry, restore, merge, rebase, conflict resolution, force push, or deletion.
 
 Settings are saved locally outside git:
 

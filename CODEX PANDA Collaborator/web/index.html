@@ -823,6 +823,80 @@
       overflow: auto;
     }
 
+    .hidden { display: none !important; }
+
+    .workflow-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .workflow-actions button {
+      min-width: 0;
+      min-height: 30px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .danger {
+      background: var(--bad);
+      border-color: var(--bad);
+      color: #fff;
+    }
+
+    .manager-box,
+    .message-box,
+    .summary-box {
+      display: grid;
+      gap: 7px;
+    }
+
+    .manager-card {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--field);
+      padding: 6px;
+    }
+
+    .manager-card b {
+      display: block;
+      color: var(--accent);
+      font-size: 10px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .manager-card span,
+    .manager-card li {
+      color: var(--soft);
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .manager-card ul {
+      margin: 0;
+      padding-left: 15px;
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .view-toggle button {
+      min-height: 22px;
+      font-size: 10px;
+      padding: 0 6px;
+    }
+
+    .view-toggle button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
     .setup-overlay {
       position: fixed;
       inset: 0;
@@ -1103,8 +1177,16 @@
                 <label>Notes
                   <textarea id="handoffNotes" placeholder="Current intent, risks, next action"></textarea>
                 </label>
-                <div class="actions">
+                <label>Quick message
+                  <input id="messageText" maxlength="500" placeholder="Short note, concern, achievement, or next step">
+                </label>
+                <div class="workflow-actions">
+                  <button class="primary" id="startSessionBtn" type="button">Start Session / Start Work</button>
+                  <button id="endSessionBtn" type="button">End Session / Handoff</button>
+                  <button id="messageBtn" type="button">Save Message</button>
                   <button class="primary" id="handoffBtn" disabled>Create safe handoff</button>
+                  <button class="danger" id="pauseBtn" type="button">Emergency Pause</button>
+                  <button id="clearPauseBtn" type="button">Clear Pause</button>
                 </div>
               </div>
             </div>
@@ -1123,11 +1205,26 @@
 
         <section class="panel files-panel">
           <div class="panel-head">
-            <h2>Changed Files</h2>
+            <h2 id="rightPanelTitle">Changed Files</h2>
             <span class="chip" id="fileChip">0</span>
           </div>
           <div class="panel-body">
+            <div class="view-toggle">
+              <button type="button" class="active" data-side-view="files">Files</button>
+              <button type="button" data-side-view="manager">Manager</button>
+              <button type="button" data-side-view="timeline">Timeline</button>
+              <button type="button" data-side-view="search">Search</button>
+            </div>
             <ul class="file-list" id="fileList"></ul>
+            <div class="manager-box hidden" id="managerBox"></div>
+            <div class="manager-box hidden" id="timelineBox"></div>
+            <div class="manager-box hidden" id="searchBox">
+              <label>Search history
+                <input id="searchText" maxlength="120" placeholder="Search handoffs, messages, reports">
+              </label>
+              <button type="button" id="searchBtn">Search</button>
+              <div id="searchResults" class="manager-box"></div>
+            </div>
           </div>
         </section>
       </section>
@@ -1309,7 +1406,9 @@
       packageRoot: '',
       settings: null,
       busy: false,
-      registrationStage: 'user1'
+      registrationStage: 'user1',
+      control: null,
+      sideView: 'files'
     };
 
     const $ = id => document.getElementById(id);
@@ -1329,6 +1428,12 @@
       $('scanBtn').disabled = isBusy;
       $('packagesBtn').disabled = isBusy;
       $('handoffBtn').disabled = isBusy || !state.repo || !setupReady().allReady;
+      $('startSessionBtn').disabled = isBusy || !setupReady().allReady;
+      $('endSessionBtn').disabled = isBusy || !state.repo || !setupReady().allReady;
+      $('messageBtn').disabled = isBusy || !setupReady().allReady;
+      $('pauseBtn').disabled = isBusy || !setupReady().allReady;
+      $('clearPauseBtn').disabled = isBusy;
+      $('searchBtn').disabled = isBusy;
       $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
       document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
         button.disabled = isBusy;
@@ -1892,6 +1997,187 @@
       };
     }
 
+    function listMarkup(items) {
+      const rows = (items || []).filter(Boolean);
+      return rows.length ? `<ul>${rows.slice(-5).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<span>Nothing recorded yet.</span>';
+    }
+
+    function renderControlCenter(data) {
+      state.control = data?.session || data;
+      const control = state.control || {};
+      const pm = control.project_manager || {};
+      const latest = control.latest_handoff;
+      const paused = control.control_state?.paused;
+      $('startSessionBtn').textContent = control.control_state?.start_work_enabled ? 'Start Work: Ready' : 'Start Session / Start Work';
+      $('pauseBtn').textContent = paused ? 'Paused' : 'Emergency Pause';
+      $('pauseBtn').disabled = state.busy || paused || !setupReady().allReady;
+      $('clearPauseBtn').disabled = state.busy || !paused;
+      $('managerBox').innerHTML = `
+        <div class="manager-card"><b>Recommended next action</b><span>${escapeHtml(pm.recommended_next_action || 'Run Start Session.')}</span></div>
+        <div class="manager-card"><b>Repo health</b><span>${escapeHtml(pm.repo_health || 'Unknown')}</span></div>
+        <div class="manager-card"><b>Latest handoff</b><span>${escapeHtml(latest?.plain?.title || 'No handoff found yet.')}</span></div>
+        <div class="manager-card"><b>Achievements</b>${listMarkup(pm.latest_achievements)}</div>
+        <div class="manager-card"><b>Concerns</b>${listMarkup(pm.current_concerns)}</div>
+        <div class="manager-card"><b>Collaborator activity</b><span>Latest agent: ${escapeHtml(pm.collaborator_activity?.latest_agent || 'none yet')}. Messages: ${pm.collaborator_activity?.recent_messages || 0}; concerns: ${pm.collaborator_activity?.recent_concerns || 0}.</span></div>
+      `;
+      const timeline = control.timeline || [];
+      $('timelineBox').innerHTML = timeline.length
+        ? timeline.slice(-16).reverse().map(item => `
+            <div class="manager-card">
+              <b>${escapeHtml(item.kind || 'event')} - ${escapeHtml(item.title || '')}</b>
+              <span>${escapeHtml(item.created_at || '')}</span><br>
+              <span>${escapeHtml(item.detail || '')}</span>
+            </div>
+          `).join('')
+        : '<div class="empty">No timeline events yet.</div>';
+      if (latest?.plain) {
+        showResult(`
+          <strong>Latest handoff summary</strong><br>
+          <div class="view-toggle">
+            <button type="button" class="active" data-summary-view="plain">Plain English</button>
+            <button type="button" data-summary-view="technical">Technical</button>
+          </div>
+          <div id="summaryPlain" class="summary-box">
+            <div class="manager-card"><b>Major events</b>${listMarkup(latest.plain.major_events)}</div>
+            <div class="manager-card"><b>Achievements</b>${listMarkup(latest.plain.achievements)}</div>
+            <div class="manager-card"><b>Concerns</b>${listMarkup(latest.plain.concerns)}</div>
+            <div class="manager-card"><b>Next steps</b>${listMarkup(latest.plain.next_steps)}</div>
+          </div>
+          <div id="summaryTechnical" class="summary-box hidden">
+            <div class="manager-card"><b>Branch</b><span>${escapeHtml(latest.technical?.branch_at_creation || '')}</span></div>
+            <div class="manager-card"><b>HEAD</b><span>${escapeHtml(latest.technical?.short_head || '')}</span></div>
+            <div class="manager-card"><b>Protection</b><span>${escapeHtml(latest.technical?.protection_branch || '')}</span></div>
+            <div class="manager-card"><b>Files</b><span>Patches: ${latest.technical?.patch_count || 0}; copied: ${latest.technical?.copied_count || 0}; skipped: ${latest.technical?.skipped_count || 0}</span></div>
+          </div>
+        `);
+      }
+      renderSideView();
+    }
+
+    function renderSideView() {
+      ['fileList', 'managerBox', 'timelineBox', 'searchBox'].forEach(id => $(id).classList.add('hidden'));
+      const titles = {files: 'Changed Files', manager: 'Project Manager', timeline: 'Timeline', search: 'Search'};
+      $('rightPanelTitle').textContent = titles[state.sideView] || 'Changed Files';
+      if (state.sideView === 'files') $('fileList').classList.remove('hidden');
+      if (state.sideView === 'manager') $('managerBox').classList.remove('hidden');
+      if (state.sideView === 'timeline') $('timelineBox').classList.remove('hidden');
+      if (state.sideView === 'search') $('searchBox').classList.remove('hidden');
+      document.querySelectorAll('[data-side-view]').forEach(button => {
+        button.classList.toggle('active', button.dataset.sideView === state.sideView);
+      });
+    }
+
+    async function refreshControlCenter() {
+      if (!setupReady().allReady) return;
+      try {
+        const context = activeOperatorContext();
+        const params = new URLSearchParams({
+          path: $('repoPath').value,
+          user_id: context.user_id,
+          display_name: context.display_name,
+          codex_account: context.codex_account,
+          claude_account: context.claude_account,
+          git_author_name: context.git_author_name,
+          git_author_email: context.git_author_email
+        });
+        const data = await apiGet(`/api/control-center?${params.toString()}`);
+        renderControlCenter(data);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      }
+    }
+
+    async function startSessionWorkflow() {
+      setBusy(true);
+      try {
+        const data = await api('/api/session/start', {
+          path: $('repoPath').value,
+          operator_context: activeOperatorContext()
+        });
+        renderControlCenter(data.session);
+        await scanRepo();
+        showResult(`Start Session complete. ${data.session.start_work_enabled ? '<strong>Start Work is ready.</strong>' : '<strong>Start Work is blocked.</strong>'}`);
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function endSessionWorkflow() {
+      setBusy(true);
+      try {
+        const data = await api('/api/session/end', {
+          path: $('repoPath').value,
+          title: $('handoffTitle').value || 'PANDA end-session handoff',
+          agent: $('handoffAgent').value,
+          notes: $('handoffNotes').value,
+          operator_context: activeOperatorContext()
+        });
+        const handoff = data.handoff;
+        showResult(`End Session complete.<br><span>Handoff: <span class="path">${escapeHtml(handoff.package_dir)}</span></span><br><span>Daily report: <span class="path">${escapeHtml(data.daily_report?.path || '')}</span></span>`);
+        await scanRepo();
+        await refreshControlCenter();
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function saveMessageWorkflow(kind = 'note') {
+      setBusy(true);
+      try {
+        const text = $('messageText').value.trim();
+        const data = await api('/api/message', {
+          kind,
+          text,
+          author: activeProfile()?.display_name || 'PANDA user',
+          operator_context: activeOperatorContext()
+        });
+        $('messageText').value = '';
+        showResult(`Message saved: <strong>${escapeHtml(data.message.kind)}</strong><br>${escapeHtml(data.message.text)}`);
+        await refreshControlCenter();
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function pauseWorkflow(paused) {
+      setBusy(true);
+      try {
+        const reason = paused ? ($('messageText').value.trim() || 'Manual Emergency Pause') : '';
+        const data = await api(paused ? '/api/pause' : '/api/pause/clear', {
+          reason,
+          operator_context: activeOperatorContext()
+        });
+        showResult(paused ? `Emergency Pause active: <strong>${escapeHtml(reason)}</strong>` : 'Emergency Pause cleared.');
+        renderControlCenter({control_state: data.control_state, project_manager: {recommended_next_action: paused ? 'Stop work until the pause is cleared.' : 'Run Start Session before work resumes.'}, timeline: state.control?.timeline || [], messages: state.control?.messages || []});
+        await refreshControlCenter();
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function runSearch() {
+      setBusy(true);
+      try {
+        const query = $('searchText').value.trim();
+        const data = await apiGet(`/api/search?q=${encodeURIComponent(query)}`);
+        $('searchResults').innerHTML = (data.results || []).length
+          ? data.results.map(item => `<div class="manager-card"><b>${escapeHtml(item.source)} - ${escapeHtml(item.kind || item.title || '')}</b><span>${escapeHtml(item.text || item.detail || item.path || '')}</span></div>`).join('')
+          : '<div class="empty">No matching history found.</div>';
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
     async function createHandoff() {
       setBusy(true);
       try {
@@ -1926,6 +2212,7 @@
         `);
         await scanRepo();
         await loadPackages(false);
+        await refreshControlCenter();
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
@@ -2045,6 +2332,12 @@
 
     $('scanBtn').addEventListener('click', scanRepo);
     $('handoffBtn').addEventListener('click', createHandoff);
+    $('startSessionBtn').addEventListener('click', startSessionWorkflow);
+    $('endSessionBtn').addEventListener('click', endSessionWorkflow);
+    $('messageBtn').addEventListener('click', () => saveMessageWorkflow('note'));
+    $('pauseBtn').addEventListener('click', () => pauseWorkflow(true));
+    $('clearPauseBtn').addEventListener('click', () => pauseWorkflow(false));
+    $('searchBtn').addEventListener('click', runSearch);
     $('packagesBtn').addEventListener('click', loadPackages);
     $('openSetupBtn').addEventListener('click', openSetupWizard);
     $('closeSetupBtn').addEventListener('click', closeSetupWizard);
@@ -2063,6 +2356,12 @@
         performGoSwitch(button.dataset.switchGo);
       });
     });
+    document.querySelectorAll('[data-side-view]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.sideView = button.dataset.sideView;
+        renderSideView();
+      });
+    });
     ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
       $(id).addEventListener('input', () => {
         syncAllRegistrationFieldsToState();
@@ -2077,6 +2376,16 @@
       }
     });
     $('resultBox').addEventListener('click', event => {
+      const summaryButton = event.target.closest('button[data-summary-view]');
+      if (summaryButton) {
+        const view = summaryButton.dataset.summaryView;
+        $('summaryPlain')?.classList.toggle('hidden', view !== 'plain');
+        $('summaryTechnical')?.classList.toggle('hidden', view !== 'technical');
+        document.querySelectorAll('[data-summary-view]').forEach(button => {
+          button.classList.toggle('active', button.dataset.summaryView === view);
+        });
+        return;
+      }
       const button = event.target.closest('button[data-package-id]');
       if (button) {
         loadPackageDetail(button.dataset.packageId);
@@ -2094,6 +2403,7 @@
       if (savedPath) $('repoPath').value = savedPath;
       try {
         await loadSettings();
+        await refreshControlCenter();
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       }

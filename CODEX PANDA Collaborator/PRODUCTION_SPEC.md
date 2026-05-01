@@ -135,3 +135,163 @@ The project includes Windows helper scripts:
 - No merge/rebase/conflict automation.
 - No remote push orchestration.
 - No deletion of packages or branches from the UI.
+
+## v0.9 Control Center Design Spec
+
+PANDA Collaborator v0.9 expands the app from a handoff-only tool into the main local control center for one active project.
+
+The control center must stay safety-first. It may automate safe reading, scanning, summarizing, logging, and package creation. It must not automate destructive Git actions, credential entry, branch switching, merge/rebase, conflict resolution, restore, delete, or force push.
+
+### Start Session Workflow
+
+The app must provide a clear Start Session flow after a user presses GO / Switch.
+
+The workflow should automate as much as possible:
+
+1. Confirm the active user profile is complete.
+2. Apply the active user's defaults.
+3. Scan the repository.
+4. Find the latest handoff package for the active repo.
+5. Summarize the latest handoff in plain language.
+6. Show concerns, achievements, and recommended next action.
+7. Log the start-session event.
+8. Enable a clear Start Work state only after required checks pass.
+
+If there is no latest handoff, PANDA should say so plainly and recommend creating a fresh handoff before serious work continues.
+
+### Plain-English And Technical Views
+
+PANDA must support two handoff summary views:
+
+- Plain-English view: major events, achievements, concerns, next steps, and active user context.
+- Technical view: branch, `HEAD`, package path, patch counts, copied file counts, skipped files, and safety receipt.
+
+The UI must provide a simple toggle between these views.
+
+### Messages And Saved Communication
+
+PANDA must include a simple message/status window.
+
+Messages must:
+
+- be visible in the app;
+- be saved to readable local files;
+- preserve author, timestamp, kind, text, and active user context;
+- be included in project history/search.
+
+The app should support short notes such as what was done, concerns, achievements, and next steps.
+
+### End Session / Create Handoff Workflow
+
+PANDA must provide a guided End Session / Create Handoff workflow.
+
+The workflow should automate:
+
+1. Repository scan.
+2. Collection of optional plain-English closeout notes.
+3. Safe handoff package creation.
+4. Plain-English summary creation.
+5. Technical record creation.
+6. Timeline logging.
+7. Daily report update.
+8. Recommended next action update.
+
+Closeout notes are encouraged but not required.
+
+If PANDA cannot directly perform a safe action, it should prepare the required text or command, copy it to the clipboard when possible, and clearly tell the user what it copied and why manual action is required.
+
+### Project Timeline
+
+PANDA must keep a chronological project timeline.
+
+The timeline should record:
+
+- user switches;
+- start sessions;
+- repo scans;
+- handoff packages;
+- messages;
+- concerns;
+- achievements;
+- emergency pause/clear events;
+- daily report creation.
+
+The timeline should be visible in the UI and searchable.
+
+### Project Manager View
+
+PANDA must include a Project Manager View that summarizes the project in plain language:
+
+- active user;
+- repo health;
+- latest achievements;
+- current concerns;
+- recommended next action;
+- latest handoff summary;
+- recent timeline events;
+- Claude/Codex collaborator activity.
+
+### Daily Reports And Archive Logs
+
+PANDA must create a daily plain-English project report when work happens that day.
+
+Reports and logs must be archived locally in readable files. They should preserve enough detail to reconstruct the day without relying on memory.
+
+### Search
+
+PANDA must provide simple search across:
+
+- messages;
+- timeline events;
+- handoff summaries;
+- daily reports;
+- concerns;
+- achievements;
+- collaborator activity.
+
+### Collaborator Activity
+
+PANDA must treat Claude and Codex as visible collaborators when account/agent context is available.
+
+The app should show recent activity such as:
+
+- last active collaborator;
+- latest handoff author/agent;
+- recent concern count;
+- recent message count.
+
+### Recommendations
+
+PANDA must show a simple "What should happen next?" recommendation.
+
+The recommendation should be based on:
+
+- setup completion;
+- emergency pause status;
+- repo scan status;
+- dirty/clean working tree;
+- latest handoff availability;
+- latest concerns;
+- recent timeline activity.
+
+### Emergency Pause / Stop Work
+
+PANDA must provide Emergency Pause / Stop Work mode.
+
+When active:
+
+- the UI must show strong warning language;
+- Start Work should be blocked;
+- the reason must be logged;
+- the user must be able to clear the pause with a clear event.
+
+Emergency Pause must not modify project files.
+
+### Automatic Versus Manual Actions
+
+PANDA must clearly separate:
+
+- safe automatic actions PANDA performs itself;
+- manual actions PANDA cannot safely perform.
+
+Manual actions should be shown in plain language with clear instructions.
