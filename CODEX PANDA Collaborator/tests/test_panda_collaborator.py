@@ -360,6 +360,18 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("Information only:", html)
         self.assertIn("Preview restore safety only. This checks risk but does not change files.", html)
 
+    def test_create_safe_handoff_button_is_prominent_and_state_colored(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        handoff_panel = html.split('data-flow-panel="handoff"', 1)[1].split('</section>', 1)[0]
+
+        self.assertEqual(html.count('id="handoffBtn"'), 1)
+        self.assertLess(handoff_panel.index('id="handoffBtn"'), handoff_panel.index('class="handoff-fields"'))
+        self.assertIn('class="handoff-primary-action" id="handoffBtn" disabled>Create safe handoff</button>', html)
+        self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?width:\s*100%;")
+        self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?min-height:\s*48px;")
+        self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
+        self.assertRegex(html, r"(?s)\.handoff-primary-action:disabled\s*\{.*?background:\s*linear-gradient\(180deg, #4a4a56, #353542\);")
+
     def test_setup_dialog_is_centered_and_shows_three_setup_columns(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 

@@ -163,6 +163,7 @@ PANDA must visually separate passive information from user actions.
 - Disabled future actions may be visually dimmed or locked, but they must retain action-button shape so the user can tell they are unavailable commands, not passive information.
 - Tabs and segmented controls are still actions; keep them rectangular even when compact.
 - Every action button and every passive pill must provide a plain-language tooltip that tells the user what the item means or what will happen if clicked.
+- The Create safe handoff button is the primary purpose action. It must be full-width or otherwise visually dominant in the Create Handoff panel, stay visible above secondary handoff actions, render grey when prerequisites are incomplete, and turn green only when the app state is ready to create the protected handoff package.
 
 ### Start Session Workflow
 
