@@ -1,6 +1,6 @@
 # PANDA Collaborator Acceptance Report
 
-Accepted version: `0.7.0`
+Accepted version: `0.8.0`
 
 Date: 2026-04-30
 
@@ -16,12 +16,14 @@ PANDA Collaborator is accepted as a safety-first Windows shared AI coding workst
 - inspect handoff manifests without arbitrary path reads;
 - preview restore safety without mutating the target repository;
 - guide registration for exactly two customizable local user profiles in order: User 1, then User 2;
+- collect per-user Codex account label, Claude account label, Git author name, and Git author email;
 - open a Collaborator Hub with GO / Switch buttons after registration;
 - automate the user switch process from the GO / Switch buttons;
 - show the active user name in large top-of-screen text;
 - visibly differentiate User 1 and User 2 with different color themes;
 - run locally through a Windows start script;
 - verify itself through a Windows test script.
+- write session/account context into handoff docs so the next Claude/Codex session can continue with history intact.
 
 ## Safety Acceptance
 

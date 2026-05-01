@@ -88,6 +88,8 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         self.assertEqual(settings["active_user_id"], "user1")
         self.assertEqual([user["id"] for user in settings["users"]], ["user1", "user2"])
         self.assertEqual(settings["users"][0]["display_name"], "User 1")
+        self.assertEqual(settings["users"][0]["codex_account"], "")
+        self.assertEqual(settings["users"][0]["claude_account"], "")
 
     def test_save_settings_persists_two_custom_names(self):
         saved = pc.save_settings(
@@ -99,12 +101,20 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
                         "default_repo_path": str(self.tmp / "repo-a"),
                         "handoff_agent": "Codex",
                         "handoff_title": "Darrin handoff",
+                        "codex_account": "darrin-codex@example.invalid",
+                        "claude_account": "darrin-claude@example.invalid",
+                        "git_author_name": "Darrin",
+                        "git_author_email": "darrin@example.invalid",
                     },
                     {
                         "display_name": "CD",
                         "default_repo_path": str(self.tmp / "repo-b"),
                         "handoff_agent": "Claude",
                         "handoff_title": "CD handoff",
+                        "codex_account": "cd-codex@example.invalid",
+                        "claude_account": "cd-claude@example.invalid",
+                        "git_author_name": "CD",
+                        "git_author_email": "cd@example.invalid",
                     },
                 ],
             }
@@ -115,6 +125,8 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         self.assertEqual([user["display_name"] for user in saved["users"]], ["Darrin", "CD"])
         loaded = pc.load_settings()
         self.assertEqual(loaded["users"][1]["handoff_title"], "CD handoff")
+        self.assertEqual(loaded["users"][0]["codex_account"], "darrin-codex@example.invalid")
+        self.assertEqual(loaded["users"][1]["git_author_email"], "cd@example.invalid")
 
         pc.save_settings(saved)
         backups = list(self.tmp.glob("settings.local.*.bak.json"))
@@ -151,7 +163,22 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         (self.repo / "tracked.txt").write_text("base\nworking change\n", encoding="utf-8")
         (self.repo / "new-note.md").write_text("# untracked\n", encoding="utf-8")
 
-        manifest = pc.create_handoff_package(str(self.repo), "handoff test", "Codex", "verify safety")
+        manifest = pc.create_handoff_package(
+            str(self.repo),
+            "handoff test",
+            "Codex",
+            "verify safety",
+            {
+                "user_id": "user1",
+                "display_name": "Darrin",
+                "codex_account": "darrin-codex@example.invalid",
+                "claude_account": "darrin-claude@example.invalid",
+                "git_author_name": "Darrin",
+                "git_author_email": "darrin@example.invalid",
+                "repo_path": str(self.repo),
+                "shared_git_working_tree": True,
+            },
+        )
 
         package_dir = Path(manifest["package_dir"])
         self.assertTrue(package_dir.exists())
@@ -163,6 +190,8 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertTrue((package_dir / "file_copies" / "new-note.md").exists())
         self.assertFalse(manifest["stash_used"])
         self.assertTrue(manifest["committed_protection"]["created_without_checkout"])
+        self.assertEqual(manifest["operator_context"]["display_name"], "Darrin")
+        self.assertEqual(manifest["operator_context"]["codex_account"], "darrin-codex@example.invalid")
 
         branch = manifest["committed_protection"]["branch"]
         refs = run(["git", "show-ref", "--verify", f"refs/heads/{branch}"], self.repo)
@@ -186,6 +215,9 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertTrue(detail["branch_exists"])
         self.assertEqual(detail["counts"]["patches"], 2)
         self.assertIn("# handoff test", detail["handoff_preview"])
+        self.assertIn("## Session / Account Context", detail["handoff_preview"])
+        self.assertIn("Codex account label: darrin-codex@example.invalid", detail["handoff_preview"])
+        self.assertIn("If both users use the same repository path", detail["handoff_preview"])
 
         before_preview_status = run(["git", "status", "--porcelain=v1", "-uall"], self.repo).stdout
         plan = pc.preview_restore_plan(packages["packages"][0]["id"], str(self.repo))

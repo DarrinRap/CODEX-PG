@@ -393,6 +393,13 @@
       white-space: nowrap;
     }
 
+    .hub-card small {
+      color: var(--soft);
+      font-size: 10px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
     .hub-card button {
       min-height: 30px;
       font-size: 11px;
@@ -561,7 +568,8 @@
     }
 
     .setup-names,
-    .profile-defaults {
+    .profile-defaults,
+    .account-defaults {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 6px;
@@ -570,6 +578,22 @@
 
     .profile-title {
       grid-column: 1 / -1;
+    }
+
+    .account-defaults {
+      padding-top: 2px;
+    }
+
+    .identity-note {
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--warn);
+      border-radius: 4px;
+      background: rgba(243, 156, 18, .08);
+      color: var(--soft);
+      padding: 6px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.35;
     }
 
     .segmented {
@@ -1152,6 +1176,21 @@
                   <input id="profileTitle" maxlength="90" autocomplete="off">
                 </label>
               </div>
+              <div class="identity-note">Store login names, emails, or account labels only. Do not enter passwords, API keys, tokens, or recovery codes.</div>
+              <div class="account-defaults">
+                <label>Codex account label
+                  <input id="codexAccount" maxlength="120" autocomplete="off">
+                </label>
+                <label>Claude account label
+                  <input id="claudeAccount" maxlength="120" autocomplete="off">
+                </label>
+                <label>Git author name
+                  <input id="gitAuthorName" maxlength="80" autocomplete="off">
+                </label>
+                <label>Git author email
+                  <input id="gitAuthorEmail" maxlength="120" autocomplete="off">
+                </label>
+              </div>
             </div>
           </section>
 
@@ -1182,6 +1221,21 @@
                   <input id="profileTitleUser2" maxlength="90" autocomplete="off">
                 </label>
               </div>
+              <div class="identity-note">Store login names, emails, or account labels only. Do not enter passwords, API keys, tokens, or recovery codes.</div>
+              <div class="account-defaults">
+                <label>Codex account label
+                  <input id="codexAccountUser2" maxlength="120" autocomplete="off">
+                </label>
+                <label>Claude account label
+                  <input id="claudeAccountUser2" maxlength="120" autocomplete="off">
+                </label>
+                <label>Git author name
+                  <input id="gitAuthorNameUser2" maxlength="80" autocomplete="off">
+                </label>
+                <label>Git author email
+                  <input id="gitAuthorEmailUser2" maxlength="120" autocomplete="off">
+                </label>
+              </div>
             </div>
           </section>
 
@@ -1198,11 +1252,13 @@
                 <div class="hub-card" data-hub-user="user1">
                   <span>User 1</span>
                   <strong data-hub-name="user1">User 1</strong>
+                  <small data-hub-account="user1">Account details needed</small>
                   <button type="button" data-switch-go="user1">GO / Switch to User 1</button>
                 </div>
                 <div class="hub-card" data-hub-user="user2">
                   <span>User 2</span>
                   <strong data-hub-name="user2">User 2</strong>
+                  <small data-hub-account="user2">Account details needed</small>
                   <button type="button" data-switch-go="user2">GO / Switch to User 2</button>
                 </div>
               </div>
@@ -1333,7 +1389,11 @@
         user.display_name !== (userId === 'user1' ? 'User 1' : 'User 2') &&
         user.default_repo_path &&
         user.handoff_agent &&
-        user.handoff_title
+        user.handoff_title &&
+        user.codex_account &&
+        user.claude_account &&
+        user.git_author_name &&
+        user.git_author_email
       );
     }
 
@@ -1344,7 +1404,11 @@
           $('user1Name')?.value.trim() !== 'User 1' &&
           $('profileRepoPath')?.value.trim() &&
           $('profileAgent')?.value.trim() &&
-          $('profileTitle')?.value.trim()
+          $('profileTitle')?.value.trim() &&
+          $('codexAccount')?.value.trim() &&
+          $('claudeAccount')?.value.trim() &&
+          $('gitAuthorName')?.value.trim() &&
+          $('gitAuthorEmail')?.value.trim()
         );
       }
       return Boolean(
@@ -1352,7 +1416,11 @@
         $('user2Name')?.value.trim() !== 'User 2' &&
         $('profileRepoPathUser2')?.value.trim() &&
         $('profileAgentUser2')?.value.trim() &&
-        $('profileTitleUser2')?.value.trim()
+        $('profileTitleUser2')?.value.trim() &&
+        $('codexAccountUser2')?.value.trim() &&
+        $('claudeAccountUser2')?.value.trim() &&
+        $('gitAuthorNameUser2')?.value.trim() &&
+        $('gitAuthorEmailUser2')?.value.trim()
       );
     }
 
@@ -1427,6 +1495,10 @@
       $('profileRepoPath').value = user.default_repo_path || '';
       $('profileAgent').value = user.handoff_agent || user.display_name || '';
       $('profileTitle').value = user.handoff_title || 'AI workstation handoff';
+      $('codexAccount').value = user.codex_account || '';
+      $('claudeAccount').value = user.claude_account || '';
+      $('gitAuthorName').value = user.git_author_name || '';
+      $('gitAuthorEmail').value = user.git_author_email || '';
     }
 
     function loadUser2ProfileFields() {
@@ -1435,6 +1507,10 @@
       $('profileRepoPathUser2').value = user.default_repo_path || '';
       $('profileAgentUser2').value = user.handoff_agent || user.display_name || '';
       $('profileTitleUser2').value = user.handoff_title || 'AI workstation handoff';
+      $('codexAccountUser2').value = user.codex_account || '';
+      $('claudeAccountUser2').value = user.claude_account || '';
+      $('gitAuthorNameUser2').value = user.git_author_name || '';
+      $('gitAuthorEmailUser2').value = user.git_author_email || '';
     }
 
     function updateSetupGuide() {
@@ -1444,7 +1520,7 @@
       $('setupChecklist').innerHTML = markup;
       $('wizardChecklist').innerHTML = markup;
       updateRegistrationProgress();
-      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Register User 1 first, then User 2, then open the Hub.';
+      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Register User 1 first, then User 2. Include Codex, Claude, and Git identity labels for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
       $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
@@ -1493,6 +1569,10 @@
       profile.default_repo_path = $('profileRepoPath').value.trim();
       profile.handoff_agent = $('profileAgent').value.trim() || profile.display_name;
       profile.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
+      profile.codex_account = $('codexAccount').value.trim();
+      profile.claude_account = $('claudeAccount').value.trim();
+      profile.git_author_name = $('gitAuthorName').value.trim();
+      profile.git_author_email = $('gitAuthorEmail').value.trim();
     }
 
     function syncRegistrationFieldsToState(userId) {
@@ -1504,12 +1584,20 @@
         user.default_repo_path = $('profileRepoPath').value.trim() || user.default_repo_path;
         user.handoff_agent = $('profileAgent').value.trim() || user.display_name;
         user.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
+        user.codex_account = $('codexAccount').value.trim();
+        user.claude_account = $('claudeAccount').value.trim();
+        user.git_author_name = $('gitAuthorName').value.trim();
+        user.git_author_email = $('gitAuthorEmail').value.trim();
         return;
       }
       user.display_name = $('user2Name').value.trim() || 'User 2';
       user.default_repo_path = $('profileRepoPathUser2').value.trim() || user.default_repo_path;
       user.handoff_agent = $('profileAgentUser2').value.trim() || user.display_name;
       user.handoff_title = $('profileTitleUser2').value.trim() || 'AI workstation handoff';
+      user.codex_account = $('codexAccountUser2').value.trim();
+      user.claude_account = $('claudeAccountUser2').value.trim();
+      user.git_author_name = $('gitAuthorNameUser2').value.trim();
+      user.git_author_email = $('gitAuthorEmailUser2').value.trim();
     }
 
     function syncAllRegistrationFieldsToState() {
@@ -1535,6 +1623,12 @@
         document.querySelectorAll(`[data-hub-name="${user.id}"]`).forEach(node => {
           node.textContent = user.display_name || user.id;
         });
+        document.querySelectorAll(`[data-hub-account="${user.id}"]`).forEach(node => {
+          const git = user.git_author_name && user.git_author_email
+            ? `${user.git_author_name} <${user.git_author_email}>`
+            : 'Git identity needed';
+          node.textContent = `Codex: ${user.codex_account || 'needed'} | Claude: ${user.claude_account || 'needed'} | Git: ${git}`;
+        });
       });
       document.querySelectorAll('[data-hub-user]').forEach(card => {
         card.classList.toggle('active', card.dataset.hubUser === activeUserId);
@@ -1559,6 +1653,10 @@
       $('profileTitle').value = profile.handoff_title || 'AI workstation handoff';
       $('profileAgent').value = profile.handoff_agent || profile.display_name;
       $('profileRepoPath').value = profile.default_repo_path || '';
+      $('codexAccount').value = profile.codex_account || '';
+      $('claudeAccount').value = profile.claude_account || '';
+      $('gitAuthorName').value = profile.git_author_name || '';
+      $('gitAuthorEmail').value = profile.git_author_email || '';
       updateSetupGuide();
     }
 
@@ -1572,9 +1670,17 @@
       $('profileRepoPath').value = profile?.default_repo_path || '';
       $('profileAgent').value = profile?.handoff_agent || profile?.display_name || '';
       $('profileTitle').value = profile?.handoff_title || 'AI workstation handoff';
+      $('codexAccount').value = profile?.codex_account || '';
+      $('claudeAccount').value = profile?.claude_account || '';
+      $('gitAuthorName').value = profile?.git_author_name || '';
+      $('gitAuthorEmail').value = profile?.git_author_email || '';
       $('profileRepoPathUser2').value = user2?.default_repo_path || '';
       $('profileAgentUser2').value = user2?.handoff_agent || user2?.display_name || '';
       $('profileTitleUser2').value = user2?.handoff_title || 'AI workstation handoff';
+      $('codexAccountUser2').value = user2?.codex_account || '';
+      $('claudeAccountUser2').value = user2?.claude_account || '';
+      $('gitAuthorNameUser2').value = user2?.git_author_name || '';
+      $('gitAuthorEmailUser2').value = user2?.git_author_email || '';
       updateActiveButtons();
       applyUserTheme();
       updateSetupGuide();
@@ -1635,7 +1741,7 @@
         state.settings.active_user_id = 'user1';
         syncRegistrationFieldsToState('user1');
         if (!storedUserReady('user1')) {
-          throw new Error('Finish User 1 name, repo, agent, and title before continuing.');
+          throw new Error('Finish User 1 name, repo, agent, title, Codex account, Claude account, and Git author identity before continuing.');
         }
         renderSettings();
         setRegistrationStage('user2');
@@ -1653,7 +1759,7 @@
         syncRegistrationFieldsToState('user2');
         if (!storedUserReady('user1')) setRegistrationStage('user1');
         if (!storedUserReady('user1')) throw new Error('Register User 1 first.');
-        if (!storedUserReady('user2')) throw new Error('Finish User 2 name, repo, agent, and title before opening the Hub.');
+        if (!storedUserReady('user2')) throw new Error('Finish User 2 name, repo, agent, title, Codex account, Claude account, and Git author identity before opening the Hub.');
         state.settings.active_user_id = 'user2';
         await saveCurrentSettings();
         setRegistrationStage('hub');
@@ -1677,7 +1783,8 @@
         await persistSettings();
         applyActiveProfileDefaults({forceRepo: true});
         closeSetupWizard();
-        showResult(`GO complete: switched to <strong>${escapeHtml(activeProfile()?.display_name || userId)}</strong>, applied defaults, saved the active user, and scanned the repo.`);
+        const profile = activeProfile();
+        showResult(`GO complete: switched to <strong>${escapeHtml(profile?.display_name || userId)}</strong>, applied defaults, saved account context, and scanned the repo.<br><span class="small">Codex: ${escapeHtml(profile?.codex_account || '')}; Claude: ${escapeHtml(profile?.claude_account || '')}; Git: ${escapeHtml(profile?.git_author_name || '')} &lt;${escapeHtml(profile?.git_author_email || '')}&gt;. Same repo path means shared git working tree and history.</span>`);
         await scanRepo();
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
@@ -1767,6 +1874,24 @@
       }
     }
 
+    function activeOperatorContext() {
+      const profile = activeProfile() || {};
+      const activeRepoPath = $('repoPath').value.trim() || profile.default_repo_path || '';
+      const sharedRepo = (state.settings?.users || [])
+        .filter(user => user.default_repo_path && activeRepoPath)
+        .some(user => user.id !== profile.id && user.default_repo_path.trim().toLowerCase() === activeRepoPath.toLowerCase());
+      return {
+        user_id: profile.id || state.settings?.active_user_id || '',
+        display_name: profile.display_name || '',
+        codex_account: profile.codex_account || '',
+        claude_account: profile.claude_account || '',
+        git_author_name: profile.git_author_name || '',
+        git_author_email: profile.git_author_email || '',
+        repo_path: activeRepoPath,
+        shared_git_working_tree: sharedRepo
+      };
+    }
+
     async function createHandoff() {
       setBusy(true);
       try {
@@ -1780,13 +1905,15 @@
           path: $('repoPath').value,
           title: $('handoffTitle').value,
           agent: $('handoffAgent').value,
-          notes: $('handoffNotes').value
+          notes: $('handoffNotes').value,
+          operator_context: activeOperatorContext()
         });
         const handoff = data.handoff;
         const copies = handoff.uncommitted_protection.file_copies.copied.length;
         const skipped = handoff.uncommitted_protection.file_copies.skipped.length;
         showResult(`
           <strong>${escapeHtml(handoff.title)}</strong><br>
+          <span>User: <strong>${escapeHtml(handoff.operator_context?.display_name || '')}</strong></span><br>
           <span>Branch: <span class="path">${escapeHtml(handoff.committed_protection.branch)}</span></span><br>
           <span>Package: <span class="path">${escapeHtml(handoff.package_dir)}</span></span><br>
           <span>Copied files: ${copies}; skipped: ${skipped}</span>
@@ -1936,7 +2063,7 @@
         performGoSwitch(button.dataset.switchGo);
       });
     });
-    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2'].forEach(id => {
+    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
       $(id).addEventListener('input', () => {
         syncAllRegistrationFieldsToState();
         updateActiveButtons();

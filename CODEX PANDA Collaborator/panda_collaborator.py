@@ -30,7 +30,7 @@ from typing import Any
 
 
 APP_TITLE = "PANDA Collaborator"
-APP_VERSION = "0.7.0"
+APP_VERSION = "0.8.0"
 APP_ROOT = Path(__file__).resolve().parent
 WEB_ROOT = APP_ROOT / "web"
 DEFAULT_PACKAGE_ROOT = APP_ROOT / "CODEX handoff packages"
@@ -50,6 +50,16 @@ FORBIDDEN_GIT_COMMANDS = [
 ]
 
 DANGEROUS_GIT_VERBS = {"stash", "merge", "rebase", "checkout", "restore", "clean"}
+USER_PROFILE_REQUIRED_FIELDS = (
+    "display_name",
+    "default_repo_path",
+    "handoff_agent",
+    "handoff_title",
+    "codex_account",
+    "claude_account",
+    "git_author_name",
+    "git_author_email",
+)
 COPY_EXCLUDE_PREFIXES = {
     ".git",
     ".panda-collaborator",
@@ -108,6 +118,10 @@ def default_settings() -> dict[str, Any]:
                 "default_repo_path": r"C:\CODEX PG",
                 "handoff_agent": "Codex",
                 "handoff_title": "AI workstation handoff",
+                "codex_account": "",
+                "claude_account": "",
+                "git_author_name": "",
+                "git_author_email": "",
             },
             {
                 "id": "user2",
@@ -115,6 +129,10 @@ def default_settings() -> dict[str, Any]:
                 "default_repo_path": r"C:\CODEX PG",
                 "handoff_agent": "Claude",
                 "handoff_title": "AI workstation handoff",
+                "codex_account": "",
+                "claude_account": "",
+                "git_author_name": "",
+                "git_author_email": "",
             },
         ],
     }
@@ -151,6 +169,10 @@ def normalize_settings(payload: dict[str, Any], *, strict: bool = True, mark_com
                 "handoff_title": clean_setting_text(
                     source.get("handoff_title"), default_user["handoff_title"], 90
                 ),
+                "codex_account": clean_setting_text(source.get("codex_account"), "", 120),
+                "claude_account": clean_setting_text(source.get("claude_account"), "", 120),
+                "git_author_name": clean_setting_text(source.get("git_author_name"), "", 80),
+                "git_author_email": clean_setting_text(source.get("git_author_email"), "", 120),
             }
         )
 
@@ -158,10 +180,10 @@ def normalize_settings(payload: dict[str, Any], *, strict: bool = True, mark_com
     if active_user_id not in {"user1", "user2"}:
         active_user_id = defaults["active_user_id"]
 
-    names_ready = all(user["display_name"] for user in normalized_users)
-    setup_completed = bool(payload.get("setup_completed")) and names_ready
+    profiles_ready = all(all(user.get(field) for field in USER_PROFILE_REQUIRED_FIELDS) for user in normalized_users)
+    setup_completed = bool(payload.get("setup_completed")) and profiles_ready
     if mark_completed:
-        setup_completed = names_ready
+        setup_completed = profiles_ready
 
     normalized = {
         "schema_version": 1,
@@ -202,6 +224,28 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
     temp_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
     os.replace(temp_path, path)
     return settings
+
+
+def normalize_operator_context(value: Any, repo_root: str = "") -> dict[str, Any]:
+    source = value if isinstance(value, dict) else {}
+
+    user_id = clean_setting_text(source.get("user_id"), "", 16)
+    if user_id not in {"user1", "user2"}:
+        user_id = ""
+
+    context = {
+        "user_id": user_id,
+        "display_name": clean_setting_text(source.get("display_name"), "", 80),
+        "codex_account": clean_setting_text(source.get("codex_account"), "", 120),
+        "claude_account": clean_setting_text(source.get("claude_account"), "", 120),
+        "git_author_name": clean_setting_text(source.get("git_author_name"), "", 80),
+        "git_author_email": clean_setting_text(source.get("git_author_email"), "", 120),
+        "repo_path": clean_setting_text(source.get("repo_path"), repo_root, 260),
+        "shared_git_working_tree": bool(source.get("shared_git_working_tree", True)),
+        "credential_storage": "Account labels, usernames, and emails only. Passwords, tokens, API keys, and browser credentials are not stored.",
+        "history_context_rule": "Continue from HANDOFF.md plus manifest.json so branch, HEAD, status, notes, and operator context are not lost.",
+    }
+    return context
 
 
 def run_command(args: list[str], cwd: Path | None = None, timeout: int = 30) -> CommandResult:
@@ -463,6 +507,10 @@ def handoff_markdown(manifest: dict[str, Any]) -> str:
     copied = manifest["uncommitted_protection"]["file_copies"]["copied"]
     skipped = manifest["uncommitted_protection"]["file_copies"]["skipped"]
     patches = manifest["uncommitted_protection"]["patches"]
+    operator = manifest.get("operator_context", {})
+    git_author = operator.get("git_author_name", "")
+    git_email = operator.get("git_author_email", "")
+    git_author_line = f"{git_author} <{git_email}>".strip() if git_author or git_email else "(not recorded)"
     return "\n".join(
         [
             f"# {manifest['title']}",
@@ -472,6 +520,24 @@ def handoff_markdown(manifest: dict[str, Any]) -> str:
             f"Branch at creation: `{manifest['branch_at_creation']}`",
             f"HEAD: `{manifest['head']}`",
             f"Protection branch: `{manifest['committed_protection']['branch']}`",
+            "",
+            "## Session / Account Context",
+            "",
+            f"- Active PANDA user: {operator.get('display_name') or '(not recorded)'}",
+            f"- PANDA user slot: {operator.get('user_id') or '(not recorded)'}",
+            f"- Codex account label: {operator.get('codex_account') or '(not recorded)'}",
+            f"- Claude account label: {operator.get('claude_account') or '(not recorded)'}",
+            f"- Git author identity: {git_author_line}",
+            f"- Git working tree: `{operator.get('repo_path') or manifest['repo_root']}`",
+            f"- Shared git working tree: {'yes' if operator.get('shared_git_working_tree', True) else 'no'}",
+            f"- Credential storage: {operator.get('credential_storage') or 'No passwords, tokens, or API keys are stored.'}",
+            "",
+            "## History / Continuation Context",
+            "",
+            "- Continue from this `HANDOFF.md` and `manifest.json` before writing code.",
+            "- Preserve the branch, HEAD, status snapshot, operator notes, and account context above.",
+            "- If both users use the same repository path, they share the same git working tree and commit history.",
+            "- Use the recorded Git author identity as context; PANDA does not switch Git credentials or browser logins.",
             "",
             "## Safety Contract",
             "",
@@ -501,7 +567,13 @@ def handoff_markdown(manifest: dict[str, Any]) -> str:
     )
 
 
-def create_handoff_package(path_text: str, title: str, agent: str = "", notes: str = "") -> dict[str, Any]:
+def create_handoff_package(
+    path_text: str,
+    title: str,
+    agent: str = "",
+    notes: str = "",
+    operator_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     status = repo_status(path_text)
     repo = Path(status["repo_root"])
     package_root = package_root_path()
@@ -530,6 +602,7 @@ def create_handoff_package(path_text: str, title: str, agent: str = "", notes: s
         "head": status["head"],
         "short_head": status["short_head"],
         "status_at_creation": status,
+        "operator_context": normalize_operator_context(operator_context, str(repo)),
         "committed_protection": {
             "type": "git branch ref",
             "branch": protection_branch,
@@ -862,6 +935,7 @@ class PandaHandler(BaseHTTPRequestHandler):
                     str(payload.get("title", "PANDA Collaborator handoff")),
                     str(payload.get("agent", "")),
                     str(payload.get("notes", "")),
+                    payload.get("operator_context", {}),
                 )
                 return json_response(self, {"ok": True, "handoff": manifest})
             if parsed.path == "/api/restore/preview":

@@ -28,17 +28,24 @@ C:\CODEX PG
 ```
 
 7. Check the User 1 agent name and handoff title.
-8. Click **Register User 1 and continue**.
-9. Register **User 2** next.
-10. Type the User 2 name.
-11. Check the User 2 repo path, agent name, and handoff title.
-12. Click **Register User 2 and open Hub**.
+8. Enter the User 1 Codex account label and Claude account label.
+9. Enter the User 1 Git author name and Git author email.
+10. Click **Register User 1 and continue**.
+11. Register **User 2** next.
+12. Type the User 2 name.
+13. Check the User 2 repo path, agent name, and handoff title.
+14. Enter the User 2 Codex account label, Claude account label, Git author name, and Git author email.
+15. Click **Register User 2 and open Hub**.
+
+Use account names, login emails, or short labels only. Do not type passwords, API keys, tokens, recovery codes, or browser credentials into PANDA.
 
 When setup is saved, the setup badge changes to **Ready**.
 
 The active user's name appears in big letters at the top of the screen. User 1 uses a warm amber color theme. User 2 uses a cool cyan color theme.
 
 The Collaborator Hub shows a GO / Switch button for each user. Pressing GO / Switch changes the active user, applies that user's saved defaults, saves the active user, changes the color theme, and scans the repo.
+
+If User 1 and User 2 both use the same repo path, they share the same git working tree and commit history. PANDA records each user's Git author name/email for handoff context, but it does not log in to GitHub or switch Git credentials for you.
 
 ## Daily Use
 
@@ -55,7 +62,10 @@ The app creates a handoff package with:
 - a protection branch for committed work;
 - patch files for uncommitted work;
 - file copies for changed and new files;
-- a `HANDOFF.md` summary.
+- a `HANDOFF.md` summary;
+- a `manifest.json` record with the active user, Codex account label, Claude account label, Git author identity, repo path, branch, `HEAD`, current status, and your notes.
+
+That handoff record is what the next Claude or Codex session should read first so history and context are not lost.
 
 ## Reading Old Handoffs
 
