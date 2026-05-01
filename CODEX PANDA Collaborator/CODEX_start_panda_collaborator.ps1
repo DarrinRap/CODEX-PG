@@ -25,6 +25,28 @@ function Resolve-PandaPython {
   throw "Python was not found."
 }
 
+function Backup-PandaLog {
+  param([string]$Path)
+
+  if (-not (Test-Path -LiteralPath $Path)) {
+    return
+  }
+
+  $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+  $directory = Split-Path -Parent $Path
+  $name = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+  $extension = [System.IO.Path]::GetExtension($Path)
+  $backup = Join-Path $directory "$name.$stamp.bak$extension"
+  $counter = 1
+
+  while (Test-Path -LiteralPath $backup) {
+    $backup = Join-Path $directory "$name.$stamp.$counter.bak$extension"
+    $counter += 1
+  }
+
+  Move-Item -LiteralPath $Path -Destination $backup
+}
+
 $existing = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($existing) {
   Write-Host "PANDA Collaborator is already listening on http://$HostAddress`:$Port/"
@@ -32,7 +54,8 @@ if ($existing) {
 }
 
 $python = Resolve-PandaPython
-Remove-Item -Path $OutLog, $ErrLog -ErrorAction SilentlyContinue
+Backup-PandaLog -Path $OutLog
+Backup-PandaLog -Path $ErrLog
 Start-Process -FilePath $python `
   -ArgumentList @("`"$Script`"", "--host", $HostAddress, "--port", "$Port") `
   -WorkingDirectory $Root `
