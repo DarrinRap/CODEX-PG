@@ -319,11 +319,21 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
 
         self.assertRegex(html, r"(?s)\.setup-dialog-head h2\s*\{.*?font-size:\s*18px;")
         self.assertRegex(html, r"(?s)\.registration-title strong\s*\{.*?font-size:\s*18px;")
-        self.assertRegex(html, r"(?s)\.active-user-banner strong\s*\{.*?font-size:\s*22px;")
+        self.assertRegex(html, r"(?s)\.active-user-banner strong\s*\{.*?font-size:\s*20px;")
         self.assertRegex(html, r"(?s)\.panda-step\s*\{.*?font-size:\s*11px;")
         self.assertRegex(html, r"(?s)\.brand h1\s*\{.*?font-size:\s*14px;")
         self.assertRegex(html, r"(?s)\.panel-head h2\s*\{.*?font-size:\s*10px;")
         self.assertRegex(html, r"(?s)\.hub-card strong\s*\{.*?font-size:\s*12px;")
+
+    def test_active_user_banner_stays_inside_header_row(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertRegex(html, r"(?s)\.shell\s*\{.*?grid-template-rows:\s*92px minmax\(0, 1fr\);")
+        self.assertRegex(html, r"(?s)header\s*\{.*?grid-template-rows:\s*44px 32px;")
+        self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?height:\s*38px;")
+        self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?overflow:\s*hidden;")
+        self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?grid-template-columns:\s*auto minmax\(120px, 320px\) minmax\(0, 1fr\);")
+        self.assertRegex(html, r"(?s)\.active-user-banner small\s*\{.*?text-overflow:\s*ellipsis;")
 
     def test_information_pills_and_action_buttons_are_visually_distinct(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")

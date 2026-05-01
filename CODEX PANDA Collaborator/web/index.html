@@ -113,13 +113,13 @@
     .shell {
       height: 100vh;
       display: grid;
-      grid-template-rows: 108px minmax(0, 1fr);
+      grid-template-rows: 92px minmax(0, 1fr);
       overflow: hidden;
     }
 
     header {
       display: grid;
-      grid-template-rows: 56px 36px;
+      grid-template-rows: 44px 32px;
       gap: 6px;
       padding: 8px 12px;
       border-bottom: 1px solid var(--line);
@@ -171,9 +171,13 @@
       flex: 1;
       min-width: 220px;
       display: grid;
-      gap: 1px;
-      align-content: center;
-      padding: 8px 12px;
+      grid-template-columns: auto minmax(120px, 320px) minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      height: 38px;
+      min-height: 0;
+      overflow: hidden;
+      padding: 4px 10px;
       border: 1px solid var(--user-ring);
       border-radius: 6px;
       background: linear-gradient(90deg, var(--user-surface), rgba(26, 26, 46, .78));
@@ -183,13 +187,15 @@
     .active-user-banner span {
       color: var(--soft);
       font-size: 10px;
+      line-height: 1;
       font-weight: 900;
       text-transform: uppercase;
+      white-space: nowrap;
     }
 
     .active-user-banner strong {
       color: var(--user-accent);
-      font-size: 22px;
+      font-size: 20px;
       line-height: 1;
       font-weight: 950;
       text-transform: uppercase;
@@ -201,7 +207,11 @@
     .active-user-banner small {
       color: var(--muted);
       font-size: 10px;
+      line-height: 1;
       font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .panda-step-guide {
