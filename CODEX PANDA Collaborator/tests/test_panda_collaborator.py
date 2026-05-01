@@ -209,6 +209,15 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         with self.assertRaises(pc.CollaboratorError):
             pc.pick_local_path({"mode": "branch"})
 
+    def test_path_picker_configures_high_dpi_awareness_before_gui(self):
+        source = (PROJECT_ROOT / "panda_collaborator.py").read_text(encoding="utf-8")
+
+        self.assertIn("def configure_path_picker_dpi_awareness()", source)
+        self.assertIn("SetProcessDpiAwareness(2)", source)
+        self.assertIn("SetProcessDPIAware()", source)
+        self.assertLess(source.index("configure_path_picker_dpi_awareness()"), source.index("import tkinter as tk"))
+        self.assertIn('root.tk.call("tk", "scaling"', source)
+
 
 class PandaCollaboratorWebThemeTests(unittest.TestCase):
     def test_workflow_panels_are_single_state_colored_step_guide(self):

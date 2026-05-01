@@ -696,6 +696,42 @@ def normalize_operator_context(value: Any, repo_root: str = "") -> dict[str, Any
     return context
 
 
+_PATH_PICKER_DPI_AWARENESS_SET = False
+
+
+def configure_path_picker_dpi_awareness() -> str:
+    """Make Windows native picker dialogs render crisply on high-DPI screens."""
+    global _PATH_PICKER_DPI_AWARENESS_SET
+    if _PATH_PICKER_DPI_AWARENESS_SET:
+        return "already-set"
+    if sys.platform != "win32":
+        _PATH_PICKER_DPI_AWARENESS_SET = True
+        return "not-windows"
+    try:
+        import ctypes
+
+        try:
+            # Per-monitor DPI awareness gives the native file dialog the best chance
+            # of matching the monitor it opens on. Windows may reject this if another
+            # library already set DPI awareness; that still means the process is not
+            # using the blurry legacy default.
+            result = ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            if result in (-2147024891, 0x80070005):
+                _PATH_PICKER_DPI_AWARENESS_SET = True
+                return "already-set"
+            if result != 0:
+                raise OSError(result)
+            _PATH_PICKER_DPI_AWARENESS_SET = True
+            return "per-monitor"
+        except OSError:
+            ctypes.windll.user32.SetProcessDPIAware()
+            _PATH_PICKER_DPI_AWARENESS_SET = True
+            return "system"
+    except Exception:
+        _PATH_PICKER_DPI_AWARENESS_SET = True
+        return "unavailable"
+
+
 def pick_local_path(payload: dict[str, Any]) -> dict[str, Any]:
     mode = clean_setting_text(payload.get("mode"), "file", 16).lower()
     if mode not in {"file", "folder"}:
@@ -710,6 +746,8 @@ def pick_local_path(payload: dict[str, Any]) -> dict[str, Any]:
         if not initial_dir.exists():
             initial_dir = Path.home()
 
+    configure_path_picker_dpi_awareness()
+
     try:
         import tkinter as tk
         from tkinter import filedialog
@@ -719,6 +757,10 @@ def pick_local_path(payload: dict[str, Any]) -> dict[str, Any]:
     root = None
     try:
         root = tk.Tk()
+        try:
+            root.tk.call("tk", "scaling", max(root.winfo_fpixels("1i") / 72, 1.0))
+        except Exception:
+            pass
         root.withdraw()
         root.attributes("-topmost", True)
         if mode == "folder":

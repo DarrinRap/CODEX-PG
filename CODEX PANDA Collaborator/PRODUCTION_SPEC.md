@@ -86,6 +86,7 @@ The setup and hub flow:
 - stores per-user defaults for repository path, handoff agent, and handoff title;
 - provides Browse buttons for the main repository path and each user's default repository path so users can pick the local Git repository folder instead of typing a Windows path;
 - stores a shared Project Files Tracker directory, defaulting to `C:\panda-gallery`, with a Browse button;
+- opens Windows path picker dialogs with high-DPI awareness so Browse windows render crisply on high-resolution displays whenever Windows allows it;
 - treats `C:\panda-gallery\skills\pg-project-sync\MANIFEST.md` as the existing canonical project-files manifest and preserves the existing `pgsync` flow that creates `workflows\project_knowledge_sync_YYYY-MM-DD` bundles for Claude.ai project files;
 - requires per-user Codex account label, Claude account label, Git author name, and Git author email during registration;
 - requires per-user Claude Desktop path and Claude Code path during registration so each user profile identifies the local tools it is meant to use;
