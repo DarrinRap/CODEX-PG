@@ -279,10 +279,17 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
 
     def test_repository_paths_have_folder_browse_buttons(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        repo_panel = html.split('class="panel repo-panel"', 1)[1].split('</section>', 1)[0]
 
         for element_id in ("repoPath", "profileRepoPath", "profileRepoPathUser2"):
             self.assertIn(f'id="{element_id}"', html)
             self.assertIn(f'data-path-picker="{element_id}"', html)
+        self.assertEqual(html.count('id="repoPath"'), 1)
+        self.assertEqual(html.count('id="scanBtn"'), 1)
+        self.assertIn('class="repo-scan-controls"', repo_panel)
+        self.assertIn('id="repoPath"', repo_panel)
+        self.assertIn('data-path-picker="repoPath"', repo_panel)
+        self.assertIn('class="primary" id="scanBtn" type="button">Scan repository</button>', repo_panel)
         self.assertIn('data-path-title="Select local Git repository folder"', html)
         self.assertIn('data-path-title="Select User 1 local Git repository folder"', html)
         self.assertIn('data-path-title="Select User 2 local Git repository folder"', html)

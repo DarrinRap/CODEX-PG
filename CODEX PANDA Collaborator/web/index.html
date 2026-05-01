@@ -280,7 +280,7 @@
     .support-grid {
       display: grid;
       grid-template-columns: minmax(230px, .55fr) minmax(360px, 1.2fr) minmax(360px, 1.05fr);
-      grid-template-rows: minmax(108px, .32fr) minmax(0, 1fr);
+      grid-template-rows: minmax(132px, .36fr) minmax(0, 1fr);
       gap: 10px;
       min-height: 0;
       min-width: 0;
@@ -1082,12 +1082,29 @@
     .repo-panel .panel-body {
       padding: 7px 8px;
       overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 6px;
     }
     .repo-panel .empty {
-      min-height: 38px;
+      min-height: 30px;
       padding: 7px;
       display: grid;
       place-items: center;
+    }
+    .repo-scan-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 6px;
+      align-items: end;
+      min-width: 0;
+    }
+    .repo-scan-controls label {
+      min-width: 0;
+    }
+    .repo-scan-controls button {
+      min-height: 30px;
+      white-space: nowrap;
     }
     .setup-panel { min-height: 0; }
     .status-panel {
@@ -1525,12 +1542,6 @@
           </div>
           <div class="panel-body">
             <div class="form-stack">
-              <label>Repository
-                <div class="inline-picker">
-                  <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
-                  <button type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder">Browse</button>
-                </div>
-              </label>
               <label>Project files
                 <div class="inline-picker">
                   <input id="projectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
@@ -1538,8 +1549,6 @@
                 </div>
               </label>
               <div class="workflow-actions">
-                <button class="primary" id="scanBtn" type="button">Scan repo</button>
-                <button id="packagesBtn" type="button">Packages</button>
                 <button class="primary" id="startSessionBtn" type="button">Start Session / Start Work</button>
                 <button class="danger" id="pauseBtn" type="button">Emergency Pause</button>
                 <button id="clearPauseBtn" type="button">Clear Pause</button>
@@ -1586,6 +1595,16 @@
             <span class="chip" id="branchChip">No repo</span>
           </div>
           <div class="panel-body">
+            <div class="repo-scan-controls">
+              <label>Repository
+                <div class="inline-picker">
+                  <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
+                  <button type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder">Browse</button>
+                </div>
+              </label>
+              <button class="primary" id="scanBtn" type="button">Scan repository</button>
+              <button id="packagesBtn" type="button">Packages</button>
+            </div>
             <div id="repoSummary" class="empty">Scan a repository.</div>
           </div>
         </section>

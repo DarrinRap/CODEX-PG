@@ -85,6 +85,7 @@ The setup and hub flow:
 - provides a checklist that shows which registration steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;
 - provides Browse buttons for the main repository path and each user's default repository path so users can pick the local Git repository folder instead of typing a Windows path;
+- keeps the main repository picker and rectangular Scan repository button directly inside the Working Tree panel so the user can see how to choose and scan a repo from the panel that displays repo state;
 - stores a shared Project Files Tracker directory, defaulting to `C:\panda-gallery`, with a Browse button;
 - opens Windows path picker dialogs with high-DPI awareness so Browse windows render crisply on high-resolution displays whenever Windows allows it;
 - treats `C:\panda-gallery\skills\pg-project-sync\MANIFEST.md` as the existing canonical project-files manifest and preserves the existing `pgsync` flow that creates `workflows\project_knowledge_sync_YYYY-MM-DD` bundles for Claude.ai project files;
