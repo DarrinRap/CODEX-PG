@@ -139,6 +139,22 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
 
 
 class PandaCollaboratorWebThemeTests(unittest.TestCase):
+    def test_header_uses_large_arrow_step_guide(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('class="panda-step-guide"', html)
+        self.assertIn('id="pandaStepGuide"', html)
+        self.assertIn("function pandaStepGuideState()", html)
+        self.assertIn("function renderPandaStepGuide()", html)
+        self.assertIn("Register User 1", html)
+        self.assertIn("Register User 2", html)
+        self.assertIn("Collaborator Hub", html)
+        self.assertIn("Start Session", html)
+        self.assertIn("Create Handoff", html)
+        self.assertIn("arrow: index === rows.length - 1 ? '' : '>'", html)
+        self.assertIn(".panda-step.current", html)
+        self.assertIn(".panda-step.done", html)
+
     def test_user_one_registration_uses_warm_amber_theme(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
         user_one_match = re.search(r"body\.user-one\s*\{(?P<body>.*?)\n\s*\}", html, re.S)

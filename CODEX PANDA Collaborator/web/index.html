@@ -111,19 +111,26 @@
     .shell {
       height: 100vh;
       display: grid;
-      grid-template-rows: 72px minmax(0, 1fr);
+      grid-template-rows: 108px minmax(0, 1fr);
       overflow: hidden;
     }
 
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      display: grid;
+      grid-template-rows: 56px 36px;
+      gap: 6px;
       padding: 8px 12px;
       border-bottom: 1px solid var(--line);
       background: linear-gradient(90deg, var(--user-bg), var(--surface) 58%);
       z-index: 2;
+      min-width: 0;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       min-width: 0;
     }
 
@@ -193,6 +200,74 @@
       color: var(--muted);
       font-size: 10px;
       font-weight: 800;
+    }
+
+    .panda-step-guide {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      min-width: 0;
+      align-items: stretch;
+    }
+
+    .panda-step {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) 15px;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--field);
+      color: var(--muted);
+      padding: 5px 6px;
+      font-size: 13px;
+      font-weight: 950;
+      line-height: 1;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .panda-step .num {
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, .06);
+      color: inherit;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .panda-step .label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .panda-step .arrow {
+      color: inherit;
+      font-size: 18px;
+      font-weight: 950;
+      text-align: right;
+    }
+
+    .panda-step.current {
+      color: var(--user-accent);
+      border-color: var(--user-ring);
+      background: var(--user-surface);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+    }
+
+    .panda-step.done {
+      color: var(--ok);
+      border-color: rgba(127, 176, 105, .52);
+      background: rgba(127, 176, 105, .1);
+    }
+
+    .panda-step.todo {
+      opacity: .72;
     }
 
     .status-strip {
@@ -1038,7 +1113,8 @@
     }
 
     @media (max-width: 620px) {
-      header { gap: 6px; padding: 6px 8px; }
+      .shell { grid-template-rows: 100px minmax(0, 1fr); }
+      header { grid-template-rows: 50px 34px; gap: 6px; padding: 6px 8px; }
       .brand { min-width: 148px; gap: 6px; }
       .mark { width: 24px; height: 24px; font-size: 10px; }
       .brand h1 { font-size: 13px; }
@@ -1047,6 +1123,10 @@
       .active-user-banner strong { font-size: 18px; }
       .active-user-banner small { display: none; }
       .status-strip { justify-content: flex-end; gap: 4px; }
+      .panda-step-guide { gap: 4px; }
+      .panda-step { grid-template-columns: 14px minmax(0, 1fr) 9px; gap: 3px; padding: 4px; font-size: 9px; }
+      .panda-step .num { width: 14px; height: 14px; font-size: 8px; }
+      .panda-step .arrow { font-size: 12px; }
       .chip { font-size: 9px; padding: 2px 5px; }
       main { grid-template-columns: 155px minmax(0, 1fr); }
       .left, .right { padding: 6px; }
@@ -1065,23 +1145,26 @@
 <body>
   <div class="shell">
     <header>
-      <div class="brand">
-        <div class="mark">PC</div>
-        <div>
-          <h1>PANDA Collaborator</h1>
-          <span>Shared workstation handoff manager</span>
+      <div class="header-top">
+        <div class="brand">
+          <div class="mark">PC</div>
+          <div>
+            <h1>PANDA Collaborator</h1>
+            <span>Shared workstation handoff manager</span>
+          </div>
+        </div>
+        <div class="active-user-banner" id="activeUserBanner">
+          <span>Active user</span>
+          <strong id="activeUserName">SETUP NEEDED</strong>
+          <small id="activeUserTheme">Complete setup before handoff work</small>
+        </div>
+        <div class="status-strip" id="statusStrip">
+          <span class="chip">Ready</span>
+          <span class="chip ok">No destructive git</span>
+          <span class="chip ok">No stash safety</span>
         </div>
       </div>
-      <div class="active-user-banner" id="activeUserBanner">
-        <span>Active user</span>
-        <strong id="activeUserName">SETUP NEEDED</strong>
-        <small id="activeUserTheme">Complete setup before handoff work</small>
-      </div>
-      <div class="status-strip" id="statusStrip">
-        <span class="chip">Ready</span>
-        <span class="chip ok">No destructive git</span>
-        <span class="chip ok">No stash safety</span>
-      </div>
+      <nav class="panda-step-guide" id="pandaStepGuide" aria-label="PANDA workflow steps"></nav>
     </header>
 
     <main>
@@ -1549,6 +1632,60 @@
       };
     }
 
+    function pandaStepGuideState() {
+      const setupOpen = !$('setupOverlay')?.classList.contains('hidden');
+      const user1Done = Boolean(storedUserReady('user1'));
+      const user2Done = Boolean(storedUserReady('user2'));
+      const setupDone = Boolean(setupReady().allReady && state.settings?.setup_completed);
+      const sessionReady = Boolean(state.control?.start_work_enabled || state.control?.control_state?.start_work_enabled);
+      const handoffDone = Boolean(state.control?.latest_handoff || state.packages.length);
+      let current = 'user1';
+
+      if (setupOpen && ['user1', 'user2', 'hub'].includes(state.registrationStage)) {
+        current = state.registrationStage;
+      } else if (!user1Done) {
+        current = 'user1';
+      } else if (!user2Done) {
+        current = 'user2';
+      } else if (!setupDone) {
+        current = 'hub';
+      } else if (!sessionReady) {
+        current = 'start';
+      } else {
+        current = 'handoff';
+      }
+
+      return [
+        ['user1', 'Register User 1', user1Done],
+        ['user2', 'Register User 2', user2Done],
+        ['hub', 'Collaborator Hub', setupDone],
+        ['start', 'Start Session', sessionReady],
+        ['handoff', 'Create Handoff', handoffDone],
+      ].map(([id, label, done], index, rows) => ({
+        id,
+        label,
+        done,
+        current: id === current,
+        arrow: index === rows.length - 1 ? '' : '>'
+      }));
+    }
+
+    function renderPandaStepGuide() {
+      const guide = $('pandaStepGuide');
+      if (!guide) return;
+      guide.innerHTML = pandaStepGuideState().map((step, index) => {
+        const klass = step.done ? 'done' : step.current ? 'current' : 'todo';
+        const stateLabel = step.done ? 'done' : step.current ? 'current' : 'next';
+        return `
+          <div class="panda-step ${klass}" data-panda-step="${step.id}" aria-label="${escapeHtml(step.label)} ${stateLabel}">
+            <span class="num">${index + 1}</span>
+            <span class="label">${escapeHtml(step.label)}</span>
+            <span class="arrow">${step.arrow}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
     function checklistMarkup(readiness) {
       const rows = [
         ['user1Ready', 'Register User 1'],
@@ -1642,6 +1779,7 @@
       $('openHubBtn').disabled = state.busy || !readiness.allReady;
       $('handoffBtn').disabled = state.busy || !state.repo || !readiness.allReady;
       updateHubCards();
+      renderPandaStepGuide();
     }
 
     function openSetupWizard() {
@@ -1933,6 +2071,7 @@
 
     function renderRepo(repo) {
       state.repo = repo;
+      renderPandaStepGuide();
       localStorage.setItem('pandaCollaborator.repoPath', repo.repo_root);
       $('handoffBtn').disabled = false;
       $('branchChip').textContent = repo.branch;
@@ -2014,6 +2153,7 @@
 
     function renderControlCenter(data) {
       state.control = data?.session || data;
+      renderPandaStepGuide();
       const control = state.control || {};
       const pm = control.project_manager || {};
       const latest = control.latest_handoff;
