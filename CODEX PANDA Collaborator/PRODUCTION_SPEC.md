@@ -75,6 +75,8 @@ The setup and hub flow:
 - requires User 2 registration second;
 - opens the Collaborator Hub after both users are registered;
 - shows GO / Switch action buttons for User 1 and User 2 in the Hub;
+- keeps a persistent Setup Users / Switch User button in the header so the switch workflow is never hidden in a side panel;
+- keeps Collaborator Hub user-card buttons clickable before setup is complete, using them to guide the user into setup instead of presenting dead disabled controls;
 - makes GO / Switch automate the full switch process: save active user, apply that user's defaults, update the theme, and scan the repository;
 - shows the active user's custom name in large uppercase text at the top of the screen;
 - uses clearly different complementary color themes for User 1 and User 2;

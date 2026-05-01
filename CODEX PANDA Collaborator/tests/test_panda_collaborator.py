@@ -216,6 +216,16 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn('data-path-title="Select User 1 local Git repository folder"', html)
         self.assertIn('data-path-title="Select User 2 local Git repository folder"', html)
 
+    def test_switch_user_entry_points_are_visible_and_not_dead_before_setup(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="switchUserBtn"', html)
+        self.assertIn("Collaborator Hub / Switch Users", html)
+        self.assertIn("$('switchUserBtn').addEventListener('click', openSetupWizard)", html)
+        self.assertIn("button.disabled = state.busy;", html)
+        self.assertIn("button.textContent = ready ? `GO / Switch to", html)
+        self.assertIn(": `Setup ${user?.display_name", html)
+
     def test_registration_headers_do_not_render_redundant_number_badges(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 

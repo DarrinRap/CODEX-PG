@@ -279,6 +279,15 @@
       min-width: 0;
     }
 
+    .switch-user-btn {
+      min-height: 30px;
+      border-color: var(--user-ring);
+      background: var(--user-surface);
+      color: var(--user-accent);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
     .chip {
       border: 1px solid var(--line);
       color: var(--soft);
@@ -1180,6 +1189,7 @@
           <span class="chip ok">No destructive git</span>
           <span class="chip ok">No stash safety</span>
         </div>
+        <button id="switchUserBtn" class="switch-user-btn" type="button">Setup users</button>
       </div>
       <nav class="panda-step-guide" id="pandaStepGuide" aria-label="PANDA workflow steps"></nav>
     </header>
@@ -1210,7 +1220,7 @@
 
           <section class="panel setup-panel">
             <div class="panel-head">
-              <h2>Collaborator Hub</h2>
+              <h2>Collaborator Hub / Switch Users</h2>
               <span class="chip warn" id="setupChip">Needed</span>
             </div>
             <div class="panel-body">
@@ -1564,6 +1574,7 @@
       $('clearPauseBtn').disabled = isBusy;
       $('searchBtn').disabled = isBusy;
       $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
+      $('switchUserBtn').disabled = isBusy;
       document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
         button.disabled = isBusy;
       });
@@ -1833,6 +1844,7 @@
       $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Register User 1 first, then User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
+      $('switchUserBtn').textContent = readiness.allReady ? 'Switch User' : 'Setup Users';
       $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
       $('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');
       $('openHubBtn').disabled = state.busy || !readiness.allReady;
@@ -1954,8 +1966,8 @@
       document.querySelectorAll('[data-switch-go]').forEach(button => {
         const user = userById(button.dataset.switchGo);
         const ready = setupReady().allReady;
-        button.disabled = state.busy || !ready;
-        button.textContent = ready ? `GO / Switch to ${user?.display_name || button.dataset.switchGo}` : 'Register first';
+        button.disabled = state.busy;
+        button.textContent = ready ? `GO / Switch to ${user?.display_name || button.dataset.switchGo}` : `Setup ${user?.display_name || button.dataset.switchGo}`;
       });
     }
 
@@ -2587,6 +2599,7 @@
     $('searchBtn').addEventListener('click', runSearch);
     $('packagesBtn').addEventListener('click', loadPackages);
     $('openSetupBtn').addEventListener('click', openSetupWizard);
+    $('switchUserBtn').addEventListener('click', openSetupWizard);
     $('closeSetupBtn').addEventListener('click', closeSetupWizard);
     $('registerBackBtn').addEventListener('click', () => {
       setRegistrationStage(state.registrationStage === 'hub' ? 'user2' : 'user1');
