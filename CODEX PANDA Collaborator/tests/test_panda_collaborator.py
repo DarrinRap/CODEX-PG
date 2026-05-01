@@ -248,6 +248,17 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertNotIn('<span class="step-num">3</span>', html)
         self.assertIn('class="panda-step-guide"', html)
 
+    def test_heading_fonts_stay_compact_for_single_screen_fit(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertRegex(html, r"(?s)\.setup-dialog-head h2\s*\{.*?font-size:\s*18px;")
+        self.assertRegex(html, r"(?s)\.registration-title strong\s*\{.*?font-size:\s*18px;")
+        self.assertRegex(html, r"(?s)\.active-user-banner strong\s*\{.*?font-size:\s*22px;")
+        self.assertRegex(html, r"(?s)\.panda-step\s*\{.*?font-size:\s*11px;")
+        self.assertRegex(html, r"(?s)\.brand h1\s*\{.*?font-size:\s*14px;")
+        self.assertRegex(html, r"(?s)\.panel-head h2\s*\{.*?font-size:\s*10px;")
+        self.assertRegex(html, r"(?s)\.hub-card strong\s*\{.*?font-size:\s*12px;")
+
 
 class PandaCollaboratorHandoffTests(unittest.TestCase):
     def setUp(self):
