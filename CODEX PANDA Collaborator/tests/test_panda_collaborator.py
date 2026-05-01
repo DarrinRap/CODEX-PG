@@ -294,6 +294,15 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn('data-path-title="Select User 1 local Git repository folder"', html)
         self.assertIn('data-path-title="Select User 2 local Git repository folder"', html)
 
+    def test_scan_repository_does_not_open_registration_wizard(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        scan_function = html.split("async function scanRepo()", 1)[1].split("function activeOperatorContext()", 1)[0]
+
+        self.assertIn("api('/api/repo/scan'", scan_function)
+        self.assertNotIn("openSetupWizard", scan_function)
+        self.assertNotIn("setupReady().allReady", scan_function)
+        self.assertIn("Repository scan complete. Setup is only required before handover", scan_function)
+
     def test_project_files_directory_uses_existing_pgsync_location(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 

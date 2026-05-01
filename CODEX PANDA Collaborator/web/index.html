@@ -2735,13 +2735,9 @@
     async function scanRepo() {
       setBusy(true);
       try {
-        if (!setupReady().allReady) {
-          openSetupWizard();
-          throw new Error('Finish setup before scanning so the active user is clear.');
-        }
         const data = await api('/api/repo/scan', {path: $('repoPath').value});
         renderRepo(data.repo);
-        showResult('Repository scan complete.');
+        showResult('Repository scan complete. Setup is only required before handover, session start, or safe handoff creation.');
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {

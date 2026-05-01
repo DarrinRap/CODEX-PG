@@ -96,7 +96,8 @@ The setup and hub flow:
 - clearly records whether the two users are using the same repository path, which means they share the same git working tree and commit history;
 - records Git author identity as context but does not switch Git credentials or perform Git hosting login;
 - applies the active user's defaults to the repository and handoff controls;
-- blocks scan and handoff actions until required setup fields are complete;
+- keeps the Repository panel Scan repository button available as a direct repository-only action; it must scan the typed or picked path and must not open registration;
+- blocks handover, session start, and handoff creation until required setup fields are complete;
 - persists settings in a local ignored `CODEX settings` file;
 - writes a timestamped backup before replacing an existing settings file.
 
