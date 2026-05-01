@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from html.parser import HTMLParser
 from pathlib import Path
 
 import sys
@@ -19,6 +20,27 @@ def run(args, cwd):
     if result.returncode != 0:
         raise AssertionError(f"{args} failed\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}")
     return result
+
+
+class ButtonInventoryParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.buttons = []
+        self._button_stack = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "button":
+            self._button_stack.append({"attrs": dict(attrs), "text": ""})
+        elif self._button_stack:
+            self._button_stack[-1]["text"] += " "
+
+    def handle_data(self, data):
+        if self._button_stack:
+            self._button_stack[-1]["text"] += data
+
+    def handle_endtag(self, tag):
+        if tag == "button" and self._button_stack:
+            self.buttons.append(self._button_stack.pop())
 
 
 class PandaCollaboratorSafetyTests(unittest.TestCase):
@@ -388,6 +410,34 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("Hand over to this user, apply their saved settings, and scan the repository.", html)
         self.assertIn("Information only:", html)
         self.assertIn("Preview restore safety only. This checks risk but does not change files.", html)
+        self.assertIn("Always enforced", html)
+        self.assertIn("These safety rules protect your work and cannot be changed from this screen.", html)
+
+    def test_every_button_has_click_wiring_or_delegated_handler(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        parser = ButtonInventoryParser()
+        parser.feed(html)
+        direct_listener_ids = set(re.findall(r"\$\('([^']+)'\)\.addEventListener\('click'", html))
+        delegated_handlers = {
+            "data-switch-go": "querySelectorAll('[data-switch-go]')",
+            "data-path-picker": "querySelectorAll('[data-path-picker]')",
+            "data-side-view": "querySelectorAll('[data-side-view]')",
+            "data-summary-view": "dataset.summaryView",
+            "data-package-id": "dataset.packageId",
+            "data-restore-package-id": "dataset.restorePackageId",
+        }
+
+        missing = []
+        for button in parser.buttons:
+            attrs = button["attrs"]
+            label = " ".join(button["text"].split())
+            button_id = attrs.get("id")
+            wired = bool(button_id and button_id in direct_listener_ids)
+            wired = wired or any(attr in attrs and needle in html for attr, needle in delegated_handlers.items())
+            if not wired:
+                missing.append({"id": button_id, "label": label, "attrs": attrs})
+
+        self.assertEqual(missing, [], "Every visible button must perform work or be covered by a delegated handler.")
 
     def test_create_safe_handoff_button_is_prominent_and_state_colored(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")

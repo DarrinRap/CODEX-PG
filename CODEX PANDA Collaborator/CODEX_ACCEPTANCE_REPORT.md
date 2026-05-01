@@ -51,11 +51,25 @@ The implementation also blocks stash, merge, rebase, checkout, restore, and clea
 ## Verification Performed
 
 - Python syntax check: passed.
-- Unit tests: `7/7` passed.
+- Unit tests: `28/28` passed.
 - Windows test runner: passed.
 - Local health endpoint: passed.
 - Browser smoke: passed with zero console errors, including User 1 registration, User 2 registration, Collaborator Hub open, GO / Switch automation for both users, per-user defaults, theme switching, automatic scan, and no page scroll.
 - Git checkpoint: committed and pushed.
+
+## Bible Cross-Reference Audit
+
+Latest audit: 2026-05-01
+
+- Cross-referenced the UI against `CODEX_PAH_DESIGN_REVIEW_6C_BIBLE_v1.md` and `PRODUCTION_SPEC.md`.
+- Confirmed the five-step left-to-right workflow is the primary guide: Register User 1, Register User 2, Collaborator Hub / Handover, Start Session, Create Handoff.
+- Confirmed action controls use rectangular buttons and passive status information uses rounded pill chips.
+- Confirmed the main handoff action is a wide rectangular button, grey while blocked and green when ready.
+- Confirmed repository scan is wired only to repository scanning and does not open registration.
+- Confirmed picker buttons are present for repository path, project files directory, Claude Desktop path, and Claude Code path.
+- Confirmed explicit handover buttons are present for `HANDOVER TO USER 1` and `HANDOVER TO USER 2`.
+- Confirmed all static HTML buttons have either a direct click listener or an approved delegated click handler. This is now enforced by `test_every_button_has_click_wiring_or_delegated_handler`.
+- Clarified the Safety Rules panel label to `Always enforced` so it does not imply an editable unlock mode.
 
 ## Current Runtime
 
