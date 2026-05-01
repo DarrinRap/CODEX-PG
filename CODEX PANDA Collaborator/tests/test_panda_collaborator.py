@@ -325,6 +325,15 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.panel-head h2\s*\{.*?font-size:\s*10px;")
         self.assertRegex(html, r"(?s)\.hub-card strong\s*\{.*?font-size:\s*12px;")
 
+    def test_information_pills_and_action_buttons_are_visually_distinct(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertRegex(html, r"(?s)button\s*\{.*?border-radius:\s*2px;")
+        self.assertRegex(html, r"(?s)button\s*\{.*?box-shadow:\s*inset 0 1px 0")
+        self.assertRegex(html, r"(?s)\.chip\s*\{.*?border-radius:\s*999px;")
+        self.assertRegex(html, r"(?s)\.chip\s*\{.*?cursor:\s*default;")
+        self.assertIn('class="chip" id="scanTime"', html)
+
     def test_setup_dialog_is_centered_and_shows_three_setup_columns(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 

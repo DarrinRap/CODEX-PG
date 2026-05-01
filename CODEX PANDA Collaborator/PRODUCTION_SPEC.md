@@ -153,6 +153,16 @@ PANDA Collaborator v0.9 expands the app from a handoff-only tool into the main l
 
 The control center must stay safety-first. It may automate safe reading, scanning, summarizing, logging, and package creation. It must not automate destructive Git actions, credential entry, branch switching, merge/rebase, conflict resolution, restore, delete, or force push.
 
+### Control Shape Visual Grammar
+
+PANDA must visually separate passive information from user actions.
+
+- Information/status values must render as passive rounded pill chips. Examples: ready, idle, safe, branch, no repo, not scanned, counts, safety labels, active user labels, and other state-only indicators.
+- Action controls must render as squared or lightly rectangular buttons. Examples: GO / Switch, Register, Browse, Scan repo, Start Session, Create safe handoff, Save Message, Search, Preview restore safety, and setup navigation.
+- A pill must never perform work when clicked. If an element performs work, changes state, opens a picker, switches a user, saves data, scans, or creates a package, it must be a rectangular action button.
+- Disabled future actions may be visually dimmed or locked, but they must retain action-button shape so the user can tell they are unavailable commands, not passive information.
+- Tabs and segmented controls are still actions; keep them rectangular even when compact.
+
 ### Start Session Workflow
 
 The app must provide a clear Start Session flow after a user presses GO / Switch.

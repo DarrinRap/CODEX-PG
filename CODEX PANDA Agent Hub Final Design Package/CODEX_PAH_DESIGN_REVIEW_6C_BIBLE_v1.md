@@ -229,6 +229,13 @@ The design includes:
 - rightpane panels
 - statusbar
 
+Control-shape rule for all PANDA/PG operational apps:
+
+- Information/status elements use rounded pill chips only.
+- Action elements use squared or lightly rectangular buttons only.
+- A pill must be passive and must not perform work on click.
+- Any control that opens, saves, scans, switches, creates, previews, searches, starts, pauses, or otherwise changes state must keep rectangular action-button shape, including disabled future actions and compact tab/segmented controls.
+
 The global primary action issue was fixed before final review.
 
 ### Resize/Persistence Behavior
@@ -291,4 +298,3 @@ Included:
 Pass for Darrin review and CC/Claude review.
 
 Do not implement PAH runtime changes until Darrin approves the design direction.
-
