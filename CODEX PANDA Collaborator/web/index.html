@@ -344,6 +344,138 @@
       gap: 8px;
     }
 
+    .hub-grid,
+    .registration-hub-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .hub-card {
+      display: grid;
+      gap: 7px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      padding: 8px;
+      min-width: 0;
+    }
+
+    .hub-card[data-hub-user="user1"] {
+      border-color: rgba(240, 185, 140, .58);
+      background: rgba(240, 185, 140, .08);
+    }
+
+    .hub-card[data-hub-user="user2"] {
+      border-color: rgba(104, 216, 232, .58);
+      background: rgba(104, 216, 232, .08);
+    }
+
+    .hub-card.active {
+      box-shadow: 0 0 0 2px var(--user-ring);
+    }
+
+    .hub-card span {
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .hub-card strong {
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.05;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hub-card button {
+      min-height: 30px;
+      font-size: 11px;
+    }
+
+    .hub-card[data-hub-user="user1"] button,
+    .go-user1 {
+      background: #f0b98c;
+      border-color: #f0b98c;
+      color: #1a1018;
+    }
+
+    .hub-card[data-hub-user="user2"] button,
+    .go-user2 {
+      background: #68d8e8;
+      border-color: #68d8e8;
+      color: #071820;
+    }
+
+    .registration-progress {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .registration-progress li {
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--field);
+      padding: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .registration-progress li.current {
+      color: var(--user-accent);
+      border-color: var(--user-ring);
+      background: var(--user-surface);
+    }
+
+    .registration-progress li.done {
+      color: var(--ok);
+      border-color: rgba(127, 176, 105, .5);
+    }
+
+    .registration-panel.hidden {
+      display: none;
+    }
+
+    .registration-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .registration-title {
+      border: 1px solid var(--user-ring);
+      border-radius: 6px;
+      background: var(--user-surface);
+      padding: 10px;
+    }
+
+    .registration-title span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .registration-title strong {
+      display: block;
+      color: var(--user-accent);
+      font-size: 24px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
     .active-mini {
       border: 1px solid var(--user-ring);
       border-radius: 5px;
@@ -877,7 +1009,7 @@
 
           <section class="panel setup-panel">
             <div class="panel-head">
-              <h2>User Control</h2>
+              <h2>Collaborator Hub</h2>
               <span class="chip warn" id="setupChip">Needed</span>
             </div>
             <div class="panel-body">
@@ -886,13 +1018,21 @@
                   <span>Now working as</span>
                   <strong id="sideActiveName">SETUP NEEDED</strong>
                 </div>
-                <div class="segmented" id="sideUserToggleGroup">
-                  <button type="button" class="user-choice" data-user-toggle="user1">User 1</button>
-                  <button type="button" class="user-choice" data-user-toggle="user2">User 2</button>
+                <div class="hub-grid" id="sideHubGrid">
+                  <div class="hub-card" data-hub-user="user1">
+                    <span>User 1</span>
+                    <strong data-hub-name="user1">User 1</strong>
+                    <button type="button" data-switch-go="user1">GO / Switch</button>
+                  </div>
+                  <div class="hub-card" data-hub-user="user2">
+                    <span>User 2</span>
+                    <strong data-hub-name="user2">User 2</strong>
+                    <button type="button" data-switch-go="user2">GO / Switch</button>
+                  </div>
                 </div>
                 <ul class="setup-checklist" id="setupChecklist"></ul>
                 <div class="actions">
-                  <button class="primary" id="openSetupBtn">Setup wizard</button>
+                  <button class="primary" id="openSetupBtn">Register users</button>
                   <button id="applyProfileBtn">Apply defaults</button>
                 </div>
               </div>
@@ -973,71 +1113,98 @@
       <section class="setup-dialog">
         <div class="setup-dialog-head">
           <div>
-            <span>Guided setup</span>
-            <h2 id="setupWizardTitle">SET UP TWO USERS</h2>
+            <span>Registration</span>
+            <h2 id="setupWizardTitle">REGISTER USER 1</h2>
           </div>
           <button id="closeSetupBtn" type="button">Close</button>
         </div>
         <div class="wizard-grid">
-          <section class="wizard-step">
+          <section class="wizard-step wide">
+            <div class="wizard-step-body">
+              <ul class="registration-progress" id="registrationProgress"></ul>
+            </div>
+          </section>
+
+          <section class="wizard-step wide registration-panel" data-registration-stage="user1">
             <div class="wizard-step-head">
               <span class="step-num">1</span>
               <div>
-                <h3>Name both users</h3>
-                <p>These names appear in huge letters when a user is active.</p>
+                <h3>Register User 1</h3>
+                <p>Name User 1 first, then confirm User 1 defaults.</p>
               </div>
             </div>
             <div class="wizard-step-body">
-              <div class="setup-names">
+              <div class="registration-title">
+                <span>User 1 registration</span>
+                <strong>Warm amber identity</strong>
+              </div>
+              <div class="profile-defaults">
                 <label>User 1 name
                   <input id="user1Name" maxlength="40" autocomplete="off">
                 </label>
-                <label>User 2 name
-                  <input id="user2Name" maxlength="40" autocomplete="off">
-                </label>
-              </div>
-            </div>
-          </section>
-
-          <section class="wizard-step">
-            <div class="wizard-step-head">
-              <span class="step-num">2</span>
-              <div>
-                <h3>Choose who is active</h3>
-                <p>User 1 is warm amber. User 2 is cool cyan.</p>
-              </div>
-            </div>
-            <div class="wizard-step-body">
-              <div class="segmented" id="wizardUserToggleGroup">
-                <button type="button" class="user-choice" data-user-toggle="user1">User 1</button>
-                <button type="button" class="user-choice" data-user-toggle="user2">User 2</button>
-              </div>
-              <div class="active-mini">
-                <span>Preview</span>
-                <strong id="wizardActiveName">SETUP NEEDED</strong>
-              </div>
-            </div>
-          </section>
-
-          <section class="wizard-step wide">
-            <div class="wizard-step-head">
-              <span class="step-num">3</span>
-              <div>
-                <h3>Confirm this user's defaults</h3>
-                <p>These fill in automatically when this user is selected.</p>
-              </div>
-            </div>
-            <div class="wizard-step-body">
-              <div class="profile-defaults">
                 <label>Repository path
                   <input id="profileRepoPath" spellcheck="false">
                 </label>
                 <label>Handoff agent name
                   <input id="profileAgent" maxlength="60" autocomplete="off">
                 </label>
-                <label class="profile-title">Default handoff title
+                <label>Default handoff title
                   <input id="profileTitle" maxlength="90" autocomplete="off">
                 </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="wizard-step wide registration-panel hidden" data-registration-stage="user2">
+            <div class="wizard-step-head">
+              <span class="step-num">2</span>
+              <div>
+                <h3>Register User 2</h3>
+                <p>Now name User 2 and confirm User 2 defaults.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <div class="registration-title">
+                <span>User 2 registration</span>
+                <strong>Cool cyan identity</strong>
+              </div>
+              <div class="profile-defaults">
+                <label>User 2 name
+                  <input id="user2Name" maxlength="40" autocomplete="off">
+                </label>
+                <label>Repository path
+                  <input id="profileRepoPathUser2" spellcheck="false">
+                </label>
+                <label>Handoff agent name
+                  <input id="profileAgentUser2" maxlength="60" autocomplete="off">
+                </label>
+                <label>Default handoff title
+                  <input id="profileTitleUser2" maxlength="90" autocomplete="off">
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="wizard-step wide registration-panel hidden" data-registration-stage="hub">
+            <div class="wizard-step-head">
+              <span class="step-num">3</span>
+              <div>
+                <h3>Collaborator Hub</h3>
+                <p>Use GO / Switch to automate the whole switch process.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <div class="registration-hub-grid" id="registrationHubGrid">
+                <div class="hub-card" data-hub-user="user1">
+                  <span>User 1</span>
+                  <strong data-hub-name="user1">User 1</strong>
+                  <button type="button" data-switch-go="user1">GO / Switch to User 1</button>
+                </div>
+                <div class="hub-card" data-hub-user="user2">
+                  <span>User 2</span>
+                  <strong data-hub-name="user2">User 2</strong>
+                  <button type="button" data-switch-go="user2">GO / Switch to User 2</button>
+                </div>
               </div>
             </div>
           </section>
@@ -1046,8 +1213,8 @@
             <div class="wizard-step-head">
               <span class="step-num">4</span>
               <div>
-                <h3>Save and start</h3>
-                <p>The app saves setup, applies defaults, and can scan the repo for you.</p>
+                <h3>Required flow</h3>
+                <p>User 1 registration, then User 2 registration, then the Collaborator Hub.</p>
               </div>
             </div>
             <div class="wizard-step-body">
@@ -1057,8 +1224,10 @@
           </section>
         </div>
         <div class="setup-dialog-foot">
-          <button id="saveSettingsBtn" type="button">Save setup</button>
-          <button class="primary" id="saveAndScanBtn" type="button">Save setup and scan</button>
+          <button id="registerBackBtn" type="button">Back</button>
+          <button id="registerUser1NextBtn" class="primary" type="button">Register User 1 and continue</button>
+          <button id="registerUser2FinishBtn" class="primary" type="button">Register User 2 and open Hub</button>
+          <button id="openHubBtn" class="primary" type="button">Open Collaborator Hub</button>
         </div>
       </section>
     </div>
@@ -1083,7 +1252,8 @@
       packages: [],
       packageRoot: '',
       settings: null,
-      busy: false
+      busy: false,
+      registrationStage: 'user1'
     };
 
     const $ = id => document.getElementById(id);
@@ -1104,7 +1274,7 @@
       $('packagesBtn').disabled = isBusy;
       $('handoffBtn').disabled = isBusy || !state.repo || !setupReady().allReady;
       $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
-      document.querySelectorAll('[data-user-toggle]').forEach(button => {
+      document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
         button.disabled = isBusy;
       });
       updateSetupGuide();
@@ -1149,19 +1319,47 @@
       $('activeUserName').textContent = name;
       $('activeUserTheme').textContent = userThemeLabel(activeUserId);
       $('sideActiveName').textContent = name;
-      $('wizardActiveName').textContent = name;
-      $('setupWizardTitle').textContent = state.settings?.setup_completed ? `${name} SETUP` : 'SET UP TWO USERS';
+    }
+
+    function userById(userId) {
+      return (state.settings?.users || []).find(user => user.id === userId) || null;
+    }
+
+    function storedUserReady(userId) {
+      const user = userById(userId);
+      if (!user) return false;
+      return Boolean(
+        user.display_name &&
+        user.display_name !== (userId === 'user1' ? 'User 1' : 'User 2') &&
+        user.default_repo_path &&
+        user.handoff_agent &&
+        user.handoff_title
+      );
+    }
+
+    function registrationFieldReady(userId) {
+      if (userId === 'user1') {
+        return Boolean(
+          $('user1Name')?.value.trim() &&
+          $('user1Name')?.value.trim() !== 'User 1' &&
+          $('profileRepoPath')?.value.trim() &&
+          $('profileAgent')?.value.trim() &&
+          $('profileTitle')?.value.trim()
+        );
+      }
+      return Boolean(
+        $('user2Name')?.value.trim() &&
+        $('user2Name')?.value.trim() !== 'User 2' &&
+        $('profileRepoPathUser2')?.value.trim() &&
+        $('profileAgentUser2')?.value.trim() &&
+        $('profileTitleUser2')?.value.trim()
+      );
     }
 
     function setupReady() {
-      const user1Name = $('user1Name')?.value.trim() || '';
-      const user2Name = $('user2Name')?.value.trim() || '';
-      const repoPath = $('profileRepoPath')?.value.trim() || '';
-      const agent = $('profileAgent')?.value.trim() || '';
-      const title = $('profileTitle')?.value.trim() || '';
-      const namesReady = Boolean(user1Name && user2Name && user1Name !== 'User 1' && user2Name !== 'User 2');
+      const namesReady = Boolean(storedUserReady('user1') && storedUserReady('user2'));
       const activeReady = state.settings?.active_user_id === 'user1' || state.settings?.active_user_id === 'user2';
-      const defaultsReady = Boolean(repoPath && agent && title);
+      const defaultsReady = Boolean(storedUserReady('user1') && storedUserReady('user2'));
       return {
         namesReady,
         activeReady,
@@ -1172,18 +1370,71 @@
 
     function checklistMarkup(readiness) {
       const rows = [
-        ['namesReady', 'Name both users'],
-        ['activeReady', 'Choose active user'],
-        ['defaultsReady', 'Confirm repo and handoff defaults'],
-        ['allReady', 'Save setup']
+        ['user1Ready', 'Register User 1'],
+        ['user2Ready', 'Register User 2'],
+        ['allReady', 'Open Collaborator Hub']
       ];
-      const firstOpen = rows.find(([key]) => !readiness[key])?.[0] || '';
+      const rowState = {
+        user1Ready: storedUserReady('user1') || registrationFieldReady('user1'),
+        user2Ready: storedUserReady('user2') || registrationFieldReady('user2'),
+        allReady: readiness.allReady
+      };
+      const firstOpen = rows.find(([key]) => !rowState[key])?.[0] || '';
       return rows.map(([key, label]) => {
-        const done = readiness[key];
+        const done = rowState[key];
         const status = done ? 'Done' : key === firstOpen ? 'Now' : 'Next';
         const klass = done ? 'done' : key === firstOpen ? 'current' : '';
         return `<li class="${klass}"><span>${escapeHtml(label)}</span><b>${status}</b></li>`;
       }).join('');
+    }
+
+    function updateRegistrationProgress() {
+      if (!$('registrationProgress')) return;
+      const rows = [
+        ['user1', '1. Register User 1', storedUserReady('user1') || registrationFieldReady('user1')],
+        ['user2', '2. Register User 2', storedUserReady('user2') || registrationFieldReady('user2')],
+        ['hub', '3. Collaborator Hub', setupReady().allReady]
+      ];
+      $('registrationProgress').innerHTML = rows.map(([stage, label, done]) => {
+        const klass = done ? 'done' : stage === state.registrationStage ? 'current' : '';
+        return `<li class="${klass}">${escapeHtml(label)}</li>`;
+      }).join('');
+    }
+
+    function setRegistrationStage(stage) {
+      state.registrationStage = stage;
+      if (stage === 'user1') loadCommonProfileFields('user1');
+      if (stage === 'user2') loadUser2ProfileFields();
+      document.querySelectorAll('[data-registration-stage]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.registrationStage !== stage);
+      });
+      const title = {
+        user1: 'REGISTER USER 1',
+        user2: 'REGISTER USER 2',
+        hub: 'COLLABORATOR HUB'
+      }[stage] || 'REGISTER USERS';
+      $('setupWizardTitle').textContent = title;
+      $('registerBackBtn').style.display = stage === 'user1' ? 'none' : '';
+      $('registerUser1NextBtn').style.display = stage === 'user1' ? '' : 'none';
+      $('registerUser2FinishBtn').style.display = stage === 'user2' ? '' : 'none';
+      $('openHubBtn').style.display = stage === 'hub' ? '' : 'none';
+      updateSetupGuide();
+    }
+
+    function loadCommonProfileFields(userId) {
+      const user = userById(userId);
+      if (!user) return;
+      $('profileRepoPath').value = user.default_repo_path || '';
+      $('profileAgent').value = user.handoff_agent || user.display_name || '';
+      $('profileTitle').value = user.handoff_title || 'AI workstation handoff';
+    }
+
+    function loadUser2ProfileFields() {
+      const user = userById('user2');
+      if (!user) return;
+      $('profileRepoPathUser2').value = user.default_repo_path || '';
+      $('profileAgentUser2').value = user.handoff_agent || user.display_name || '';
+      $('profileTitleUser2').value = user.handoff_title || 'AI workstation handoff';
     }
 
     function updateSetupGuide() {
@@ -1192,20 +1443,23 @@
       const markup = checklistMarkup(readiness);
       $('setupChecklist').innerHTML = markup;
       $('wizardChecklist').innerHTML = markup;
-      $('setupWarning').textContent = readiness.allReady ? '' : 'Finish the highlighted step before saving setup.';
+      updateRegistrationProgress();
+      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Register User 1 first, then User 2, then open the Hub.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
-      $('saveSettingsBtn').disabled = state.busy || !readiness.allReady;
-      $('saveAndScanBtn').disabled = state.busy || !readiness.allReady;
+      $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
+      $('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');
+      $('openHubBtn').disabled = state.busy || !readiness.allReady;
       $('handoffBtn').disabled = state.busy || !state.repo || !readiness.allReady;
+      updateHubCards();
     }
 
     function openSetupWizard() {
       $('setupOverlay').classList.remove('hidden');
-      updateSetupGuide();
+      const stage = setupReady().allReady ? 'hub' : storedUserReady('user1') || registrationFieldReady('user1') ? 'user2' : 'user1';
+      setRegistrationStage(stage);
       setTimeout(() => {
-        const readiness = setupReady();
-        const target = !readiness.namesReady ? 'user1Name' : !readiness.defaultsReady ? 'profileRepoPath' : 'saveAndScanBtn';
+        const target = state.registrationStage === 'user1' ? 'user1Name' : state.registrationStage === 'user2' ? 'user2Name' : 'openHubBtn';
         $(target)?.focus();
       }, 0);
     }
@@ -1241,6 +1495,28 @@
       profile.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
     }
 
+    function syncRegistrationFieldsToState(userId) {
+      if (!state.settings) return;
+      const user = userById(userId);
+      if (!user) return;
+      if (userId === 'user1') {
+        user.display_name = $('user1Name').value.trim() || 'User 1';
+        user.default_repo_path = $('profileRepoPath').value.trim() || user.default_repo_path;
+        user.handoff_agent = $('profileAgent').value.trim() || user.display_name;
+        user.handoff_title = $('profileTitle').value.trim() || 'AI workstation handoff';
+        return;
+      }
+      user.display_name = $('user2Name').value.trim() || 'User 2';
+      user.default_repo_path = $('profileRepoPathUser2').value.trim() || user.default_repo_path;
+      user.handoff_agent = $('profileAgentUser2').value.trim() || user.display_name;
+      user.handoff_title = $('profileTitleUser2').value.trim() || 'AI workstation handoff';
+    }
+
+    function syncAllRegistrationFieldsToState() {
+      syncRegistrationFieldsToState('user1');
+      syncRegistrationFieldsToState('user2');
+    }
+
     function updateActiveButtons() {
       const profileNames = {};
       (state.settings?.users || []).forEach(user => {
@@ -1250,6 +1526,24 @@
         const userId = button.dataset.userToggle;
         button.textContent = profileNames[userId] || userId;
         button.classList.toggle('active', state.settings?.active_user_id === userId);
+      });
+    }
+
+    function updateHubCards() {
+      const activeUserId = state.settings?.active_user_id;
+      (state.settings?.users || []).forEach(user => {
+        document.querySelectorAll(`[data-hub-name="${user.id}"]`).forEach(node => {
+          node.textContent = user.display_name || user.id;
+        });
+      });
+      document.querySelectorAll('[data-hub-user]').forEach(card => {
+        card.classList.toggle('active', card.dataset.hubUser === activeUserId);
+      });
+      document.querySelectorAll('[data-switch-go]').forEach(button => {
+        const user = userById(button.dataset.switchGo);
+        const ready = setupReady().allReady;
+        button.disabled = state.busy || !ready;
+        button.textContent = ready ? `GO / Switch to ${user?.display_name || button.dataset.switchGo}` : 'Register first';
       });
     }
 
@@ -1278,6 +1572,9 @@
       $('profileRepoPath').value = profile?.default_repo_path || '';
       $('profileAgent').value = profile?.handoff_agent || profile?.display_name || '';
       $('profileTitle').value = profile?.handoff_title || 'AI workstation handoff';
+      $('profileRepoPathUser2').value = user2?.default_repo_path || '';
+      $('profileAgentUser2').value = user2?.handoff_agent || user2?.display_name || '';
+      $('profileTitleUser2').value = user2?.handoff_title || 'AI workstation handoff';
       updateActiveButtons();
       applyUserTheme();
       updateSetupGuide();
@@ -1291,7 +1588,7 @@
       const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
       applyActiveProfileDefaults({forceRepo: !savedPath});
       if (!state.settings.setup_completed) {
-        showResult('Setup needed. The wizard is open: name both users, choose the active user, confirm defaults, then save.');
+        showResult('Registration needed. The registration screen is open: register User 1, then User 2, then use the Collaborator Hub.');
         openSetupWizard();
       }
     }
@@ -1313,6 +1610,75 @@
         showResult(`Setup saved for <strong>${escapeHtml(names)}</strong>. Active user: <strong>${escapeHtml(activeProfile()?.display_name || '')}</strong>.`);
         if (closeAfter) closeSetupWizard();
         if (scanAfter) await scanRepo();
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function saveCurrentSettings() {
+      syncAllRegistrationFieldsToState();
+      return persistSettings();
+    }
+
+    async function persistSettings() {
+      const data = await api('/api/settings', state.settings);
+      state.settings = data.settings;
+      renderSettings();
+      return data.settings;
+    }
+
+    async function registerUser1AndContinue() {
+      setBusy(true);
+      try {
+        state.settings.active_user_id = 'user1';
+        syncRegistrationFieldsToState('user1');
+        if (!storedUserReady('user1')) {
+          throw new Error('Finish User 1 name, repo, agent, and title before continuing.');
+        }
+        renderSettings();
+        setRegistrationStage('user2');
+        showResult('User 1 registered. Now register User 2.');
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function registerUser2AndOpenHub() {
+      setBusy(true);
+      try {
+        syncRegistrationFieldsToState('user2');
+        if (!storedUserReady('user1')) setRegistrationStage('user1');
+        if (!storedUserReady('user1')) throw new Error('Register User 1 first.');
+        if (!storedUserReady('user2')) throw new Error('Finish User 2 name, repo, agent, and title before opening the Hub.');
+        state.settings.active_user_id = 'user2';
+        await saveCurrentSettings();
+        setRegistrationStage('hub');
+        closeSetupWizard();
+        showResult('Registration complete. Collaborator Hub is ready. Use GO / Switch to automate user switching.');
+      } catch (error) {
+        showResult(escapeHtml(error.message), 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function performGoSwitch(userId) {
+      setBusy(true);
+      try {
+        if (!setupReady().allReady) {
+          openSetupWizard();
+          throw new Error('Register User 1 and User 2 before using GO / Switch.');
+        }
+        state.settings.active_user_id = userId;
+        await persistSettings();
+        applyActiveProfileDefaults({forceRepo: true});
+        closeSetupWizard();
+        showResult(`GO complete: switched to <strong>${escapeHtml(activeProfile()?.display_name || userId)}</strong>, applied defaults, saved the active user, and scanned the repo.`);
+        await scanRepo();
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
@@ -1555,26 +1921,24 @@
     $('packagesBtn').addEventListener('click', loadPackages);
     $('openSetupBtn').addEventListener('click', openSetupWizard);
     $('closeSetupBtn').addEventListener('click', closeSetupWizard);
-    $('saveSettingsBtn').addEventListener('click', () => saveSettings({closeAfter: true}));
-    $('saveAndScanBtn').addEventListener('click', () => saveSettings({scanAfter: true, closeAfter: true}));
+    $('registerBackBtn').addEventListener('click', () => {
+      setRegistrationStage(state.registrationStage === 'hub' ? 'user2' : 'user1');
+    });
+    $('registerUser1NextBtn').addEventListener('click', registerUser1AndContinue);
+    $('registerUser2FinishBtn').addEventListener('click', registerUser2AndOpenHub);
+    $('openHubBtn').addEventListener('click', closeSetupWizard);
     $('applyProfileBtn').addEventListener('click', () => {
       applyActiveProfileDefaults({forceRepo: true});
       showResult(`Defaults applied for <strong>${escapeHtml(activeProfile()?.display_name || 'active user')}</strong>.`);
     });
-    document.querySelectorAll('[data-user-toggle]').forEach(button => {
+    document.querySelectorAll('[data-switch-go]').forEach(button => {
       button.addEventListener('click', () => {
-        syncProfileNamesToState();
-        syncActiveProfileFieldsToState();
-        state.settings.active_user_id = button.dataset.userToggle;
-        renderSettings();
-        applyActiveProfileDefaults({forceRepo: true});
-        showResult(`Active user is now <strong>${escapeHtml(activeProfile()?.display_name || '')}</strong>. The screen color changed to match.`);
+        performGoSwitch(button.dataset.switchGo);
       });
     });
-    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle'].forEach(id => {
+    ['user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2'].forEach(id => {
       $(id).addEventListener('input', () => {
-        syncProfileNamesToState();
-        syncActiveProfileFieldsToState();
+        syncAllRegistrationFieldsToState();
         updateActiveButtons();
         applyUserTheme();
         updateSetupGuide();

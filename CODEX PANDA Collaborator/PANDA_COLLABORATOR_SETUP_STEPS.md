@@ -18,34 +18,37 @@ Nothing is sent to the internet by the app just because you open it.
 
 1. Double-click the **PANDA Collaborator** icon on your Desktop.
 2. Wait a few seconds for your browser to open.
-3. The setup wizard should open automatically if setup is not finished.
-4. Type the name for the first user.
-5. Type the name for the second user.
-6. Click the user button for the person who is using the app right now.
-7. Check the repo path. For this project it is usually:
+3. Registration should open automatically if setup is not finished.
+4. Register **User 1** first.
+5. Type the User 1 name.
+6. Check the User 1 repo path. For this project it is usually:
 
 ```text
 C:\CODEX PG
 ```
 
-8. Check the agent name. This is the name that will be written into handoff packages.
-9. Check the handoff title. This is the default title for a new handoff.
-10. Click **Save setup and scan**.
+7. Check the User 1 agent name and handoff title.
+8. Click **Register User 1 and continue**.
+9. Register **User 2** next.
+10. Type the User 2 name.
+11. Check the User 2 repo path, agent name, and handoff title.
+12. Click **Register User 2 and open Hub**.
 
 When setup is saved, the setup badge changes to **Ready**.
 
 The active user's name appears in big letters at the top of the screen. User 1 uses a warm amber color theme. User 2 uses a cool cyan color theme.
 
+The Collaborator Hub shows a GO / Switch button for each user. Pressing GO / Switch changes the active user, applies that user's saved defaults, saves the active user, changes the color theme, and scans the repo.
+
 ## Daily Use
 
 1. Open PANDA Collaborator from the desktop icon.
-2. Make sure the correct user is selected in the **Setup** panel.
-3. Confirm that the big name at the top of the screen matches the person using the app.
-4. Click **Apply defaults** if you want to load that user's saved repo and handoff defaults.
-5. Click **Scan**.
-6. Review the **Working Tree** numbers and **Changed Files** list.
-7. If you need to hand work to another AI or another user, fill in the handoff notes.
-8. Click **Create safe handoff**.
+2. Use the **Collaborator Hub**.
+3. Press **GO / Switch** for the person who is using the app.
+4. Confirm that the big name at the top of the screen matches that person.
+5. Review the **Working Tree** numbers and **Changed Files** list after the automatic scan.
+6. If you need to hand work to another AI or another user, fill in the handoff notes.
+7. Click **Create safe handoff**.
 
 The app creates a handoff package with:
 
