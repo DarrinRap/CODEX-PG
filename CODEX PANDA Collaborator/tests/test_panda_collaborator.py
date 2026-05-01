@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -135,6 +136,27 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
     def test_save_settings_requires_exactly_two_profiles(self):
         with self.assertRaises(pc.CollaboratorError):
             pc.save_settings({"users": [{"display_name": "Only one"}]})
+
+
+class PandaCollaboratorWebThemeTests(unittest.TestCase):
+    def test_user_one_registration_uses_warm_amber_theme(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        user_one_match = re.search(r"body\.user-one\s*\{(?P<body>.*?)\n\s*\}", html, re.S)
+        self.assertIsNotNone(user_one_match)
+        user_one_css = user_one_match.group("body").lower()
+
+        self.assertIn("--user-accent: #f2b36d", user_one_css)
+        self.assertIn("--accent: #f2b36d", user_one_css)
+        self.assertIn("--user-bg: #281a10", user_one_css)
+        self.assertNotIn("#68d8e8", user_one_css)
+        self.assertNotIn("104, 216, 232", user_one_css)
+        self.assertIn("function effectiveThemeUserId()", html)
+        self.assertIn("if (setupOpen && ['user1', 'user2'].includes(state.registrationStage))", html)
+        self.assertRegex(
+            html,
+            r"(?s)function setRegistrationStage\(stage\).*?applyUserTheme\(\);.*?updateSetupGuide\(\);",
+            "Registration stage changes must immediately retheme the wizard.",
+        )
 
 
 class PandaCollaboratorHandoffTests(unittest.TestCase):

@@ -57,17 +57,17 @@
     }
 
     body.user-one {
-      --user-accent: #f0b98c;
-      --user-accent-2: #e86f68;
-      --user-bg: #211725;
-      --user-surface: #322033;
-      --user-ink: #1a1018;
-      --user-ring: rgba(240, 185, 140, .52);
-      --accent: #f0b98c;
-      --accent-hover: #e8a87c;
-      --accent-light: #ffd2a8;
-      --accent-border: rgba(240, 185, 140, .56);
-      --accent-soft: rgba(240, 185, 140, .14);
+      --user-accent: #f2b36d;
+      --user-accent-2: #ffd38f;
+      --user-bg: #281a10;
+      --user-surface: #3a2616;
+      --user-ink: #1f1408;
+      --user-ring: rgba(242, 179, 109, .58);
+      --accent: #f2b36d;
+      --accent-hover: #d9913d;
+      --accent-light: #ffd38f;
+      --accent-border: rgba(242, 179, 109, .62);
+      --accent-soft: rgba(242, 179, 109, .18);
     }
 
     body.user-two {
@@ -1471,9 +1471,17 @@
       return userId === 'user2' ? 'USER 2 COOL CYAN MODE' : 'USER 1 WARM AMBER MODE';
     }
 
+    function effectiveThemeUserId() {
+      const setupOpen = !$('setupOverlay')?.classList.contains('hidden');
+      if (setupOpen && ['user1', 'user2'].includes(state.registrationStage)) {
+        return state.registrationStage;
+      }
+      return state.settings?.active_user_id || 'user1';
+    }
+
     function applyUserTheme() {
-      const profile = activeProfile();
-      const activeUserId = state.settings?.active_user_id || 'user1';
+      const activeUserId = effectiveThemeUserId();
+      const profile = userById(activeUserId) || activeProfile();
       document.body.classList.toggle('user-one', activeUserId !== 'user2');
       document.body.classList.toggle('user-two', activeUserId === 'user2');
       const name = profile?.display_name || 'Setup Needed';
@@ -1591,6 +1599,7 @@
       $('registerUser1NextBtn').style.display = stage === 'user1' ? '' : 'none';
       $('registerUser2FinishBtn').style.display = stage === 'user2' ? '' : 'none';
       $('openHubBtn').style.display = stage === 'hub' ? '' : 'none';
+      applyUserTheme();
       updateSetupGuide();
     }
 
@@ -1647,6 +1656,7 @@
 
     function closeSetupWizard() {
       $('setupOverlay').classList.add('hidden');
+      applyUserTheme();
     }
 
     function activeProfile() {
