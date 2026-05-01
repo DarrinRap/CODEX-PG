@@ -259,6 +259,25 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.panel-head h2\s*\{.*?font-size:\s*10px;")
         self.assertRegex(html, r"(?s)\.hub-card strong\s*\{.*?font-size:\s*12px;")
 
+    def test_main_screen_orders_controls_left_to_right_by_workflow(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        main = html.split('<main class="workflow-layout">', 1)[1].split('<div class="setup-overlay', 1)[0]
+
+        self.assertIn('class="workflow-row"', main)
+        self.assertRegex(html, r"(?s)\.workflow-row\s*\{.*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);")
+
+        sequence = [
+            "Register User 1",
+            "Register User 2",
+            "Collaborator Hub / Switch Users",
+            "Start Session",
+            "Create Handoff",
+        ]
+        positions = [main.index(label) for label in sequence]
+        self.assertEqual(positions, sorted(positions))
+        self.assertLess(main.index('id="startSessionBtn"'), main.index('id="handoffBtn"'))
+        self.assertLess(main.index('class="workflow-row"'), main.index('class="support-grid"'))
+
 
 class PandaCollaboratorHandoffTests(unittest.TestCase):
     def setUp(self):

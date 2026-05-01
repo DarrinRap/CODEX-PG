@@ -310,10 +310,102 @@
 
     main {
       display: grid;
-      grid-template-columns: 290px minmax(0, 1fr);
+      grid-template-rows: minmax(210px, .72fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px;
       min-height: 0;
       height: 100%;
       overflow: hidden;
+    }
+
+    .workflow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .support-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, .7fr) minmax(360px, 1fr) minmax(360px, 1.1fr);
+      grid-template-rows: minmax(0, 1fr) minmax(118px, .45fr);
+      gap: 10px;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .sequence-panel {
+      border-color: rgba(104, 216, 232, .28);
+      background: linear-gradient(180deg, var(--surface), rgba(32, 32, 55, .92));
+    }
+
+    .sequence-panel .panel-head {
+      background: rgba(255, 255, 255, .025);
+    }
+
+    .sequence-step {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      color: var(--user-accent);
+      background: var(--user-surface);
+      border: 1px solid var(--user-ring);
+      font-size: 9px;
+      font-weight: 950;
+    }
+
+    .sequence-panel h2 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .sequence-panel h2 span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .register-card {
+      border: 1px solid var(--user-ring);
+      border-radius: 5px;
+      background: var(--user-surface);
+      padding: 7px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .register-card span {
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .register-card strong {
+      color: var(--user-accent);
+      font-size: 16px;
+      line-height: 1.05;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .handoff-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, .8fr);
+      gap: 6px;
+    }
+
+    .handoff-fields label:last-child,
+    .handoff-fields label:nth-child(3) {
+      grid-column: 1 / -1;
     }
 
     .left,
@@ -903,12 +995,22 @@
       min-height: 0;
     }
 
-    .repo-panel { grid-column: 1 / -1; }
+    .repo-panel { min-height: 0; }
     .setup-panel { min-height: 0; }
     .handoff-panel { min-height: 0; }
-    .status-panel { min-height: 0; }
-    .files-panel {
+    .status-panel {
       grid-column: 2;
+      grid-row: 1 / -1;
+      min-height: 0;
+    }
+    .files-panel {
+      grid-column: 3;
+      grid-row: 1 / -1;
+      min-height: 0;
+    }
+
+    .safety-panel {
+      grid-column: 1;
       grid-row: 2;
       min-height: 0;
     }
@@ -1122,16 +1224,19 @@
     @media (max-width: 1060px) {
       html, body { overflow: hidden; }
       .shell { height: 100vh; min-height: 0; overflow: hidden; }
-      main { grid-template-columns: 210px minmax(0, 1fr); height: 100%; overflow: hidden; }
-      .left { border-right: 1px solid var(--line); border-bottom: 0; }
-      .left, .right { overflow: hidden; padding: 8px; }
-      .section-grid { height: 100%; grid-template-rows: 118px 236px minmax(0, 1fr); }
-      .right {
+      main {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: 86px minmax(0, 1fr) minmax(120px, .72fr);
+        grid-template-rows: minmax(210px, .82fr) minmax(0, 1fr);
+        height: 100%;
+        overflow: hidden;
+        padding: 8px;
       }
-      .repo-panel, .files-panel { grid-column: 1; grid-row: auto; }
-      .split { grid-template-rows: minmax(0, 1fr) 150px; }
+      .workflow-row { gap: 8px; }
+      .support-grid {
+        grid-template-columns: minmax(210px, .75fr) minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(105px, .45fr);
+        gap: 8px;
+      }
       .repo-grid { grid-template-columns: repeat(5, minmax(48px, 1fr)); }
       .metric { min-height: 46px; padding: 5px; }
       .metric b { font-size: 14px; }
@@ -1154,16 +1259,25 @@
       .panda-step .num { width: 14px; height: 14px; font-size: 8px; }
       .panda-step .arrow { font-size: 12px; }
       .chip { font-size: 9px; padding: 2px 5px; }
-      main { grid-template-columns: 155px minmax(0, 1fr); }
-      .left, .right { padding: 6px; }
+      main {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(196px, .82fr) minmax(0, 1fr);
+        padding: 6px;
+        gap: 6px;
+      }
+      .workflow-row,
+      .support-grid { gap: 6px; }
+      .support-grid {
+        grid-template-columns: minmax(120px, .8fr) minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(88px, .38fr);
+      }
       .panel-head { padding: 6px 7px; }
       .panel-body { padding: 6px 7px; }
       .repo-grid { grid-template-columns: repeat(5, minmax(34px, 1fr)); gap: 4px; }
       .receipt-grid { grid-template-columns: repeat(2, minmax(58px, 1fr)); }
-      .section-grid { grid-template-rows: 108px 228px minmax(0, 1fr); gap: 6px; }
       .setup-names, .profile-defaults { grid-template-columns: minmax(0, 1fr); }
-      .right { gap: 6px; grid-template-rows: 80px minmax(0, 1fr) minmax(105px, .64fr); }
-      .split { gap: 6px; grid-template-rows: minmax(0, 1fr) 128px; }
+      .handoff-fields { grid-template-columns: minmax(0, 1fr); }
+      .handoff-fields label:nth-child(2) { grid-column: 1 / -1; }
       .wizard-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -1194,99 +1308,106 @@
       <nav class="panda-step-guide" id="pandaStepGuide" aria-label="PANDA workflow steps"></nav>
     </header>
 
-    <main>
-      <aside class="left">
-        <div class="section-grid">
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Repository</h2>
-              <span class="small" id="scanTime">Not scanned</span>
-            </div>
-            <div class="panel-body">
-              <div class="form-stack">
-                <label>Path
-                  <div class="inline-picker">
-                    <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
-                    <button type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder">Browse</button>
-                  </div>
-                </label>
-                <label>Project files directory
-                  <div class="inline-picker">
-                    <input id="projectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
-                    <button type="button" data-path-picker="projectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
-                  </div>
-                </label>
-                <div class="actions">
-                  <button class="primary" id="scanBtn">Scan</button>
-                  <button id="packagesBtn">Packages</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel setup-panel">
-            <div class="panel-head">
-              <h2>Collaborator Hub / Switch Users</h2>
-              <span class="chip warn" id="setupChip">Needed</span>
-            </div>
-            <div class="panel-body">
-              <div class="setup-control">
-                <div class="active-mini">
-                  <span>Now working as</span>
-                  <strong id="sideActiveName">SETUP NEEDED</strong>
-                </div>
-                <div class="hub-grid" id="sideHubGrid">
-                  <div class="hub-card" data-hub-user="user1">
-                    <span>User 1</span>
-                    <strong data-hub-name="user1">User 1</strong>
-                    <button type="button" data-switch-go="user1">GO / Switch</button>
-                  </div>
-                  <div class="hub-card" data-hub-user="user2">
-                    <span>User 2</span>
-                    <strong data-hub-name="user2">User 2</strong>
-                    <button type="button" data-switch-go="user2">GO / Switch</button>
-                  </div>
-                </div>
-                <ul class="setup-checklist" id="setupChecklist"></ul>
-                <div class="actions">
-                  <button class="primary" id="openSetupBtn">Register users</button>
-                  <button id="applyProfileBtn">Apply defaults</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Safety Rules</h2>
-              <span class="chip ok">Locked</span>
-            </div>
-            <div class="panel-body">
-              <ul class="rule-list" id="ruleList"></ul>
-            </div>
-          </section>
-        </div>
-      </aside>
-
-      <section class="right">
-        <section class="panel repo-panel">
+    <main class="workflow-layout">
+      <section class="workflow-row" aria-label="Primary PANDA workflow">
+        <section class="panel sequence-panel setup-panel">
           <div class="panel-head">
-            <h2>Working Tree</h2>
-            <span class="chip" id="branchChip">No repo</span>
+            <h2><span class="sequence-step">1</span><span>Register User 1</span></h2>
+            <span class="chip warn" id="setupChip">Needed</span>
           </div>
           <div class="panel-body">
-            <div id="repoSummary" class="empty">Scan a repository.</div>
+            <div class="form-stack">
+              <div class="register-card" data-hub-user="user1">
+                <span>User 1 identity</span>
+                <strong data-hub-name="user1">User 1</strong>
+              </div>
+              <button class="primary" id="openSetupBtn" type="button">Register User 1</button>
+              <ul class="setup-checklist" id="setupChecklist"></ul>
+            </div>
           </div>
         </section>
 
-        <section class="split">
-          <div class="panel handoff-panel">
-            <div class="panel-head">
-              <h2>Create Handoff</h2>
-              <span class="chip ok">Branch + Patch + Copies</span>
+        <section class="panel sequence-panel">
+          <div class="panel-head">
+            <h2><span class="sequence-step">2</span><span>Register User 2</span></h2>
+            <span class="chip">Next</span>
+          </div>
+          <div class="panel-body">
+            <div class="form-stack">
+              <div class="register-card" data-hub-user="user2">
+                <span>User 2 identity</span>
+                <strong data-hub-name="user2">User 2</strong>
+              </div>
+              <button id="applyProfileBtn" type="button">Apply defaults</button>
             </div>
-            <div class="panel-body">
-              <div class="form-stack">
+          </div>
+        </section>
+
+        <section class="panel sequence-panel">
+          <div class="panel-head">
+            <h2><span class="sequence-step">3</span><span>Collaborator Hub / Switch Users</span></h2>
+            <span class="chip">GO</span>
+          </div>
+          <div class="panel-body">
+            <div class="setup-control">
+              <div class="active-mini">
+                <span>Now working as</span>
+                <strong id="sideActiveName">SETUP NEEDED</strong>
+              </div>
+              <div class="hub-grid" id="sideHubGrid">
+                <div class="hub-card" data-hub-user="user1">
+                  <span>User 1</span>
+                  <strong data-hub-name="user1">User 1</strong>
+                  <button type="button" data-switch-go="user1">GO / Switch</button>
+                </div>
+                <div class="hub-card" data-hub-user="user2">
+                  <span>User 2</span>
+                  <strong data-hub-name="user2">User 2</strong>
+                  <button type="button" data-switch-go="user2">GO / Switch</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel sequence-panel">
+          <div class="panel-head">
+            <h2><span class="sequence-step">4</span><span>Start Session</span></h2>
+            <span class="small" id="scanTime">Not scanned</span>
+          </div>
+          <div class="panel-body">
+            <div class="form-stack">
+              <label>Repository
+                <div class="inline-picker">
+                  <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
+                  <button type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder">Browse</button>
+                </div>
+              </label>
+              <label>Project files
+                <div class="inline-picker">
+                  <input id="projectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
+                  <button type="button" data-path-picker="projectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
+                </div>
+              </label>
+              <div class="workflow-actions">
+                <button class="primary" id="scanBtn" type="button">Scan repo</button>
+                <button id="packagesBtn" type="button">Packages</button>
+                <button class="primary" id="startSessionBtn" type="button">Start Session / Start Work</button>
+                <button class="danger" id="pauseBtn" type="button">Emergency Pause</button>
+                <button id="clearPauseBtn" type="button">Clear Pause</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel sequence-panel handoff-panel">
+          <div class="panel-head">
+            <h2><span class="sequence-step">5</span><span>Create Handoff</span></h2>
+            <span class="chip ok">Safe</span>
+          </div>
+          <div class="panel-body">
+            <div class="form-stack">
+              <div class="handoff-fields">
                 <label>Title
                   <input id="handoffTitle" value="AI workstation handoff" maxlength="90">
                 </label>
@@ -1299,26 +1420,35 @@
                 <label>Quick message
                   <input id="messageText" maxlength="500" placeholder="Short note, concern, achievement, or next step">
                 </label>
-                <div class="workflow-actions">
-                  <button class="primary" id="startSessionBtn" type="button">Start Session / Start Work</button>
-                  <button id="endSessionBtn" type="button">End Session / Handoff</button>
-                  <button id="messageBtn" type="button">Save Message</button>
-                  <button class="primary" id="handoffBtn" disabled>Create safe handoff</button>
-                  <button class="danger" id="pauseBtn" type="button">Emergency Pause</button>
-                  <button id="clearPauseBtn" type="button">Clear Pause</button>
-                </div>
+              </div>
+              <div class="workflow-actions">
+                <button id="endSessionBtn" type="button">End Session / Handoff</button>
+                <button id="messageBtn" type="button">Save Message</button>
+                <button class="primary" id="handoffBtn" disabled>Create safe handoff</button>
               </div>
             </div>
           </div>
+        </section>
+      </section>
 
-          <div class="panel status-panel">
-            <div class="panel-head">
-              <h2>Status Messages</h2>
-              <span class="chip" id="resultChip">Idle</span>
-            </div>
-            <div class="panel-body">
-              <div id="resultBox" class="empty status-window">Ready. No handoff package created yet.</div>
-            </div>
+      <section class="support-grid" aria-label="Repository, status, and review support">
+        <section class="panel repo-panel">
+          <div class="panel-head">
+            <h2>Working Tree</h2>
+            <span class="chip" id="branchChip">No repo</span>
+          </div>
+          <div class="panel-body">
+            <div id="repoSummary" class="empty">Scan a repository.</div>
+          </div>
+        </section>
+
+        <section class="panel status-panel">
+          <div class="panel-head">
+            <h2>Status Messages</h2>
+            <span class="chip" id="resultChip">Idle</span>
+          </div>
+          <div class="panel-body">
+            <div id="resultBox" class="empty status-window">Ready. No handoff package created yet.</div>
           </div>
         </section>
 
@@ -1344,6 +1474,16 @@
               <button type="button" id="searchBtn">Search</button>
               <div id="searchResults" class="manager-box"></div>
             </div>
+          </div>
+        </section>
+
+        <section class="panel safety-panel">
+          <div class="panel-head">
+            <h2>Safety Rules</h2>
+            <span class="chip ok">Locked</span>
+          </div>
+          <div class="panel-body">
+            <ul class="rule-list" id="ruleList"></ul>
           </div>
         </section>
       </section>
