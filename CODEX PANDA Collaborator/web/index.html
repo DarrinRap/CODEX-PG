@@ -1837,6 +1837,107 @@
       }[char]));
     }
 
+    function cleanTooltipText(value) {
+      return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function tooltipForAction(button) {
+      const byId = {
+        switchUserBtn: 'Open the user setup and switching screen.',
+        openSetupBtn: 'Open registration so you can set up User 1 and User 2.',
+        applyProfileBtn: 'Apply the saved defaults for the active user.',
+        scanBtn: 'Check the selected repository for branch, file, and safety status.',
+        packagesBtn: 'Show saved handoff packages for this repository.',
+        startSessionBtn: 'Start the work session after setup checks are complete.',
+        pauseBtn: 'Stop work from continuing until the pause is cleared.',
+        clearPauseBtn: 'Clear the emergency pause so work can continue.',
+        endSessionBtn: 'End the session and prepare a safe handoff record.',
+        messageBtn: 'Save the quick message into the project history.',
+        handoffBtn: 'Create the safe handoff package with branch, patch, and file-copy protection.',
+        searchBtn: 'Search saved project history and handoff messages.',
+        closeSetupBtn: 'Close this setup window.',
+        autoFillSetupBtn: 'Try to fill paths and setup fields automatically.',
+        registerBackBtn: 'Go back to the previous setup step.',
+        registerUser1NextBtn: 'Save User 1 registration and continue to User 2.',
+        registerUser2FinishBtn: 'Save User 2 registration and open the Collaborator Hub.',
+        openHubBtn: 'Open the Collaborator Hub after both users are registered.'
+      };
+      if (byId[button.id]) return byId[button.id];
+      if (button.dataset.pathPicker) {
+        const title = cleanTooltipText(button.dataset.pathTitle || 'choose a file or folder');
+        return `Open a picker to ${title.toLowerCase()} instead of typing the path.`;
+      }
+      if (button.dataset.switchGo) {
+        return 'Switch to this user, apply their saved settings, and scan the repository.';
+      }
+      if (button.dataset.sideView) {
+        return `Show the ${cleanTooltipText(button.textContent).toLowerCase()} view in the right panel.`;
+      }
+      if (button.dataset.summaryView) {
+        return `Show the ${cleanTooltipText(button.textContent).toLowerCase()} handoff summary.`;
+      }
+      if (button.dataset.packageId) {
+        return 'Open this handoff package so you can inspect what was saved.';
+      }
+      if (button.dataset.restorePackageId) {
+        return 'Preview restore safety only. This checks risk but does not change files.';
+      }
+      const text = cleanTooltipText(button.textContent);
+      return text ? `Click to ${text.toLowerCase()}.` : 'Action button.';
+    }
+
+    function tooltipForChip(chip) {
+      const byId = {
+        setupChip: 'Shows whether the required user setup is complete.',
+        branchChip: 'Shows the current repository branch after scanning.',
+        scanTime: 'Shows when the repository was last scanned.',
+        resultChip: 'Shows the current message or error status.',
+        fileChip: 'Shows how many changed files were found.'
+      };
+      if (byId[chip.id]) return byId[chip.id];
+      if (chip.classList.contains('user-chip')) return 'Shows the active PANDA user.';
+      const text = cleanTooltipText(chip.textContent);
+      const byText = {
+        Ready: 'The app is ready for the next safe step.',
+        Setup: 'User setup still needs attention.',
+        Needed: 'This setup item is still needed.',
+        Next: 'This step comes later in the workflow.',
+        GO: 'This step uses GO buttons to switch users.',
+        Safe: 'This item follows PANDA safety rules.',
+        Idle: 'No action is running right now.',
+        Error: 'The last action had a problem.',
+        Locked: 'This safety rule is locked and cannot be changed here.',
+        'No repo': 'No repository has been scanned yet.',
+        'No destructive git': 'Destructive Git commands are blocked.',
+        'No stash safety': 'PANDA uses patches and file copies instead of stash.',
+        'Patch + copies armed': 'PANDA is ready to protect uncommitted work with patches and file copies.',
+        'Uncommitted work': 'The repository has uncommitted changes.',
+        'Clean tree': 'The repository has no uncommitted changes.'
+      };
+      if (byText[text]) return byText[text];
+      if (text.startsWith('HEAD ')) return 'Shows the current Git commit after scanning.';
+      return text ? `Information only: ${text}.` : 'Information only.';
+    }
+
+    function applyTooltips(root = document) {
+      root.querySelectorAll?.('button').forEach(button => {
+        const tooltip = tooltipForAction(button);
+        if (button.getAttribute('title') !== tooltip) button.setAttribute('title', tooltip);
+        if (!button.getAttribute('aria-label')) button.setAttribute('aria-label', tooltip);
+      });
+      root.querySelectorAll?.('.chip').forEach(chip => {
+        const tooltip = tooltipForChip(chip);
+        if (chip.getAttribute('title') !== tooltip) chip.setAttribute('title', tooltip);
+        if (!chip.getAttribute('aria-label')) chip.setAttribute('aria-label', tooltip);
+      });
+    }
+
+    function startTooltipObserver() {
+      applyTooltips();
+      const observer = new MutationObserver(() => applyTooltips());
+      observer.observe(document.body, {childList: true, characterData: true, subtree: true});
+    }
+
     function setBusy(isBusy) {
       state.busy = isBusy;
       const handoffReady = handoffStepReady();
@@ -3043,6 +3144,7 @@
     });
 
     async function init() {
+      startTooltipObserver();
       renderRules();
       const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
       if (savedPath) $('repoPath').value = savedPath;

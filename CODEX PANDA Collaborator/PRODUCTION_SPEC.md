@@ -162,6 +162,7 @@ PANDA must visually separate passive information from user actions.
 - A pill must never perform work when clicked. If an element performs work, changes state, opens a picker, switches a user, saves data, scans, or creates a package, it must be a rectangular action button.
 - Disabled future actions may be visually dimmed or locked, but they must retain action-button shape so the user can tell they are unavailable commands, not passive information.
 - Tabs and segmented controls are still actions; keep them rectangular even when compact.
+- Every action button and every passive pill must provide a plain-language tooltip that tells the user what the item means or what will happen if clicked.
 
 ### Start Session Workflow
 

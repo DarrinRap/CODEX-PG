@@ -334,6 +334,19 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.chip\s*\{.*?cursor:\s*default;")
         self.assertIn('class="chip" id="scanTime"', html)
 
+    def test_action_buttons_and_info_pills_get_lay_tooltips(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("function tooltipForAction(button)", html)
+        self.assertIn("function tooltipForChip(chip)", html)
+        self.assertIn("function applyTooltips(root = document)", html)
+        self.assertIn("function startTooltipObserver()", html)
+        self.assertIn("new MutationObserver(() => applyTooltips())", html)
+        self.assertIn("Open a picker to", html)
+        self.assertIn("Switch to this user, apply their saved settings, and scan the repository.", html)
+        self.assertIn("Information only:", html)
+        self.assertIn("Preview restore safety only. This checks risk but does not change files.", html)
+
     def test_setup_dialog_is_centered_and_shows_three_setup_columns(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
