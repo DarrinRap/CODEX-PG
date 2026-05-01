@@ -206,6 +206,14 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("claude_code_path", html)
         self.assertNotIn('<span class="step-num">4</span>', html)
 
+    def test_registration_headers_do_not_render_redundant_number_badges(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertNotIn('<span class="step-num">1</span>', html)
+        self.assertNotIn('<span class="step-num">2</span>', html)
+        self.assertNotIn('<span class="step-num">3</span>', html)
+        self.assertIn('class="panda-step-guide"', html)
+
 
 class PandaCollaboratorHandoffTests(unittest.TestCase):
     def setUp(self):
