@@ -206,6 +206,16 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("claude_code_path", html)
         self.assertNotIn('<span class="step-num">4</span>', html)
 
+    def test_repository_paths_have_folder_browse_buttons(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        for element_id in ("repoPath", "profileRepoPath", "profileRepoPathUser2"):
+            self.assertIn(f'id="{element_id}"', html)
+            self.assertIn(f'data-path-picker="{element_id}"', html)
+        self.assertIn('data-path-title="Select local Git repository folder"', html)
+        self.assertIn('data-path-title="Select User 1 local Git repository folder"', html)
+        self.assertIn('data-path-title="Select User 2 local Git repository folder"', html)
+
     def test_registration_headers_do_not_render_redundant_number_badges(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 

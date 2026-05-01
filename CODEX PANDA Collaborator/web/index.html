@@ -1195,7 +1195,10 @@
             <div class="panel-body">
               <div class="form-stack">
                 <label>Path
-                  <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
+                  <div class="inline-picker">
+                    <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
+                    <button type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder">Browse</button>
+                  </div>
                 </label>
                 <div class="actions">
                   <button class="primary" id="scanBtn">Scan</button>
@@ -1363,7 +1366,10 @@
                   <input id="user1Name" maxlength="40" autocomplete="off">
                 </label>
                 <label>Repository path
-                  <input id="profileRepoPath" spellcheck="false">
+                  <div class="inline-picker">
+                    <input id="profileRepoPath" spellcheck="false">
+                    <button type="button" data-path-picker="profileRepoPath" data-path-mode="folder" data-path-title="Select User 1 local Git repository folder">Browse</button>
+                  </div>
                 </label>
                 <label>Handoff agent name
                   <input id="profileAgent" maxlength="60" autocomplete="off">
@@ -1419,7 +1425,10 @@
                   <input id="user2Name" maxlength="40" autocomplete="off">
                 </label>
                 <label>Repository path
-                  <input id="profileRepoPathUser2" spellcheck="false">
+                  <div class="inline-picker">
+                    <input id="profileRepoPathUser2" spellcheck="false">
+                    <button type="button" data-path-picker="profileRepoPathUser2" data-path-mode="folder" data-path-title="Select User 2 local Git repository folder">Browse</button>
+                  </div>
                 </label>
                 <label>Handoff agent name
                   <input id="profileAgentUser2" maxlength="60" autocomplete="off">

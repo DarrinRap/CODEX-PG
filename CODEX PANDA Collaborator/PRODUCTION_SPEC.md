@@ -82,6 +82,7 @@ The setup and hub flow:
 - keeps setup instructions progressive: while registering User 1, do not show User 2 or Collaborator Hub checklist rows; reveal User 2 only after User 1 is registered, then reveal the Hub only after User 2 is registered;
 - provides a checklist that shows which registration steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;
+- provides Browse buttons for the main repository path and each user's default repository path so users can pick the local Git repository folder instead of typing a Windows path;
 - requires per-user Codex account label, Claude account label, Git author name, and Git author email during registration;
 - requires per-user Claude Desktop path and Claude Code path during registration so each user profile identifies the local tools it is meant to use;
 - provides Browse buttons for Claude Desktop and Claude Code paths so users can pick Windows paths instead of typing them by hand;
