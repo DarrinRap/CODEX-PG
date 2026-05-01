@@ -126,6 +126,8 @@ Each profile stores:
 - default handoff title;
 - Codex account label;
 - Claude account label;
+- Claude Desktop path;
+- Claude Code path;
 - Git author name;
 - Git author email.
 
@@ -133,9 +135,11 @@ PANDA stores account labels, usernames, and emails only. Do not enter passwords,
 
 If both users use the same repository path, they share the same git working tree and commit history. PANDA records the per-user Git author identity for context and handoff docs, but it does not switch Git credentials or log in to Git hosting accounts.
 
-The active user is shown in large text at the top of the screen. User 1 uses a warm amber/coral theme. User 2 uses a cool cyan/teal theme. The color change is intentional so the operator can tell which user is active at a glance.
+The active user is shown in large text at the top of the screen. User 1 uses a warm amber theme. User 2 uses a cool cyan theme. User identity colors stay attached to their own registration and workflow surfaces even when the other user is the active operator.
 
-On first run, registration opens automatically. The required order is User 1 registration, then User 2 registration, then the Collaborator Hub. The Hub has GO / Switch buttons for both users. A GO / Switch action saves the active user, applies that user's defaults, changes the screen theme, and scans the repository automatically.
+On first run, registration opens automatically. The required order is User 1 registration, User 1 confirmation, User 2 registration, then the Collaborator Hub. The setup window is compact and scrollable, groups fields into readable sections, and disabled registration actions explain which required fields are still missing. PANDA does not silently jump from User 1 into User 2; the user chooses **Continue to User 2** from the confirmation panel. The Hub has HANDOVER TO USER 1 and HANDOVER TO USER 2 buttons. A handover action saves the active user, applies that user's defaults, changes the active-user header theme, and scans the repository automatically.
+
+Safe action buttons turn green when they can be activated. Disabled actions are grey. Warning actions such as Emergency Pause may stay red.
 
 ## v0.9 Control Center
 

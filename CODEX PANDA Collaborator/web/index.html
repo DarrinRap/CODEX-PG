@@ -84,6 +84,26 @@
       --accent-soft: rgba(104, 216, 232, .14);
     }
 
+    [data-user-tone="user1"],
+    [data-hub-user="user1"] {
+      --tone-accent: #f2b36d;
+      --tone-accent-2: #ffd38f;
+      --tone-bg: #281a10;
+      --tone-surface: #3a2616;
+      --tone-ink: #1f1408;
+      --tone-ring: rgba(242, 179, 109, .58);
+    }
+
+    [data-user-tone="user2"],
+    [data-hub-user="user2"] {
+      --tone-accent: #68d8e8;
+      --tone-accent-2: #7fb069;
+      --tone-bg: #0f2430;
+      --tone-surface: #163242;
+      --tone-ink: #071820;
+      --tone-ring: rgba(104, 216, 232, .52);
+    }
+
     button, input, textarea {
       font: inherit;
       font-family: var(--font-ui);
@@ -103,7 +123,13 @@
 
     button:hover { border-color: var(--accent-border); background: var(--field-hover); }
     button:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .28); }
-    button:disabled { opacity: .52; cursor: not-allowed; }
+    button:disabled {
+      opacity: 1;
+      cursor: not-allowed;
+      border-color: rgba(136, 136, 136, .38);
+      background: linear-gradient(180deg, #4a4a56, #353542);
+      color: #aaa7a0;
+    }
     .primary {
       background: var(--accent);
       border-color: var(--accent);
@@ -296,6 +322,11 @@
       box-shadow: 0 0 0 1px var(--user-ring), 0 10px 22px var(--shadow);
     }
 
+    .sequence-panel[data-user-tone].is-current {
+      border-color: var(--tone-ring);
+      box-shadow: 0 0 0 1px var(--tone-ring), 0 10px 22px var(--shadow);
+    }
+
     .sequence-panel.is-locked {
       opacity: .46;
       filter: grayscale(.45);
@@ -312,6 +343,11 @@
     .sequence-panel.is-current .panel-head {
       background: var(--user-surface);
       border-bottom-color: var(--user-ring);
+    }
+
+    .sequence-panel[data-user-tone].is-current .panel-head {
+      background: var(--tone-surface);
+      border-bottom-color: var(--tone-ring);
     }
 
     .sequence-panel.is-ready .panel-head {
@@ -361,6 +397,12 @@
       background: rgba(255, 255, 255, .045);
     }
 
+    .sequence-panel[data-user-tone] .sequence-step {
+      color: var(--tone-accent);
+      background: var(--tone-surface);
+      border-color: var(--tone-ring);
+    }
+
     .sequence-panel h2 {
       display: flex;
       align-items: center;
@@ -382,14 +424,15 @@
     }
 
     .sequence-panel.is-current .sequence-arrow { color: var(--user-accent); }
+    .sequence-panel[data-user-tone].is-current .sequence-arrow { color: var(--tone-accent); }
     .sequence-panel.is-ready .sequence-arrow { color: var(--ok); }
     .sequence-panel.is-pending .sequence-arrow { color: var(--warn); }
     .sequence-panel.is-locked .sequence-arrow { color: var(--muted); }
 
     .register-card {
-      border: 1px solid var(--user-ring);
+      border: 1px solid var(--tone-ring, var(--user-ring));
       border-radius: 5px;
-      background: var(--user-surface);
+      background: var(--tone-surface, var(--user-surface));
       padding: 7px;
       display: grid;
       gap: 4px;
@@ -403,7 +446,7 @@
     }
 
     .register-card strong {
-      color: var(--user-accent);
+      color: var(--tone-accent, var(--user-accent));
       font-size: 16px;
       line-height: 1.05;
       text-transform: uppercase;
@@ -797,6 +840,12 @@
       background: var(--user-surface);
     }
 
+    .setup-dialog[data-user-tone] .setup-checklist li.current {
+      color: var(--tone-accent);
+      border-color: var(--tone-ring);
+      background: var(--tone-surface);
+    }
+
     .setup-checklist b {
       color: inherit;
       font-size: 10px;
@@ -1167,6 +1216,23 @@
       color: #fff;
     }
 
+    button:not(:disabled):not(.danger) {
+      border-color: rgba(127, 176, 105, .86);
+      background: linear-gradient(180deg, #8ccf6f, #6da850);
+      color: #07140a;
+    }
+
+    button:hover:not(:disabled):not(.danger) {
+      border-color: rgba(155, 220, 126, .96);
+      background: linear-gradient(180deg, #9bdc7e, #76b75a);
+    }
+
+    .danger:not(:disabled) {
+      background: var(--bad);
+      border-color: var(--bad);
+      color: #fff;
+    }
+
     .manager-box,
     .message-box,
     .summary-box {
@@ -1219,6 +1285,13 @@
       color: var(--accent-ink);
     }
 
+    .view-toggle button.active:not(:disabled),
+    .segmented button.active:not(:disabled) {
+      border-color: rgba(127, 176, 105, .86);
+      background: linear-gradient(180deg, #8ccf6f, #6da850);
+      color: #07140a;
+    }
+
     .setup-overlay {
       position: fixed;
       inset: 0;
@@ -1235,11 +1308,11 @@
     }
 
     .setup-dialog {
-      width: min(1240px, calc(100vw - 72px));
+      width: min(960px, calc(100vw - 72px));
       max-height: calc(100vh - 48px);
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
-      border: 1px solid var(--user-ring);
+      border: 1px solid var(--tone-ring, var(--user-ring));
       border-radius: 8px;
       background: var(--surface);
       box-shadow: 0 24px 60px rgba(0, 0, 0, .48);
@@ -1253,7 +1326,7 @@
       justify-content: space-between;
       gap: 10px;
       padding: 8px 12px;
-      background: linear-gradient(90deg, var(--user-bg), var(--surface));
+      background: linear-gradient(90deg, var(--tone-bg, var(--user-bg)), var(--surface));
       border-bottom: 1px solid var(--line);
     }
 
@@ -1266,10 +1339,16 @@
 
     .setup-dialog-head h2 {
       margin: 2px 0 0;
-      color: var(--user-accent);
+      color: var(--tone-accent, var(--user-accent));
       font-size: 18px;
       line-height: 1;
       text-transform: uppercase;
+    }
+
+    .setup-dialog[data-user-tone] .primary {
+      background: linear-gradient(180deg, #8ccf6f, #6da850);
+      border-color: rgba(127, 176, 105, .86);
+      color: #07140a;
     }
 
     .setup-dialog-head span {
@@ -1287,7 +1366,7 @@
       gap: 8px;
       padding: 8px;
       min-height: 0;
-      overflow: hidden;
+      overflow: auto;
     }
 
     .wizard-step {
@@ -1332,7 +1411,7 @@
     }
 
     .setup-project-step .wizard-step-body {
-      grid-template-columns: minmax(0, 1fr) auto minmax(240px, .72fr);
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: end;
       gap: 8px;
       padding: 7px 8px;
@@ -1343,6 +1422,7 @@
     }
 
     .setup-project-step .identity-note {
+      grid-column: 1 / -1;
       padding: 5px 7px;
       line-height: 1.2;
     }
@@ -1352,10 +1432,74 @@
       min-height: 0;
     }
 
+    .registration-transition {
+      grid-column: 1 / -1;
+      border-color: var(--tone-ring);
+      background: var(--tone-surface);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
+    }
+
+    .registration-transition.hidden {
+      display: none;
+    }
+
+    .registration-transition .wizard-step-body {
+      grid-template-columns: minmax(0, .78fr) minmax(220px, .42fr);
+      align-items: start;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    .transition-title {
+      display: grid;
+      gap: 4px;
+      padding: 12px;
+      border: 1px solid var(--tone-ring);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .035);
+    }
+
+    .transition-title span,
+    .registration-subhead {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .transition-title strong {
+      color: var(--tone-accent);
+      font-size: 22px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .transition-copy {
+      margin: 0;
+      color: var(--soft);
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 750;
+    }
+
+    .transition-next {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .035);
+      padding: 10px;
+    }
+
     .registration-panel.is-current {
       grid-column: 1 / -1;
       border-color: var(--user-ring);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+      overflow: visible;
+    }
+
+    .registration-panel[data-user-tone].is-current {
+      border-color: var(--tone-ring);
     }
 
     .registration-panel:not(.is-current) .wizard-step-body {
@@ -1369,6 +1513,11 @@
     .registration-panel.is-current .wizard-step-head {
       background: var(--user-surface);
       border-bottom-color: var(--user-ring);
+    }
+
+    .registration-panel[data-user-tone].is-current .wizard-step-head {
+      background: var(--tone-surface);
+      border-bottom-color: var(--tone-ring);
     }
 
     .registration-panel.is-ready .wizard-step-head {
@@ -1390,8 +1539,46 @@
       display: none;
     }
 
+    .setup-dialog[data-registration-stage="user1Complete"] .setup-project-step,
+    .setup-dialog[data-registration-stage="user1Complete"] .registration-panel[data-registration-stage="user1"] {
+      display: none;
+    }
+
     .registration-panel.is-locked .wizard-step-body {
       filter: saturate(.7);
+    }
+
+    .registration-panel[data-user-tone] .registration-title {
+      border-color: var(--tone-ring);
+      background: var(--tone-surface);
+    }
+
+    .registration-panel[data-user-tone] .registration-title strong {
+      color: var(--tone-accent);
+    }
+
+    .profile-defaults,
+    .account-defaults {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .025);
+      padding: 8px;
+    }
+
+    .profile-defaults {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .account-defaults {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .registration-subhead {
+      grid-column: 1 / -1;
     }
 
     .setup-dialog-status {
@@ -1494,13 +1681,14 @@
       .handoff-fields { grid-template-columns: minmax(0, 1fr); }
       .handoff-fields label:nth-child(2) { grid-column: 1 / -1; }
       .wizard-grid { grid-template-columns: 1fr; }
+      .registration-transition .wizard-step-body { grid-template-columns: minmax(0, 1fr); }
       .setup-project-step .wizard-step-body { grid-template-columns: minmax(0, 1fr); }
       .setup-dialog-foot { display: grid; gap: 8px; }
       .setup-dialog-status { width: 100%; }
       .setup-dialog-status .setup-checklist { grid-template-columns: minmax(0, 1fr); }
       .setup-dialog-actions { min-width: 0; justify-content: flex-end; flex-wrap: wrap; }
       .setup-overlay { padding: 18px; }
-      .setup-dialog { width: min(1120px, 100%); max-height: calc(100vh - 36px); }
+      .setup-dialog { width: min(960px, 100%); max-height: calc(100vh - 36px); }
     }
   </style>
 </head>
@@ -1531,7 +1719,7 @@
 
     <main class="workflow-layout">
       <section class="workflow-row" aria-label="Primary PANDA workflow">
-        <section class="panel sequence-panel setup-panel" data-flow-panel="user1">
+        <section class="panel sequence-panel setup-panel" data-flow-panel="user1" data-user-tone="user1">
           <div class="panel-head">
             <h2><span class="sequence-step">1</span><span>Register User 1</span></h2>
             <span class="sequence-arrow" aria-hidden="true">&gt;</span>
@@ -1549,7 +1737,7 @@
           </div>
         </section>
 
-        <section class="panel sequence-panel" data-flow-panel="user2">
+        <section class="panel sequence-panel" data-flow-panel="user2" data-user-tone="user2">
           <div class="panel-head">
             <h2><span class="sequence-step">2</span><span>Register User 2</span></h2>
             <span class="sequence-arrow" aria-hidden="true">&gt;</span>
@@ -1717,7 +1905,7 @@
     </main>
 
     <div class="setup-overlay hidden" id="setupOverlay" aria-modal="true" role="dialog">
-      <section class="setup-dialog">
+      <section class="setup-dialog" data-user-tone="user1">
         <div class="setup-dialog-head">
           <div>
             <span>Registration</span>
@@ -1747,7 +1935,7 @@
             </div>
           </section>
 
-          <section class="wizard-step registration-panel" data-registration-stage="user1">
+          <section class="wizard-step registration-panel" data-registration-stage="user1" data-user-tone="user1">
             <div class="wizard-step-head">
               <div>
                 <h3>Register User 1</h3>
@@ -1760,6 +1948,7 @@
                 <strong>Warm amber identity</strong>
               </div>
               <div class="profile-defaults">
+                <div class="registration-subhead">Profile</div>
                 <label>User 1 name
                   <input id="user1Name" maxlength="40" autocomplete="off">
                 </label>
@@ -1778,6 +1967,7 @@
               </div>
               <div class="identity-note">Store login names, emails, or account labels only. Do not enter passwords, API keys, tokens, or recovery codes.</div>
               <div class="account-defaults">
+                <div class="registration-subhead">Accounts, tools, and Git identity</div>
                 <label>Codex account label
                   <input id="codexAccount" maxlength="120" autocomplete="off">
                 </label>
@@ -1806,7 +1996,27 @@
             </div>
           </section>
 
-          <section class="wizard-step registration-panel" data-registration-stage="user2">
+          <section class="wizard-step registration-transition hidden" id="user1Transition" data-user-tone="user1">
+            <div class="wizard-step-head">
+              <div>
+                <h3>User 1 registered</h3>
+                <p>Review the handoff point before moving to User 2.</p>
+              </div>
+            </div>
+            <div class="wizard-step-body">
+              <div class="transition-title">
+                <span>Next setup step</span>
+                <strong>User 1 is ready</strong>
+                <p class="transition-copy">PANDA saved the User 1 registration fields in this setup session. Continue when you are ready to register User 2.</p>
+              </div>
+              <div class="transition-next">
+                <div class="registration-subhead">Next</div>
+                <p class="transition-copy">User 2 needs their own name, repo defaults, account labels, Claude paths, and Git identity before the Collaborator Hub opens.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="wizard-step registration-panel" data-registration-stage="user2" data-user-tone="user2">
             <div class="wizard-step-head">
               <div>
                 <h3>Register User 2</h3>
@@ -1819,6 +2029,7 @@
                 <strong>Cool cyan identity</strong>
               </div>
               <div class="profile-defaults">
+                <div class="registration-subhead">Profile</div>
                 <label>User 2 name
                   <input id="user2Name" maxlength="40" autocomplete="off">
                 </label>
@@ -1837,6 +2048,7 @@
               </div>
               <div class="identity-note">Store login names, emails, or account labels only. Do not enter passwords, API keys, tokens, or recovery codes.</div>
               <div class="account-defaults">
+                <div class="registration-subhead">Accounts, tools, and Git identity</div>
                 <label>Codex account label
                   <input id="codexAccountUser2" maxlength="120" autocomplete="off">
                 </label>
@@ -1899,6 +2111,7 @@
           <div class="setup-dialog-actions">
             <button id="registerBackBtn" type="button">Back</button>
             <button id="registerUser1NextBtn" class="primary" type="button">Register User 1 and continue</button>
+            <button id="continueUser2Btn" class="primary" type="button">Continue to User 2</button>
             <button id="registerUser2FinishBtn" class="primary" type="button">Register User 2 and open Hub</button>
             <button id="openHubBtn" class="primary" type="button">Open Collaborator Hub</button>
           </div>
@@ -1949,6 +2162,9 @@
     }
 
     function tooltipForAction(button) {
+      if (button.disabled && button.dataset.missingFields) {
+        return `Complete these fields first: ${cleanTooltipText(button.dataset.missingFields)}.`;
+      }
       const byId = {
         switchUserBtn: 'Open the user setup and handover screen.',
         openSetupBtn: 'Open registration so you can set up User 1 and User 2.',
@@ -1965,7 +2181,8 @@
         closeSetupBtn: 'Close this setup window.',
         autoFillSetupBtn: 'Try to fill paths and setup fields automatically.',
         registerBackBtn: 'Go back to the previous setup step.',
-        registerUser1NextBtn: 'Save User 1 registration and continue to User 2.',
+        registerUser1NextBtn: 'Save User 1 registration and show the next-step confirmation.',
+        continueUser2Btn: 'Continue from the User 1 confirmation to User 2 registration.',
         registerUser2FinishBtn: 'Save User 2 registration and open the Collaborator Hub.',
         openHubBtn: 'Open the Collaborator Hub after both users are registered.'
       };
@@ -2060,7 +2277,7 @@
       $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
       $('autoFillSetupBtn').disabled = isBusy || !state.settings;
       $('switchUserBtn').disabled = isBusy;
-      document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
+      document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #continueUser2Btn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
         button.disabled = isBusy;
       });
       document.querySelectorAll('[data-path-picker]').forEach(button => {
@@ -2102,10 +2319,6 @@
     }
 
     function effectiveThemeUserId() {
-      const setupOpen = !$('setupOverlay')?.classList.contains('hidden');
-      if (setupOpen && ['user1', 'user2'].includes(state.registrationStage)) {
-        return state.registrationStage;
-      }
       return state.settings?.active_user_id || 'user1';
     }
 
@@ -2146,35 +2359,44 @@
       return Boolean(state.settings?.project_files_directory || $('projectFilesDirectory')?.value.trim() || $('setupProjectFilesDirectory')?.value.trim());
     }
 
-    function registrationFieldReady(userId) {
+    function registrationRequiredFields(userId) {
       if (userId === 'user1') {
-        return Boolean(
-          $('user1Name')?.value.trim() &&
-          $('user1Name')?.value.trim() !== 'User 1' &&
-          $('profileRepoPath')?.value.trim() &&
-          $('profileAgent')?.value.trim() &&
-          $('profileTitle')?.value.trim() &&
-          $('codexAccount')?.value.trim() &&
-          $('claudeAccount')?.value.trim() &&
-          $('claudeDesktopPath')?.value.trim() &&
-          $('claudeCodePath')?.value.trim() &&
-          $('gitAuthorName')?.value.trim() &&
-          $('gitAuthorEmail')?.value.trim()
-        );
+        return [
+          ['user1Name', 'User 1 name', value => value && value !== 'User 1'],
+          ['profileRepoPath', 'repository path'],
+          ['profileAgent', 'handoff agent name'],
+          ['profileTitle', 'default handoff title'],
+          ['codexAccount', 'Codex account label'],
+          ['claudeAccount', 'Claude account label'],
+          ['claudeDesktopPath', 'Claude Desktop path'],
+          ['claudeCodePath', 'Claude Code path'],
+          ['gitAuthorName', 'Git author name'],
+          ['gitAuthorEmail', 'Git author email']
+        ];
       }
-      return Boolean(
-        $('user2Name')?.value.trim() &&
-        $('user2Name')?.value.trim() !== 'User 2' &&
-        $('profileRepoPathUser2')?.value.trim() &&
-        $('profileAgentUser2')?.value.trim() &&
-        $('profileTitleUser2')?.value.trim() &&
-        $('codexAccountUser2')?.value.trim() &&
-        $('claudeAccountUser2')?.value.trim() &&
-        $('claudeDesktopPathUser2')?.value.trim() &&
-        $('claudeCodePathUser2')?.value.trim() &&
-        $('gitAuthorNameUser2')?.value.trim() &&
-        $('gitAuthorEmailUser2')?.value.trim()
-      );
+      return [
+        ['user2Name', 'User 2 name', value => value && value !== 'User 2'],
+        ['profileRepoPathUser2', 'repository path'],
+        ['profileAgentUser2', 'handoff agent name'],
+        ['profileTitleUser2', 'default handoff title'],
+        ['codexAccountUser2', 'Codex account label'],
+        ['claudeAccountUser2', 'Claude account label'],
+        ['claudeDesktopPathUser2', 'Claude Desktop path'],
+        ['claudeCodePathUser2', 'Claude Code path'],
+        ['gitAuthorNameUser2', 'Git author name'],
+        ['gitAuthorEmailUser2', 'Git author email']
+      ];
+    }
+
+    function registrationMissingFields(userId) {
+      return registrationRequiredFields(userId).filter(([fieldId, , validator]) => {
+        const value = $(fieldId)?.value.trim() || '';
+        return validator ? !validator(value) : !value;
+      }).map(([, label]) => label);
+    }
+
+    function registrationFieldReady(userId) {
+      return registrationMissingFields(userId).length === 0;
     }
 
     function setupReady() {
@@ -2200,8 +2422,8 @@
       const handoffDone = Boolean(state.control?.latest_handoff || state.packages.length);
       let current = 'user1';
 
-      if (setupOpen && ['user1', 'user2', 'hub'].includes(state.registrationStage)) {
-        current = state.registrationStage;
+      if (setupOpen && ['user1', 'user1Complete', 'user2', 'hub'].includes(state.registrationStage)) {
+        current = state.registrationStage === 'user1Complete' ? 'user1' : state.registrationStage;
       } else if (!user1Done) {
         current = 'user1';
       } else if (!user2Done) {
@@ -2311,29 +2533,44 @@
       state.registrationStage = stage;
       if (stage === 'user1') loadCommonProfileFields('user1');
       if (stage === 'user2') loadUser2ProfileFields();
+      $('user1Transition')?.classList.toggle('hidden', stage !== 'user1Complete');
       document.querySelectorAll('[data-registration-stage]').forEach(panel => {
         const panelStage = panel.dataset.registrationStage;
         const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
         const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
         const panelReady = panelStage === 'user1' ? user1Ready : panelStage === 'user2' ? user2Ready : setupReady().allReady;
-        const locked = (panelStage === 'user2' && !user1Ready) || (panelStage === 'hub' && !(user1Ready && user2Ready));
+        const transitionOpen = stage === 'user1Complete';
+        const locked = (transitionOpen && panelStage !== 'user1') || (panelStage === 'user2' && !user1Ready) || (panelStage === 'hub' && !(user1Ready && user2Ready));
         const isCurrent = panelStage === stage && !locked;
         panel.classList.toggle('is-current', isCurrent);
-        panel.classList.toggle('is-ready', !isCurrent && !locked && panelReady);
+        panel.classList.toggle('is-ready', (!isCurrent && !locked && panelReady) || (transitionOpen && panelStage === 'user1'));
         panel.classList.toggle('is-pending', !isCurrent && !locked && !panelReady);
         panel.classList.toggle('is-locked', locked);
-        panel.dataset.registrationState = locked ? 'locked' : isCurrent ? 'current' : panelReady ? 'ready' : 'pending';
+        panel.dataset.registrationState = locked ? 'locked' : isCurrent ? 'current' : panelReady || (transitionOpen && panelStage === 'user1') ? 'ready' : 'pending';
       });
       const title = {
         user1: 'REGISTER USER 1',
+        user1Complete: 'USER 1 REGISTERED',
         user2: 'REGISTER USER 2',
         hub: 'COLLABORATOR HUB'
       }[stage] || 'REGISTER USERS';
       $('setupWizardTitle').textContent = title;
+      const setupDialog = document.querySelector('.setup-dialog');
+      const userTone = stage === 'user1Complete' ? 'user1' : ['user1', 'user2'].includes(stage) ? stage : '';
+      if (setupDialog) {
+        setupDialog.dataset.registrationStage = stage;
+        if (userTone) {
+          setupDialog.dataset.userTone = userTone;
+        } else {
+          delete setupDialog.dataset.userTone;
+        }
+      }
       $('registerBackBtn').style.display = stage === 'user1' ? 'none' : '';
       $('registerUser1NextBtn').style.display = stage === 'user1' ? '' : 'none';
+      $('continueUser2Btn').style.display = stage === 'user1Complete' ? '' : 'none';
       $('registerUser2FinishBtn').style.display = stage === 'user2' ? '' : 'none';
       $('openHubBtn').style.display = stage === 'hub' ? '' : 'none';
+      document.querySelector('.wizard-grid')?.scrollTo?.({top: 0});
       applyUserTheme();
       updateSetupGuide();
     }
@@ -2370,15 +2607,25 @@
       if (!$('setupChecklist') || !$('wizardChecklist')) return;
       const readiness = setupReady();
       const markup = checklistMarkup(readiness);
+      const missing = ['user1', 'user2'].includes(state.registrationStage) ? registrationMissingFields(state.registrationStage) : [];
       $('setupChecklist').innerHTML = markup;
       $('wizardChecklist').innerHTML = markup;
       updateRegistrationProgress();
-      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to choose who is working now.' : 'Confirm the Project Files Tracker directory, then register User 1 and User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
+      $('setupWarning').textContent = readiness.allReady
+        ? 'Ready. Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to choose who is working now.'
+        : state.registrationStage === 'user1Complete'
+          ? 'User 1 is ready. Click Continue to User 2 when you are ready to register the second profile.'
+        : missing.length
+          ? `Missing for ${state.registrationStage === 'user1' ? 'User 1' : 'User 2'}: ${missing.join(', ')}.`
+          : 'Confirm the Project Files Tracker directory, then register User 1 and User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
       $('switchUserBtn').textContent = readiness.allReady ? 'Handover Users' : 'Setup Users';
       $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
+      $('continueUser2Btn').disabled = state.busy || !storedUserReady('user1');
       $('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');
+      $('registerUser1NextBtn').dataset.missingFields = registrationMissingFields('user1').join(', ');
+      $('registerUser2FinishBtn').dataset.missingFields = registrationMissingFields('user2').join(', ');
       $('openHubBtn').disabled = state.busy || !readiness.allReady;
       $('handoffBtn').disabled = state.busy || !handoffStepReady();
       $('endSessionBtn').disabled = state.busy || !handoffStepReady();
@@ -2392,7 +2639,7 @@
       const stage = setupReady().allReady ? 'hub' : storedUserReady('user1') || registrationFieldReady('user1') ? 'user2' : 'user1';
       setRegistrationStage(stage);
       setTimeout(() => {
-        const target = state.registrationStage === 'user1' ? 'user1Name' : state.registrationStage === 'user2' ? 'user2Name' : 'openHubBtn';
+        const target = state.registrationStage === 'user1' ? 'user1Name' : state.registrationStage === 'user1Complete' ? 'continueUser2Btn' : state.registrationStage === 'user2' ? 'user2Name' : 'openHubBtn';
         $(target)?.focus();
       }, 0);
     }
@@ -2672,8 +2919,8 @@
           throw new Error('Finish User 1 name, repo, agent, title, Codex account, Claude account, Claude paths, and Git author identity before continuing.');
         }
         renderSettings();
-        setRegistrationStage('user2');
-        showResult('User 1 registered. Now register User 2.');
+        setRegistrationStage('user1Complete');
+        showResult('User 1 registered. Review the next-step confirmation, then continue to User 2.');
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
@@ -3193,9 +3440,10 @@
     $('closeSetupBtn').addEventListener('click', closeSetupWizard);
     $('autoFillSetupBtn').addEventListener('click', autoFillSetup);
     $('registerBackBtn').addEventListener('click', () => {
-      setRegistrationStage(state.registrationStage === 'hub' ? 'user2' : 'user1');
+      setRegistrationStage(state.registrationStage === 'hub' ? 'user2' : state.registrationStage === 'user2' ? 'user1Complete' : 'user1');
     });
     $('registerUser1NextBtn').addEventListener('click', registerUser1AndContinue);
+    $('continueUser2Btn').addEventListener('click', () => setRegistrationStage('user2'));
     $('registerUser2FinishBtn').addEventListener('click', registerUser2AndOpenHub);
     $('openHubBtn').addEventListener('click', closeSetupWizard);
     $('applyProfileBtn').addEventListener('click', () => {

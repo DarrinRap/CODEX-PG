@@ -29,13 +29,22 @@ C:\CODEX PG
 
 7. Check the User 1 agent name and handoff title.
 8. Enter the User 1 Codex account label and Claude account label.
-9. Enter the User 1 Git author name and Git author email.
-10. Click **Register User 1 and continue**.
-11. Register **User 2** next.
-12. Type the User 2 name.
-13. Check the User 2 repo path, agent name, and handoff title.
-14. Enter the User 2 Codex account label, Claude account label, Git author name, and Git author email.
-15. Click **Register User 2 and open Hub**.
+9. Enter the User 1 Claude Desktop path and Claude Code path.
+10. Enter the User 1 Git author name and Git author email.
+11. Click **Register User 1 and continue**.
+12. Review the **User 1 registered** confirmation.
+13. Click **Continue to User 2** when ready.
+14. Register **User 2** next.
+15. Type the User 2 name.
+16. Check the User 2 repo path, agent name, and handoff title.
+17. Enter the User 2 Codex account label and Claude account label.
+18. Enter the User 2 Claude Desktop path and Claude Code path.
+19. Enter the User 2 Git author name and Git author email.
+20. Click **Register User 2 and open Hub**.
+
+If a registration button is grey, setup is still missing something. The footer names the missing fields. Scroll inside the registration window if some account, Claude path, or Git identity fields are below the visible area.
+
+PANDA should not jump straight from User 1 to User 2. It should show the User 1 confirmation first so the handoff point is obvious.
 
 Use account names, login emails, or short labels only. Do not type passwords, API keys, tokens, recovery codes, or browser credentials into PANDA.
 
@@ -43,7 +52,9 @@ When setup is saved, the setup badge changes to **Ready**.
 
 The active user's name appears in big letters at the top of the screen. User 1 uses a warm amber color theme. User 2 uses a cool cyan color theme.
 
-The Collaborator Hub shows a GO / Switch button for each user. Pressing GO / Switch changes the active user, applies that user's saved defaults, saves the active user, changes the color theme, and scans the repo.
+The Collaborator Hub shows a **HANDOVER TO USER 1** button and a **HANDOVER TO USER 2** button. Pressing a handover button changes the active user, applies that user's saved defaults, saves the active user, changes the active-user header theme, and scans the repo.
+
+Across the app, safe buttons turn green when they can be clicked. Grey buttons are unavailable because setup or another prerequisite is incomplete. Emergency Pause may stay red because it is a warning action.
 
 If User 1 and User 2 both use the same repo path, they share the same git working tree and commit history. PANDA records each user's Git author name/email for handoff context, but it does not log in to GitHub or switch Git credentials for you.
 
@@ -51,7 +62,7 @@ If User 1 and User 2 both use the same repo path, they share the same git workin
 
 1. Open PANDA Collaborator from the desktop icon.
 2. Use the **Collaborator Hub**.
-3. Press **GO / Switch** for the person who is using the app.
+3. Press **HANDOVER TO USER 1** or **HANDOVER TO USER 2** for the person who is using the app.
 4. Confirm that the big name at the top of the screen matches that person.
 5. Press **Start Session / Start Work**.
 6. Let PANDA run the automatic checklist.

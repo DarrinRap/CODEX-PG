@@ -82,7 +82,12 @@ The setup and hub flow:
 - uses clearly different complementary color themes for User 1 and User 2;
 - follows the PANDA-wide workflow rule without duplicating text: the five left-to-right workflow panels are the visible step guide, use arrow separators in their headers, and visually mark state with semantic header colors: user/current accent for the active step, yellow for pending, green for ready/done, and muted treatment for locked future steps;
 - keeps setup instructions progressive: while registering User 1, do not show User 2 or Collaborator Hub checklist rows; reveal User 2 only after User 1 is registered, then reveal the Hub only after User 2 is registered;
-- keeps the setup wizard visually compact: the current registration step owns the available width, completed prior steps collapse to headers, locked future steps are hidden, and setup status lives in a compact footer strip instead of a duplicate full card;
+- keeps the setup wizard visually compact: the dialog is capped at a compact width, the current registration step owns the available width, completed prior steps collapse to headers, locked future steps are hidden, and setup status lives in a compact footer strip instead of a duplicate full card;
+- keeps the setup wizard body scrollable so all required User 1 and User 2 fields remain reachable on smaller or zoomed viewports;
+- shows an explicit User 1 registered confirmation panel after User 1 validates; the app must not silently jump from User 1 into User 2 registration without an explicit Continue to User 2 action;
+- groups registration inputs into readable Profile and Accounts/tools/Git sections instead of presenting one unstructured slab of fields;
+- names missing required registration fields in the setup footer and on disabled registration action tooltips so a user can tell why User 1 or User 2 cannot yet be registered;
+- keeps User 1 and User 2 identity colors independent from the currently active workstation user: User 1 registration/workflow surfaces stay warm amber and User 2 registration/workflow surfaces stay cool cyan even when the other user is active in the header;
 - provides a checklist that shows which registration steps are complete;
 - stores per-user defaults for repository path, handoff agent, and handoff title;
 - provides Browse buttons for the main repository path and each user's default repository path so users can pick the local Git repository folder instead of typing a Windows path;
@@ -168,6 +173,8 @@ PANDA must visually separate passive information from user actions.
 - Tabs and segmented controls are still actions; keep them rectangular even when compact.
 - Every action button and every passive pill must provide a plain-language tooltip that tells the user what the item means or what will happen if clicked.
 - The Create safe handoff button is the primary purpose action. It must be full-width or otherwise visually dominant in the Create Handoff panel, stay visible above secondary handoff actions, render grey when prerequisites are incomplete, and turn green only when the app state is ready to create the protected handoff package.
+- Across the app, safe action buttons that can currently be clicked must render green. Disabled safe actions must render grey. Dangerous actions such as Emergency Pause may retain warning/red treatment while enabled.
+- User identity colors are not button-ready colors. Amber and cyan identify User 1/User 2 surfaces; green identifies an activatable safe command.
 
 ### Start Session Workflow
 

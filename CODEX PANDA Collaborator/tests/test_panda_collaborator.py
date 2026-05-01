@@ -280,12 +280,36 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertNotIn("#68d8e8", user_one_css)
         self.assertNotIn("104, 216, 232", user_one_css)
         self.assertIn("function effectiveThemeUserId()", html)
-        self.assertIn("if (setupOpen && ['user1', 'user2'].includes(state.registrationStage))", html)
+        theme_function = html.split("function effectiveThemeUserId()", 1)[1].split("function applyUserTheme()", 1)[0]
+        self.assertNotIn("registrationStage", theme_function)
         self.assertRegex(
             html,
             r"(?s)function setRegistrationStage\(stage\).*?applyUserTheme\(\);.*?updateSetupGuide\(\);",
-            "Registration stage changes must immediately retheme the wizard.",
+            "Registration stage changes must refresh labels without changing the active operator theme.",
         )
+
+    def test_user_registration_surfaces_keep_identity_tones(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('[data-user-tone="user1"]', html)
+        self.assertIn('[data-user-tone="user2"]', html)
+        self.assertIn("--tone-accent: #f2b36d", html)
+        self.assertIn("--tone-accent: #68d8e8", html)
+        self.assertIn('data-flow-panel="user1" data-user-tone="user1"', html)
+        self.assertIn('data-flow-panel="user2" data-user-tone="user2"', html)
+        self.assertIn('class="setup-dialog" data-user-tone="user1"', html)
+        self.assertIn('data-registration-stage="user1" data-user-tone="user1"', html)
+        self.assertIn('data-registration-stage="user2" data-user-tone="user2"', html)
+        self.assertIn("setupDialog.dataset.userTone = userTone", html)
+        self.assertIn("delete setupDialog.dataset.userTone", html)
+        self.assertRegex(html, r"(?s)\.setup-dialog\s*\{.*?border:\s*1px solid var\(--tone-ring, var\(--user-ring\)\);")
+        self.assertRegex(html, r"(?s)\.setup-dialog-head h2\s*\{.*?color:\s*var\(--tone-accent, var\(--user-accent\)\);")
+        self.assertRegex(html, r"(?s)\.setup-dialog\[data-user-tone\] \.primary\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
+        self.assertRegex(html, r"(?s)\.setup-dialog\[data-user-tone\] \.setup-checklist li\.current\s*\{.*?color:\s*var\(--tone-accent\);")
+        self.assertRegex(html, r"(?s)\.sequence-panel\[data-user-tone\]\.is-current\s*\{.*?border-color:\s*var\(--tone-ring\);")
+        self.assertRegex(html, r"(?s)\.registration-panel\[data-user-tone\]\.is-current\s*\{.*?border-color:\s*var\(--tone-ring\);")
+        self.assertRegex(html, r"(?s)\.register-card\s*\{.*?border:\s*1px solid var\(--tone-ring, var\(--user-ring\)\);")
+        self.assertRegex(html, r"(?s)\.register-card strong\s*\{.*?color:\s*var\(--tone-accent, var\(--user-accent\)\);")
 
     def test_setup_collects_claude_paths_with_browse_buttons(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -394,6 +418,9 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
 
         self.assertRegex(html, r"(?s)button\s*\{.*?border-radius:\s*2px;")
         self.assertRegex(html, r"(?s)button\s*\{.*?box-shadow:\s*inset 0 1px 0")
+        self.assertRegex(html, r"(?s)button:not\(:disabled\):not\(\.danger\)\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
+        self.assertRegex(html, r"(?s)button:disabled\s*\{.*?background:\s*linear-gradient\(180deg, #4a4a56, #353542\);")
+        self.assertRegex(html, r"(?s)\.view-toggle button\.active:not\(:disabled\).*?\.segmented button\.active:not\(:disabled\)\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
         self.assertRegex(html, r"(?s)\.chip\s*\{.*?border-radius:\s*999px;")
         self.assertRegex(html, r"(?s)\.chip\s*\{.*?cursor:\s*default;")
         self.assertIn('class="chip" id="scanTime"', html)
@@ -412,6 +439,7 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("Preview restore safety only. This checks risk but does not change files.", html)
         self.assertIn("Always enforced", html)
         self.assertIn("These safety rules protect your work and cannot be changed from this screen.", html)
+        self.assertIn("Complete these fields first:", html)
 
     def test_every_button_has_click_wiring_or_delegated_handler(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -451,12 +479,14 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
         self.assertRegex(html, r"(?s)\.handoff-primary-action:disabled\s*\{.*?background:\s*linear-gradient\(180deg, #4a4a56, #353542\);")
 
-    def test_setup_dialog_is_centered_and_shows_three_setup_columns(self):
+    def test_setup_dialog_is_centered_and_shows_compact_setup_columns(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertRegex(html, r"(?s)\.setup-dialog\s*\{.*?width:\s*min\(1240px, calc\(100vw - 72px\)\);")
+        self.assertRegex(html, r"(?s)\.setup-dialog\s*\{.*?width:\s*min\(960px, calc\(100vw - 72px\)\);")
         self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);")
-        self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?overflow:\s*hidden;")
+        self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?overflow:\s*auto;")
+        self.assertRegex(html, r"(?s)\.setup-project-step \.wizard-step-body\s*\{.*?grid-template-columns:\s*minmax\(0, 1fr\) auto;")
+        self.assertRegex(html, r"(?s)\.setup-project-step \.identity-note\s*\{.*?grid-column:\s*1 / -1;")
         self.assertIn('class="wizard-step wide setup-project-step"', html)
         self.assertIn('class="setup-dialog-status"', html)
         self.assertIn('class="setup-dialog-actions"', html)
@@ -473,6 +503,45 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertNotIn('registration-panel hidden" data-registration-stage="hub"', html)
         self.assertIn("panel.classList.toggle('is-current'", html)
         self.assertIn("panel.classList.toggle('is-locked'", html)
+
+    def test_user_one_registration_uses_confirmation_before_user_two(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="user1Transition"', html)
+        self.assertIn('id="continueUser2Btn"', html)
+        self.assertIn("user1Complete: 'USER 1 REGISTERED'", html)
+        self.assertIn("setRegistrationStage('user1Complete')", html)
+        self.assertIn("$('continueUser2Btn').addEventListener('click', () => setRegistrationStage('user2'))", html)
+        self.assertIn("stage === 'user1Complete' ? 'user1'", html)
+        self.assertIn("state.registrationStage === 'user1Complete' ? 'continueUser2Btn'", html)
+        self.assertIn("transitionOpen && panelStage !== 'user1'", html)
+        self.assertIn("document.querySelector('.wizard-grid')?.scrollTo?.({top: 0});", html)
+        self.assertIn("setupDialog.dataset.registrationStage = stage", html)
+        self.assertIn('.setup-dialog[data-registration-stage="user1Complete"] .setup-project-step', html)
+        self.assertIn("User 1 is ready. Click Continue to User 2", html)
+        self.assertNotIn("setRegistrationStage('user2');\n        showResult('User 1 registered. Now register User 2.')", html)
+        self.assertRegex(html, r"(?s)\.registration-transition\s*\{.*?grid-column:\s*1 / -1;")
+        self.assertRegex(html, r"(?s)\.profile-defaults\s*\{.*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);")
+        self.assertRegex(html, r"(?s)@media \(max-width: 620px\).*?\.registration-transition \.wizard-step-body\s*\{.*?grid-template-columns:\s*minmax\(0, 1fr\);")
+        self.assertIn("Accounts, tools, and Git identity", html)
+
+    def test_user_two_registration_names_missing_fields(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("function registrationRequiredFields(userId)", html)
+        self.assertIn("function registrationMissingFields(userId)", html)
+        self.assertIn("return registrationMissingFields(userId).length === 0", html)
+        for field_id in (
+            "codexAccountUser2",
+            "claudeAccountUser2",
+            "claudeDesktopPathUser2",
+            "claudeCodePathUser2",
+            "gitAuthorNameUser2",
+            "gitAuthorEmailUser2",
+        ):
+            self.assertIn(f"['{field_id}'", html)
+        self.assertIn("Missing for ${state.registrationStage === 'user1' ? 'User 1' : 'User 2'}", html)
+        self.assertIn("$('registerUser2FinishBtn').dataset.missingFields = registrationMissingFields('user2').join(', ');", html)
 
     def test_main_screen_orders_controls_left_to_right_by_workflow(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
