@@ -318,11 +318,15 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
         self.assertIn('id="switchUserBtn"', html)
-        self.assertIn("Collaborator Hub / Switch Users", html)
+        self.assertIn("Collaborator Hub / Handover", html)
         self.assertIn("$('switchUserBtn').addEventListener('click', openSetupWizard)", html)
         self.assertIn("button.disabled = state.busy;", html)
-        self.assertIn("button.textContent = ready ? `GO / Switch to", html)
-        self.assertIn(": `Setup ${user?.display_name", html)
+        self.assertIn("HANDOVER TO USER 1", html)
+        self.assertIn("HANDOVER TO USER 2", html)
+        self.assertIn("function handoverButtonLabel(userId, user)", html)
+        self.assertIn("button.textContent = ready ? handoverButtonLabel(button.dataset.switchGo, user)", html)
+        self.assertIn(": `SET UP ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`", html)
+        self.assertNotIn("GO / Switch", html)
 
     def test_registration_headers_do_not_render_redundant_number_badges(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -372,7 +376,7 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("function startTooltipObserver()", html)
         self.assertIn("new MutationObserver(() => applyTooltips())", html)
         self.assertIn("Open a picker to", html)
-        self.assertIn("Switch to this user, apply their saved settings, and scan the repository.", html)
+        self.assertIn("Hand over to this user, apply their saved settings, and scan the repository.", html)
         self.assertIn("Information only:", html)
         self.assertIn("Preview restore safety only. This checks risk but does not change files.", html)
 
@@ -423,7 +427,7 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         sequence = [
             "Register User 1",
             "Register User 2",
-            "Collaborator Hub / Switch Users",
+            "Collaborator Hub / Handover",
             "Start Session",
             "Create Handoff",
         ]

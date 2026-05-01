@@ -1508,9 +1508,9 @@
 
         <section class="panel sequence-panel" data-flow-panel="hub">
           <div class="panel-head">
-            <h2><span class="sequence-step">3</span><span>Collaborator Hub / Switch Users</span></h2>
+            <h2><span class="sequence-step">3</span><span>Collaborator Hub / Handover</span></h2>
             <span class="sequence-arrow" aria-hidden="true">&gt;</span>
-            <span class="chip">GO</span>
+            <span class="chip">Handover</span>
           </div>
           <div class="panel-body">
             <div class="setup-control">
@@ -1522,12 +1522,12 @@
                 <div class="hub-card" data-hub-user="user1">
                   <span>User 1</span>
                   <strong data-hub-name="user1">User 1</strong>
-                  <button type="button" data-switch-go="user1">GO / Switch</button>
+                  <button type="button" data-switch-go="user1">HANDOVER TO USER 1</button>
                 </div>
                 <div class="hub-card" data-hub-user="user2">
                   <span>User 2</span>
                   <strong data-hub-name="user2">User 2</strong>
-                  <button type="button" data-switch-go="user2">GO / Switch</button>
+                  <button type="button" data-switch-go="user2">HANDOVER TO USER 2</button>
                 </div>
               </div>
             </div>
@@ -1809,7 +1809,7 @@
             <div class="wizard-step-head">
               <div>
                 <h3>Collaborator Hub</h3>
-                <p>Use GO / Switch to automate the whole switch process.</p>
+                <p>Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to automate the whole handover process.</p>
               </div>
             </div>
             <div class="wizard-step-body">
@@ -1818,13 +1818,13 @@
                   <span>User 1</span>
                   <strong data-hub-name="user1">User 1</strong>
                   <small data-hub-account="user1">Account details needed</small>
-                  <button type="button" data-switch-go="user1">GO / Switch to User 1</button>
+                  <button type="button" data-switch-go="user1">HANDOVER TO USER 1</button>
                 </div>
                 <div class="hub-card" data-hub-user="user2">
                   <span>User 2</span>
                   <strong data-hub-name="user2">User 2</strong>
                   <small data-hub-account="user2">Account details needed</small>
-                  <button type="button" data-switch-go="user2">GO / Switch to User 2</button>
+                  <button type="button" data-switch-go="user2">HANDOVER TO USER 2</button>
                 </div>
               </div>
             </div>
@@ -1896,7 +1896,7 @@
 
     function tooltipForAction(button) {
       const byId = {
-        switchUserBtn: 'Open the user setup and switching screen.',
+        switchUserBtn: 'Open the user setup and handover screen.',
         openSetupBtn: 'Open registration so you can set up User 1 and User 2.',
         applyProfileBtn: 'Apply the saved defaults for the active user.',
         scanBtn: 'Check the selected repository for branch, file, and safety status.',
@@ -1921,7 +1921,7 @@
         return `Open a picker to ${title.toLowerCase()} instead of typing the path.`;
       }
       if (button.dataset.switchGo) {
-        return 'Switch to this user, apply their saved settings, and scan the repository.';
+        return 'Hand over to this user, apply their saved settings, and scan the repository.';
       }
       if (button.dataset.sideView) {
         return `Show the ${cleanTooltipText(button.textContent).toLowerCase()} view in the right panel.`;
@@ -1955,7 +1955,7 @@
         Setup: 'User setup still needs attention.',
         Needed: 'This setup item is still needed.',
         Next: 'This step comes later in the workflow.',
-        GO: 'This step uses GO buttons to switch users.',
+        Handover: 'This step uses handover buttons to choose the active user.',
         Safe: 'This item follows PANDA safety rules.',
         Idle: 'No action is running right now.',
         Error: 'The last action had a problem.',
@@ -2319,10 +2319,10 @@
       $('setupChecklist').innerHTML = markup;
       $('wizardChecklist').innerHTML = markup;
       updateRegistrationProgress();
-      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use a GO / Switch button to enter as a user.' : 'Confirm the Project Files Tracker directory, then register User 1 and User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
+      $('setupWarning').textContent = readiness.allReady ? 'Ready. Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to choose who is working now.' : 'Confirm the Project Files Tracker directory, then register User 1 and User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
-      $('switchUserBtn').textContent = readiness.allReady ? 'Switch User' : 'Setup Users';
+      $('switchUserBtn').textContent = readiness.allReady ? 'Handover Users' : 'Setup Users';
       $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
       $('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');
       $('openHubBtn').disabled = state.busy || !readiness.allReady;
@@ -2442,6 +2442,13 @@
       });
     }
 
+    function handoverButtonLabel(userId, user) {
+      const userNumber = userId === 'user1' ? 'USER 1' : 'USER 2';
+      const displayName = cleanTooltipText(user?.display_name || '');
+      const normalizedName = displayName.toUpperCase();
+      return normalizedName && normalizedName !== userNumber ? `HANDOVER TO ${userNumber}: ${normalizedName}` : `HANDOVER TO ${userNumber}`;
+    }
+
     function updateHubCards() {
       const activeUserId = state.settings?.active_user_id;
       (state.settings?.users || []).forEach(user => {
@@ -2462,7 +2469,7 @@
         const user = userById(button.dataset.switchGo);
         const ready = setupReady().allReady;
         button.disabled = state.busy;
-        button.textContent = ready ? `GO / Switch to ${user?.display_name || button.dataset.switchGo}` : `Setup ${user?.display_name || button.dataset.switchGo}`;
+        button.textContent = ready ? handoverButtonLabel(button.dataset.switchGo, user) : `SET UP ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`;
       });
     }
 
@@ -2631,7 +2638,7 @@
         await saveCurrentSettings();
         setRegistrationStage('hub');
         closeSetupWizard();
-        showResult('Registration complete. Collaborator Hub is ready. Use GO / Switch to automate user switching.');
+        showResult('Registration complete. Collaborator Hub is ready. Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to automate the handover.');
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
@@ -2644,14 +2651,14 @@
       try {
         if (!setupReady().allReady) {
           openSetupWizard();
-          throw new Error('Register User 1 and User 2 before using GO / Switch.');
+          throw new Error('Register User 1 and User 2 before using handover.');
         }
         state.settings.active_user_id = userId;
         await persistSettings();
         applyActiveProfileDefaults({forceRepo: true});
         closeSetupWizard();
         const profile = activeProfile();
-        showResult(`GO complete: switched to <strong>${escapeHtml(profile?.display_name || userId)}</strong>, applied defaults, saved account context, and scanned the repo.<br><span class="small">Codex: ${escapeHtml(profile?.codex_account || '')}; Claude: ${escapeHtml(profile?.claude_account || '')}; Git: ${escapeHtml(profile?.git_author_name || '')} &lt;${escapeHtml(profile?.git_author_email || '')}&gt;. Same repo path means shared git working tree and history.</span>`);
+        showResult(`Handover complete: handed over to <strong>${escapeHtml(profile?.display_name || userId)}</strong>, applied defaults, saved account context, and scanned the repo.<br><span class="small">Codex: ${escapeHtml(profile?.codex_account || '')}; Claude: ${escapeHtml(profile?.claude_account || '')}; Git: ${escapeHtml(profile?.git_author_name || '')} &lt;${escapeHtml(profile?.git_author_email || '')}&gt;. Same repo path means shared git working tree and history.</span>`);
         await scanRepo();
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');

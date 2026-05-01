@@ -74,10 +74,10 @@ The setup and hub flow:
 - requires User 1 registration first;
 - requires User 2 registration second;
 - opens the Collaborator Hub after both users are registered;
-- shows GO / Switch action buttons for User 1 and User 2 in the Hub;
-- keeps a persistent Setup Users / Switch User button in the header so the switch workflow is never hidden in a side panel;
+- shows explicit HANDOVER TO USER 1 and HANDOVER TO USER 2 action buttons in the Hub;
+- keeps a persistent Setup Users / Handover Users button in the header so the handover workflow is never hidden in a side panel;
 - keeps Collaborator Hub user-card buttons clickable before setup is complete, using them to guide the user into setup instead of presenting dead disabled controls;
-- makes GO / Switch automate the full switch process: save active user, apply that user's defaults, update the theme, and scan the repository;
+- makes HANDOVER TO USER 1 / HANDOVER TO USER 2 automate the full handover process: save active user, apply that user's defaults, update the theme, and scan the repository;
 - shows the active user's custom name in large uppercase text at the top of the screen;
 - uses clearly different complementary color themes for User 1 and User 2;
 - follows the PANDA-wide workflow rule without duplicating text: the five left-to-right workflow panels are the visible step guide, use arrow separators in their headers, and visually mark state with semantic header colors: user/current accent for the active step, yellow for pending, green for ready/done, and muted treatment for locked future steps;
@@ -160,7 +160,7 @@ The control center must stay safety-first. It may automate safe reading, scannin
 PANDA must visually separate passive information from user actions.
 
 - Information/status values must render as passive rounded pill chips. Examples: ready, idle, safe, branch, no repo, not scanned, counts, safety labels, active user labels, and other state-only indicators.
-- Action controls must render as squared or lightly rectangular buttons. Examples: GO / Switch, Register, Browse, Scan repo, Start Session, Create safe handoff, Save Message, Search, Preview restore safety, and setup navigation.
+- Action controls must render as squared or lightly rectangular buttons. Examples: HANDOVER TO USER 1, HANDOVER TO USER 2, Register, Browse, Scan repo, Start Session, Create safe handoff, Save Message, Search, Preview restore safety, and setup navigation.
 - A pill must never perform work when clicked. If an element performs work, changes state, opens a picker, switches a user, saves data, scans, or creates a package, it must be a rectangular action button.
 - Disabled future actions may be visually dimmed or locked, but they must retain action-button shape so the user can tell they are unavailable commands, not passive information.
 - Tabs and segmented controls are still actions; keep them rectangular even when compact.
@@ -169,7 +169,7 @@ PANDA must visually separate passive information from user actions.
 
 ### Start Session Workflow
 
-The app must provide a clear Start Session flow after a user presses GO / Switch.
+The app must provide a clear Start Session flow after a user presses HANDOVER TO USER 1 or HANDOVER TO USER 2.
 
 The workflow should automate as much as possible:
 
