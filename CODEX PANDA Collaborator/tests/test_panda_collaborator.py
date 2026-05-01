@@ -340,7 +340,17 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         main = html.split('<main class="workflow-layout">', 1)[1].split('<div class="setup-overlay', 1)[0]
 
         self.assertIn('class="workflow-row"', main)
-        self.assertRegex(html, r"(?s)\.workflow-row\s*\{.*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);")
+        self.assertRegex(
+            html,
+            r"(?s)\.workflow-row\s*\{.*?grid-template-columns:\s*minmax\(145px, \.55fr\).*?minmax\(540px, 2\.45fr\);",
+        )
+        self.assertRegex(html, r"(?s)main\s*\{.*?grid-template-rows:\s*minmax\(340px, 1\.22fr\) minmax\(0, \.58fr\);")
+        self.assertIn('data-flow-panel="handoff"', main)
+        self.assertIn(".sequence-panel.is-locked", html)
+        self.assertIn("function updateWorkflowLocks()", html)
+        self.assertIn("handoff: handoffStepReady()", html)
+        self.assertIn("forbidden.slice(0, 2)", html)
+        self.assertIn("more destructive commands blocked", html)
 
         sequence = [
             "Register User 1",
