@@ -117,6 +117,8 @@ WATCHER_EVENT_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_watcher_events.jsonl"
 SWEEP_AUDIT_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_sweep_audit.md"
 INTERACTION_LEDGER_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_interaction_ledger.jsonl"
 MESSAGE_AUDIT_STATE_PATH = HUB_ROOT / "CODEX state" / "CODEX_message_audit_state.local.json"
+PAH_MAIL_STATE_SNAPSHOT_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_mail_state_snapshot.local.json"
+PAH_STATE_PERF_LOG_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_mail_state_perf.local.jsonl"
 PERIODIC_HEALTH_LATEST_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_periodic_health_latest.json"
 INSPECTOR_LATEST_JSON_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.json"
 INSPECTOR_LATEST_MARKDOWN_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.md"
@@ -144,6 +146,13 @@ EXPENSIVE_STATUS_CACHE_LOCK = threading.Lock()
 EXPENSIVE_STATUS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 MESSAGE_PARSE_CACHE_LOCK = threading.Lock()
 MESSAGE_PARSE_CACHE: dict[str, tuple[tuple[int, int], Message]] = {}
+MESSAGE_PARSE_CACHE_METRICS = {"hits": 0, "misses": 0, "stores": 0, "pruned": 0, "clears": 0}
+MESSAGE_VALIDATION_CACHE_LOCK = threading.Lock()
+MESSAGE_VALIDATION_CACHE: dict[str, tuple[tuple[int, int, str], list[tuple[str, str]]]] = {}
+MESSAGE_VALIDATION_CACHE_METRICS = {"hits": 0, "misses": 0, "stores": 0, "pruned": 0, "clears": 0}
+STATE_PROFILE_LOCK = threading.Lock()
+LAST_STATE_PROFILE: dict[str, Any] = {}
+LAST_STATE_PROFILE_MONOTONIC = 0.0
 PROGRESS_MONITOR_STATUSES = {
     "active",
     "compose",
@@ -201,6 +210,30 @@ COMPLETION_EVIDENCE_STATUSES = {
     "review_complete",
     "shipped",
 }
+REVIEW_PENDING_STATUSES = {
+    "complete_pending_cd_review",
+    "complete_pending_review",
+    "ready_for_cd_review",
+    "ready_for_human_loop",
+    "ready_for_review",
+    "waiting_cd_review",
+    "waiting_review",
+}
+DARRIN_AUTHORITY_STATUSES = {
+    "ready_for_backup",
+    "ready_for_commit",
+    "ready_for_human_loop",
+    "ready_for_publish",
+    "ready_to_commit",
+}
+DARRIN_AUTHORITY_BOUNDARIES = {
+    "backup",
+    "commit",
+    "publish",
+    "push",
+    "ready_to_commit",
+    "write_to_panda_gallery",
+}
 SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
     "Claude -> Codex": ({"claude-desktop", "claude-code"}, {"codex"}),
     "Codex -> Claude": ({"codex"}, {"claude-desktop"}),
@@ -214,11 +247,16 @@ SOURCE_ROUTE_CONTRACTS: dict[str, tuple[set[str], set[str]]] = {
     "Claude Sent": ({"claude-desktop", "claude-code"}, {"codex"}),
 }
 AGENT_ID_ALIASES = {
+    "cc": "claude-code",
+    "cd": "claude-desktop",
     "claude": "claude-desktop",
     "claude-desktop": "claude-desktop",
     "claude-code": "claude-code",
     "codex": "codex",
     "darrin": "darrin",
+    "message": "message",
+    "system": "system",
+    "unknown": "unknown",
 }
 ROUTE_DIRECTION_BY_AGENTS = {
     ("claude-desktop", "codex"): "Claude -> Codex",
@@ -235,6 +273,272 @@ def normalize_agent_id(value: Any) -> str:
     if not token:
         return ""
     return AGENT_ID_ALIASES.get(token, token)
+
+
+def normalize_status_token(value: Any) -> str:
+    token = re.sub(r"[\s-]+", "_", str(value or "").strip().lower())
+    return token.strip("_")
+
+
+def message_parse_cache_metrics() -> dict[str, Any]:
+    with MESSAGE_PARSE_CACHE_LOCK:
+        return {
+            **MESSAGE_PARSE_CACHE_METRICS,
+            "entries": len(MESSAGE_PARSE_CACHE),
+        }
+
+
+def message_validation_cache_metrics() -> dict[str, Any]:
+    with MESSAGE_VALIDATION_CACHE_LOCK:
+        return {
+            **MESSAGE_VALIDATION_CACHE_METRICS,
+            "entries": len(MESSAGE_VALIDATION_CACHE),
+        }
+
+
+def new_state_profile() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "_started_perf_counter": time.perf_counter(),
+        "steps": {},
+        "cache": {},
+    }
+
+
+def timed_state_step(profile: dict[str, Any], name: str, builder: Any) -> Any:
+    started = time.perf_counter()
+    try:
+        return builder()
+    finally:
+        profile.setdefault("steps", {})[name] = {
+            "duration_ms": round((time.perf_counter() - started) * 1000, 3)
+        }
+
+
+def finalize_state_profile(
+    profile: dict[str, Any],
+    counts: dict[str, Any] | None = None,
+    error: str = "",
+) -> dict[str, Any]:
+    global LAST_STATE_PROFILE, LAST_STATE_PROFILE_MONOTONIC
+    finished = time.perf_counter()
+    started = profile.setdefault("_started_perf_counter", finished)
+    profile.pop("_started_perf_counter", None)
+    profile["duration_ms"] = round((finished - float(started)) * 1000, 3)
+    profile["completed_at"] = datetime.now().isoformat(timespec="seconds")
+    profile["cache"] = {
+        "message_parse": message_parse_cache_metrics(),
+        "message_validation": message_validation_cache_metrics(),
+    }
+    if counts is not None:
+        profile["counts"] = dict(counts)
+    if error:
+        profile["error"] = error
+
+    snapshot = json.loads(json.dumps(profile, default=str))
+    with STATE_PROFILE_LOCK:
+        LAST_STATE_PROFILE = snapshot
+        LAST_STATE_PROFILE_MONOTONIC = time.monotonic()
+    try:
+        PAH_STATE_PERF_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        atomic_append_text(PAH_STATE_PERF_LOG_PATH, json.dumps(snapshot, sort_keys=True) + "\n")
+    except OSError:
+        pass
+    return snapshot
+
+
+def latest_state_profile() -> dict[str, Any]:
+    with STATE_PROFILE_LOCK:
+        profile = dict(LAST_STATE_PROFILE)
+        profile_at = LAST_STATE_PROFILE_MONOTONIC
+    if profile:
+        profile["age_seconds"] = round(max(0.0, time.monotonic() - profile_at), 3)
+    return profile
+
+
+def snapshot_age_seconds(path: Path) -> float | None:
+    try:
+        return round(max(0.0, time.time() - path.stat().st_mtime), 3)
+    except OSError:
+        return None
+
+
+def latest_mail_state_snapshot_summary() -> dict[str, Any]:
+    if not PAH_MAIL_STATE_SNAPSHOT_PATH.exists():
+        return {}
+    payload = read_json(PAH_MAIL_STATE_SNAPSHOT_PATH, {})
+    if not payload:
+        return {}
+    return {
+        "path": str(PAH_MAIL_STATE_SNAPSHOT_PATH),
+        "schema_version": payload.get("schema_version", 0),
+        "generated_at": payload.get("generated_at", ""),
+        "age_seconds": snapshot_age_seconds(PAH_MAIL_STATE_SNAPSHOT_PATH),
+        "duration_ms": payload.get("duration_ms", 0),
+        "source_counts": payload.get("source_counts", {}),
+        "freshness": payload.get("freshness", {}),
+        "authority": payload.get("authority", {}),
+        "classifier": payload.get("classifier", {}),
+        "warnings": payload.get("warnings", []),
+        "errors": payload.get("errors", []),
+    }
+
+
+def ready_payload() -> dict[str, Any]:
+    profile = latest_state_profile()
+    snapshot = latest_mail_state_snapshot_summary()
+    age = snapshot.get("age_seconds") if snapshot else None
+    degraded: list[str] = []
+    if not snapshot:
+        degraded.append("mail_state_snapshot_missing")
+    elif isinstance(age, (int, float)) and age > 60:
+        degraded.append("mail_state_snapshot_stale")
+    return {
+        "ok": True,
+        "schema_version": 1,
+        "server_ready": True,
+        "snapshot_available": bool(snapshot),
+        "snapshot_fresh_enough": bool(snapshot) and not degraded,
+        "snapshot_age_seconds": age,
+        "degraded_reason": degraded,
+        "mail_state_snapshot": snapshot,
+        "state_profile": profile,
+    }
+
+
+def sanitize_snapshot_message(row: dict[str, Any]) -> dict[str, Any]:
+    allowed = (
+        "message_id",
+        "thread_id",
+        "path",
+        "name",
+        "modified",
+        "title",
+        "summary",
+        "from_agent",
+        "to_agent",
+        "status",
+        "thread_status",
+        "type",
+        "priority",
+        "approval_boundary",
+        "read_state",
+        "unread",
+        "classifier_state",
+        "review_pending",
+        "requires_darrin_authority",
+        "stale_unread",
+        "urgent_codex_request",
+    )
+    return {key: row.get(key, "" if key not in {"unread", "review_pending", "requires_darrin_authority"} else False) for key in allowed}
+
+
+def normalize_projection_owner(value: Any) -> str:
+    return normalize_agent_id(str(value or "").replace("_", "-"))
+
+
+def build_mail_state_snapshot(status_data: dict[str, Any]) -> dict[str, Any]:
+    generated_at = datetime.now().isoformat(timespec="seconds")
+    profile = status_data.get("state_profile", {}) if isinstance(status_data.get("state_profile"), dict) else {}
+    counts = status_data.get("counts", {}) if isinstance(status_data.get("counts"), dict) else {}
+    thread_focus = status_data.get("thread_focus", {}) if isinstance(status_data.get("thread_focus"), dict) else {}
+    thread_rows = thread_focus.get("all", []) if isinstance(thread_focus.get("all", []), list) else []
+    messages = [sanitize_snapshot_message(row) for row in status_data.get("latest", []) if isinstance(row, dict)]
+    threads: list[dict[str, Any]] = []
+    for row in thread_rows:
+        if not isinstance(row, dict):
+            continue
+        state_name = str(row.get("state", ""))
+        owner = normalize_projection_owner(row.get("owner", ""))
+        review_pending = bool(row.get("review_pending"))
+        requires_darrin = bool(row.get("requires_darrin_authority") or row.get("requires_darrin_decision"))
+        threads.append(
+            {
+                "thread_id": str(row.get("thread_id") or row.get("id") or ""),
+                "state": state_name,
+                "current_owner": "darrin" if requires_darrin else owner,
+                "current_action": str(row.get("primary_action", "")),
+                "review_owner": owner if review_pending and owner != "darrin" else "",
+                "approval_owner": "darrin" if requires_darrin else "",
+                "approval_boundary": str(row.get("approval_boundary", "")),
+                "next_gate_after_review": "darrin_approval" if review_pending and requires_darrin else "none",
+                "delivery_level": "visible",
+                "source_message": str(row.get("message_path", "")),
+                "latest_message": str(row.get("message_path", "")),
+                "confidence": "medium",
+                "warnings": [],
+            }
+        )
+    open_agent = int(thread_focus.get("counts", {}).get("open_on_agent", 0) or 0) if isinstance(thread_focus.get("counts"), dict) else 0
+    open_darrin = int(thread_focus.get("counts", {}).get("open_on_darrin", 0) or 0) if isinstance(thread_focus.get("counts"), dict) else 0
+    owner_unknown = int(thread_focus.get("counts", {}).get("owner_unknown", 0) or 0) if isinstance(thread_focus.get("counts"), dict) else 0
+    warnings = ["shadow_snapshot_from_legacy_state"]
+    if owner_unknown:
+        warnings.append("owner_unknown_threads_present")
+    return {
+        "schema_version": 1,
+        "generated_at": generated_at,
+        "duration_ms": profile.get("duration_ms", 0),
+        "builder_version": "phase1-shadow-from-legacy-state",
+        "source_counts": {
+            "messages": counts.get("messages", 0),
+            "threads": counts.get("threads", 0),
+            "archived_threads": counts.get("archived_threads", 0),
+            "snapshot_messages": len(messages),
+            "snapshot_threads": len(threads),
+        },
+        "freshness": {
+            "state_profile_generated_at": profile.get("generated_at", ""),
+            "state_profile_duration_ms": profile.get("duration_ms", 0),
+            "refresh_in_progress": False,
+            "last_error": "",
+        },
+        "delivery": {
+            "highest_proven_level": "visible",
+            "note": "Phase 1 shadow snapshot derives visibility from legacy PAH state; CD pickup still requires read/ack evidence.",
+        },
+        "classifier": {
+            "open_on_agent": open_agent,
+            "open_on_darrin": open_darrin,
+            "owner_unknown": owner_unknown,
+            "review_pending": sum(1 for thread in threads if thread.get("review_owner")),
+            "warnings": [],
+        },
+        "authority": {
+            "model": "projection_only",
+            "darrin_only_protected_action_authority": True,
+            "open_on_darrin": open_darrin,
+            "reconcile_available": False,
+        },
+        "mail": {
+            "latest": messages,
+        },
+        "threads": threads,
+        "messages": messages,
+        "warnings": warnings,
+        "errors": [],
+    }
+
+
+def write_mail_state_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    try:
+        write_json(PAH_MAIL_STATE_SNAPSHOT_PATH, snapshot)
+    except OSError as exc:
+        return {
+            "ok": False,
+            "path": str(PAH_MAIL_STATE_SNAPSHOT_PATH),
+            "error": str(exc),
+        }
+    return {
+        "ok": True,
+        "path": str(PAH_MAIL_STATE_SNAPSHOT_PATH),
+        "generated_at": snapshot.get("generated_at", ""),
+        "source_counts": snapshot.get("source_counts", {}),
+        "freshness": snapshot.get("freshness", {}),
+        "authority": snapshot.get("authority", {}),
+        "classifier": snapshot.get("classifier", {}),
+    }
 
 
 def direction_accepts_agents(direction: str, from_agent: str, to_agent: str) -> bool:
@@ -500,11 +804,46 @@ def parse_message_cached(path: Path, direction: str) -> Message:
     with MESSAGE_PARSE_CACHE_LOCK:
         cached = MESSAGE_PARSE_CACHE.get(cache_key)
         if cached and cached[0] == signature:
+            MESSAGE_PARSE_CACHE_METRICS["hits"] += 1
             return cached[1]
+        MESSAGE_PARSE_CACHE_METRICS["misses"] += 1
     msg = parse_message(path, direction)
     with MESSAGE_PARSE_CACHE_LOCK:
         MESSAGE_PARSE_CACHE[cache_key] = (signature, msg)
+        MESSAGE_PARSE_CACHE_METRICS["stores"] += 1
     return msg
+
+
+def message_validation_cache_key(msg: Message) -> str:
+    return message_cache_key(msg.path)
+
+
+def message_validation_signature(msg: Message) -> tuple[int, int, str]:
+    try:
+        stat_result = msg.path.stat()
+        return (
+            int(getattr(stat_result, "st_mtime_ns", int(stat_result.st_mtime * 1_000_000_000))),
+            stat_result.st_size,
+            msg.name,
+        )
+    except OSError:
+        return (0, len(msg.body), f"{msg.name}:{content_hash(msg.body)}")
+
+
+def validate_message_text_cached(msg: Message) -> list[tuple[str, str]]:
+    cache_key = message_validation_cache_key(msg)
+    signature = message_validation_signature(msg)
+    with MESSAGE_VALIDATION_CACHE_LOCK:
+        cached = MESSAGE_VALIDATION_CACHE.get(cache_key)
+        if cached and cached[0] == signature:
+            MESSAGE_VALIDATION_CACHE_METRICS["hits"] += 1
+            return list(cached[1])
+        MESSAGE_VALIDATION_CACHE_METRICS["misses"] += 1
+    issues = [(item.level, item.message) for item in validate_message_text(msg.body, msg.name)]
+    with MESSAGE_VALIDATION_CACHE_LOCK:
+        MESSAGE_VALIDATION_CACHE[cache_key] = (signature, list(issues))
+        MESSAGE_VALIDATION_CACHE_METRICS["stores"] += 1
+    return issues
 
 
 def prune_message_parse_cache(active_keys: set[str]) -> None:
@@ -512,11 +851,21 @@ def prune_message_parse_cache(active_keys: set[str]) -> None:
         stale_keys = [key for key in MESSAGE_PARSE_CACHE if key not in active_keys]
         for key in stale_keys:
             MESSAGE_PARSE_CACHE.pop(key, None)
+        MESSAGE_PARSE_CACHE_METRICS["pruned"] += len(stale_keys)
+    with MESSAGE_VALIDATION_CACHE_LOCK:
+        stale_validation_keys = [key for key in MESSAGE_VALIDATION_CACHE if key not in active_keys]
+        for key in stale_validation_keys:
+            MESSAGE_VALIDATION_CACHE.pop(key, None)
+        MESSAGE_VALIDATION_CACHE_METRICS["pruned"] += len(stale_validation_keys)
 
 
 def clear_message_parse_cache() -> None:
     with MESSAGE_PARSE_CACHE_LOCK:
         MESSAGE_PARSE_CACHE.clear()
+        MESSAGE_PARSE_CACHE_METRICS["clears"] += 1
+    with MESSAGE_VALIDATION_CACHE_LOCK:
+        MESSAGE_VALIDATION_CACHE.clear()
+        MESSAGE_VALIDATION_CACHE_METRICS["clears"] += 1
 
 
 def compact(value: str, limit: int) -> str:
@@ -648,6 +997,26 @@ def is_completion_evidence_message(msg: Message) -> bool:
     return msg_type in COMPLETION_EVIDENCE_TYPES or status in COMPLETION_EVIDENCE_STATUSES
 
 
+def message_has_review_pending_gate(msg: Message) -> bool:
+    status = normalize_status_token(msg.status)
+    thread_status = normalize_status_token(msg.thread_status)
+    owner = normalize_agent_id(msg.action_owner or msg.to_agent)
+    if owner not in {"codex", "claude-desktop", "claude-code", "darrin"}:
+        return False
+    return status in REVIEW_PENDING_STATUSES or thread_status in REVIEW_PENDING_STATUSES
+
+
+def message_requires_darrin_authority(msg: Message) -> bool:
+    status = normalize_status_token(msg.status)
+    thread_status = normalize_status_token(msg.thread_status)
+    approval_boundary = normalize_status_token(msg.approval_boundary)
+    if boolish(msg.requires_darrin_decision):
+        return True
+    if approval_boundary in DARRIN_AUTHORITY_BOUNDARIES:
+        return True
+    return status in DARRIN_AUTHORITY_STATUSES or thread_status in DARRIN_AUTHORITY_STATUSES
+
+
 def completed_thread_ids(messages: list[Message]) -> set[str]:
     return {msg.stable_thread for msg in messages if is_completion_evidence_message(msg)}
 
@@ -662,6 +1031,8 @@ def is_no_action_coordination_message(msg: Message) -> bool:
     if approval_boundary and approval_boundary != "coordination_only":
         return False
     if boolish(msg.requires_darrin_decision):
+        return False
+    if message_requires_darrin_authority(msg):
         return False
     no_action_tokens = (
         "no action required",
@@ -767,10 +1138,10 @@ def thread_owner_label(owner: str) -> str:
 
 
 def classify_thread_state(latest: Message, archived: bool = False) -> str:
-    owner = safe_slug(latest.action_owner).replace("-", "_")
-    status = str(latest.status or "").strip().lower()
-    thread_status = str(latest.thread_status or "").strip().lower()
-    msg_type = str(latest.message_type or "").strip().lower()
+    owner = normalize_agent_id(latest.action_owner).replace("-", "_")
+    status = normalize_status_token(latest.status)
+    thread_status = normalize_status_token(latest.thread_status)
+    msg_type = normalize_status_token(latest.message_type)
     if message_has_reply_tombstone(latest):
         return "closed"
     if not is_structured_mailbox_message(latest) and message_in_any_agent_inbox(latest):
@@ -785,15 +1156,15 @@ def classify_thread_state(latest: Message, archived: bool = False) -> str:
         return "open_on_agent"
     if owner == "darrin":
         return "open_on_darrin"
-    if boolish(latest.requires_darrin_decision):
+    if message_requires_darrin_authority(latest):
         return "open_on_darrin"
     if is_no_action_coordination_message(latest):
         return "closed"
     if msg_type in COMPLETION_EVIDENCE_TYPES or status in COMPLETION_EVIDENCE_STATUSES:
-        if thread_status in {"ready_for_review", "waiting_review"}:
+        if message_has_review_pending_gate(latest):
             return "open_on_agent"
         return "closed"
-    if owner in {"codex", "claude_desktop", "claude_code", "claude-code", "claude-desktop"}:
+    if owner in {"codex", "claude_desktop", "claude_code"}:
         return "open_on_agent"
     if thread_status in {"waiting_on_agent", "waiting_review", "ready_for_review"}:
         return "open_on_agent"
@@ -822,7 +1193,7 @@ def build_thread_focus(messages: list[Message], archive_state_data: dict[str, An
             missing_action_owner += 1
         archive_status = thread_archive_status(thread_id, latest.modified, archive_state_data)
         state_name = classify_thread_state(latest, bool(archive_status.get("archived")))
-        owner = safe_slug(latest.action_owner).replace("-", "_")
+        owner = normalize_agent_id(latest.action_owner).replace("-", "_")
         if state_name == "open_on_agent" and owner == "darrin":
             owner = safe_slug(latest.to_agent or latest.from_agent).replace("-", "_")
         if not owner:
@@ -855,6 +1226,9 @@ def build_thread_focus(messages: list[Message], archive_state_data: dict[str, An
                 "age_seconds": age_seconds,
                 "count": len(items),
                 "requires_darrin_decision": boolish(latest.requires_darrin_decision),
+                "requires_darrin_authority": message_requires_darrin_authority(latest),
+                "review_pending": message_has_review_pending_gate(latest),
+                "approval_boundary": latest.approval_boundary,
                 "is_urgent": is_urgent_codex_request_message(latest),
                 "latest_from": latest.from_agent,
                 "latest_to": latest.to_agent,
@@ -892,7 +1266,7 @@ def build_thread_focus(messages: list[Message], archive_state_data: dict[str, An
     }
 
 
-def validate_mailbox(messages: list[Message]) -> list[dict[str, Any]]:
+def validate_mailbox(messages: list[Message], include_schema: bool = True) -> list[dict[str, Any]]:
     ledger = load_ledger_text()
     issues: list[dict[str, Any]] = []
     seen_issue_keys: set[tuple[str, str, str]] = set()
@@ -923,10 +1297,11 @@ def validate_mailbox(messages: list[Message]) -> list[dict[str, Any]]:
         else:
             seen_ids[msg.message_id] = (msg.path, content_hash(msg.body))
 
-        for schema_issue in validate_message_text(msg.body, msg.name):
-            if schema_issue.message == "Missing id / message_id / Message-ID" and not msg.message_id:
-                continue
-            add(schema_issue.level, msg, schema_issue.message)
+        if include_schema:
+            for level, message in validate_message_text_cached(msg):
+                if message == "Missing id / message_id / Message-ID" and not msg.message_id:
+                    continue
+                add(level, msg, message)
 
         route_issue = source_route_issue(msg)
         if route_issue:
@@ -1070,6 +1445,45 @@ def load_message_audit_state() -> dict[str, Any]:
 
 def write_message_audit_state(state_data: dict[str, Any]) -> None:
     write_json(MESSAGE_AUDIT_STATE_PATH, state_data)
+
+
+def message_audit_summary(
+    state_data: dict[str, Any] | None = None,
+    *,
+    mode: str = "summary",
+) -> dict[str, Any]:
+    if state_data is None:
+        state_data = load_message_audit_state()
+    messages = state_data.get("messages", {})
+    threads = state_data.get("threads", {})
+    if not isinstance(messages, dict):
+        messages = {}
+    if not isinstance(threads, dict):
+        threads = {}
+
+    last_seen_values = [
+        str(record.get("last_seen_at", ""))
+        for record in [*messages.values(), *threads.values()]
+        if isinstance(record, dict) and record.get("last_seen_at")
+    ]
+    state_modified_at = ""
+    try:
+        if MESSAGE_AUDIT_STATE_PATH.exists():
+            state_modified_at = datetime.fromtimestamp(MESSAGE_AUDIT_STATE_PATH.stat().st_mtime).astimezone().isoformat(timespec="seconds")
+    except OSError:
+        state_modified_at = ""
+    return {
+        "path": str(MESSAGE_AUDIT_STATE_PATH),
+        "messages_tracked": len(messages),
+        "threads_tracked": len(threads),
+        "discovered": 0,
+        "transitions": 0,
+        "counts_current_refresh": False,
+        "mode": mode,
+        "side_effects": False,
+        "last_seen_at": max(last_seen_values) if last_seen_values else "",
+        "state_modified_at": state_modified_at,
+    }
 
 
 def ledger_json_safe(value: Any) -> Any:
@@ -1308,6 +1722,9 @@ def audit_messages_and_thread_states(
             "threads_tracked": len(seen_threads),
             "discovered": discovered,
             "transitions": transitions,
+            "counts_current_refresh": True,
+            "mode": "full",
+            "side_effects": True,
         }
 
 
@@ -2120,20 +2537,11 @@ def mark_all_messages_read(actor: str = "codex") -> dict[str, Any]:
     return {"count": len(messages), "state_path": str(READ_STATE_PATH)}
 
 
-def normalize_agent_id(value: str) -> str:
-    if not str(value or "").strip():
+def normalize_agent_id(value: Any) -> str:
+    token = re.sub(r"[\s_]+", "-", str(value or "").strip().lower())
+    if not token:
         return ""
-    normalized = safe_slug(value).replace("_", "-")
-    aliases = {
-        "cc": "claude-code",
-        "claude": "claude-desktop",
-        "claude-desktop": "claude-desktop",
-        "claude-code": "claude-code",
-        "cd": "claude-desktop",
-        "codex": "codex",
-        "darrin": "darrin",
-    }
-    return aliases.get(normalized, normalized)
+    return AGENT_ID_ALIASES.get(token, token)
 
 
 def validate_agent_no_mail_claim(
@@ -3281,41 +3689,98 @@ def cached_git_status() -> dict[str, Any]:
     return cached_expensive_status("git_status", GIT_STATUS_CACHE_SECONDS, git_status)
 
 
-def state() -> dict[str, Any]:
-    messages = load_messages()
-    read_state_data = load_read_state()
-    archive_state_data = load_thread_archive_state()
-    decisions = build_decision_queue(messages, write_file=False)
-    all_decisions = build_decision_queue(messages, write_file=False, include_inactive=True)
-    urgent_codex_requests = urgent_codex_request_rows(messages, read_state_data)
-    agent_progress = build_agent_progress_monitor(messages, read_state_data)
-    validation = validate_mailbox(messages)
-    validation_actionable, validation_inactive = apply_validation_state(validation)
-    validation_summary = summarize_validation(validation)
-    all_threads = build_threads(messages, read_state_data, archive_state_data)
-    thread_focus = build_thread_focus(messages, archive_state_data)
-    message_audit = audit_messages_and_thread_states(messages, thread_focus, read_state_data)
-    active_threads = [thread for thread in all_threads if not thread.get("archived")]
-    archived_threads = [thread for thread in all_threads if thread.get("archived")]
-    completed_threads = completed_thread_ids(messages)
-    unread_messages = sum(
-        1 for msg in messages if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
-    )
-    diagnostics = cached_communication_diagnostics()
-    route_tests = route_test_status(refresh=True)
-    work_board = work_board_status()
-    approvals = approval_status()
-    adapters = adapter_status()
-    quarantine = quarantine_status()
-    decision_state = decision_state_summary()
-    agent_status = build_agent_status(messages, read_state_data, work_board, decisions, thread_focus)
-    watcher = build_watcher_status(agent_status, route_tests)
-    return {
+def state(include_schema_validation: bool = True, include_message_audit: bool = True) -> dict[str, Any]:
+    profile = new_state_profile()
+    profile["validation_mode"] = "full" if include_schema_validation else "fast_no_schema"
+    profile["message_audit_mode"] = "full" if include_message_audit else "skipped_hot_path"
+    try:
+        messages = timed_state_step(profile, "load_messages", load_messages)
+        read_state_data = timed_state_step(profile, "load_read_state", load_read_state)
+        archive_state_data = timed_state_step(profile, "load_thread_archive_state", load_thread_archive_state)
+        decisions = timed_state_step(profile, "build_decision_queue_active", lambda: build_decision_queue(messages, write_file=False))
+        all_decisions = timed_state_step(
+            profile,
+            "build_decision_queue_all",
+            lambda: build_decision_queue(messages, write_file=False, include_inactive=True),
+        )
+        urgent_codex_requests = timed_state_step(
+            profile, "urgent_codex_request_rows", lambda: urgent_codex_request_rows(messages, read_state_data)
+        )
+        agent_progress = timed_state_step(
+            profile, "build_agent_progress_monitor", lambda: build_agent_progress_monitor(messages, read_state_data)
+        )
+        validation = timed_state_step(
+            profile, "validate_mailbox", lambda: validate_mailbox(messages, include_schema=include_schema_validation)
+        )
+        validation_actionable, validation_inactive = timed_state_step(
+            profile, "apply_validation_state", lambda: apply_validation_state(validation)
+        )
+        validation_summary = timed_state_step(profile, "summarize_validation", lambda: summarize_validation(validation))
+        all_threads = timed_state_step(
+            profile, "build_threads", lambda: build_threads(messages, read_state_data, archive_state_data)
+        )
+        thread_focus = timed_state_step(profile, "build_thread_focus", lambda: build_thread_focus(messages, archive_state_data))
+        if include_message_audit:
+            message_audit = timed_state_step(
+                profile,
+                "audit_messages_and_thread_states",
+                lambda: audit_messages_and_thread_states(messages, thread_focus, read_state_data),
+            )
+        else:
+            message_audit = timed_state_step(
+                profile,
+                "message_audit_summary",
+                lambda: message_audit_summary(mode="skipped_hot_path"),
+            )
+        active_threads = timed_state_step(
+            profile, "split_active_threads", lambda: [thread for thread in all_threads if not thread.get("archived")]
+        )
+        archived_threads = timed_state_step(
+            profile, "split_archived_threads", lambda: [thread for thread in all_threads if thread.get("archived")]
+        )
+        completed_threads = timed_state_step(profile, "completed_thread_ids", lambda: completed_thread_ids(messages))
+        unread_messages = timed_state_step(
+            profile,
+            "count_unread_messages",
+            lambda: sum(
+                1
+                for msg in messages
+                if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
+            ),
+        )
+        diagnostics = timed_state_step(profile, "cached_communication_diagnostics", cached_communication_diagnostics)
+        route_tests = timed_state_step(profile, "route_test_status_refresh", lambda: route_test_status(refresh=True))
+        work_board = timed_state_step(profile, "work_board_status", work_board_status)
+        approvals = timed_state_step(profile, "approval_status", approval_status)
+        adapters = timed_state_step(profile, "adapter_status", adapter_status)
+        quarantine = timed_state_step(profile, "quarantine_status", quarantine_status)
+        decision_state = timed_state_step(profile, "decision_state_summary", decision_state_summary)
+        agent_status = timed_state_step(
+            profile, "build_agent_status", lambda: build_agent_status(messages, read_state_data, work_board, decisions, thread_focus)
+        )
+        watcher = timed_state_step(profile, "build_watcher_status", lambda: build_watcher_status(agent_status, route_tests))
+        latest = timed_state_step(
+            profile, "serialize_latest", lambda: [message_to_json(msg, read_state_data, completed_threads) for msg in messages[:40]]
+        )
+        mailbox_overview = timed_state_step(profile, "build_mailbox_overview", lambda: build_mailbox_overview(messages, read_state_data))
+        agent_mailboxes = timed_state_step(
+            profile, "build_agent_mailbox_messages", lambda: build_agent_mailbox_messages(messages, read_state_data)
+        )
+        validation_state = timed_state_step(profile, "validation_state_summary", validation_state_summary)
+        read_summary = timed_state_step(profile, "read_state_summary", lambda: read_state_summary(read_state_data))
+        thread_archive = timed_state_step(
+            profile, "thread_archive_summary", lambda: thread_archive_summary(archive_state_data)
+        )
+        notifications = timed_state_step(profile, "notification_status", notification_status)
+        git = timed_state_step(profile, "cached_git_status", cached_git_status)
+        payload = {
         "project_root": str(PROJECT_ROOT),
         "mailbox_root": str(MAILBOX_ROOT),
         "panda_gallery_root": str(PANDA_GALLERY_ROOT),
         "decision_queue_path": str(DECISION_QUEUE_PATH),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "validation_mode": profile["validation_mode"],
+        "message_audit_mode": profile["message_audit_mode"],
         "counts": {
             "messages": len(messages),
             "unread_messages": unread_messages,
@@ -3335,9 +3800,9 @@ def state() -> dict[str, Any]:
             "agent_progress_red": agent_progress.get("counts", {}).get("red", 0),
             "agent_progress_yellow": agent_progress.get("counts", {}).get("yellow", 0),
         },
-        "latest": [message_to_json(msg, read_state_data, completed_threads) for msg in messages[:40]],
-        "mailboxes": build_mailbox_overview(messages, read_state_data),
-        "agent_mailboxes": build_agent_mailbox_messages(messages, read_state_data),
+        "latest": latest,
+        "mailboxes": mailbox_overview,
+        "agent_mailboxes": agent_mailboxes,
         "agent_status": agent_status,
         "watcher": watcher,
         "threads": active_threads[:80],
@@ -3352,19 +3817,25 @@ def state() -> dict[str, Any]:
         "validation_actionable": validation_actionable,
         "validation_inactive": validation_inactive,
         "validation_summary": validation_summary,
-        "validation_state": validation_state_summary(),
-        "read_state": read_state_summary(read_state_data),
+        "validation_state": validation_state,
+        "read_state": read_summary,
         "message_audit": message_audit,
-        "thread_archive": thread_archive_summary(archive_state_data),
+        "thread_archive": thread_archive,
         "diagnostics": diagnostics,
         "route_tests": route_tests,
         "work_board": work_board,
         "approvals": approvals,
         "adapters": adapters,
         "quarantine": quarantine,
-        "notifications": notification_status(),
-        "git": cached_git_status(),
+        "notifications": notifications,
+        "git": git,
     }
+        payload["state_profile"] = finalize_state_profile(profile, payload.get("counts", {}))
+        payload["mail_state_snapshot"] = write_mail_state_snapshot(build_mail_state_snapshot(payload))
+        return payload
+    except Exception as exc:
+        finalize_state_profile(profile, error=f"{type(exc).__name__}: {exc}")
+        raise
 
 
 def route_id_for_direction(direction: str) -> str:
@@ -3510,6 +3981,7 @@ def inspector_freshness_component() -> dict[str, Any]:
 
 
 def periodic_health_monitor_summary() -> dict[str, Any]:
+    max_age_seconds = 30 * 60
     report = read_json(PERIODIC_HEALTH_LATEST_PATH, {})
     if not report:
         return health_component(
@@ -3527,6 +3999,25 @@ def periodic_health_monitor_summary() -> dict[str, Any]:
     level = "err" if failed else "ok" if report.get("ok") else "warn"
     generated_at = str(report.get("generated_at", ""))
     schedule = report.get("schedule", {}) if isinstance(report.get("schedule", {}), dict) else {}
+    age_seconds = seconds_since_iso(generated_at) if generated_at else snapshot_age_seconds(PERIODIC_HEALTH_LATEST_PATH)
+    if isinstance(age_seconds, (int, float)) and age_seconds > max_age_seconds:
+        return health_component(
+            "warn",
+            "Periodic monitor stale",
+            f"Latest periodic health report is {human_duration(int(age_seconds))} old; stale failed checks are not current health failures.",
+            generated_at=generated_at,
+            next_run_after=str(schedule.get("next_run_after", "")),
+            schedule=schedule,
+            path=str(PERIODIC_HEALTH_LATEST_PATH),
+            failed_checks=failed,
+            duration_ms=report.get("duration_ms", 0),
+            archive_read_sweep=checks.get("archive_read_sweep", {}),
+            status_summary=report.get("status_summary", {}),
+            warnings=report.get("warnings", []),
+            age_seconds=int(age_seconds),
+            max_age_seconds=max_age_seconds,
+            stale=True,
+        )
     detail = "Periodic monitor passed." if level == "ok" else f"Periodic monitor needs attention: {', '.join(failed) or 'report warning'}."
     return health_component(
         level,
@@ -3541,7 +4032,169 @@ def periodic_health_monitor_summary() -> dict[str, Any]:
         archive_read_sweep=checks.get("archive_read_sweep", {}),
         status_summary=report.get("status_summary", {}),
         warnings=report.get("warnings", []),
+        age_seconds=age_seconds,
+        max_age_seconds=max_age_seconds,
+        stale=False,
     )
+
+
+def mediated_messaging_health_component(cockpit: dict[str, Any]) -> dict[str, Any]:
+    state_data = cockpit.get("cockpit_state", {}) if isinstance(cockpit.get("cockpit_state", {}), dict) else {}
+    counts = state_data.get("counts", {}) if isinstance(state_data.get("counts", {}), dict) else {}
+    diagnostics = cockpit.get("diagnostics", {}) if isinstance(cockpit.get("diagnostics", {}), dict) else {}
+    relay_health = diagnostics.get("relay_health", {}) if isinstance(diagnostics.get("relay_health", {}), dict) else {}
+    profile = cockpit.get("state_profile") if isinstance(cockpit.get("state_profile"), dict) else latest_state_profile()
+    snapshot = latest_mail_state_snapshot_summary()
+    duration_ms = float(profile.get("duration_ms", 0) or 0) if profile else 0.0
+    relay_ok = bool(relay_health.get("ok")) if relay_health else False
+    active_rows = 0
+    if isinstance(relay_health.get("counts"), dict):
+        active_rows = int(relay_health["counts"].get("active_rows", 0) or 0)
+    level = "ok"
+    issues: list[str] = []
+    if not profile:
+        level = "warn"
+        issues.append("state profile missing")
+    elif duration_ms >= 10_000:
+        level = "err"
+        issues.append(f"state build {duration_ms:.0f} ms")
+    elif duration_ms >= 1_000:
+        level = "warn"
+        issues.append(f"state build {duration_ms:.0f} ms")
+    if relay_health and not relay_ok:
+        level = health_level(level, "warn")
+        issues.append("relay health warning")
+    if not snapshot:
+        level = health_level(level, "warn")
+        issues.append("mail state snapshot missing")
+    detail = (
+        "Mediated messaging profile is within Phase 0 limits."
+        if level == "ok"
+        else f"Mediated messaging needs attention: {', '.join(issues)}."
+    )
+    return health_component(
+        level,
+        "Mediated messaging",
+        detail,
+        phase="phase0_instrumented",
+        endpoint_profile=profile,
+        mail_state_snapshot=snapshot,
+        delivery_levels={
+            "written": "not yet snapshot-backed",
+            "discovered": "ledger-backed where events exist",
+            "visible": "legacy cockpit classifier",
+            "read": "read-state-backed",
+            "acknowledged": "reply/ack evidence only",
+        },
+        authority_model="Darrin approval remains the only protected-action authority.",
+        active_rows=active_rows,
+        open_on_agent=int(counts.get("open_on_agent", 0) or 0),
+        open_on_darrin=int(counts.get("open_on_darrin", 0) or 0),
+        owner_unknown=int(counts.get("owner_unknown", 0) or 0),
+    )
+
+
+def fast_health_payload_from_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    generated_at = datetime.now().isoformat(timespec="seconds")
+    source_counts = snapshot.get("source_counts", {}) if isinstance(snapshot.get("source_counts"), dict) else {}
+    classifier = snapshot.get("classifier", {}) if isinstance(snapshot.get("classifier"), dict) else {}
+    authority = snapshot.get("authority", {}) if isinstance(snapshot.get("authority"), dict) else {}
+    warnings = snapshot.get("warnings", []) if isinstance(snapshot.get("warnings"), list) else []
+    errors = snapshot.get("errors", []) if isinstance(snapshot.get("errors"), list) else []
+    snapshot_age = snapshot.get("age_seconds")
+    stale_snapshot = isinstance(snapshot_age, (int, float)) and snapshot_age > 60
+    open_on_darrin = int(classifier.get("open_on_darrin", 0) or 0)
+    open_on_agent = int(classifier.get("open_on_agent", 0) or 0)
+    owner_unknown = int(classifier.get("owner_unknown", 0) or 0)
+    unanswered_total = open_on_darrin + open_on_agent + owner_unknown
+    snapshot_level = "err" if errors else "warn" if warnings or stale_snapshot else "ok"
+    git = cached_git_status()
+    git_clean = bool(git.get("clean"))
+    components = {
+        "server": health_component("ok", "Server API online", f"PAH API generated this fast health payload at {generated_at}."),
+        "routes": health_component(
+            "unknown",
+            "Mailbox routes",
+            "Fast health uses the latest mail-state snapshot; detailed route tests are available in Inspector or cockpit.",
+            problem_routes=[],
+        ),
+        "inspector": inspector_freshness_component(),
+        "mailboxes": health_component(
+            "warn" if owner_unknown else "ok",
+            "Mailboxes",
+            f"{source_counts.get('messages', 0)} message(s); {owner_unknown} owner-unknown thread(s).",
+            owner_unknown=owner_unknown,
+            messages=source_counts.get("messages", 0),
+            threads=source_counts.get("threads", 0),
+        ),
+        "unanswered": health_component(
+            "err" if owner_unknown else "warn" if unanswered_total else "ok",
+            "Unanswered work",
+            f"{open_on_darrin} open on Darrin; {open_on_agent} open on agents; {owner_unknown} owner unknown.",
+            open_on_darrin=open_on_darrin,
+            open_on_agent=open_on_agent,
+            owner_unknown=owner_unknown,
+            total=unanswered_total,
+        ),
+        "urgent_codex": health_component("unknown", "Urgent Codex requests", "Fast health does not compute urgent request detail."),
+        "agent_progress": health_component("unknown", "Agent progress", "Fast health defers detailed progress cards to cockpit/Inspector."),
+        "archive": health_component(
+            "ok" if SWEEP_AUDIT_LOG_PATH.exists() else "unknown",
+            "Archive sweep",
+            "Read-mail sweep audit log is present." if SWEEP_AUDIT_LOG_PATH.exists() else "No sweep audit log has been written yet.",
+            audit_log_path=str(SWEEP_AUDIT_LOG_PATH),
+        ),
+        "interaction_ledger": health_component(
+            "ok" if INTERACTION_LEDGER_PATH.exists() else "unknown",
+            "Interaction ledger",
+            "Append-only PAH interaction ledger is present."
+            if INTERACTION_LEDGER_PATH.exists()
+            else "No interaction ledger events have been written yet.",
+            ledger_path=str(INTERACTION_LEDGER_PATH),
+        ),
+        "mediated_messaging": health_component(
+            snapshot_level,
+            "Mediated messaging",
+            "Fast health is using the sanitized mail-state snapshot.",
+            phase="phase1_shadow_snapshot",
+            mail_state_snapshot=snapshot,
+            delivery_levels={
+                "written": "physical files counted in snapshot",
+                "discovered": "ledger-backed where events exist",
+                "visible": "snapshot projection",
+                "read": "read-state-backed",
+                "acknowledged": "reply/ack evidence only",
+            },
+            authority_model=str(authority.get("model", "projection_only")),
+            darrin_only_protected_action_authority=bool(authority.get("darrin_only_protected_action_authority", True)),
+        ),
+        "diagnostics": health_component(
+            "warn" if snapshot_level != "ok" else "ok",
+            "Diagnostics",
+            "Fast health reports snapshot warnings; run Inspector for full diagnostics.",
+            snapshot_warnings=warnings,
+            snapshot_errors=errors,
+        ),
+        "periodic_monitor": periodic_health_monitor_summary(),
+        "github_backup": health_component(
+            "ok" if git_clean else "warn",
+            "Git/GitHub backup",
+            "Working tree is clean." if git_clean else str(git.get("status_label") or git.get("text") or "Working tree has uncommitted or unsynced changes."),
+            branch=str(git.get("branch", "")),
+            tracking=str(git.get("tracking", "")),
+            clean=git_clean,
+        ),
+    }
+    overall = health_level(*(str(item.get("level", "unknown")) for item in components.values()))
+    return {
+        "ok": overall == "ok",
+        "schema_version": 1,
+        "generated_at": generated_at,
+        "overall": overall,
+        "summary": "PAH healthy." if overall == "ok" else "PAH needs attention.",
+        "source": "mail_state_snapshot",
+        "components": components,
+    }
 
 
 def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
@@ -3622,6 +4275,7 @@ def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
             else "No interaction ledger events have been written yet.",
             ledger_path=str(INTERACTION_LEDGER_PATH),
         ),
+        "mediated_messaging": mediated_messaging_health_component(cockpit),
         "diagnostics": health_component(
             "err" if failed_checks else "warn" if warn_checks or actionable_validation else "ok",
             "Diagnostics",
@@ -3652,6 +4306,9 @@ def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
 
 
 def health_payload() -> dict[str, Any]:
+    snapshot = latest_mail_state_snapshot_summary()
+    if snapshot:
+        return fast_health_payload_from_snapshot(snapshot)
     return health_payload_from_cockpit(cockpit_payload())
 
 
@@ -3986,7 +4643,7 @@ def cockpit_thread_queue(thread_focus: dict[str, Any], limit: int = 80) -> list[
 
 
 def cockpit_payload() -> dict[str, Any]:
-    status_data = state()
+    status_data = state(include_schema_validation=False, include_message_audit=False)
     generated_at = str(status_data.get("generated_at", datetime.now().isoformat(timespec="seconds")))
     routes = build_cockpit_routes(status_data)
     route_summary = summarize_cockpit_routes(routes)
@@ -4018,6 +4675,10 @@ def cockpit_payload() -> dict[str, Any]:
     payload = {
         "schema_version": 1,
         "generated_at": generated_at,
+        "state_profile": status_data.get("state_profile", {}),
+        "mail_state_snapshot": status_data.get("mail_state_snapshot", {}),
+        "validation_mode": status_data.get("validation_mode", "full"),
+        "message_audit_mode": status_data.get("message_audit_mode", "full"),
         "cockpit_state": {
             "as_of_iso": generated_at,
             "mode": "live",
@@ -4085,6 +4746,7 @@ def cockpit_payload() -> dict[str, Any]:
             "actionable_validation_issues": validation_summary.get("actionable", 0),
             "last_run_iso": generated_at,
             "thread_classifier": thread_focus.get("diagnostics", {}),
+            "state_profile": status_data.get("state_profile", {}),
             "relay_health": {
                 "ok": bool(relay_health_check.get("ok")) if relay_health_check else False,
                 "severity": str(relay_health_check.get("severity", "warning")) if relay_health_check else "warning",
@@ -4239,6 +4901,8 @@ def message_to_json(
         "wake_candidate_label": wake_candidate_label,
         "content_changed_since_read": read_status["content_changed"],
         "classifier_state": classifier_state,
+        "review_pending": message_has_review_pending_gate(msg),
+        "requires_darrin_authority": message_requires_darrin_authority(msg),
         "thread_has_completion_evidence": thread_has_completion_evidence,
         "status_badges": message_status_badges(msg, read_status["unread"]),
         "quarantine_allowed": quarantine_candidate_allowed(msg.path),
@@ -5047,6 +5711,9 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/ping":
             self.send_json({"ok": True, "service": "panda-agent-hub"})
+            return
+        if parsed.path == "/api/ready":
+            self.send_json(ready_payload())
             return
         if parsed.path == "/api/cockpit":
             self.send_json(cockpit_payload())

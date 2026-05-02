@@ -40,6 +40,21 @@ Acceptance:
 - Live Inspector includes `endpoint.mailroom_transaction_canary`.
 - Live `/api/health` includes `components.inspector` and `components.routes.problem_routes`.
 
+## Mediated Messaging Reliability Rules
+
+2026-05-02 implementation addendum:
+
+1. PAH must separate physical mailbox facts, derived PAH state, authority projections, and Darrin approval authority.
+2. Darrin approval is the only authority for implementation-approved, commit-approved, backup-approved, publish-approved, protected-write-approved, or `C:\panda-gallery` write states.
+3. PAH may write sanitized local shadow snapshots under `CODEX Agent Hub\CODEX state`, but snapshot files must not persist raw mailbox bodies by default.
+4. `/api/ready` is the fast readiness contract. Server smoke must not use heavyweight `/api/status` as startup proof.
+5. The `mediated_messaging` health component must report delivery/visibility state as evidence, not as proof of Claude Desktop pickup unless read/ack evidence exists.
+6. `complete_pending_cd_review` and equivalent explicit review-pending metadata remain open on the reviewing agent until ack/reply evidence exists.
+7. `ready_to_commit` and other protected boundaries remain Darrin-gated even when an agent says the work is ready.
+8. State-builder profiles must stay available until hot endpoints are snapshot-backed. The 2026-05-02 pass moved full schema validation off cockpit's hot path and reduced hot-path `validate_mailbox` time from about 7.4s to about 22ms.
+9. Cockpit hot refresh must not run side-effectful message discovery/classifier audit writes. Use `message_audit_summary` on the cockpit path; reserve full `audit_messages_and_thread_states` ledgering for explicit full-state or audit flows.
+10. Stale periodic monitor reports must be visible but must not masquerade as current failures. Reports older than the freshness window are warnings with preserved failed-check detail, not current `/api/health` errors.
+
 ## Classifier And Wake Rules
 
 1. Explicit coordination-only shares that say no action or no reply is required are closed/informational, even if their frontmatter still says `status: open` for traceability.

@@ -10,6 +10,49 @@ $Stderr = Join-Path $Logs 'CODEX_server_smoke_stderr.log'
 Remove-Item -LiteralPath $Stdout -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $Stderr -Force -ErrorAction SilentlyContinue
 
+function Invoke-PahSmokeEndpoint {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Uri,
+        [int]$TimeoutSec = 10
+    )
+    $Timer = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        $Payload = Invoke-RestMethod -Uri $Uri -TimeoutSec $TimeoutSec
+        $Timer.Stop()
+        [pscustomobject]@{
+            name = $Name
+            ok = $true
+            latency_ms = [int]$Timer.ElapsedMilliseconds
+            timed_out = $false
+            error = ''
+            payload = $Payload
+        }
+    }
+    catch {
+        $Timer.Stop()
+        [pscustomobject]@{
+            name = $Name
+            ok = $false
+            latency_ms = [int]$Timer.ElapsedMilliseconds
+            timed_out = $Timer.Elapsed.TotalSeconds -ge $TimeoutSec
+            error = $_.Exception.Message
+            payload = $null
+        }
+    }
+}
+
+function Select-PahEndpointSummary {
+    param([Parameter(Mandatory = $true)]$Result)
+    [pscustomobject]@{
+        name = $Result.name
+        ok = $Result.ok
+        latency_ms = $Result.latency_ms
+        timed_out = $Result.timed_out
+        error = $Result.error
+    }
+}
+
 $Process = Start-Process -FilePath python -ArgumentList @(
     "`"$App`"",
     '--host',
@@ -35,13 +78,29 @@ try {
         throw "PAH server did not print a startup URL."
     }
 
-    $Status = Invoke-RestMethod -Uri "$Url/api/status" -TimeoutSec 10
+    $Ping = Invoke-PahSmokeEndpoint -Name 'ping' -Uri "$Url/api/ping" -TimeoutSec 15
+    if (-not $Ping.ok) {
+        throw "PAH server did not pass /api/ping readiness: $($Ping.error)"
+    }
+    $Ready = Invoke-PahSmokeEndpoint -Name 'ready' -Uri "$Url/api/ready" -TimeoutSec 5
+    $Health = Invoke-PahSmokeEndpoint -Name 'health' -Uri "$Url/api/health" -TimeoutSec 35
+    $Cockpit = Invoke-PahSmokeEndpoint -Name 'cockpit' -Uri "$Url/api/cockpit" -TimeoutSec 35
+    $Status = if ($Cockpit.payload) { $Cockpit.payload } else { $null }
+    $PerformanceOk = $Health.ok -and $Cockpit.ok -and $Health.latency_ms -lt 10000 -and $Cockpit.latency_ms -lt 10000
     [pscustomobject]@{
         url = $Url
-        messages = $Status.counts.messages
-        threads = $Status.counts.threads
-        decisions = $Status.counts.decisions
-        diagnostics_ok = $Status.diagnostics.ok
+        readiness_ok = $Ping.ok -and $Ready.ok
+        performance_ok = $PerformanceOk
+        messages = if ($Status) { $Status.cockpit_state.counts.messages } else { $null }
+        threads = if ($Status) { $Status.cockpit_state.counts.threads_all } else { $null }
+        decisions = if ($Status) { $Status.cockpit_state.counts.decisions_needed } else { $null }
+        diagnostics_ok = if ($Status) { $Status.diagnostics.ok } else { $null }
+        endpoints = @(
+            Select-PahEndpointSummary $Ping
+            Select-PahEndpointSummary $Ready
+            Select-PahEndpointSummary $Health
+            Select-PahEndpointSummary $Cockpit
+        )
     } | ConvertTo-Json -Compress
 }
 finally {
@@ -50,4 +109,3 @@ finally {
         $Process.WaitForExit()
     }
 }
-

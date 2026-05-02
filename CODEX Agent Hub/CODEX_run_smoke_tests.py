@@ -603,6 +603,17 @@ def test_cockpit_payload_contract() -> None:
     assert_true("relay_health" in payload["diagnostics"], "cockpit diagnostics carries relay health summary")
     assert_true("status_label" in payload["diagnostics"]["relay_health"], "relay health summary carries status label")
     assert_true("cache" in payload["diagnostics"]["relay_health"], "relay health summary carries cache metadata")
+    assert_true("state_profile" in payload, "cockpit carries Phase 0 state performance profile")
+    assert_true("steps" in payload["state_profile"], "state profile carries timed steps")
+    assert_true(payload["validation_mode"] == "fast_no_schema", "cockpit uses fast validation mode")
+    assert_true(payload["message_audit_mode"] == "skipped_hot_path", "cockpit skips side-effectful message audit")
+    assert_true(payload["message_audit"].get("mode") == "skipped_hot_path", "cockpit carries audit summary mode")
+    assert_true(
+        "audit_messages_and_thread_states" not in payload["state_profile"]["steps"],
+        "cockpit profile avoids full message audit step",
+    )
+    assert_true("message_audit_summary" in payload["state_profile"]["steps"], "cockpit profiles audit summary step")
+    assert_true(payload.get("mail_state_snapshot", {}).get("ok"), "cockpit writes a Phase 1 shadow mail-state snapshot")
     assert_true("health" in payload, "cockpit carries canonical health summary")
     assert_true("components" in payload["health"], "health summary carries components")
     assert_true("server" in payload["health"]["components"], "health summary carries server component")
@@ -621,14 +632,89 @@ def test_health_payload_contract() -> None:
     assert_true(payload["schema_version"] == 1, "health schema version")
     assert_true(payload["overall"] in {"ok", "warn", "err", "unknown"}, "health overall level is normalized")
     assert_true(isinstance(payload["ok"], bool), "health ok is boolean")
+    assert_true(payload.get("source") in {None, "mail_state_snapshot"}, "health source is compatible")
     components = payload["components"]
-    for name in ("server", "routes", "inspector", "mailboxes", "unanswered", "agent_progress", "archive", "diagnostics", "periodic_monitor", "github_backup"):
+    for name in (
+        "server",
+        "routes",
+        "inspector",
+        "mailboxes",
+        "unanswered",
+        "agent_progress",
+        "archive",
+        "interaction_ledger",
+        "mediated_messaging",
+        "diagnostics",
+        "periodic_monitor",
+        "github_backup",
+    ):
         assert_true(name in components, f"health carries {name} component")
         assert_true(components[name]["level"] in {"ok", "warn", "err", "unknown"}, f"{name} health level is normalized")
         assert_true(bool(components[name]["label"]), f"{name} health has label")
         assert_true(bool(components[name]["detail"]), f"{name} health has detail")
     assert_true("problem_routes" in components["routes"], "routes health carries held/failed route detail")
     assert_true("stale" in components["inspector"], "inspector health carries freshness state")
+    assert_true("delivery_levels" in components["mediated_messaging"], "mediated messaging health reports delivery levels")
+
+
+def test_health_payload_uses_snapshot_when_available() -> None:
+    cockpit = agent_hub.cockpit_payload()
+    assert_true(cockpit.get("mail_state_snapshot", {}).get("ok"), "snapshot exists before fast health")
+    payload = agent_hub.health_payload()
+    assert_true(payload.get("source") == "mail_state_snapshot", "health uses snapshot summary when available")
+    assert_true("mediated_messaging" in payload["components"], "snapshot health keeps mediated messaging component")
+
+
+def test_periodic_health_monitor_summary_ignores_stale_failures() -> None:
+    with TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "periodic_health.json"
+        original = agent_hub.PERIODIC_HEALTH_LATEST_PATH
+        try:
+            agent_hub.PERIODIC_HEALTH_LATEST_PATH = path
+            path.write_text(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "generated_at": "2026-04-30T06:56:04-07:00",
+                        "duration_ms": 100,
+                        "schedule": {"interval_minutes": 10, "next_run_after": "2026-04-30T07:06:04-07:00"},
+                        "checks": {"communication_backlog": {"ok": False}},
+                        "warnings": ["stale backlog"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            component = agent_hub.periodic_health_monitor_summary()
+            assert_true(component["level"] == "warn", "stale periodic failures are warnings")
+            assert_true(component["stale"], "stale periodic report is flagged")
+            assert_true(
+                "communication_backlog" in component["failed_checks"],
+                "stale periodic report still preserves failed check detail",
+            )
+        finally:
+            agent_hub.PERIODIC_HEALTH_LATEST_PATH = original
+
+
+def test_ready_payload_contract() -> None:
+    payload = agent_hub.ready_payload()
+    assert_true(payload["schema_version"] == 1, "ready schema version")
+    assert_true(payload["server_ready"], "ready reports server readiness")
+    assert_true(isinstance(payload["snapshot_available"], bool), "ready reports snapshot availability")
+    assert_true(isinstance(payload["degraded_reason"], list), "ready degraded reasons are structured")
+
+
+def test_mail_state_snapshot_sanitized_contract() -> None:
+    payload = agent_hub.cockpit_payload()
+    summary = payload["mail_state_snapshot"]
+    snapshot_path = Path(summary["path"])
+    assert_true(snapshot_path.exists(), "mail-state snapshot file is written")
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    assert_true(snapshot["schema_version"] == 1, "mail-state snapshot schema version")
+    assert_true(snapshot["authority"]["darrin_only_protected_action_authority"], "snapshot records Darrin-only authority")
+    assert_true(snapshot["builder_version"] == "phase1-shadow-from-legacy-state", "snapshot is explicitly shadow mode")
+    first = snapshot["messages"][0] if snapshot.get("messages") else {}
+    assert_true("body" not in first, "snapshot messages do not persist raw body")
+    assert_true("raw" not in first, "snapshot messages do not persist raw frontmatter/source")
 
 
 def test_pah_ui_pg_design_bible_tokens() -> None:
@@ -2126,6 +2212,92 @@ def test_message_parse_cache_reuses_unchanged_files_and_invalidates_changes() ->
             agent_hub.clear_message_parse_cache()
 
 
+def test_message_validation_cache_reuses_unchanged_files_and_invalidates_changes() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        inbox = root / "CODEX Inbox"
+        inbox.mkdir(parents=True)
+        path = inbox / "message.md"
+        base_metadata = {
+            "schema_version": MESSAGE_SCHEMA_VERSION,
+            "message_id": "PAH-VALIDATION-CACHE-001",
+            "thread_id": "PAH-VALIDATION-CACHE-001",
+            "from": "claude-desktop",
+            "to": "codex",
+            "type": "coordination",
+            "status": "open",
+            "thread_status": "active",
+            "priority": "normal",
+            "approval_boundary": "coordination_only",
+            "requires_darrin_decision": False,
+        }
+        first_text = render_message_markdown(base_metadata, "Validation cache", "Cache smoke", "Body.")
+        changed_metadata = dict(base_metadata)
+        changed_metadata["status"] = "not_a_status"
+        changed_text = render_message_markdown(changed_metadata, "Validation cache", "Cache smoke", "Body.")
+        atomic_write_text(path, first_text)
+        try:
+            agent_hub.clear_message_parse_cache()
+            msg = agent_hub.parse_message_cached(path, "Smoke")
+            agent_hub.validate_mailbox([msg])
+            metrics_after_first = agent_hub.message_validation_cache_metrics()
+            agent_hub.validate_mailbox([msg])
+            metrics_after_second = agent_hub.message_validation_cache_metrics()
+            assert_true(
+                metrics_after_second["hits"] > metrics_after_first["hits"],
+                "unchanged message validation reuses cached schema results",
+            )
+
+            time.sleep(0.02)
+            atomic_write_text(path, changed_text)
+            changed = agent_hub.parse_message_cached(path, "Smoke")
+            issues = agent_hub.validate_mailbox([changed])
+            metrics_after_change = agent_hub.message_validation_cache_metrics()
+            assert_true(
+                metrics_after_change["misses"] > metrics_after_second["misses"],
+                "changed message invalidates validation cache",
+            )
+            assert_true(
+                any("Unsupported status enum" in issue["message"] for issue in issues),
+                "changed validation result is recomputed",
+            )
+        finally:
+            agent_hub.clear_message_parse_cache()
+
+
+def test_fast_validation_mode_skips_schema_but_keeps_route_checks() -> None:
+    message = agent_hub.Message(
+        direction="Claude -> Codex",
+        path=Path("C:/CODEX PG/fast_validation.md"),
+        name="fast_validation.md",
+        modified=1.0,
+        title="Fast validation",
+        message_id="PAH-FAST-VALIDATION",
+        thread_id="PAH-FAST-VALIDATION",
+        thread_status="active",
+        status="not_a_status",
+        from_agent="codex",
+        to_agent="codex",
+        action_owner="codex",
+        message_type="coordination",
+        body="---\nstatus: not_a_status\n---\n",
+    )
+    fast_issues = agent_hub.validate_mailbox([message], include_schema=False)
+    full_issues = agent_hub.validate_mailbox([message], include_schema=True)
+    assert_true(
+        not any("Unsupported status enum" in issue["message"] for issue in fast_issues),
+        "fast validation skips schema enum checks",
+    )
+    assert_true(
+        any("Spoofing check failed" in issue["message"] for issue in fast_issues),
+        "fast validation keeps route spoofing checks",
+    )
+    assert_true(
+        any("Unsupported status enum" in issue["message"] for issue in full_issues),
+        "full validation keeps schema enum checks",
+    )
+
+
 def test_port_fallback_can_be_disabled_for_tray_launches() -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
@@ -2609,6 +2781,29 @@ def test_classifier_darrin_precedence_beats_completion_fallback() -> None:
     assert_true(state == "open_on_darrin", "Darrin ownership wins before completion/report fallback")
 
 
+def test_classifier_darrin_authority_boundary_stays_open() -> None:
+    message = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/ready_to_commit.md"),
+        name="ready_to_commit.md",
+        modified=1.0,
+        title="Ready to commit needs Darrin",
+        message_id="PAH-CLASSIFIER-DARRIN-AUTHORITY",
+        thread_id="PAH-CLASSIFIER-DARRIN-AUTHORITY",
+        thread_status="active",
+        status="ready_to_commit",
+        from_agent="claude-desktop",
+        to_agent="codex",
+        action_owner="codex",
+        requires_darrin_decision=False,
+        approval_boundary="ready_to_commit",
+        message_type="report",
+        schema_version="1",
+    )
+    state = agent_hub.classify_thread_state(message)
+    assert_true(state == "open_on_darrin", "ready-to-commit authority boundary stays Darrin-gated")
+
+
 def test_classifier_pre_staged_pending_trigger_is_parked() -> None:
     message = agent_hub.Message(
         direction="smoke",
@@ -2691,6 +2886,28 @@ def test_classifier_completion_messages_close_before_agent_owner() -> None:
     )
     state = agent_hub.classify_thread_state(review_report)
     assert_true(state == "open_on_agent", "ready-for-review report remains open on the reviewing agent")
+
+    cd_review_rtc = agent_hub.Message(
+        direction="smoke",
+        path=Path("C:/CODEX PG/cd_review_rtc.md"),
+        name="cd_review_rtc.md",
+        modified=1.0,
+        title="Codex RTC pending CD review",
+        message_id="PAH-CLASSIFIER-CD-REVIEW-RTC",
+        thread_id="PAH-CLASSIFIER-CD-REVIEW-RTC",
+        thread_status="active",
+        status="complete_pending_cd_review",
+        from_agent="codex",
+        to_agent="claude-desktop",
+        action_owner="claude_desktop",
+        requires_darrin_decision=False,
+        message_type="rtc",
+        schema_version="1",
+    )
+    state = agent_hub.classify_thread_state(cd_review_rtc)
+    assert_true(state == "open_on_agent", "complete-pending-CD-review RTC remains open on Claude Desktop")
+    row = agent_hub.message_to_json(cd_review_rtc, {})
+    assert_true(row["review_pending"], "review-pending RTC is exposed in message JSON")
 
 
 def test_classifier_no_action_coordination_share_closes() -> None:
@@ -2962,6 +3179,10 @@ def main() -> None:
     test_mailroom_transaction_canary_is_isolated()
     test_cockpit_payload_contract()
     test_health_payload_contract()
+    test_health_payload_uses_snapshot_when_available()
+    test_periodic_health_monitor_summary_ignores_stale_failures()
+    test_ready_payload_contract()
+    test_mail_state_snapshot_sanitized_contract()
     test_pah_ui_pg_design_bible_tokens()
     test_agent_progress_monitor_contract()
     test_pah_inspector_cc_progress_sidecar_contract()
@@ -2992,10 +3213,13 @@ def main() -> None:
     test_processed_message_sidecar_idempotency()
     test_read_state_marks_changed_content_unread()
     test_message_parse_cache_reuses_unchanged_files_and_invalidates_changes()
+    test_message_validation_cache_reuses_unchanged_files_and_invalidates_changes()
+    test_fast_validation_mode_skips_schema_but_keeps_route_checks()
     test_port_fallback_can_be_disabled_for_tray_launches()
     test_archive_read_mail_moves_read_messages_from_active_inboxes()
     test_archive_read_moves_replied_tombstoned_unread_messages()
     test_classifier_darrin_precedence_beats_completion_fallback()
+    test_classifier_darrin_authority_boundary_stays_open()
     test_classifier_pre_staged_pending_trigger_is_parked()
     test_classifier_completion_messages_close_before_agent_owner()
     test_classifier_no_action_coordination_share_closes()
