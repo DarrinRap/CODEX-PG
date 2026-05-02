@@ -21,7 +21,7 @@
 - [x] Restore mailroom compatibility routes (`/api/send`, `/api/message-read-state`, `/api/mark-all-read`) as wrappers around current create/read-state helpers so the dashboard and operator scripts cannot silently fail against retired endpoints.
 - [x] Add a token-protected mailroom transaction canary (`/api/mailroom-canary`) that exercises send, read-state, reply tombstone, and interaction-ledger writes in an isolated temporary mailbox.
 - [x] Add `/api/health` Inspector freshness reporting so stale Inspector output warns instead of masquerading as current green evidence.
-- [ ] Add a dashboard callout when the latest Inspector report is stale and a one-click "Run Inspector now" workflow is available.
+- [x] Add a dashboard callout when the latest Inspector report is stale and a one-click "Run Inspector now" workflow is available.
 
 ## Mailroom Protocol
 
@@ -81,6 +81,7 @@
 - [x] Add a main-screen Inspector button that opens a full-screen PAH Inspector panel with latest report summary, findings, Markdown report, and report-open action.
 - [x] Add Inspector at-a-glance status graphics and color-coded action buttons while keeping PG Design Bible colors/fonts.
 - [x] Make Inspector status graphics and chips clickable so PASS/WARN/FAIL reorder the findings list and OVERALL restores severity order.
+- [x] Add one-click Run Inspector in the Inspector panel and footer stale-report callout, with cached health folded into the top Queue health chip.
 - [ ] Add visual status for unresolved communication backlog: open-on-agent, owner-unknown, stale unread, and Darrin-waiting.
 - [ ] Add one-click "copy discrepancy summary" for sending concise status to CD/CC.
 - [ ] Add collapsible advanced diagnostics so the default dashboard stays clean but the details are nearby.
@@ -96,3 +97,12 @@
 - [ ] Keep generated logs/state out of commits unless they are intentional fixtures or docs.
 - [x] Document PAH operational protocols in the README: live URL, server start command, health checks, archive-read behavior, and ledger location.
 - [ ] At the end of every PAH implementation or incident-response pass, update durable PAH docs with what was learned, what changed, verification run, remaining risk, and any follow-up work. Use README for operations, TODO for follow-ups, and spec docs for product/UX/protocol/acceptance rules.
+
+## Recent PAH Pass Notes
+
+- Added silent tray behavior for PAH overdue/notification-log popups: tray menu now labels these popup paths as disabled and the notification timer is not started.
+- Added `/api/run-inspector` plus a PAH Inspector "Run Inspector" button so the UI can refresh Inspector evidence without a terminal.
+- Stale Inspector health now contributes to the top Queue health cue and footer callout, keeping cached evidence from looking current.
+- Added a Health Attention strip with the top PAH warning causes, direct jumps to queue/diagnostics/Inspector, and one-click copy of a concise status summary.
+- Verification run: Python compile passed, UI JavaScript parse check passed, PAH smoke tests passed, PAH validator passed, temporary-server `/api/run-inspector` returned fresh warn-only Inspector output (`41 pass`, `3 warn`, `0 fail`), restarted live PAH on `8765` returned the same fresh warn-only result, and live Chrome screenshot QA confirmed the Health Attention strip renders without obvious overlap at desktop width.
+- Remaining risk: overall PAH health can still be warn/err because real mailbox backlog, owner-unknown items, CC sidecar absence, and stale unread protocol items remain outside this UI/runtime fix.

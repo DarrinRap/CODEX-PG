@@ -695,6 +695,95 @@ button.filter.active {
   color: var(--ok);
 }
 .notice[hidden] { display: none; }
+.health-explainer {
+  margin: 8px 12px 0;
+  border: 1px solid rgba(232, 168, 124, .38);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .38);
+  overflow: hidden;
+}
+.health-explainer[hidden] { display: none; }
+.health-explainer.ok {
+  border-color: rgba(127, 176, 105, .38);
+}
+.health-explainer.err {
+  border-color: rgba(231, 76, 60, .56);
+}
+.health-explainer-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.health-explainer-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  min-width: 0;
+}
+.health-explainer-title span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.health-explainer-copy {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.health-explainer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.health-explainer-actions button {
+  min-height: 26px;
+}
+.health-reasons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+.health-reason {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--field);
+  padding: 8px;
+}
+.health-reason.warn { border-color: rgba(243, 156, 18, .50); }
+.health-reason.err { border-color: rgba(231, 76, 60, .56); }
+.health-reason.ok { border-color: rgba(127, 176, 105, .38); }
+.health-reason-label {
+  color: var(--quiet);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.health-reason-value {
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.health-reason-detail {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
 .trust-strip {
   margin: 8px 12px 0;
   border: 1px solid rgba(232, 168, 124, .38);
@@ -1954,6 +2043,7 @@ body.quiet-mode .top-actions button[disabled] {
         <div class="guide-step"><strong>3. Browse</strong><span>History and diagnostics stay secondary.</span></div>
       </div>
       </div>
+      <div class="health-explainer" id="healthExplainer" hidden></div>
       <div class="summary-strip" id="summaryStrip"></div>
       <div class="steward-panel" id="stewardPanel" hidden></div>
       <div class="cc-activity-panel unknown" id="ccActivityPanel" hidden></div>
@@ -2131,7 +2221,8 @@ body.quiet-mode .top-actions button[disabled] {
       </div>
       <div class="inspector-glance" id="inspectorGlance" aria-label="Inspector status at a glance"></div>
       <div class="inspector-actions">
-        <button class="gbtn inspector-action-primary" id="refreshInspector" title="Refresh the latest Inspector report">Refresh</button>
+        <button class="gbtn inspector-action-primary" id="runInspector" title="Run PAH Inspector now">Run Inspector</button>
+        <button class="gbtn inspector-action-secondary" id="refreshInspector" title="Refresh the latest Inspector report">Refresh</button>
         <button class="gbtn inspector-action-secondary" id="openInspectorReport" title="Open the Inspector report file">Open</button>
         <button class="gbtn inspector-action-close" id="closeInspector" title="Close Inspector">Close</button>
       </div>
@@ -2812,6 +2903,38 @@ async function loadInspectorReport() {
   renderInspectorPanel();
   return payload;
 }
+async function runInspectorNow() {
+  const controls = [
+    document.getElementById('runInspector'),
+    ...document.querySelectorAll('[data-inspector-run]')
+  ].filter(Boolean);
+  const labels = new Map(controls.map(control => [control, control.textContent]));
+  controls.forEach(control => {
+    control.disabled = true;
+    control.textContent = 'Running';
+  });
+  try {
+    const payload = await postJson('/api/run-inspector', {actor: 'pah-ui'});
+    inspectorReport = payload;
+    renderInspectorPanel();
+    const summary = payload.report?.summary || {};
+    const counts = summary.counts || {};
+    await loadCockpit();
+    setNotice(
+      `Inspector complete: ${counts.pass || 0} pass, ${counts.warn || 0} warning, ${counts.fail || 0} fail.`,
+      counts.fail ? 'err' : 'ok'
+    );
+    return payload;
+  } catch (err) {
+    setNotice(`Run Inspector failed: ${err.message || err}`);
+    throw err;
+  } finally {
+    controls.forEach(control => {
+      control.disabled = false;
+      control.textContent = labels.get(control) || 'Run Inspector';
+    });
+  }
+}
 async function openInspectorPanel() {
   inspectorOpen = true;
   document.getElementById('inspectorPanel').hidden = false;
@@ -3406,18 +3529,21 @@ function renderServerHealth() {
     const unansweredHealth = health.unanswered || {};
     const mailboxesHealth = health.mailboxes || {};
     const diagnosticsHealth = health.diagnostics || {};
+    const inspectorHealth = health.inspector || {};
     const ledgerHealth = health.interaction_ledger || {};
     const urgentCount = Number(urgentHealth.urgent_codex_requests || 0);
     const unansweredTotal = Number(unansweredHealth.total || 0);
     const ownerUnknown = Number(unansweredHealth.owner_unknown || mailboxesHealth.owner_unknown || 0);
     const staleUnread = Number(mailboxesHealth.stale_unread || 0);
     const diagnosticsProblems = Number(diagnosticsHealth.failed_checks || 0) + Number(diagnosticsHealth.warn_checks || 0) + Number(diagnosticsHealth.actionable_validation_issues || 0);
+    const inspectorLevel = componentLevel(inspectorHealth);
+    const inspectorProblem = inspectorLevel === 'warn' || inspectorLevel === 'err';
     const queueLevel = urgentCount || ownerUnknown || unansweredTotal
       ? 'err'
-      : diagnosticsProblems || staleUnread
+      : diagnosticsProblems || staleUnread || inspectorProblem
       ? 'warn'
-      : healthLevel(urgentHealth.level, mailboxesHealth.level, unansweredHealth.level);
-    const queueDetail = [urgentHealth.detail, health.unanswered?.detail, health.diagnostics?.detail, health.mailboxes?.detail].filter(Boolean).join(' ');
+      : healthLevel(urgentHealth.level, mailboxesHealth.level, unansweredHealth.level, inspectorHealth.level);
+    const queueDetail = [urgentHealth.detail, health.unanswered?.detail, health.diagnostics?.detail, health.mailboxes?.detail, inspectorHealth.detail].filter(Boolean).join(' ');
     setHealthChip('healthApi', cockpit.load_error ? 'err' : apiHealth.level || 'unknown', 'API', cockpit.load_error ? 'API refresh failed; showing last loaded data.' : apiHealth.detail || 'PAH API status.');
     setHealthChip('healthRoutes', routeHealth.level || 'unknown', 'Routes', routeHealth.detail || 'Mailbox route status.');
     setHealthChip('healthQueue', queueLevel, 'Queue', queueDetail || 'Queue and diagnostics status.');
@@ -3477,6 +3603,7 @@ function render() {
   renderAgents(cockpit.agents || []);
   renderMailboxGrid(cockpit.agents || []);
   renderInboxStatus(cockpit.agents || []);
+  renderHealthExplainer();
   renderSummary(counts, cockpit.diagnostics || {});
   renderStewardPanel();
   renderCcActivityPanel();
@@ -3698,6 +3825,125 @@ function renderSummary(counts, diagnostics) {
   `).join(''));
   document.querySelectorAll('button.summary[data-filter]').forEach(button => {
     button.addEventListener('click', () => focusPanel(button.dataset.filter || 'you'));
+  });
+}
+function healthReasonList() {
+  const components = cockpit?.health?.components || {};
+  const counts = cockpit?.cockpit_state?.counts || {};
+  const diagnostics = cockpit?.diagnostics || {};
+  const reasons = [];
+  const add = (id, label, level, value, detail, action = 'diagnostics') => {
+    const normalized = ['ok', 'warn', 'err', 'unknown'].includes(level) ? level : 'unknown';
+    if (normalized === 'ok' || normalized === 'unknown') return;
+    reasons.push({id, label, level: normalized, value, detail, action});
+  };
+  const urgent = components.urgent_codex || {};
+  const urgentCount = Number(urgent.urgent_codex_requests || counts.urgent_codex_requests || 0);
+  add('urgent', 'Urgent', urgent.level || (urgentCount ? 'err' : 'ok'), `${urgentCount} request${urgentCount === 1 ? '' : 's'}`, urgent.detail || 'Urgent Codex requests need attention.', 'queue');
+  const unanswered = components.unanswered || {};
+  const ownerUnknown = Number(unanswered.owner_unknown || counts.owner_unknown || 0);
+  const openOnAgent = Number(unanswered.open_on_agent || counts.open_on_agent || 0);
+  const openOnDarrin = Number(unanswered.open_on_darrin || counts.open_on_darrin || 0);
+  add('unanswered', 'Ownership', unanswered.level || (ownerUnknown ? 'err' : openOnAgent || openOnDarrin ? 'warn' : 'ok'), `${openOnDarrin}/${openOnAgent}/${ownerUnknown}`, unanswered.detail || 'Open work needs ownership review.', 'queue');
+  const mailboxes = components.mailboxes || {};
+  const staleUnread = Number(mailboxes.stale_unread || counts.stale_unread || 0);
+  add('mailboxes', 'Unread', mailboxes.level || (staleUnread ? 'warn' : 'ok'), `${staleUnread} stale`, mailboxes.detail || 'Unread mailbox items are past the wake threshold.', 'queue');
+  const diag = components.diagnostics || {};
+  const diagProblems = Number(diag.failed_checks || diagnostics.checks_fail || 0) + Number(diag.warn_checks || diagnostics.checks_warn || 0) + Number(diag.actionable_validation_issues || 0);
+  add('diagnostics', 'Diagnostics', diag.level || (diagProblems ? 'warn' : 'ok'), `${diagProblems} item${diagProblems === 1 ? '' : 's'}`, diag.detail || 'Diagnostics need review.', 'diagnostics');
+  const inspector = components.inspector || {};
+  add('inspector', 'Inspector', inspector.level || 'unknown', inspector.stale ? 'stale' : 'not current', inspector.detail || 'Inspector evidence needs a fresh run.', 'inspector');
+  const progress = components.agent_progress || {};
+  const progressCounts = progress.counts || {};
+  const progressTotal = Number(progressCounts.red || 0) + Number(progressCounts.yellow || 0);
+  add('agent-progress', 'Progress', progress.level || (progressTotal ? 'warn' : 'ok'), `${progressTotal} card${progressTotal === 1 ? '' : 's'}`, progress.detail || 'Agent progress monitor needs review.', 'diagnostics');
+  const periodic = components.periodic_monitor || {};
+  add('periodic', 'Monitor', periodic.level || 'unknown', periodic.failed_checks?.length ? `${periodic.failed_checks.length} failed` : 'stale', periodic.detail || 'Periodic monitor needs attention.', 'diagnostics');
+  return reasons.sort((a, b) => ({err: 0, warn: 1, unknown: 2, ok: 3}[a.level] - {err: 0, warn: 1, unknown: 2, ok: 3}[b.level]));
+}
+function statusSummaryText() {
+  const health = cockpit?.health || {};
+  const counts = cockpit?.cockpit_state?.counts || {};
+  const diagnostics = cockpit?.diagnostics || {};
+  const inspector = cockpit?.health?.components?.inspector || {};
+  const lines = [
+    `PAH status: ${String(health.overall || 'unknown').toUpperCase()} - ${health.summary || 'No summary.'}`,
+    `Open: Darrin ${counts.open_on_darrin || 0}, agents ${counts.open_on_agent || 0}, owner unknown ${counts.owner_unknown || 0}, stale unread ${counts.stale_unread || 0}.`,
+    `Diagnostics: ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} pass, ${diagnostics.checks_warn || 0} warn, ${diagnostics.checks_fail || 0} fail.`,
+    `Inspector: ${inspector.detail || 'not reported'}.`,
+  ];
+  const reasons = healthReasonList().slice(0, 5);
+  if (reasons.length) {
+    lines.push('Top attention:');
+    reasons.forEach(reason => lines.push(`- ${reason.label}: ${reason.value} - ${reason.detail}`));
+  } else {
+    lines.push('Top attention: none.');
+  }
+  return lines.join('\n');
+}
+async function copyStatusSummary() {
+  try {
+    await navigator.clipboard.writeText(statusSummaryText());
+    setNotice('PAH status summary copied.', 'ok');
+  } catch (err) {
+    setNotice('Copy status summary failed. Select the health text and copy manually.');
+  }
+}
+function renderHealthExplainer() {
+  const node = document.getElementById('healthExplainer');
+  if (!node) return;
+  const health = cockpit?.health || {};
+  const overall = String(health.overall || 'unknown').toLowerCase();
+  const reasons = healthReasonList();
+  if (!reasons.length && overall === 'ok') {
+    node.hidden = true;
+    node.innerHTML = '';
+    return;
+  }
+  const tone = overall === 'err' ? 'err' : overall === 'ok' ? 'ok' : 'warn';
+  const topReasons = reasons.slice(0, 3);
+  const title = overall === 'err'
+    ? 'PAH Needs Attention'
+    : overall === 'warn'
+    ? 'PAH Has Warnings'
+    : 'PAH Status';
+  const copy = reasons.length
+    ? `${topReasons.map(reason => `${reason.label}: ${reason.value}`).join(' / ')}`
+    : health.summary || 'No active attention items.';
+  node.hidden = false;
+  node.className = `health-explainer ${tone}`;
+  node.innerHTML = `
+    <div class="health-explainer-head">
+      <div>
+        <div class="health-explainer-title"><span class="dot ${esc(statusClass(tone))}"></span><span>${esc(title)}</span></div>
+        <div class="health-explainer-copy">${esc(copy)}</div>
+      </div>
+      <div class="health-explainer-actions">
+        <button class="gbtn secondary" id="copyStatusSummary" type="button">Copy status</button>
+        <button class="gbtn secondary" id="healthOpenDiagnostics" type="button">Diagnostics</button>
+        ${reasons.some(reason => reason.id === 'inspector') ? '<button class="gbtn secondary" id="healthRunInspector" type="button">Run Inspector</button>' : ''}
+      </div>
+    </div>
+    <div class="health-reasons">
+      ${(topReasons.length ? topReasons : [{label: 'Status', level: tone, value: overall.toUpperCase(), detail: health.summary || 'No health summary.'}]).map(reason => `
+        <button class="health-reason ${esc(reason.level)}" type="button" data-health-reason="${esc(reason.action || 'diagnostics')}" title="${esc(reason.detail)}">
+          <div class="health-reason-label">${esc(reason.label)}</div>
+          <div class="health-reason-value">${esc(reason.value)}</div>
+          <div class="health-reason-detail">${esc(reason.detail)}</div>
+        </button>
+      `).join('')}
+    </div>
+  `;
+  document.getElementById('copyStatusSummary')?.addEventListener('click', copyStatusSummary);
+  document.getElementById('healthOpenDiagnostics')?.addEventListener('click', () => focusPanel('diagnostics'));
+  document.getElementById('healthRunInspector')?.addEventListener('click', () => runInspectorNow().catch(() => {}));
+  document.querySelectorAll('button.health-reason[data-health-reason]').forEach(button => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.healthReason || 'diagnostics';
+      if (action === 'queue') focusPanel('all');
+      else if (action === 'inspector') openInspectorPanel();
+      else focusPanel('diagnostics');
+    });
   });
 }
 function componentLevel(component) {
@@ -4353,10 +4599,17 @@ function renderDiagnostics(diagnostics) {
   const missing = Number(classifier.missing_action_owner || 0) + Number(classifier.missing_thread_id || 0);
   const node = document.getElementById('diagnosticsLine');
   if (!node) return;
+  const inspectorHealth = cockpit?.health?.components?.inspector || {};
+  const inspectorLevel = componentLevel(inspectorHealth);
+  const inspectorNeedsRun = inspectorLevel === 'warn' || inspectorLevel === 'err';
+  const inspectorButton = inspectorNeedsRun
+    ? '<button class="diag-action" type="button" data-inspector-run="footer">Run Inspector</button>'
+    : '';
   if (fail || warn) {
     node.innerHTML = `
       ${fail ? '<button class="diag-action" type="button" data-diagnostics-action="failure">Failure</button>' : ''}
-      <span class="diag-text">Diagnostics need review: ${esc(fail)} failed, ${esc(warn)} warning.</span>
+      ${inspectorButton}
+      <span class="diag-text">Diagnostics need review: ${esc(fail)} failed, ${esc(warn)} warning.${inspectorNeedsRun ? ` ${esc(inspectorHealth.detail || 'Inspector needs a fresh run.')}` : ''}</span>
     `;
     const action = node.querySelector('button[data-diagnostics-action="failure"]');
     if (action) {
@@ -4364,6 +4617,18 @@ function renderDiagnostics(diagnostics) {
     } else {
       node.addEventListener('click', () => focusQueueItem('diagnostics', 'diag-suite'), {once: true});
     }
+    node.querySelector('button[data-inspector-run]')?.addEventListener('click', event => {
+      event.stopPropagation();
+      runInspectorNow().catch(() => {});
+    });
+    return;
+  }
+  if (inspectorNeedsRun) {
+    node.innerHTML = `
+      ${inspectorButton}
+      <span class="diag-text">${esc(inspectorHealth.detail || 'Inspector report needs a fresh run.')}</span>
+    `;
+    node.querySelector('button[data-inspector-run]')?.addEventListener('click', () => runInspectorNow().catch(() => {}));
     return;
   }
   const text = missing
@@ -4484,6 +4749,7 @@ document.getElementById('stateCopied').addEventListener('click', () => setLocalS
 document.getElementById('stateWaiting').addEventListener('click', () => setLocalState('waiting'));
 document.getElementById('stateHandled').addEventListener('click', () => setLocalState('handled'));
 document.getElementById('openInspector').addEventListener('click', () => openInspectorPanel());
+document.getElementById('runInspector').addEventListener('click', () => runInspectorNow().catch(() => {}));
 document.getElementById('inspectorPanel').addEventListener('click', event => {
   const control = event.target.closest('[data-inspector-order]');
   if (!control) return;

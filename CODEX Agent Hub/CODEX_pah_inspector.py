@@ -764,6 +764,7 @@ def supported_post_routes() -> set[str]:
         "/api/test-notification",
         "/api/write-decision-queue",
         "/api/run-diagnostics",
+        "/api/run-inspector",
         "/api/clear-diagnostics",
         "/api/cleanup-inbox-accumulation",
         "/api/archive-read-codex-inbox",

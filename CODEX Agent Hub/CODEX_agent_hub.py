@@ -2705,6 +2705,56 @@ def inspector_report_payload() -> dict[str, Any]:
     }
 
 
+def run_inspector_report(base_url: str) -> dict[str, Any]:
+    import subprocess
+    import sys
+
+    command = [
+        sys.executable,
+        str(HUB_ROOT / "CODEX_pah_inspector.py"),
+        "--url",
+        base_url.rstrip("/"),
+        "--json",
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(HUB_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "ok": False,
+            "error": "PAH Inspector timed out.",
+            "runner": {
+                "returncode": None,
+                "stdout": exc.stdout or "",
+                "stderr": exc.stderr or "",
+                "timeout_seconds": 60,
+            },
+        }
+    payload = inspector_report_payload()
+    runner = {
+        "returncode": completed.returncode,
+        "stdout": completed.stdout[-4000:],
+        "stderr": completed.stderr[-4000:],
+        "command": command,
+    }
+    if completed.returncode not in {0, 1}:
+        return {
+            "ok": False,
+            "error": "PAH Inspector failed before writing a trusted report.",
+            "runner": runner,
+            "cached_report": payload,
+        }
+    payload["ok"] = bool(payload.get("report"))
+    payload["runner"] = runner
+    return payload
+
+
 def parse_iso_datetime(value: str) -> datetime | None:
     text = str(value or "").strip()
     if not text:
@@ -5030,6 +5080,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/test-notification",
             "/api/write-decision-queue",
             "/api/run-diagnostics",
+            "/api/run-inspector",
             "/api/clear-diagnostics",
             "/api/cleanup-inbox-accumulation",
             "/api/archive-read-codex-inbox",
@@ -5078,6 +5129,12 @@ class Handler(BaseHTTPRequestHandler):
         if parsed_path == "/api/run-diagnostics":
             diagnostics = run_communication_diagnostics(write_report=True)
             self.send_json({"ok": diagnostics["ok"], **diagnostics})
+            return
+        if parsed_path == "/api/run-inspector":
+            host = "127.0.0.1"
+            port = self.server.server_address[1]
+            result = run_inspector_report(str(payload.get("url") or f"http://{host}:{port}"))
+            self.send_json(result, 200 if result.get("ok") else 500)
             return
         if parsed_path == "/api/clear-diagnostics":
             try:

@@ -58,6 +58,7 @@ $script:AlertsEnabled = $false
 $script:SnoozeUntil = [datetime]::MaxValue
 $script:NotificationLogPopupsEnabled = $false
 $script:NotificationPosition = 0
+$script:TrayPopupsDisabled = $true
 
 function Limit-Text {
     param([string]$Text, [int]$Max = 60)
@@ -122,9 +123,10 @@ function Start-PahServer {
 
 function Show-PahBalloon {
     param([string]$Title, [string]$Message, [int]$Ms = 8000)
-    $NotifyIcon.BalloonTipTitle = (Limit-Text $Title 63)
-    $NotifyIcon.BalloonTipText = (Limit-Text $Message 255)
-    $NotifyIcon.ShowBalloonTip($Ms)
+    if ($script:TrayPopupsDisabled) {
+        return
+    }
+    return
 }
 
 function Alert-CooldownElapsed {
@@ -136,27 +138,12 @@ function Alerts-AreActive {
 }
 
 function Update-AlertMenuText {
-    if (-not $script:AlertsEnabled) {
-        $AlertsToggleItem.Text = 'Overdue popups: Off'
-        $SnoozeItem.Text = 'Snooze overdue popups'
-        return
-    }
-    if ((Get-Date) -lt $script:SnoozeUntil) {
-        $remaining = [Math]::Max(1, [int][Math]::Ceiling(($script:SnoozeUntil - (Get-Date)).TotalMinutes))
-        $AlertsToggleItem.Text = "Overdue popups: Snoozed ${remaining}m"
-        $SnoozeItem.Text = 'Snooze overdue popups'
-        return
-    }
-    $AlertsToggleItem.Text = "Overdue popups: On, ${AlertCooldownMinutes}m cooldown"
-    $SnoozeItem.Text = 'Snooze overdue popups for 2 hours'
+    $AlertsToggleItem.Text = 'Overdue popups: Disabled'
+    $SnoozeItem.Text = 'Snooze overdue popups (disabled)'
 }
 
 function Update-NotificationMenuText {
-    if ($script:NotificationLogPopupsEnabled) {
-        $NotificationToggleItem.Text = 'Notification-log popups: On'
-        return
-    }
-    $NotificationToggleItem.Text = 'Notification-log popups: Off'
+    $NotificationToggleItem.Text = 'Notification-log popups: Disabled'
 }
 
 function Set-NotificationPositionToEnd {
@@ -269,34 +256,26 @@ $DismissItem = $Menu.Items.Add('Dismiss current alerts')
 $DismissItem.Add_Click({ Dismiss-CurrentAlerts })
 
 $AlertsToggleItem = $Menu.Items.Add('Overdue popups: Off')
+$AlertsToggleItem.Enabled = $false
 $AlertsToggleItem.Add_Click({
-    $script:AlertsEnabled = -not $script:AlertsEnabled
-    if ($script:AlertsEnabled) {
-        $script:SnoozeUntil = [datetime]::MinValue
-        $script:LastAlertAt = Get-Date
-        Show-PahBalloon 'PANDA Agent Hub' "Overdue popups enabled with a ${AlertCooldownMinutes} minute cooldown." 5000
-    }
-    else {
-        $script:SnoozeUntil = [datetime]::MaxValue
-    }
+    $script:AlertsEnabled = $false
+    $script:SnoozeUntil = [datetime]::MaxValue
     Update-AlertMenuText
 })
 
 $SnoozeItem = $Menu.Items.Add('Snooze overdue popups')
+$SnoozeItem.Enabled = $false
 $SnoozeItem.Add_Click({
-    $script:AlertsEnabled = $true
-    $script:SnoozeUntil = (Get-Date).AddHours(2)
+    $script:AlertsEnabled = $false
+    $script:SnoozeUntil = [datetime]::MaxValue
     Update-AlertMenuText
-    Show-PahBalloon 'PANDA Agent Hub' 'Overdue popups snoozed for 2 hours.' 4000
 })
 
 $NotificationToggleItem = $Menu.Items.Add('Notification-log popups: Off')
+$NotificationToggleItem.Enabled = $false
 $NotificationToggleItem.Add_Click({
-    $script:NotificationLogPopupsEnabled = -not $script:NotificationLogPopupsEnabled
+    $script:NotificationLogPopupsEnabled = $false
     Update-NotificationMenuText
-    if ($script:NotificationLogPopupsEnabled) {
-        Show-PahBalloon 'PANDA Agent Hub' 'Notification-log popups enabled.' 4000
-    }
 })
 
 $StatusItem = $Menu.Items.Add('Status: starting')
@@ -355,60 +334,7 @@ $StatusTimer.Interval = [Math]::Max(5, $PollSeconds) * 1000
 $StatusTimer.Add_Tick({ Update-TrayStatus })
 $StatusTimer.Start()
 
-$NotificationTimer = New-Object System.Windows.Forms.Timer
-$NotificationTimer.Interval = 5000
-$NotificationTimer.Add_Tick({
-    if (-not (Test-Path -LiteralPath $NotificationLog)) {
-        return
-    }
-    $file = Get-Item -LiteralPath $NotificationLog
-    if ($file.Length -lt $script:NotificationPosition) {
-        $script:NotificationPosition = 0
-    }
-    if ($file.Length -le $script:NotificationPosition) {
-        return
-    }
-
-    $stream = [System.IO.File]::Open($NotificationLog, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
-    try {
-        $stream.Seek($script:NotificationPosition, [System.IO.SeekOrigin]::Begin) | Out-Null
-        $reader = New-Object System.IO.StreamReader($stream)
-        $newText = $reader.ReadToEnd()
-        $script:NotificationPosition = $stream.Position
-    }
-    finally {
-        if ($reader) { $reader.Dispose() }
-        $stream.Dispose()
-    }
-
-    if (-not $script:NotificationLogPopupsEnabled) {
-        return
-    }
-
-    foreach ($line in ($newText -split "`r?`n")) {
-        if ([string]::IsNullOrWhiteSpace($line)) {
-            continue
-        }
-        try {
-            $entry = $line | ConvertFrom-Json
-            $title = 'PANDA Agent Hub'
-            $message = 'Notification event recorded.'
-            if ($entry.event) {
-                $title = [string]$entry.event.subject
-                $message = [string]$entry.event.body
-            }
-            elseif ($entry.manual_test) {
-                $title = 'PANDA Agent Hub test'
-                $message = 'Notification test completed.'
-            }
-            Show-PahBalloon $title $message 8000
-        }
-        catch {
-            Show-PahBalloon 'PANDA Agent Hub' 'New notification log entry.' 5000
-        }
-    }
-})
-$NotificationTimer.Start()
+$NotificationTimer = $null
 
 Update-TrayStatus
 Update-AlertMenuText
