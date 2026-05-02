@@ -2441,7 +2441,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
             ]
             ledger_event_types = {event["event_type"] for event in ledger_events}
             assert_true("archive_read_sweep_started" in ledger_event_types, "interaction ledger records sweep start")
-            assert_true("message_archive_candidate" in ledger_event_types, "interaction ledger records dry-run archive candidates")
+            assert_true("message_archive_candidate" not in ledger_event_types, "dry-run archive previews do not write ledger candidates")
             assert_true("message_archive_skipped" in ledger_event_types, "interaction ledger records archive skips")
             assert_true("message_archived" in ledger_event_types, "interaction ledger records archived messages")
             assert_true("archive_read_sweep_finished" in ledger_event_types, "interaction ledger records sweep finish")

@@ -2285,12 +2285,13 @@ def cleanup_inbox_accumulation(
 def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = False) -> dict[str, Any]:
     started = time.perf_counter()
     actor_name = actor.strip() or "codex"
-    append_interaction_ledger_event(
-        "archive_read_sweep_started",
-        actor=actor_name,
-        dry_run=dry_run,
-        classifier="owner_unknown_guard",
-    )
+    if not dry_run:
+        append_interaction_ledger_event(
+            "archive_read_sweep_started",
+            actor=actor_name,
+            dry_run=dry_run,
+            classifier="owner_unknown_guard",
+        )
     audit_entries: list[tuple[str, str, str]] = [
         (
             "sweep-started",
@@ -2373,66 +2374,71 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
                     "reason=owner_unknown_or_unstructured; no parseable frontmatter/message_id; never auto-archive",
                 )
             )
-            append_interaction_ledger_event(
-                "message_archive_skipped",
-                actor=actor_name,
-                message=msg,
-                dry_run=dry_run,
-                reason="owner_unknown_or_unstructured",
-                classifier_state=thread_state,
-            )
+            if not dry_run:
+                append_interaction_ledger_event(
+                    "message_archive_skipped",
+                    actor=actor_name,
+                    message=msg,
+                    dry_run=dry_run,
+                    reason="owner_unknown_or_unstructured",
+                    classifier_state=thread_state,
+                )
             continue
         if is_pre_staged_pending_trigger(msg):
             skipped_pre_staged += 1
             summary["skipped_pre_staged_pending_trigger"] += 1
             audit_entries.append(("archive-skipped", str(msg.path), "reason=pre_staged_pending_trigger"))
-            append_interaction_ledger_event(
-                "message_archive_skipped",
-                actor=actor_name,
-                message=msg,
-                dry_run=dry_run,
-                reason="pre_staged_pending_trigger",
-                classifier_state=thread_state,
-            )
+            if not dry_run:
+                append_interaction_ledger_event(
+                    "message_archive_skipped",
+                    actor=actor_name,
+                    message=msg,
+                    dry_run=dry_run,
+                    reason="pre_staged_pending_trigger",
+                    classifier_state=thread_state,
+                )
             continue
         if msg.is_waiting_on_darrin:
             skipped_waiting += 1
             summary["skipped_waiting_on_darrin"] += 1
             audit_entries.append(("archive-skipped", str(msg.path), "reason=waiting_on_darrin"))
-            append_interaction_ledger_event(
-                "message_archive_skipped",
-                actor=actor_name,
-                message=msg,
-                dry_run=dry_run,
-                reason="waiting_on_darrin",
-                classifier_state=thread_state,
-            )
+            if not dry_run:
+                append_interaction_ledger_event(
+                    "message_archive_skipped",
+                    actor=actor_name,
+                    message=msg,
+                    dry_run=dry_run,
+                    reason="waiting_on_darrin",
+                    classifier_state=thread_state,
+                )
             continue
         if is_dispatch_message(msg) and msg.stable_thread not in completed_threads:
             skipped_pending_dispatch += 1
             summary["skipped_pending_dispatch"] += 1
             audit_entries.append(("archive-skipped", str(msg.path), "reason=pending_dispatch_without_completion_evidence"))
-            append_interaction_ledger_event(
-                "message_archive_skipped",
-                actor=actor_name,
-                message=msg,
-                dry_run=dry_run,
-                reason="pending_dispatch_without_completion_evidence",
-                classifier_state=thread_state,
-            )
+            if not dry_run:
+                append_interaction_ledger_event(
+                    "message_archive_skipped",
+                    actor=actor_name,
+                    message=msg,
+                    dry_run=dry_run,
+                    reason="pending_dispatch_without_completion_evidence",
+                    classifier_state=thread_state,
+                )
             continue
         if thread_state in {"open_on_agent", "open_on_darrin", "parked"}:
             skipped_active_thread += 1
             summary["skipped_active_thread"] += 1
             audit_entries.append(("archive-skipped", str(msg.path), f"reason=active_thread_without_completion_evidence; state={thread_state}"))
-            append_interaction_ledger_event(
-                "message_archive_skipped",
-                actor=actor_name,
-                message=msg,
-                dry_run=dry_run,
-                reason="active_thread_without_completion_evidence",
-                classifier_state=thread_state,
-            )
+            if not dry_run:
+                append_interaction_ledger_event(
+                    "message_archive_skipped",
+                    actor=actor_name,
+                    message=msg,
+                    dry_run=dry_run,
+                    reason="active_thread_without_completion_evidence",
+                    classifier_state=thread_state,
+                )
             continue
         read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
         if read_status["unread"]:
@@ -2516,20 +2522,6 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
                     ),
                 )
             )
-            append_interaction_ledger_event(
-                "message_archive_candidate",
-                actor=actor_name,
-                message=msg,
-                source_path=msg.path,
-                requested_destination=requested_destination,
-                destination_path=destination,
-                archive_dir=archive_dir,
-                destination_conflict=destination_conflict,
-                archive_reason=archive_reason,
-                tombstone_source=tombstone_source if tombstone_exists else None,
-                tombstone_destination=tombstone_destination if tombstone_exists else None,
-                dry_run=True,
-            )
         moved.append(record)
 
     duration_ms = int((time.perf_counter() - started) * 1000)
@@ -2547,21 +2539,22 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
             ),
         )
     )
-    append_sweep_audit_entries(audit_entries)
-    append_interaction_ledger_event(
-        "archive_read_sweep_finished",
-        actor=actor_name,
-        dry_run=dry_run,
-        moved=len(moved),
-        skipped_waiting_on_darrin=skipped_waiting,
-        skipped_pre_staged_pending_trigger=skipped_pre_staged,
-        skipped_pending_dispatch=skipped_pending_dispatch,
-        skipped_active_thread=skipped_active_thread,
-        skipped_unstructured=skipped_unstructured,
-        replied_tombstone=replied_tombstone_candidates,
-        archive_conflicts=archive_conflicts,
-        duration_ms=duration_ms,
-    )
+    if not dry_run:
+        append_sweep_audit_entries(audit_entries)
+        append_interaction_ledger_event(
+            "archive_read_sweep_finished",
+            actor=actor_name,
+            dry_run=dry_run,
+            moved=len(moved),
+            skipped_waiting_on_darrin=skipped_waiting,
+            skipped_pre_staged_pending_trigger=skipped_pre_staged,
+            skipped_pending_dispatch=skipped_pending_dispatch,
+            skipped_active_thread=skipped_active_thread,
+            skipped_unstructured=skipped_unstructured,
+            replied_tombstone=replied_tombstone_candidates,
+            archive_conflicts=archive_conflicts,
+            duration_ms=duration_ms,
+        )
     return {
         "protocol_version": 2,
         "actor": actor_name,
