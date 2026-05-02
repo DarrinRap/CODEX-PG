@@ -28,6 +28,7 @@ LATEST_JSON_PATH = LOG_DIR / "CODEX_pah_inspector_latest.json"
 LATEST_MD_PATH = LOG_DIR / "CODEX_pah_inspector_latest.md"
 HISTORY_PATH = LOG_DIR / "CODEX_pah_inspector.jsonl"
 DEFAULT_URL = "http://127.0.0.1:8765"
+DEFAULT_HTTP_TIMEOUT_SECONDS = 60
 
 
 import CODEX_agent_hub as agent_hub
@@ -57,12 +58,17 @@ def now_iso() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def fetch_json(url: str, path: str, timeout: int = 10) -> dict[str, Any]:
+def fetch_json(url: str, path: str, timeout: int = DEFAULT_HTTP_TIMEOUT_SECONDS) -> dict[str, Any]:
     with urlopen(f"{url.rstrip('/')}{path}", timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8", errors="replace"))
 
 
-def post_json_with_write_cookie(url: str, path: str, payload: dict[str, Any], timeout: int = 10) -> dict[str, Any]:
+def post_json_with_write_cookie(
+    url: str,
+    path: str,
+    payload: dict[str, Any],
+    timeout: int = DEFAULT_HTTP_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
     base_url = url.rstrip("/")
     cookie_jar = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cookie_jar))
@@ -77,7 +83,12 @@ def post_json_with_write_cookie(url: str, path: str, payload: dict[str, Any], ti
         return json.loads(response.read().decode("utf-8", errors="replace"))
 
 
-def post_json_without_write_cookie(url: str, path: str, payload: dict[str, Any], timeout: int = 10) -> dict[str, Any]:
+def post_json_without_write_cookie(
+    url: str,
+    path: str,
+    payload: dict[str, Any],
+    timeout: int = DEFAULT_HTTP_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
     base_url = url.rstrip("/")
     request = Request(
         f"{base_url}{path}",
@@ -389,7 +400,7 @@ def inspect_live_endpoints(url: str) -> tuple[list[Finding], dict[str, Any]]:
             url,
             "/api/mailroom-canary",
             {"actor": "pah_inspector"},
-            timeout=20,
+            timeout=DEFAULT_HTTP_TIMEOUT_SECONDS,
         )
         checks = canary.get("checks", {}) if isinstance(canary.get("checks"), dict) else {}
         missing_checks = sorted(name for name, ok in checks.items() if not ok)

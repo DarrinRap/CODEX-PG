@@ -165,8 +165,11 @@ def parse_legacy_metadata(text: str) -> dict[str, Any]:
     lines = text.splitlines()
     for index, line in enumerate(lines[:80]):
         stripped = line.strip()
+        bold_match = re.match(r"^\*\*([^:*]+(?:[- ][^:*]+)*):\*\*\s*(.*)$", stripped)
+        if bold_match:
+            stripped = f"{bold_match.group(1)}: {bold_match.group(2).strip()}"
         if stripped.startswith("Reply-To:"):
-            inline_reply = stripped.split(":", 1)[1].strip()
+            inline_reply = stripped.split(":", 1)[1].strip().strip("`")
             if inline_reply and inline_reply.lower() not in {"--", "none", "n/a"}:
                 metadata["reply_to"] = [inline_reply]
             else:
@@ -183,7 +186,7 @@ def parse_legacy_metadata(text: str) -> dict[str, Any]:
             continue
         match = TOKEN_RE.match(stripped)
         if match:
-            metadata[normalize_key(line.split(":", 1)[0])] = match.group(1).strip()
+            metadata[normalize_key(stripped.split(":", 1)[0])] = match.group(1).strip().strip("`")
     return metadata
 
 

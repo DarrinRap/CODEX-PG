@@ -2291,7 +2291,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
             if path != unread_codex:
                 set_message_read_state(path, message_id, text, "read", actor="smoke", state_path=state_path)
         unstructured.write_text(
-            "# Dispatch Amendment\n\n**Message-ID:** `PAH-UNSTRUCTURED-AMENDMENT`\n**From:** Claude Desktop\n**To:** Claude Code\n",
+            "# Unstructured Amendment\n\nThis lacks route fields and must never auto-archive.\n",
             encoding="utf-8",
         )
         conflict_date_dir = agent_hub.datetime.fromtimestamp(read_codex.stat().st_mtime).strftime("%Y%m%d")
@@ -2792,6 +2792,48 @@ def test_classifier_unstructured_inbox_message_is_owner_unknown() -> None:
             agent_hub.ALL_AGENT_INBOX_DIRS = original_dirs
 
 
+def test_legacy_mailbox_route_inference_avoids_owner_unknown() -> None:
+    with TemporaryDirectory() as temp_dir:
+        cc_inbox = Path(temp_dir) / "CC Inbox"
+        claude_inbox = Path(temp_dir) / "CLAUDE Inbox"
+        cc_inbox.mkdir()
+        claude_inbox.mkdir()
+        dispatch = cc_inbox / "20260501_235500_CLAUDE_to_CC_relay_hub_polish.md"
+        dispatch.write_text(
+            "# CC DISPATCH - Relay Hub Polish\n"
+            "**Message-ID:** CLAUDE-DESKTOP-20260501-235500-RELAY-HUB-POLISH\n"
+            "**Reply-To:** CLAUDE-DESKTOP-20260501-235500-RELAY-HUB-POLISH\n\n"
+            "Proceed with the polish pass. After-completion directive: HOLD after report.\n",
+            encoding="utf-8",
+        )
+        shipped = claude_inbox / "20260430_080000_CC_to_CLAUDE_panda_vellum_polish_shipped.md"
+        shipped.write_text(
+            "---\n"
+            "from: CC\n"
+            "to: CLAUDE\n"
+            "status: SHIPPED\n"
+            "---\n\n"
+            "# Commit\n\nDelivered.\n",
+            encoding="utf-8",
+        )
+        original_dirs = agent_hub.ALL_AGENT_INBOX_DIRS
+        try:
+            agent_hub.ALL_AGENT_INBOX_DIRS = (cc_inbox, claude_inbox)
+            dispatch_msg = agent_hub.parse_message(dispatch, "To Claude Code")
+            shipped_msg = agent_hub.parse_message(shipped, "Claude Code -> Claude")
+            assert_true(dispatch_msg.from_agent == "claude-desktop", "legacy filename infers dispatch sender")
+            assert_true(dispatch_msg.to_agent == "claude-code", "legacy filename infers dispatch recipient")
+            assert_true(dispatch_msg.message_id == "CLAUDE-DESKTOP-20260501-235500-RELAY-HUB-POLISH", "bold Message-ID parses")
+            assert_true(
+                agent_hub.classify_thread_state(dispatch_msg) == "open_on_agent",
+                "legacy dispatch is assigned to the recipient instead of owner_unknown",
+            )
+            assert_true(shipped_msg.message_id.startswith("PAH-LEGACY-"), "frontmatter without id gets stable fallback id")
+            assert_true(agent_hub.classify_thread_state(shipped_msg) == "closed", "legacy shipped report closes")
+        finally:
+            agent_hub.ALL_AGENT_INBOX_DIRS = original_dirs
+
+
 def test_thread_archive_state_reopens_on_new_activity() -> None:
     with TemporaryDirectory() as temp_dir:
         state_path = Path(temp_dir) / "thread_archive.json"
@@ -2959,6 +3001,7 @@ def main() -> None:
     test_classifier_no_action_coordination_share_closes()
     test_stale_unread_only_wakes_actionable_agent_threads()
     test_classifier_unstructured_inbox_message_is_owner_unknown()
+    test_legacy_mailbox_route_inference_avoids_owner_unknown()
     test_thread_archive_state_reopens_on_new_activity()
     test_decision_state()
     test_validation_state()

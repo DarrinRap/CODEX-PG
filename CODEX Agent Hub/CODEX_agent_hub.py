@@ -403,6 +403,51 @@ def parse_reply_to(lines: list[str], start_index: int) -> list[str]:
     return replies
 
 
+FILENAME_ROUTE_RE = re.compile(
+    r"(?:^|_)(CODEX|CLAUDE_DESKTOP|CLAUDE_CODE|CLAUDE|CC)_to_"
+    r"(CODEX|CLAUDE_DESKTOP|CLAUDE_CODE|CLAUDE|CC)(?:_|$)",
+    re.IGNORECASE,
+)
+
+
+def infer_route_agents_from_filename(path: Path) -> tuple[str, str]:
+    match = FILENAME_ROUTE_RE.search(path.stem)
+    if not match:
+        return "", ""
+    return normalize_agent_id(match.group(1)), normalize_agent_id(match.group(2))
+
+
+def legacy_message_id_from_path(path: Path) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "-", path.stem).strip("-").upper()
+    return f"PAH-LEGACY-{slug}" if slug else ""
+
+
+def apply_legacy_message_inference(msg: Message, metadata: dict[str, Any]) -> None:
+    inferred_from, inferred_to = infer_route_agents_from_filename(msg.path)
+    if not msg.from_agent:
+        msg.from_agent = inferred_from
+    if not msg.to_agent:
+        msg.to_agent = inferred_to
+    if not msg.message_id and msg.from_agent and msg.to_agent:
+        msg.message_id = legacy_message_id_from_path(msg.path)
+    if not msg.thread_id and msg.reply_to:
+        msg.thread_id = msg.reply_to[0]
+
+    text = " ".join([msg.title, msg.body_preview]).lower()
+    has_frontmatter = bool(metadata.get("_has_frontmatter"))
+    if not has_frontmatter and msg.to_agent and not msg.action_owner:
+        if "dispatch" in text or "proceed" in text or "ready-to-commit" in text:
+            msg.action_owner = msg.to_agent
+    if not msg.message_type and "dispatch" in text:
+        msg.message_type = "dispatch"
+    if not msg.status and msg.action_owner:
+        msg.status = "open"
+    if not msg.thread_status and (msg.action_owner or msg.message_type):
+        msg.thread_status = "active"
+    if msg.from_agent or msg.to_agent:
+        msg.direction = normalize_message_direction(msg.direction, msg.from_agent, msg.to_agent)
+
+
 def parse_message(path: Path, direction: str) -> Message:
     text = read_text(path)
     lines = text.splitlines()
@@ -437,6 +482,7 @@ def parse_message(path: Path, direction: str) -> Message:
     msg.summary = compact(summary, 260)
     body_plain = re.sub(r"[#>*_`\[\]()-]", " ", text)
     msg.body_preview = compact(" ".join(body_plain.split()), 320)
+    apply_legacy_message_inference(msg, metadata)
     return msg
 
 
@@ -2075,6 +2121,8 @@ def mark_all_messages_read(actor: str = "codex") -> dict[str, Any]:
 
 
 def normalize_agent_id(value: str) -> str:
+    if not str(value or "").strip():
+        return ""
     normalized = safe_slug(value).replace("_", "-")
     aliases = {
         "cc": "claude-code",
