@@ -1,7 +1,7 @@
 # PAH Reliability and Design Spec
 
 Status: active reminder spec
-Last updated: 2026-04-30
+Last updated: 2026-04-30 22:10 -07:00
 
 ## Purpose
 
@@ -76,7 +76,12 @@ PAH inherits the Panda Gallery Design Bible for user-facing surfaces:
 7. Inspector and PAH status controls may use semantic color for borders, text, dots, and glyphs only. Their backgrounds must remain Bible surface tokens; do not use full amber/red/green tinted panels.
 8. Inspector status tiles and chips must be actionable. `PASS`, `WARN`, and `FAIL` reorder the findings list by that status; `OVERALL` restores severity order.
 9. Colored buttons are allowed only when they encode action meaning: primary refresh/accent, secondary open/report, close/danger. Do not turn every control into a rainbow.
-10. Visual changes that touch fonts, colors, borders, animation, or background require live visual review; headless checks are useful but not sign-off.
+10. PAH action buttons use the Design Bible `.gbtn` grammar: 28px height, 4px radius, Bible surface backgrounds, semantic borders, and UI-font labels.
+11. Enabled safe actions must carry a green activatable affordance; disabled safe actions stay grey/muted; destructive or emergency actions retain warning/error treatment.
+12. Shape semantics are strict: pills are passive status/category/information; rectangles are actions. A clickable pill-looking control is a visual bug.
+13. PAH uses a 26px `--chrome` statusbar with `.statusbar` / `.sb-*` grammar. Oversized footer bars are regressions.
+14. PAH must not expose PANDA Collaborator registration, onboarding, or account-creation screens. `Register User`, `Registration`, `Onboarding`, or `Create account` copy inside PAH is a regression.
+15. Visual changes that touch fonts, colors, borders, animation, or background require live visual review; headless checks are useful but not sign-off.
 
 ## Mail And Inspector UX Rule
 
@@ -89,6 +94,8 @@ Darrin's 2026-04-30 direction is that PAH must become a simple way to see mail a
 5. Screenshots are required evidence for meaningful PAH/Inspector UX changes.
 
 2026-04-30 Bible polish addendum: Simple Mail must not use monospace for prose; the reader must show subject/meta/body before raw frontmatter; read/unread must be one neutral state-aware toggle; Reply/Send is the primary peach action; timestamps must follow today/yesterday/weekday/older-date formatting. Full details live in `CODEX_PAH_MAIL_AND_INSPECTOR_UX_SPEC.md`.
+
+2026-04-30 PAH visual-reset addendum: PAH is not a registration wizard. Keep PAH mail/inspector surfaces on the PG Design Bible dark surface scale, use `.gbtn` for action buttons, keep enabled safe commands green, reserve primary treatment to one clear action per surface, and verify with smoke tests, Inspector, and live browser inspection before handoff.
 
 ## Documentation Rule
 

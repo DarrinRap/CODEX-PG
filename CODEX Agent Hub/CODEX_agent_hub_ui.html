@@ -56,35 +56,56 @@ input {
   font: inherit;
   font-family: var(--font-ui);
 }
+.gbtn,
 button,
 select,
 input[type="text"],
 .queue-search {
-  min-height: 26px;
+  min-height: 28px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--field);
   color: var(--text);
 }
+.gbtn,
 button {
   padding: 0 9px;
   cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03), 0 1px 1px var(--shadow);
   transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
+.gbtn:hover:not([disabled]),
 button:hover:not([disabled]) {
   background: var(--field-hover);
   border-color: var(--border-hover);
 }
+.gbtn.primary,
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
   font-weight: 700;
 }
+.gbtn.primary:hover:not([disabled]),
 button.primary:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.gbtn.secondary,
 button.secondary { background: var(--panel-2); color: var(--muted); }
+.gbtn.ghost,
+button.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--muted);
+  box-shadow: none;
+}
+.gbtn.danger,
 button.danger { background: var(--field); border-color: rgba(231, 76, 60, .48); color: var(--err); }
+.gbtn:not([disabled]):not(.primary):not(.danger):not(.health-chip),
+button:not([disabled]):not(.primary):not(.danger):not(.health-chip) {
+  border-color: rgba(127, 176, 105, .50);
+}
+.gbtn:focus-visible,
 button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 button[disabled] { opacity: .48; cursor: default; }
 .top-actions #shortcutHelp,
@@ -97,7 +118,7 @@ button[disabled] { opacity: .48; cursor: default; }
   min-height: 0;
   min-width: 0;
   display: grid;
-  grid-template-rows: 48px 1fr 32px;
+  grid-template-rows: 48px 1fr 26px;
 }
 .topbar {
   display: grid;
@@ -148,7 +169,7 @@ button[disabled] { opacity: .48; cursor: default; }
 }
 .health-chip {
   appearance: none;
-  min-height: 22px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -158,6 +179,7 @@ button[disabled] { opacity: .48; cursor: default; }
   background: var(--field);
   color: var(--muted);
   font: 10px/1 var(--font-ui);
+  font-weight: 700;
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
@@ -1205,7 +1227,22 @@ button.filter.active {
   cursor: pointer;
   color: var(--quiet);
   font: 11px/1.2 var(--font-ui);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
+.mail-frontmatter summary::before {
+  content: "+";
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--accent);
+}
+.mail-frontmatter[open] summary::before { content: "-"; }
+.mail-frontmatter summary::-webkit-details-marker { display: none; }
 .mail-frontmatter pre {
   margin-top: 8px;
 }
@@ -1503,15 +1540,30 @@ button.inspector-stat.is-active {
 }
 .footer {
   border-top: 1px solid var(--border);
-  background: var(--ink);
+  background: var(--chrome);
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 10px;
+  min-height: 26px;
   padding: 0 10px;
   color: var(--quiet);
   font: 10px/1.2 var(--font-ui);
 }
+.statusbar {
+  min-height: 26px;
+  background: var(--chrome);
+}
+.sb-mode,
+.sb-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-mode { color: var(--muted); }
+.sb-item { color: var(--text); }
+.sb-sep { color: var(--text-dim); }
 .diag {
   min-width: 0;
   display: inline-flex;
@@ -1784,8 +1836,8 @@ body.quiet-mode .top-actions button[disabled] {
   .filter-row, .detail-actions { flex-wrap: wrap; }
   .queue-search { display: none; }
   .filter-row .toggle { display: none; }
-  .footer { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 44px; padding: 8px 12px; }
-  .footer strong { overflow-wrap: anywhere; white-space: normal; }
+  .footer { grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-height: 26px; padding: 0 12px; }
+  .footer strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .inspector-head { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
   .inspector-title { display: grid; gap: 4px; }
   .inspector-glance { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
@@ -1813,7 +1865,7 @@ body.quiet-mode .top-actions button[disabled] {
   .mailbox-grid:not(.mailbox-grid-main) { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-height: 720px) {
-  .app { grid-template-rows: auto 1fr 38px; min-height: 0; }
+  .app { grid-template-rows: auto 1fr 26px; min-height: 0; }
   .topbar { padding: 8px 14px; }
   .main { padding: 10px; gap: 10px; }
   .guide-card { margin-top: 6px; }
@@ -1837,26 +1889,26 @@ body.quiet-mode .top-actions button[disabled] {
       <div class="system-state" id="systemState">Loading...</div>
       <div class="meta" id="asOf">as of --</div>
       <div class="server-health" id="serverHealth" aria-label="PAH server health">
-        <button class="health-chip unknown" id="healthApi" type="button" data-health-target="api" title="Open API health detail"><span class="health-dot"></span><span data-health-label>API</span></button>
-        <button class="health-chip unknown" id="healthRoutes" type="button" data-health-target="routes" title="Open route diagnostics"><span class="health-dot"></span><span data-health-label>Routes</span></button>
-        <button class="health-chip unknown" id="healthQueue" type="button" data-health-target="queue" title="Open queue detail"><span class="health-dot"></span><span data-health-label>Queue</span></button>
-        <button class="health-chip unknown" id="healthLedger" type="button" data-health-target="ledger" title="Open interaction ledger detail"><span class="health-dot"></span><span data-health-label>Ledger</span></button>
+        <button class="gbtn health-chip unknown" id="healthApi" type="button" data-health-target="api" title="Open API health detail"><span class="health-dot"></span><span data-health-label>API</span></button>
+        <button class="gbtn health-chip unknown" id="healthRoutes" type="button" data-health-target="routes" title="Open route diagnostics"><span class="health-dot"></span><span data-health-label>Routes</span></button>
+        <button class="gbtn health-chip unknown" id="healthQueue" type="button" data-health-target="queue" title="Open queue detail"><span class="health-dot"></span><span data-health-label>Queue</span></button>
+        <button class="gbtn health-chip unknown" id="healthLedger" type="button" data-health-target="ledger" title="Open interaction ledger detail"><span class="health-dot"></span><span data-health-label>Ledger</span></button>
       </div>
     </div>
     <div class="top-actions">
       <label class="toggle"><input type="checkbox" id="autoRefresh"> Auto refresh</label>
-      <button id="refresh">Refresh</button>
+      <button class="gbtn" id="refresh">Refresh</button>
       <select id="cleanupMailbox" aria-label="Inbox to clean">
         <option value="all">All inboxes</option>
         <option value="codex">Codex inbox</option>
         <option value="claude-desktop">Claude inbox</option>
         <option value="claude-code">CC inbox</option>
       </select>
-      <button id="openInspector">Inspector</button>
-      <button id="cleanupInboxes">Clean inboxes</button>
-      <button id="archiveRead">Archive read</button>
-      <button id="shortcutHelp">Shortcuts</button>
-      <button class="primary" id="openSimpleMail">Mail</button>
+      <button class="gbtn" id="openInspector">Inspector</button>
+      <button class="gbtn" id="cleanupInboxes">Clean inboxes</button>
+      <button class="gbtn" id="archiveRead">Archive read</button>
+      <button class="gbtn" id="shortcutHelp">Shortcuts</button>
+      <button class="gbtn primary" id="openSimpleMail">Mail</button>
     </div>
   </header>
 
@@ -1909,17 +1961,17 @@ body.quiet-mode .top-actions button[disabled] {
       <div class="trust-strip" id="trustStrip" hidden></div>
       <div class="filter-row">
         <span class="filter-label">View</span>
-        <button class="filter active" data-filter="you" title="Show threads waiting on you">My threads</button>
-        <button class="filter" data-filter="agents" title="Show threads waiting on the AIs">AI backlog</button>
-        <button class="filter" data-filter="diagnostics" title="Show mailbox and health checks">Diagnostics</button>
-        <button class="filter" data-filter="all" title="Show the full thread list">All threads</button>
+        <button class="gbtn filter active" data-filter="you" title="Show threads waiting on you">My threads</button>
+        <button class="gbtn filter" data-filter="agents" title="Show threads waiting on the AIs">AI backlog</button>
+        <button class="gbtn filter" data-filter="diagnostics" title="Show mailbox and health checks">Diagnostics</button>
+        <button class="gbtn filter" data-filter="all" title="Show the full thread list">All threads</button>
         <span class="spacer"></span>
         <input class="queue-search" id="queueSearch" placeholder="Find in queue" aria-label="Find in current queue">
         <label class="toggle"><input type="checkbox" id="showSnoozed"> Snoozed</label>
-        <button class="filter" id="clearAgentFilter" hidden>Clear agent</button>
-        <button class="danger" id="clearDiagnostics" hidden>Clear diagnostics</button>
-        <button class="secondary" id="dismissVisible">Dismiss visible</button>
-        <button class="danger" id="deleteVisible">Delete visible</button>
+        <button class="gbtn filter" id="clearAgentFilter" hidden>Clear agent</button>
+        <button class="gbtn danger" id="clearDiagnostics" hidden>Clear diagnostics</button>
+        <button class="gbtn secondary" id="dismissVisible">Dismiss visible</button>
+        <button class="gbtn danger" id="deleteVisible">Delete visible</button>
       </div>
       <div class="mailbox-grid mailbox-grid-main" data-mailbox-grid></div>
       <div class="scroll">
@@ -1933,17 +1985,17 @@ body.quiet-mode .top-actions button[disabled] {
         <span class="tag" id="selectedKind">none</span>
       </div>
       <div class="detail-actions">
-        <button class="danger" id="deleteAlert">Delete alert</button>
-        <button class="primary" id="copyWake">Copy wake line</button>
-        <button class="secondary" id="openMessage">Open message</button>
-        <button class="secondary" id="openFolder">Open folder</button>
-        <button class="secondary" id="copyPath">Copy path</button>
-        <button class="secondary" id="snoozeAlert">Snooze 15m</button>
-        <button class="secondary" id="unsnoozeAlert">Unsnooze</button>
-        <button class="secondary" id="markRead">Dismiss alert</button>
-        <button class="secondary" id="resolveDecision">Resolve decision</button>
-        <button class="secondary" id="dismissDecision">Dismiss decision</button>
-        <button class="secondary" id="runDiagnostics">Run diagnostics</button>
+        <button class="gbtn danger" id="deleteAlert">Delete alert</button>
+        <button class="gbtn secondary" id="copyWake">Copy wake line</button>
+        <button class="gbtn secondary" id="openMessage">Open message</button>
+        <button class="gbtn secondary" id="openFolder">Open folder</button>
+        <button class="gbtn secondary" id="copyPath">Copy path</button>
+        <button class="gbtn secondary" id="snoozeAlert">Snooze 15m</button>
+        <button class="gbtn secondary" id="unsnoozeAlert">Unsnooze</button>
+        <button class="gbtn secondary" id="markRead">Dismiss alert</button>
+        <button class="gbtn secondary" id="resolveDecision">Resolve decision</button>
+        <button class="gbtn secondary" id="dismissDecision">Dismiss decision</button>
+        <button class="gbtn secondary" id="runDiagnostics">Run diagnostics</button>
       </div>
       <div class="scroll">
           <div class="detail-body">
@@ -2008,9 +2060,9 @@ body.quiet-mode .top-actions button[disabled] {
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="diag" id="diagnosticsLine">Diagnostics quiet.</div>
-    <div><strong id="gitState">git</strong></div>
+  <footer class="footer statusbar">
+    <div class="diag sb-mode" id="diagnosticsLine">Diagnostics quiet.</div>
+    <div class="sb-item"><span class="sb-sep">git</span> <strong id="gitState">checking</strong></div>
   </footer>
 
   <section class="mail-overlay" id="simpleMailPanel" hidden aria-label="PAH Mail" role="dialog" aria-modal="true">
@@ -2020,19 +2072,19 @@ body.quiet-mode .top-actions button[disabled] {
         <span class="mail-meta" id="simpleMailMeta">Loading</span>
       </div>
       <div class="mail-actions">
-        <button id="simpleMailRefresh" type="button">Refresh</button>
-        <button id="simpleMailClose" type="button">Close</button>
+        <button class="gbtn" id="simpleMailRefresh" type="button">Refresh</button>
+        <button class="gbtn" id="simpleMailClose" type="button">Close</button>
       </div>
     </div>
     <div class="mail-body">
       <aside class="mail-list-pane">
         <div class="mail-tabs" id="simpleMailTabs">
-          <button class="mail-tab active" type="button" data-mail-filter="inbox">Inbox</button>
-          <button class="mail-tab" type="button" data-mail-filter="unread">Unread</button>
-          <button class="mail-tab" type="button" data-mail-filter="needs">Needs Me</button>
-          <button class="mail-tab" type="button" data-mail-filter="cd">CD</button>
-          <button class="mail-tab" type="button" data-mail-filter="cc">CC</button>
-          <button class="mail-tab" type="button" data-mail-filter="all">All</button>
+          <button class="gbtn mail-tab active" type="button" data-mail-filter="inbox">Inbox</button>
+          <button class="gbtn mail-tab" type="button" data-mail-filter="unread">Unread</button>
+          <button class="gbtn mail-tab" type="button" data-mail-filter="needs">Needs Me</button>
+          <button class="gbtn mail-tab" type="button" data-mail-filter="cd">CD</button>
+          <button class="gbtn mail-tab" type="button" data-mail-filter="cc">CC</button>
+          <button class="gbtn mail-tab" type="button" data-mail-filter="all">All</button>
         </div>
         <input class="mail-search" id="simpleMailSearch" placeholder="Find mail" aria-label="Find mail">
         <div class="mail-list" id="simpleMailList"></div>
@@ -2044,8 +2096,8 @@ body.quiet-mode .top-actions button[disabled] {
             <div class="mail-reader-meta" id="simpleMailRoute">Select a message.</div>
           </div>
           <div class="mail-reader-actions">
-            <button class="secondary" id="simpleMailReadToggle" type="button">Mark as read</button>
-            <button class="secondary" id="simpleMailOpenFile" type="button">Open</button>
+            <button class="gbtn ghost" id="simpleMailReadToggle" type="button">Mark as read</button>
+            <button class="gbtn ghost" id="simpleMailOpenFile" type="button">Open</button>
           </div>
         </div>
         <div class="mail-content">
@@ -2061,7 +2113,7 @@ body.quiet-mode .top-actions button[disabled] {
           <label>Subject
             <input id="simpleMailSubject" type="text" placeholder="Reply subject">
           </label>
-          <button class="primary" id="simpleMailSend" type="button">Send</button>
+          <button class="gbtn primary" id="simpleMailSend" type="button">Send</button>
           <label class="mail-reply-text">Reply
             <textarea id="simpleMailReply" placeholder="Write reply"></textarea>
           </label>
@@ -2079,9 +2131,9 @@ body.quiet-mode .top-actions button[disabled] {
       </div>
       <div class="inspector-glance" id="inspectorGlance" aria-label="Inspector status at a glance"></div>
       <div class="inspector-actions">
-        <button class="inspector-action-primary" id="refreshInspector" title="Refresh the latest Inspector report">Refresh</button>
-        <button class="inspector-action-secondary" id="openInspectorReport" title="Open the Inspector report file">Open</button>
-        <button class="inspector-action-close" id="closeInspector" title="Close Inspector">Close</button>
+        <button class="gbtn inspector-action-primary" id="refreshInspector" title="Refresh the latest Inspector report">Refresh</button>
+        <button class="gbtn inspector-action-secondary" id="openInspectorReport" title="Open the Inspector report file">Open</button>
+        <button class="gbtn inspector-action-close" id="closeInspector" title="Close Inspector">Close</button>
       </div>
     </div>
     <div class="inspector-summary" id="inspectorSummary"></div>
@@ -2405,6 +2457,22 @@ function splitMailSource(raw) {
   if (!match) return {frontmatter: '', body: text};
   return {frontmatter: match[1].trim(), body: match[2].trim()};
 }
+function mailSnippetLooksLikeFrontmatter(text) {
+  const normalized = String(text || '').trim().toLowerCase().replace(/[_:.-]+/g, ' ');
+  if (!normalized) return false;
+  return /^(schema version|id |thread id|from |to |type |priority |status |action owner)\b/.test(normalized)
+    || (normalized.includes('schema version') && normalized.includes('thread id'));
+}
+function mailDisplaySummary(item) {
+  const choices = [item?.summary, item?.body_preview]
+    .map(value => String(value || '').trim())
+    .filter(Boolean);
+  const clean = choices.find(value => !mailSnippetLooksLikeFrontmatter(value));
+  if (clean) return clean;
+  const type = String(item?.type || item?.message_type || '').trim();
+  const priority = String(item?.priority || '').trim();
+  return [type || 'Message', priority && `${priority} priority`].filter(Boolean).join(' · ');
+}
 function inlineMailMarkdown(text) {
   return esc(text)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -2551,12 +2619,13 @@ function renderSimpleMail() {
     const selectedClass = item.path === simpleMailSelectedPath ? 'selected' : '';
     const unreadClass = item.unread ? 'unread' : '';
     const route = `${item.from_agent || '?'} -> ${item.to_agent || '?'} · ${fmtMailTime(item.modified)}`;
+    const summary = mailDisplaySummary(item);
     return `
       <button class="mail-row ${selectedClass} ${unreadClass}" type="button" data-mail-path="${esc(item.path)}" title="${esc(item.title || item.name || 'Message')}">
         <span class="mail-row-dot"></span>
         <span>
           <span class="mail-row-title">${esc(item.title || item.name || 'Message')}</span>
-          <span class="mail-row-summary">${esc(item.summary || '')}</span>
+          <span class="mail-row-summary">${esc(summary)}</span>
         </span>
         <span class="mail-row-route">${esc(route)}</span>
       </button>
@@ -3319,7 +3388,7 @@ function setHealthChip(id, level, label, title) {
   const node = document.getElementById(id);
   if (!node) return;
   const normalized = ['ok', 'warn', 'err', 'unknown'].includes(level) ? level : 'unknown';
-  node.className = `health-chip ${normalized}`;
+  node.className = `gbtn health-chip ${normalized}`;
   const labelNode = node.querySelector('[data-health-label]');
   if (labelNode) labelNode.textContent = label;
   node.title = title || label;
@@ -3678,8 +3747,8 @@ function renderCcActivityPanel() {
         <div class="cc-activity-status">${esc(card.phase || card.status || 'No active dispatch')}</div>
       </div>
       <div class="cc-activity-actions">
-        <button class="primary" id="checkCcActivityNow" type="button">Check now</button>
-        <button class="secondary" id="openCcMailbox" type="button">CC inbox</button>
+        <button class="gbtn secondary" id="checkCcActivityNow" type="button">Check now</button>
+        <button class="gbtn secondary" id="openCcMailbox" type="button">CC inbox</button>
       </div>
     </div>
     <div class="cc-activity-summary">${esc(card.evidence_summary || 'No CC activity evidence reported.')}</div>

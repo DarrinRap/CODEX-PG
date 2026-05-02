@@ -84,6 +84,20 @@
       --accent-soft: rgba(104, 216, 232, .14);
     }
 
+    body.test-mode {
+      --user-accent: #ffdf4d;
+      --user-accent-2: #ff4fd8;
+      --user-bg: #151000;
+      --user-surface: #332600;
+      --user-ink: #080600;
+      --user-ring: rgba(255, 223, 77, .78);
+      --accent: #ffdf4d;
+      --accent-hover: #f2c400;
+      --accent-light: #fff08a;
+      --accent-border: rgba(255, 79, 216, .68);
+      --accent-soft: rgba(255, 223, 77, .18);
+    }
+
     [data-user-tone="user1"],
     [data-hub-user="user1"] {
       --tone-accent: #f2b36d;
@@ -258,6 +272,261 @@
       white-space: nowrap;
     }
 
+    .test-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .test-mode-btn {
+      min-height: 30px;
+      border-radius: 2px;
+      border-color: rgba(255, 223, 77, .6);
+      background: linear-gradient(180deg, #3b3942, #242430);
+      color: #d9d4c5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .test-mode-btn.is-secondary {
+      border-color: rgba(140, 207, 111, .58);
+      background: rgba(140, 207, 111, .16);
+      color: var(--ready);
+    }
+
+    .test-mode-btn.is-active,
+    .test-mode-btn.is-running {
+      border-color: rgba(255, 79, 216, .82);
+      background: linear-gradient(180deg, #ffdf4d, #f2b600);
+      color: #120d00;
+      box-shadow: 0 0 0 2px rgba(255, 79, 216, .18);
+    }
+
+    .test-mode-btn.is-pass {
+      border-color: rgba(135, 197, 111, .9);
+      background: linear-gradient(180deg, #8ccf6f, #5fa845);
+      color: #07140a;
+    }
+
+    .test-mode-btn.is-fail {
+      border-color: rgba(239, 128, 111, .9);
+      background: linear-gradient(180deg, #ef806f, #c94032);
+      color: #1f0705;
+    }
+
+    .quit-test-btn {
+      min-height: 30px;
+      border-radius: 2px;
+      border-color: rgba(255, 223, 77, .65);
+      background: rgba(255, 223, 77, .12);
+      color: #ffdf4d;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .test-status-pill {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      min-height: 26px;
+      padding: 3px 10px;
+      border: 1px solid rgba(255, 223, 77, .56);
+      border-radius: 999px;
+      background: rgba(255, 223, 77, .1);
+      color: #ffdf4d;
+      font-size: 11px;
+      font-weight: 950;
+      text-transform: uppercase;
+      white-space: nowrap;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .test-status-pill.is-visible {
+      display: inline-flex;
+    }
+
+    .test-status-pill[data-test-result="PASS"] {
+      border-color: rgba(135, 197, 111, .72);
+      background: rgba(135, 197, 111, .14);
+      color: #9bdc7e;
+    }
+
+    .test-status-pill[data-test-result="FAIL"],
+    .test-status-pill[data-test-result="ABORTED"] {
+      border-color: rgba(239, 128, 111, .72);
+      background: rgba(239, 128, 111, .14);
+      color: #ffb1a5;
+    }
+
+    .test-banner {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      top: 64px;
+      z-index: 5;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255, 79, 216, .72);
+      border-radius: 6px;
+      background: linear-gradient(90deg, rgba(20, 16, 0, .98), rgba(54, 38, 0, .96));
+      color: #ffdf4d;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .34);
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    body.test-mode .test-banner {
+      display: flex;
+    }
+
+    body.test-mode #quitTestModeBannerBtn {
+      display: none;
+    }
+
+    body.test-mode #switchUserBtn {
+      display: none;
+    }
+
+    .test-banner[data-test-result="PASS"] {
+      border-color: rgba(135, 197, 111, .9);
+      background: linear-gradient(90deg, rgba(14, 38, 16, .98), rgba(30, 80, 34, .96));
+      color: #9bdc7e;
+    }
+
+    .test-banner[data-test-result="FAIL"],
+    .test-banner[data-test-result="ABORTED"] {
+      border-color: rgba(239, 128, 111, .9);
+      background: linear-gradient(90deg, rgba(48, 12, 8, .98), rgba(92, 24, 18, .96));
+      color: #ffb1a5;
+    }
+
+    .test-checklist {
+      position: fixed;
+      right: 14px;
+      top: 132px;
+      z-index: 70;
+      width: min(300px, calc(100vw - 28px));
+      max-height: calc(100vh - 156px);
+      display: none;
+      overflow: auto;
+      border: 2px solid var(--test-alert);
+      border-radius: 8px;
+      background: rgba(21, 19, 34, .96);
+      box-shadow: 0 18px 36px rgba(0, 0, 0, .42);
+    }
+
+    body.test-mode .test-checklist {
+      display: block;
+    }
+
+    .test-checklist.is-minimized .test-checklist-list,
+    .test-checklist.is-minimized .test-checklist-actions {
+      display: none;
+    }
+
+    .test-checklist-head {
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(36, 31, 53, .98), rgba(24, 22, 38, .98));
+      border-bottom: 1px solid rgba(255, 216, 77, .34);
+      cursor: move;
+      user-select: none;
+    }
+
+    .test-checklist h2 {
+      margin: 0;
+      font-size: .72rem;
+      letter-spacing: 0;
+      color: var(--test-alert);
+    }
+
+    .test-checklist small {
+      color: var(--muted);
+      font-weight: 900;
+      font-size: .62rem;
+    }
+
+    .test-checklist-list {
+      list-style: none;
+      margin: 0;
+      padding: 6px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .test-checklist-list li {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 6px;
+      align-items: start;
+      padding: 6px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 6px;
+      color: var(--text);
+      background: rgba(255, 255, 255, .035);
+      font-weight: 900;
+      font-size: .66rem;
+      line-height: 1.18;
+    }
+
+    .test-checklist-list li::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      margin-top: 1px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, .32);
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .test-checklist-list li.is-done {
+      border-color: rgba(140, 207, 111, .7);
+      background: rgba(140, 207, 111, .14);
+    }
+
+    .test-checklist-list li.is-done::before {
+      content: "✓";
+      display: grid;
+      place-items: center;
+      color: #071205;
+      background: var(--ready);
+      border-color: var(--ready);
+      font-size: .78rem;
+      font-weight: 1000;
+    }
+
+    .test-checklist-list li.is-current {
+      border-color: var(--test-alert);
+      box-shadow: inset 4px 0 0 var(--test-alert);
+    }
+
+    .test-checklist-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 8px;
+      border-top: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .test-checklist-actions button {
+      min-height: 28px;
+      padding: 4px 6px;
+      font-size: .62rem;
+    }
+
     .chip {
       display: inline-flex;
       align-items: center;
@@ -305,8 +574,8 @@
 
     .support-grid {
       display: grid;
-      grid-template-columns: minmax(230px, .55fr) minmax(360px, 1.2fr) minmax(360px, 1.05fr);
-      grid-template-rows: minmax(132px, .36fr) minmax(0, 1fr);
+      grid-template-columns: minmax(300px, .7fr) minmax(360px, 1.1fr) minmax(360px, 1fr);
+      grid-template-rows: minmax(172px, .62fr) minmax(86px, .38fr);
       gap: 10px;
       min-height: 0;
       min-width: 0;
@@ -652,12 +921,15 @@
 
     .hub-card {
       display: grid;
-      gap: 7px;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      align-content: start;
+      gap: 6px;
       border: 2px solid var(--line);
       border-radius: 6px;
       background: var(--field);
       padding: 8px;
       min-width: 0;
+      overflow: hidden;
     }
 
     .hub-card[data-hub-user="user1"] {
@@ -699,8 +971,17 @@
     }
 
     .hub-card button {
-      min-height: 30px;
-      font-size: 11px;
+      width: 100%;
+      min-width: 0;
+      min-height: 28px;
+      max-height: 34px;
+      padding: 3px 6px;
+      align-self: end;
+      font-size: 10px;
+      line-height: 1.05;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .hub-card[data-hub-user="user1"] button,
@@ -755,7 +1036,9 @@
 
     .registration-panel {
       display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
       gap: 10px;
+      min-height: 0;
     }
 
     .registration-title {
@@ -1127,13 +1410,15 @@
       grid-column: 1;
       grid-row: 1;
       min-height: 0;
+      overflow: hidden;
     }
     .repo-panel .panel-body {
       padding: 7px 8px;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
-      gap: 6px;
+      grid-template-rows: auto minmax(44px, 1fr);
+      gap: 10px;
     }
     .repo-panel .empty {
       min-height: 30px;
@@ -1143,16 +1428,22 @@
     }
     .repo-scan-controls {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 6px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
       align-items: end;
       min-width: 0;
     }
     .repo-scan-controls label {
+      grid-column: 1 / -1;
       min-width: 0;
     }
+    .repo-scan-controls .inline-picker {
+      grid-template-columns: minmax(0, 1fr) minmax(96px, auto);
+      gap: 8px;
+    }
     .repo-scan-controls button {
-      min-height: 30px;
+      min-width: 0;
+      min-height: 38px;
       white-space: nowrap;
     }
     .setup-panel { min-height: 0; }
@@ -1160,6 +1451,9 @@
       grid-column: 2;
       grid-row: 1 / -1;
       min-height: 0;
+    }
+    .status-panel .panel-body {
+      overflow: hidden;
     }
     .files-panel {
       grid-column: 3;
@@ -1187,6 +1481,7 @@
       min-height: 110px;
       max-height: none;
       overflow: auto;
+      scrollbar-gutter: stable;
       font-size: 11px;
     }
     .file-list {
@@ -1298,7 +1593,7 @@
       z-index: 20;
       display: grid;
       place-items: center;
-      padding: 36px 48px;
+      padding: 22px 28px;
       background: rgba(8, 8, 14, .72);
       backdrop-filter: blur(6px);
     }
@@ -1308,8 +1603,8 @@
     }
 
     .setup-dialog {
-      width: min(960px, calc(100vw - 72px));
-      max-height: calc(100vh - 48px);
+      width: min(936px, calc(100vw - 88px));
+      height: min(900px, calc(100vh - 44px));
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
       border: 1px solid var(--tone-ring, var(--user-ring));
@@ -1335,6 +1630,7 @@
       border-bottom: 0;
       align-items: stretch;
       justify-content: space-between;
+      min-height: 0;
     }
 
     .setup-dialog-head h2 {
@@ -1360,13 +1656,17 @@
 
     .wizard-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      grid-auto-rows: auto;
-      align-items: start;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto auto minmax(0, 1fr);
+      grid-template-areas:
+        "project project"
+        "hub hub"
+        "user1 user2";
+      align-items: stretch;
       gap: 8px;
       padding: 8px;
       min-height: 0;
-      overflow: auto;
+      overflow: hidden;
     }
 
     .wizard-step {
@@ -1374,6 +1674,7 @@
       border-radius: 6px;
       background: var(--field);
       min-width: 0;
+      min-height: 0;
       overflow: hidden;
     }
 
@@ -1385,9 +1686,20 @@
       display: flex;
       gap: 8px;
       align-items: center;
+      justify-content: space-between;
       padding: 6px 8px;
       border-bottom: 1px solid var(--line);
       background: rgba(255, 255, 255, .025);
+    }
+
+    .wizard-step-head > div {
+      min-width: 0;
+    }
+
+    .collapse-toggle {
+      min-width: 64px;
+      min-height: 26px;
+      flex: 0 0 auto;
     }
 
     .wizard-step-head h3 {
@@ -1408,13 +1720,78 @@
       padding: 8px;
       display: grid;
       gap: 7px;
+      min-height: 0;
+    }
+
+    .setup-project-step {
+      grid-area: project;
+    }
+
+    .registration-panel[data-registration-stage="user1"] {
+      grid-area: user1;
+    }
+
+    .registration-panel[data-registration-stage="user2"] {
+      grid-area: user2;
+    }
+
+    .registration-panel[data-registration-stage="hub"] {
+      grid-area: hub;
+      border-color: rgba(127, 176, 105, .48);
+      background: rgba(127, 176, 105, .07);
+    }
+
+    .registration-panel[data-registration-stage="hub"] .wizard-step-head {
+      background: rgba(127, 176, 105, .12);
+      border-bottom-color: rgba(127, 176, 105, .44);
+    }
+
+    .registration-panel[data-registration-stage="hub"] .wizard-step-body {
+      overflow: visible;
+      padding: 8px;
+    }
+
+    .registration-hub-grid .hub-card {
+      grid-template-columns: 72px minmax(0, 1fr) minmax(132px, .34fr);
+      grid-template-rows: auto auto;
+      align-items: center;
+      min-height: 58px;
+      padding: 8px;
+    }
+
+    .registration-hub-grid .hub-card span {
+      grid-column: 1;
+      grid-row: 1 / 3;
+      align-self: center;
+    }
+
+    .registration-hub-grid .hub-card strong {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .registration-hub-grid .hub-card small {
+      grid-column: 2;
+      grid-row: 2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .registration-hub-grid .hub-card button {
+      grid-column: 3;
+      grid-row: 1 / 3;
+      align-self: stretch;
+      min-height: 42px;
+      max-height: none;
+      font-size: 11px;
     }
 
     .setup-project-step .wizard-step-body {
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       align-items: end;
       gap: 8px;
-      padding: 7px 8px;
+      padding: 6px 8px;
     }
 
     .setup-project-step .actions {
@@ -1423,43 +1800,54 @@
 
     .setup-project-step .identity-note {
       grid-column: 1 / -1;
-      padding: 5px 7px;
+      padding: 4px 7px;
       line-height: 1.2;
+      max-height: 31px;
+      overflow: hidden;
     }
 
     .registration-panel {
       align-self: stretch;
       min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
     }
 
-    .registration-transition {
-      grid-column: 1 / -1;
-      border-color: var(--tone-ring);
-      background: var(--tone-surface);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
+    .registration-panel.is-collapsed {
+      align-self: start;
+      grid-template-rows: auto;
     }
 
-    .registration-transition.hidden {
+    .registration-panel.is-collapsed .wizard-step-body {
       display: none;
     }
 
-    .registration-transition .wizard-step-body {
-      grid-template-columns: minmax(0, .78fr) minmax(220px, .42fr);
-      align-items: start;
-      padding: 14px;
-      gap: 12px;
+    .registration-panel .wizard-step-body {
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-gutter: stable;
+      align-content: start;
     }
 
-    .transition-title {
-      display: grid;
-      gap: 4px;
-      padding: 12px;
-      border: 1px solid var(--tone-ring);
-      border-radius: 6px;
-      background: rgba(255, 255, 255, .035);
+    .setup-dialog .registration-title {
+      padding: 6px 7px;
     }
 
-    .transition-title span,
+    .setup-dialog .registration-title strong {
+      font-size: 15px;
+      line-height: 1.05;
+    }
+
+    .setup-dialog label {
+      gap: 3px;
+      font-size: 9px;
+    }
+
+    .setup-dialog input {
+      padding: 4px 6px;
+      min-height: 28px;
+    }
+
     .registration-subhead {
       color: var(--muted);
       font-size: 10px;
@@ -1467,47 +1855,13 @@
       text-transform: uppercase;
     }
 
-    .transition-title strong {
-      color: var(--tone-accent);
-      font-size: 22px;
-      line-height: 1;
-      text-transform: uppercase;
-    }
-
-    .transition-copy {
-      margin: 0;
-      color: var(--soft);
-      font-size: 12px;
-      line-height: 1.35;
-      font-weight: 750;
-    }
-
-    .transition-next {
-      display: grid;
-      gap: 8px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: rgba(255, 255, 255, .035);
-      padding: 10px;
-    }
-
     .registration-panel.is-current {
-      grid-column: 1 / -1;
       border-color: var(--user-ring);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
-      overflow: visible;
     }
 
     .registration-panel[data-user-tone].is-current {
       border-color: var(--tone-ring);
-    }
-
-    .registration-panel:not(.is-current) .wizard-step-body {
-      display: none;
-    }
-
-    .registration-panel:not(.is-current) .wizard-step-head {
-      border-bottom: 0;
     }
 
     .registration-panel.is-current .wizard-step-head {
@@ -1535,15 +1889,6 @@
       border-bottom-color: var(--line);
     }
 
-    .registration-panel.is-locked {
-      display: none;
-    }
-
-    .setup-dialog[data-registration-stage="user1Complete"] .setup-project-step,
-    .setup-dialog[data-registration-stage="user1Complete"] .registration-panel[data-registration-stage="user1"] {
-      display: none;
-    }
-
     .registration-panel.is-locked .wizard-step-body {
       filter: saturate(.7);
     }
@@ -1562,19 +1907,19 @@
       border: 1px solid var(--line);
       border-radius: 6px;
       background: rgba(255, 255, 255, .025);
-      padding: 8px;
+      padding: 7px;
     }
 
     .profile-defaults {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 7px;
+      gap: 6px;
     }
 
     .account-defaults {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 7px;
+      gap: 6px;
     }
 
     .registration-subhead {
@@ -1586,7 +1931,7 @@
       align-content: center;
       gap: 4px;
       min-width: 0;
-      width: min(760px, 100%);
+      width: min(520px, 100%);
     }
 
     .setup-dialog-status .setup-checklist {
@@ -1635,60 +1980,122 @@
         gap: 8px;
       }
       .support-grid {
-        grid-template-columns: minmax(185px, .5fr) minmax(0, 1.12fr) minmax(0, 1fr);
-        grid-template-rows: minmax(96px, .3fr) minmax(0, 1fr);
+        grid-template-columns: minmax(260px, .68fr) minmax(0, 1.08fr) minmax(0, 1fr);
+        grid-template-rows: minmax(152px, .6fr) minmax(76px, .4fr);
         gap: 8px;
       }
-      .repo-grid { grid-template-columns: repeat(5, minmax(48px, 1fr)); }
+      .repo-grid { grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); }
       .metric { min-height: 46px; padding: 5px; }
       .metric b { font-size: 14px; }
       .metric span { font-size: 9px; }
     }
 
-    @media (max-width: 620px) {
-      .shell { grid-template-rows: 54px minmax(0, 1fr); }
-      header { padding: 6px 8px; }
-      .brand { min-width: 148px; gap: 6px; }
+    @media (max-width: 1200px) {
+      html, body { overflow: hidden; }
+      .shell { grid-template-rows: auto minmax(0, 1fr); }
+      header {
+        align-items: stretch;
+        padding: 6px 8px;
+      }
+      .header-top {
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 6px;
+      }
+      .brand {
+        flex: 1 1 154px;
+        min-width: 144px;
+        gap: 6px;
+      }
       .mark { width: 24px; height: 24px; font-size: 10px; }
       .brand h1 { font-size: 13px; }
       .brand span { display: none; }
-      .active-user-banner { min-width: 112px; height: 34px; padding: 4px 7px; grid-template-columns: minmax(0, 1fr); }
+      .active-user-banner {
+        flex: 1 1 130px;
+        min-width: 120px;
+        height: 34px;
+        padding: 4px 7px;
+        grid-template-columns: minmax(0, 1fr);
+      }
       .active-user-banner span { display: none; }
       .active-user-banner strong { font-size: 18px; }
       .active-user-banner small { display: none; }
-      .status-strip { justify-content: flex-end; gap: 4px; }
+      .status-strip {
+        order: 3;
+        flex: 1 1 100%;
+        justify-content: flex-start;
+        gap: 4px;
+      }
+      .test-controls {
+        order: 4;
+        flex: 1 1 100%;
+        justify-content: flex-start;
+      }
+      .switch-user-btn {
+        flex: 0 0 auto;
+      }
       .chip { font-size: 9px; padding: 2px 5px; }
       main {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(300px, 1.15fr) minmax(0, .6fr);
+        grid-template-rows: auto auto;
         padding: 6px;
         gap: 6px;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
       .workflow-row,
       .support-grid { gap: 6px; }
       .workflow-row {
-        grid-template-columns: minmax(78px, .42fr) minmax(78px, .42fr) minmax(120px, .7fr) minmax(150px, .86fr) minmax(260px, 2.2fr);
+        grid-template-columns: minmax(0, 1fr);
       }
       .support-grid {
-        grid-template-columns: minmax(105px, .48fr) minmax(0, 1.05fr) minmax(0, 1fr);
-        grid-template-rows: minmax(88px, .28fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+      }
+      .repo-panel,
+      .status-panel,
+      .files-panel,
+      .safety-panel {
+        grid-column: 1;
+        grid-row: auto;
       }
       .panel-head { padding: 6px 7px; }
       .panel-body { padding: 6px 7px; }
-      .repo-grid { grid-template-columns: repeat(5, minmax(34px, 1fr)); gap: 4px; }
+      .repo-grid { grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)); gap: 4px; }
+      .repo-scan-controls { grid-template-columns: minmax(0, 1fr); }
+      .repo-scan-controls button { width: 100%; }
       .receipt-grid { grid-template-columns: repeat(2, minmax(58px, 1fr)); }
       .setup-names, .profile-defaults, .account-defaults { grid-template-columns: minmax(0, 1fr); }
       .handoff-fields { grid-template-columns: minmax(0, 1fr); }
       .handoff-fields label:nth-child(2) { grid-column: 1 / -1; }
-      .wizard-grid { grid-template-columns: 1fr; }
-      .registration-transition .wizard-step-body { grid-template-columns: minmax(0, 1fr); }
+      .wizard-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+        grid-template-areas:
+          "project"
+          "hub"
+          "user1"
+          "user2";
+      }
+      .registration-hub-grid .hub-card {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto auto;
+      }
+      .registration-hub-grid .hub-card span,
+      .registration-hub-grid .hub-card strong,
+      .registration-hub-grid .hub-card small,
+      .registration-hub-grid .hub-card button {
+        grid-column: 1;
+        grid-row: auto;
+      }
       .setup-project-step .wizard-step-body { grid-template-columns: minmax(0, 1fr); }
       .setup-dialog-foot { display: grid; gap: 8px; }
       .setup-dialog-status { width: 100%; }
       .setup-dialog-status .setup-checklist { grid-template-columns: minmax(0, 1fr); }
       .setup-dialog-actions { min-width: 0; justify-content: flex-end; flex-wrap: wrap; }
       .setup-overlay { padding: 18px; }
-      .setup-dialog { width: min(960px, 100%); max-height: calc(100vh - 36px); }
+      .setup-dialog { width: min(936px, 100%); height: calc(100vh - 36px); }
     }
   </style>
 </head>
@@ -1713,9 +2120,35 @@
           <span class="chip ok">No destructive git</span>
           <span class="chip ok">No stash safety</span>
         </div>
+        <div class="test-controls" aria-label="PANDA test mode controls">
+          <button id="testModeBtn" class="test-mode-btn" type="button">Start Test Mode</button>
+          <span id="testStatusPill" class="test-status-pill" data-test-result="">Test Ready</span>
+          <button id="createTestSandboxBtn" class="test-mode-btn is-secondary hidden" type="button">Reset Sandbox</button>
+          <button id="runTestAgainBtn" class="test-mode-btn hidden" type="button">Run Test</button>
+          <button id="openTestEvidenceBtn" class="test-mode-btn is-secondary hidden" type="button">Open Evidence</button>
+          <button id="quitTestModeBtn" class="quit-test-btn hidden" type="button">Quit Test Mode</button>
+        </div>
         <button id="switchUserBtn" class="switch-user-btn" type="button">Setup users</button>
       </div>
     </header>
+    <div id="testModeBanner" class="test-banner" data-test-result="">
+      <span id="testModeBannerText">TEST MODE ACTIVE - FAKE USERS, FAKE ACCOUNTS, FAKE REPOSITORY</span>
+      <button id="quitTestModeBannerBtn" class="quit-test-btn" type="button">Quit Test Mode</button>
+    </div>
+    <aside id="testChecklist" class="test-checklist" aria-label="Manual PC test checklist">
+      <div class="test-checklist-head">
+        <div>
+          <h2>PC Test Checklist</h2>
+          <small id="testChecklistProgress">0 of 7 done</small>
+        </div>
+        <button id="testChecklistMinBtn" type="button">Hide</button>
+      </div>
+      <ol id="testChecklistList" class="test-checklist-list"></ol>
+      <div class="test-checklist-actions">
+        <button id="testChecklistResetBtn" type="button">Reset checks</button>
+        <button id="testChecklistLogBtn" type="button">Show log path</button>
+      </div>
+    </aside>
 
     <main class="workflow-layout">
       <section class="workflow-row" aria-label="Primary PANDA workflow">
@@ -1770,12 +2203,12 @@
                 <div class="hub-card" data-hub-user="user1">
                   <span>User 1</span>
                   <strong data-hub-name="user1">User 1</strong>
-                  <button type="button" data-switch-go="user1">HANDOVER TO USER 1</button>
+                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">Handover</button>
                 </div>
                 <div class="hub-card" data-hub-user="user2">
                   <span>User 2</span>
                   <strong data-hub-name="user2">User 2</strong>
-                  <button type="button" data-switch-go="user2">HANDOVER TO USER 2</button>
+                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">Handover</button>
                 </div>
               </div>
             </div>
@@ -1909,7 +2342,7 @@
         <div class="setup-dialog-head">
           <div>
             <span>Registration</span>
-            <h2 id="setupWizardTitle">REGISTER USER 1</h2>
+            <h2 id="setupWizardTitle">REGISTER USERS</h2>
           </div>
           <button id="closeSetupBtn" type="button">Close</button>
         </div>
@@ -1938,9 +2371,10 @@
           <section class="wizard-step registration-panel" data-registration-stage="user1" data-user-tone="user1">
             <div class="wizard-step-head">
               <div>
-                <h3>Register User 1</h3>
-                <p>Name User 1 first, then confirm User 1 defaults.</p>
+                <h3>User 1 Profile</h3>
+                <p>Edit User 1 details and save when ready.</p>
               </div>
+              <button class="primary collapse-toggle" type="button" data-collapse-panel="user1" aria-expanded="false">Edit</button>
             </div>
             <div class="wizard-step-body">
               <div class="registration-title">
@@ -1996,32 +2430,13 @@
             </div>
           </section>
 
-          <section class="wizard-step registration-transition hidden" id="user1Transition" data-user-tone="user1">
-            <div class="wizard-step-head">
-              <div>
-                <h3>User 1 registered</h3>
-                <p>Review the handoff point before moving to User 2.</p>
-              </div>
-            </div>
-            <div class="wizard-step-body">
-              <div class="transition-title">
-                <span>Next setup step</span>
-                <strong>User 1 is ready</strong>
-                <p class="transition-copy">PANDA saved the User 1 registration fields in this setup session. Continue when you are ready to register User 2.</p>
-              </div>
-              <div class="transition-next">
-                <div class="registration-subhead">Next</div>
-                <p class="transition-copy">User 2 needs their own name, repo defaults, account labels, Claude paths, and Git identity before the Collaborator Hub opens.</p>
-              </div>
-            </div>
-          </section>
-
           <section class="wizard-step registration-panel" data-registration-stage="user2" data-user-tone="user2">
             <div class="wizard-step-head">
               <div>
-                <h3>Register User 2</h3>
-                <p>Now name User 2 and confirm User 2 defaults.</p>
+                <h3>User 2 Profile</h3>
+                <p>Edit User 2 details at the same time.</p>
               </div>
+              <button class="primary collapse-toggle" type="button" data-collapse-panel="user2" aria-expanded="false">Edit</button>
             </div>
             <div class="wizard-step-body">
               <div class="registration-title">
@@ -2081,7 +2496,7 @@
             <div class="wizard-step-head">
               <div>
                 <h3>Collaborator Hub</h3>
-                <p>Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to automate the whole handover process.</p>
+                <p>Use the Handover buttons to automate the whole handover process.</p>
               </div>
             </div>
             <div class="wizard-step-body">
@@ -2090,13 +2505,13 @@
                   <span>User 1</span>
                   <strong data-hub-name="user1">User 1</strong>
                   <small data-hub-account="user1">Account details needed</small>
-                  <button type="button" data-switch-go="user1">HANDOVER TO USER 1</button>
+                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">Handover</button>
                 </div>
                 <div class="hub-card" data-hub-user="user2">
                   <span>User 2</span>
                   <strong data-hub-name="user2">User 2</strong>
                   <small data-hub-account="user2">Account details needed</small>
-                  <button type="button" data-switch-go="user2">HANDOVER TO USER 2</button>
+                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">Handover</button>
                 </div>
               </div>
             </div>
@@ -2110,9 +2525,8 @@
           </div>
           <div class="setup-dialog-actions">
             <button id="registerBackBtn" type="button">Back</button>
-            <button id="registerUser1NextBtn" class="primary" type="button">Register User 1 and continue</button>
-            <button id="continueUser2Btn" class="primary" type="button">Continue to User 2</button>
-            <button id="registerUser2FinishBtn" class="primary" type="button">Register User 2 and open Hub</button>
+            <button id="registerUser1NextBtn" class="primary" type="button">Save User 1</button>
+            <button id="registerUser2FinishBtn" class="primary" type="button">Save User 2</button>
             <button id="openHubBtn" class="primary" type="button">Open Collaborator Hub</button>
           </div>
         </div>
@@ -2141,8 +2555,20 @@
       settings: null,
       busy: false,
       registrationStage: 'user1',
+      registrationCollapsed: {user1: true, user2: true},
       control: null,
-      sideView: 'files'
+      sideView: 'files',
+      testMode: {
+        active: false,
+        result: '',
+        normalSettingsSnapshot: null,
+        normalRepoPath: '',
+        normalProjectFilesDirectory: '',
+        run: null,
+        manualLog: null,
+        checklist: {},
+        checklistMinimized: false
+      }
     };
 
     const $ = id => document.getElementById(id);
@@ -2169,6 +2595,12 @@
         switchUserBtn: 'Open the user setup and handover screen.',
         openSetupBtn: 'Open registration so you can set up User 1 and User 2.',
         applyProfileBtn: 'Apply the saved defaults for the active user.',
+        testModeBtn: 'Start TEST MODE with fake Bob and Karen identities.',
+        createTestSandboxBtn: 'Optional: reset the fake local test folders without running the full test.',
+        runTestAgainBtn: 'Run the full local-only PC action test.',
+        openTestEvidenceBtn: 'Open the latest TEST PASS or TEST FAIL evidence report.',
+        quitTestModeBtn: 'Quit TEST MODE and restore normal Darrin and Pam state.',
+        quitTestModeBannerBtn: 'Quit TEST MODE and restore normal Darrin and Pam state.',
         scanBtn: 'Check the selected repository for branch, file, and safety status.',
         packagesBtn: 'Show saved handoff packages for this repository.',
         startSessionBtn: 'Start the work session after setup checks are complete.',
@@ -2180,10 +2612,9 @@
         searchBtn: 'Search saved project history and handoff messages.',
         closeSetupBtn: 'Close this setup window.',
         autoFillSetupBtn: 'Try to fill paths and setup fields automatically.',
-        registerBackBtn: 'Go back to the previous setup step.',
-        registerUser1NextBtn: 'Save User 1 registration and show the next-step confirmation.',
-        continueUser2Btn: 'Continue from the User 1 confirmation to User 2 registration.',
-        registerUser2FinishBtn: 'Save User 2 registration and open the Collaborator Hub.',
+        registerBackBtn: 'Return to the side-by-side user setup screen.',
+        registerUser1NextBtn: 'Save User 1 registration without leaving the side-by-side setup screen.',
+        registerUser2FinishBtn: 'Save User 2 registration without leaving the side-by-side setup screen.',
         openHubBtn: 'Open the Collaborator Hub after both users are registered.'
       };
       if (byId[button.id]) return byId[button.id];
@@ -2277,7 +2708,12 @@
       $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
       $('autoFillSetupBtn').disabled = isBusy || !state.settings;
       $('switchUserBtn').disabled = isBusy;
-      document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #continueUser2Btn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
+      $('testModeBtn').disabled = isBusy;
+      $('createTestSandboxBtn').disabled = isBusy || !state.testMode.active;
+      $('runTestAgainBtn').disabled = isBusy || !state.testMode.active;
+      $('quitTestModeBtn').disabled = false;
+      $('quitTestModeBannerBtn').disabled = false;
+      document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
         button.disabled = isBusy;
       });
       document.querySelectorAll('[data-path-picker]').forEach(button => {
@@ -2312,6 +2748,376 @@
       const visible = forbidden.slice(0, 2).map(cmd => `<li><code>${escapeHtml(cmd)}</code></li>`);
       visible.push(`<li><code>+ ${forbidden.length - 2} more destructive commands blocked</code></li>`);
       $('ruleList').innerHTML = visible.join('');
+    }
+
+    function cloneSettings(settings) {
+      return settings ? JSON.parse(JSON.stringify(settings)) : null;
+    }
+
+    function testSandboxRoot() {
+      return 'C:\\CODEX PG\\CODEX PANDA Collaborator\\PANDA test sandboxes\\pc-action-test';
+    }
+
+    function currentTestRunRoot() {
+      return state.testMode.run?.run_root || `${testSandboxRoot()}\\runs\\pending-ui-foundation`;
+    }
+
+    function fakeTestSettingsFrom(normalSettings, sandbox = null) {
+      const base = cloneSettings(normalSettings) || {
+        schema_version: 1,
+        setup_completed: true,
+        active_user_id: 'user1',
+        project_files_directory: '',
+        users: [{id: 'user1'}, {id: 'user2'}]
+      };
+      const runRoot = currentTestRunRoot();
+      const fakeRepo = sandbox?.fake_repo_path || `${runRoot}\\fake-repo`;
+      const fakeTracker = sandbox?.fake_project_files_tracker_path || `${runRoot}\\fake-project-files-tracker`;
+      const fakeClaude = `${runRoot}\\fake-claude`;
+      const fakeClaudeDesktop = sandbox?.fake_claude_desktop_path || `${fakeClaude}\\Claude Desktop Fake.exe`;
+      const fakeClaudeCode = sandbox?.fake_claude_code_path || `${fakeClaude}\\Claude Code Fake.cmd`;
+      base.setup_completed = true;
+      base.active_user_id = 'user1';
+      base.project_files_directory = fakeTracker;
+      base.users = [
+        {
+          id: 'user1',
+          display_name: 'Bob',
+          default_repo_path: fakeRepo,
+          handoff_agent: 'Codex Test',
+          handoff_title: 'Bob test handoff',
+          codex_account: 'test-bob-codex@example.invalid',
+          claude_account: 'test-bob-claude@example.invalid',
+          claude_desktop_path: fakeClaudeDesktop,
+          claude_code_path: fakeClaudeCode,
+          git_author_name: 'Bob Test',
+          git_author_email: 'bob.test@example.invalid'
+        },
+        {
+          id: 'user2',
+          display_name: 'Karen',
+          default_repo_path: fakeRepo,
+          handoff_agent: 'Claude Test',
+          handoff_title: 'Karen test handoff',
+          codex_account: 'test-karen-codex@example.invalid',
+          claude_account: 'test-karen-claude@example.invalid',
+          claude_desktop_path: fakeClaudeDesktop,
+          claude_code_path: fakeClaudeCode,
+          git_author_name: 'Karen Test',
+          git_author_email: 'karen.test@example.invalid'
+        }
+      ];
+      return base;
+    }
+
+    function storeTestModeSnapshot() {
+      if (!state.testMode.normalSettingsSnapshot && state.settings) {
+        state.testMode.normalSettingsSnapshot = cloneSettings(state.settings);
+        state.testMode.normalRepoPath = $('repoPath')?.value || localStorage.getItem('pandaCollaborator.repoPath') || '';
+        state.testMode.normalProjectFilesDirectory = state.settings.project_files_directory || $('projectFilesDirectory')?.value || '';
+      }
+      localStorage.setItem('pandaCollaborator.testModeSnapshot', JSON.stringify({
+        settings: state.testMode.normalSettingsSnapshot,
+        repoPath: state.testMode.normalRepoPath,
+        projectFilesDirectory: state.testMode.normalProjectFilesDirectory
+      }));
+    }
+
+    function restoreTestModeSnapshotFromStorage() {
+      try {
+        const raw = localStorage.getItem('pandaCollaborator.testModeSnapshot');
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function testModeResultLabel() {
+      if (!state.testMode.active) return 'Start Test Mode';
+      if (state.testMode.result === 'PASS') return 'Test Pass';
+      if (state.testMode.result === 'FAIL') return 'Test Fail';
+      if (state.testMode.result === 'ABORTED') return 'Test Aborted';
+      if (state.testMode.result === 'RUNNING') return 'Test Running';
+      return 'Test Ready';
+    }
+
+    const manualTestChecklist = [
+      {id: 'enter', text: 'Test mode is on: Bob and Karen are visible.'},
+      {id: 'run', text: 'Click Run Test.'},
+      {id: 'pass', text: 'Confirm the status pill says Test Pass or Test Fail.'},
+      {id: 'evidence', text: 'Click Open Evidence to view the report.'},
+      {id: 'quit', text: 'Click Quit Test Mode and confirm normal Darrin/Pam mode returns.'}
+    ];
+
+    function resetManualChecklist() {
+      state.testMode.checklist = {};
+      renderTestChecklist();
+    }
+
+    function markManualChecklist(id) {
+      state.testMode.checklist[id] = true;
+      if (id === 'run') state.testMode.checklist.enter = true;
+      if (id === 'pass') {
+        state.testMode.checklist.enter = true;
+        state.testMode.checklist.run = true;
+      }
+      if (id === 'evidence') state.testMode.checklist.pass = true;
+      renderTestChecklist();
+    }
+
+    function currentManualChecklistId() {
+      return manualTestChecklist.find(item => !state.testMode.checklist[item.id])?.id || '';
+    }
+
+    function renderTestChecklist() {
+      const list = $('testChecklistList');
+      if (!list) return;
+      const current = currentManualChecklistId();
+      list.innerHTML = manualTestChecklist.map(item => `
+        <li class="${state.testMode.checklist[item.id] ? 'is-done' : item.id === current ? 'is-current' : ''}">
+          <span>${escapeHtml(item.text)}</span>
+        </li>
+      `).join('');
+      const done = manualTestChecklist.filter(item => state.testMode.checklist[item.id]).length;
+      $('testChecklistProgress').textContent = `${done} of ${manualTestChecklist.length} done`;
+      $('testChecklist').classList.toggle('is-minimized', state.testMode.checklistMinimized);
+      $('testChecklistMinBtn').textContent = state.testMode.checklistMinimized ? 'Show' : 'Hide';
+    }
+
+    function startTestChecklistDrag() {
+      const panel = $('testChecklist');
+      const handle = panel?.querySelector('.test-checklist-head');
+      if (!panel || !handle) return;
+      let drag = null;
+      handle.addEventListener('pointerdown', event => {
+        if (event.target.closest('button')) return;
+        const rect = panel.getBoundingClientRect();
+        drag = {
+          offsetX: event.clientX - rect.left,
+          offsetY: event.clientY - rect.top
+        };
+        panel.setPointerCapture?.(event.pointerId);
+      });
+      panel.addEventListener('pointermove', event => {
+        if (!drag) return;
+        const maxLeft = Math.max(0, window.innerWidth - panel.offsetWidth);
+        const maxTop = Math.max(0, window.innerHeight - panel.offsetHeight);
+        const left = Math.min(Math.max(0, event.clientX - drag.offsetX), maxLeft);
+        const top = Math.min(Math.max(0, event.clientY - drag.offsetY), maxTop);
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+        panel.style.right = 'auto';
+      });
+      panel.addEventListener('pointerup', event => {
+        drag = null;
+        panel.releasePointerCapture?.(event.pointerId);
+      });
+      panel.addEventListener('pointercancel', () => {
+        drag = null;
+      });
+    }
+
+    async function ensureManualTestLog() {
+      if (state.testMode.manualLog?.log_path) return state.testMode.manualLog;
+      const data = await api('/api/test/manual-log/start', {});
+      state.testMode.manualLog = data;
+      return data;
+    }
+
+    async function logManualTestStep(event, detail = '', status = 'info') {
+      try {
+        const log = await ensureManualTestLog();
+        await api('/api/test/manual-log/append', {
+          log_path: log.log_path,
+          event,
+          detail,
+          status
+        });
+      } catch {
+        // Logging must never block TEST MODE controls.
+      }
+    }
+
+    function renderTestMode() {
+      document.body.classList.toggle('test-mode', state.testMode.active);
+      if (state.testMode.active) state.testMode.checklist.enter = true;
+      $('testModeBtn').textContent = testModeResultLabel();
+      $('testModeBtn').className = `test-mode-btn${state.testMode.active ? ' is-active' : ''}${state.testMode.result === 'PASS' ? ' is-pass' : ''}${state.testMode.result === 'FAIL' || state.testMode.result === 'ABORTED' ? ' is-fail' : ''}${state.testMode.result === 'RUNNING' ? ' is-running' : ''}`;
+      $('testModeBtn').classList.toggle('hidden', state.testMode.active);
+      $('testStatusPill').textContent = testModeResultLabel();
+      $('testStatusPill').dataset.testResult = state.testMode.result || '';
+      $('testStatusPill').classList.toggle('is-visible', state.testMode.active);
+      $('createTestSandboxBtn').classList.toggle('hidden', !state.testMode.active);
+      $('runTestAgainBtn').textContent = ['PASS', 'FAIL', 'ABORTED'].includes(state.testMode.result) ? 'Run Test Again' : 'Run Test';
+      $('runTestAgainBtn').classList.toggle('hidden', !state.testMode.active);
+      $('openTestEvidenceBtn').classList.toggle('hidden', !state.testMode.active || !['PASS', 'FAIL', 'ABORTED'].includes(state.testMode.result));
+      $('quitTestModeBtn').classList.toggle('hidden', !state.testMode.active);
+      $('testModeBanner').dataset.testResult = state.testMode.result || '';
+      $('testModeBannerText').textContent = state.testMode.active
+        ? `${testModeResultLabel().toUpperCase()} - USE RUN TEST, THEN CLICK PASS/FAIL FOR EVIDENCE`
+        : 'TEST MODE ACTIVE - FAKE USERS, FAKE ACCOUNTS, FAKE REPOSITORY';
+      $('switchUserBtn').textContent = 'Setup users';
+      renderTestChecklist();
+      applyTooltips();
+    }
+
+    function normalModeSanityCheck() {
+      const users = state.settings?.users || [];
+      const user1 = users.find(user => user.id === 'user1');
+      const user2 = users.find(user => user.id === 'user2');
+      return Boolean(
+        !state.testMode.active &&
+        user1?.display_name === 'Darrin' &&
+        user2?.display_name === 'Pam' &&
+        !document.body.classList.contains('test-mode') &&
+        !['Bob', 'Karen'].includes($('activeUserName')?.textContent || '')
+      );
+    }
+
+    function enterTestMode() {
+      if (!state.settings) return;
+      storeTestModeSnapshot();
+      state.testMode.active = true;
+      state.testMode.result = '';
+      state.testMode.run = null;
+      state.testMode.manualLog = null;
+      state.testMode.checklist = {enter: true};
+      state.settings = fakeTestSettingsFrom(state.testMode.normalSettingsSnapshot);
+      localStorage.setItem('pandaCollaborator.testModeActive', 'true');
+      localStorage.setItem('pandaCollaborator.repoPath', state.settings.users[0].default_repo_path);
+      state.repo = null;
+      renderSettings();
+      applyActiveProfileDefaults({forceRepo: true});
+      renderTestMode();
+      showResult('TEST MODE ACTIVE. Fake Bob and Karen identities are visible. Phase 1 is local-only; no GitHub repo or remote push will be used.');
+      logManualTestStep('enter-test-mode', 'User entered TEST MODE with fake Bob/Karen settings.');
+    }
+
+    async function createTestSandbox() {
+      if (!state.testMode.active) enterTestMode();
+      await logManualTestStep('click-create-sandbox', 'User clicked Create Sandbox.');
+      setBusy(true);
+      try {
+        state.testMode.result = 'RUNNING';
+        renderTestMode();
+        const data = await api('/api/test/sandbox', {});
+        state.testMode.run = data.sandbox;
+        state.settings = fakeTestSettingsFrom(state.testMode.normalSettingsSnapshot, data.sandbox);
+        localStorage.setItem('pandaCollaborator.testModeSettings', JSON.stringify(state.settings));
+        localStorage.setItem('pandaCollaborator.repoPath', data.sandbox.fake_repo_path);
+        state.repo = data.sandbox.git_status || null;
+        renderSettings();
+        $('repoPath').value = data.sandbox.fake_repo_path;
+        applyActiveProfileDefaults({forceRepo: true});
+        renderRepo();
+        renderTestMode();
+        showResult(`Fresh local-only TEST sandbox created: ${data.sandbox.run_id}. Bob and Karen now point at the fake repo, fake tracker, and fake Claude placeholders.`, 'ok');
+        await logManualTestStep('sandbox-created', `Sandbox ${data.sandbox.run_id} created at ${data.sandbox.run_root}.`, 'ok');
+      } catch (error) {
+        state.testMode.result = 'FAIL';
+        renderTestMode();
+        showResult(error.message, 'error');
+        await logManualTestStep('sandbox-create-failed', error.message, 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function runPcActionTest() {
+      if (!state.testMode.active) enterTestMode();
+      markManualChecklist('run');
+      await logManualTestStep('click-run-test', 'User clicked Run Test / Run Test Again.');
+      setBusy(true);
+      try {
+        state.testMode.result = 'RUNNING';
+        renderTestMode();
+        showResult('TEST RUNNING. PC is creating a fresh local sandbox, scanning the fake repo, saving Bob/Karen messages, creating a handoff, and writing evidence.');
+        const data = await api('/api/test/run', {});
+        const test = data.test;
+        state.testMode.result = test.status || 'FAIL';
+        state.testMode.run = test;
+        state.settings = fakeTestSettingsFrom(state.testMode.normalSettingsSnapshot, test);
+        localStorage.setItem('pandaCollaborator.testModeSettings', JSON.stringify(state.settings));
+        localStorage.setItem('pandaCollaborator.repoPath', test.fake_repo_path);
+        state.repo = test.repo_scan || null;
+        renderSettings();
+        $('repoPath').value = test.fake_repo_path;
+        applyActiveProfileDefaults({forceRepo: true});
+        renderRepo();
+        renderTestMode();
+        const checkpointList = (test.checkpoints || [])
+          .map(item => `<li><strong>${item.ok ? 'PASS' : 'FAIL'}</strong> ${escapeHtml(item.name)}: ${escapeHtml(item.detail)}</li>`)
+          .join('');
+        showResult(`
+          <strong>TEST ${escapeHtml(test.status || 'FAIL')}</strong><br>
+          <span>${escapeHtml(test.summary || '')}</span><br>
+          <span>Evidence: <span class="path">${escapeHtml(test.evidence_markdown_path || test.evidence?.markdown || '')}</span></span>
+          <ul>${checkpointList}</ul>
+        `, test.status === 'PASS' ? 'ok' : 'error');
+        if (test.status === 'PASS') markManualChecklist('pass');
+        await logManualTestStep('test-finished', `TEST ${test.status}: ${test.summary || ''}`, test.status === 'PASS' ? 'ok' : 'error');
+      } catch (error) {
+        state.testMode.result = 'FAIL';
+        renderTestMode();
+        showResult(error.message, 'error');
+        await logManualTestStep('test-run-failed', error.message, 'error');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function openTestEvidence() {
+      const path = state.testMode.run?.evidence_markdown_path || state.testMode.run?.evidence?.markdown || '';
+      if (!path) {
+        showResult('No TEST evidence report is available yet. Run the action test first.', 'error');
+        logManualTestStep('open-evidence-missing', 'User clicked TEST PASS/FAIL but no evidence path was available.', 'error');
+        return;
+      }
+      try {
+        markManualChecklist('evidence');
+        await logManualTestStep('click-open-evidence', `User opened evidence report ${path}.`);
+        const data = await apiGet(`/api/test/evidence?path=${encodeURIComponent(path)}`);
+        showResult(`
+          <strong>TEST EVIDENCE</strong><br>
+          <span class="path">${escapeHtml(data.path)}</span>
+          <pre>${escapeHtml(data.content)}</pre>
+        `, state.testMode.result === 'PASS' ? 'ok' : 'error');
+      } catch (error) {
+        showResult(error.message, 'error');
+        await logManualTestStep('open-evidence-failed', error.message, 'error');
+      }
+    }
+
+    function quitTestMode(result = '') {
+      markManualChecklist('quit');
+      logManualTestStep('quit-test-mode', 'User clicked Quit Test Mode.');
+      const snapshot = state.testMode.normalSettingsSnapshot || restoreTestModeSnapshotFromStorage();
+      const settings = snapshot?.settings || snapshot;
+      const repoPath = snapshot?.repoPath || state.testMode.normalRepoPath || '';
+      state.testMode.active = false;
+      state.testMode.result = result || state.testMode.result || '';
+      if (settings) state.settings = cloneSettings(settings);
+      if (repoPath) {
+        $('repoPath').value = repoPath;
+        localStorage.setItem('pandaCollaborator.repoPath', repoPath);
+      }
+      localStorage.removeItem('pandaCollaborator.testModeActive');
+      localStorage.removeItem('pandaCollaborator.testModeSnapshot');
+      state.testMode.normalSettingsSnapshot = null;
+      state.testMode.normalRepoPath = '';
+      state.testMode.normalProjectFilesDirectory = '';
+      state.testMode.run = null;
+      state.testMode.manualLog = null;
+      state.testMode.checklist = {};
+      state.repo = null;
+      renderSettings();
+      renderTestMode();
+      const restored = normalModeSanityCheck();
+      showResult(restored
+        ? 'TEST MODE quit complete. Normal Darrin and Pam state restored; normal-mode sanity check passed.'
+        : 'TEST MODE quit attempted, but normal-mode sanity check failed. Check settings before continuing.',
+        restored ? 'ok' : 'error');
     }
 
     function userThemeLabel(userId) {
@@ -2422,8 +3228,8 @@
       const handoffDone = Boolean(state.control?.latest_handoff || state.packages.length);
       let current = 'user1';
 
-      if (setupOpen && ['user1', 'user1Complete', 'user2', 'hub'].includes(state.registrationStage)) {
-        current = state.registrationStage === 'user1Complete' ? 'user1' : state.registrationStage;
+      if (setupOpen && ['user1', 'user2', 'users', 'hub'].includes(state.registrationStage)) {
+        current = state.registrationStage === 'users' ? (!user1Done ? 'user1' : !user2Done ? 'user2' : 'hub') : state.registrationStage;
       } else if (!user1Done) {
         current = 'user1';
       } else if (!user2Done) {
@@ -2501,7 +3307,7 @@
       const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
       const rows = [
         ['user1Ready', 'Register User 1', user1Ready, true],
-        ['user2Ready', 'Register User 2', user2Ready, user1Ready],
+        ['user2Ready', 'Register User 2', user2Ready, true],
         ['allReady', 'Open Collaborator Hub', readiness.allReady, user1Ready && user2Ready]
       ].filter(([, , , visible]) => visible);
       const rowState = Object.fromEntries(rows.map(([key, , done]) => [key, done]));
@@ -2520,7 +3326,7 @@
       const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
       const rows = [
         ['user1', '1. Register User 1', user1Ready, true],
-        ['user2', '2. Register User 2', user2Ready, user1Ready],
+        ['user2', '2. Register User 2', user2Ready, true],
         ['hub', '3. Collaborator Hub', setupReady().allReady, user1Ready && user2Ready]
       ].filter(([, , , visible]) => visible);
       $('registrationProgress').innerHTML = rows.map(([stage, label, done]) => {
@@ -2531,32 +3337,39 @@
 
     function setRegistrationStage(stage) {
       state.registrationStage = stage;
-      if (stage === 'user1') loadCommonProfileFields('user1');
-      if (stage === 'user2') loadUser2ProfileFields();
-      $('user1Transition')?.classList.toggle('hidden', stage !== 'user1Complete');
+      loadCommonProfileFields('user1');
+      loadUser2ProfileFields();
       document.querySelectorAll('[data-registration-stage]').forEach(panel => {
         const panelStage = panel.dataset.registrationStage;
         const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
         const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
         const panelReady = panelStage === 'user1' ? user1Ready : panelStage === 'user2' ? user2Ready : setupReady().allReady;
-        const transitionOpen = stage === 'user1Complete';
-        const locked = (transitionOpen && panelStage !== 'user1') || (panelStage === 'user2' && !user1Ready) || (panelStage === 'hub' && !(user1Ready && user2Ready));
-        const isCurrent = panelStage === stage && !locked;
+        const locked = panelStage === 'hub' && !(user1Ready && user2Ready);
+        const profilePanel = panelStage === 'user1' || panelStage === 'user2';
+        if (profilePanel && !panelReady) state.registrationCollapsed[panelStage] = false;
+        const collapsed = profilePanel && Boolean(state.registrationCollapsed[panelStage]);
+        const isCurrent = panelStage !== 'hub' && !locked && !panelReady;
         panel.classList.toggle('is-current', isCurrent);
-        panel.classList.toggle('is-ready', (!isCurrent && !locked && panelReady) || (transitionOpen && panelStage === 'user1'));
+        panel.classList.toggle('is-ready', !isCurrent && !locked && panelReady);
         panel.classList.toggle('is-pending', !isCurrent && !locked && !panelReady);
         panel.classList.toggle('is-locked', locked);
-        panel.dataset.registrationState = locked ? 'locked' : isCurrent ? 'current' : panelReady || (transitionOpen && panelStage === 'user1') ? 'ready' : 'pending';
+        panel.classList.toggle('is-collapsed', collapsed);
+        panel.dataset.registrationState = locked ? 'locked' : isCurrent ? 'current' : panelReady ? 'ready' : 'pending';
+        const collapseButton = panel.querySelector('[data-collapse-panel]');
+        if (collapseButton) {
+          collapseButton.textContent = collapsed ? 'Edit' : 'Collapse';
+          collapseButton.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        }
       });
       const title = {
         user1: 'REGISTER USER 1',
-        user1Complete: 'USER 1 REGISTERED',
         user2: 'REGISTER USER 2',
+        users: 'REGISTER USERS',
         hub: 'COLLABORATOR HUB'
       }[stage] || 'REGISTER USERS';
       $('setupWizardTitle').textContent = title;
       const setupDialog = document.querySelector('.setup-dialog');
-      const userTone = stage === 'user1Complete' ? 'user1' : ['user1', 'user2'].includes(stage) ? stage : '';
+      const userTone = ['user1', 'user2'].includes(stage) ? stage : '';
       if (setupDialog) {
         setupDialog.dataset.registrationStage = stage;
         if (userTone) {
@@ -2565,14 +3378,17 @@
           delete setupDialog.dataset.userTone;
         }
       }
-      $('registerBackBtn').style.display = stage === 'user1' ? 'none' : '';
-      $('registerUser1NextBtn').style.display = stage === 'user1' ? '' : 'none';
-      $('continueUser2Btn').style.display = stage === 'user1Complete' ? '' : 'none';
-      $('registerUser2FinishBtn').style.display = stage === 'user2' ? '' : 'none';
-      $('openHubBtn').style.display = stage === 'hub' ? '' : 'none';
-      document.querySelector('.wizard-grid')?.scrollTo?.({top: 0});
+      $('registerBackBtn').style.display = 'none';
+      $('registerUser1NextBtn').style.display = '';
+      $('registerUser2FinishBtn').style.display = '';
+      $('openHubBtn').style.display = setupReady().allReady ? '' : 'none';
       applyUserTheme();
       updateSetupGuide();
+    }
+
+    function toggleRegistrationPanel(userId) {
+      state.registrationCollapsed[userId] = !state.registrationCollapsed[userId];
+      setRegistrationStage('users');
     }
 
     function loadCommonProfileFields(userId) {
@@ -2607,22 +3423,24 @@
       if (!$('setupChecklist') || !$('wizardChecklist')) return;
       const readiness = setupReady();
       const markup = checklistMarkup(readiness);
-      const missing = ['user1', 'user2'].includes(state.registrationStage) ? registrationMissingFields(state.registrationStage) : [];
+      const missingUser1 = registrationMissingFields('user1');
+      const missingUser2 = registrationMissingFields('user2');
       $('setupChecklist').innerHTML = markup;
       $('wizardChecklist').innerHTML = markup;
       updateRegistrationProgress();
       $('setupWarning').textContent = readiness.allReady
-        ? 'Ready. Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to choose who is working now.'
-        : state.registrationStage === 'user1Complete'
-          ? 'User 1 is ready. Click Continue to User 2 when you are ready to register the second profile.'
-        : missing.length
-          ? `Missing for ${state.registrationStage === 'user1' ? 'User 1' : 'User 2'}: ${missing.join(', ')}.`
+        ? 'Ready. Use a Handover button to choose who is working now.'
+        : missingUser1.length || missingUser2.length
+          ? `Missing: ${[
+              missingUser1.length ? `User 1 needs ${missingUser1.join(', ')}` : '',
+              missingUser2.length ? `User 2 needs ${missingUser2.join(', ')}` : ''
+            ].filter(Boolean).join('; ')}.`
           : 'Confirm the Project Files Tracker directory, then register User 1 and User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
       $('switchUserBtn').textContent = readiness.allReady ? 'Handover Users' : 'Setup Users';
+      if (state.testMode.active) $('switchUserBtn').textContent = 'Test users';
       $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
-      $('continueUser2Btn').disabled = state.busy || !storedUserReady('user1');
       $('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');
       $('registerUser1NextBtn').dataset.missingFields = registrationMissingFields('user1').join(', ');
       $('registerUser2FinishBtn').dataset.missingFields = registrationMissingFields('user2').join(', ');
@@ -2636,10 +3454,9 @@
 
     function openSetupWizard() {
       $('setupOverlay').classList.remove('hidden');
-      const stage = setupReady().allReady ? 'hub' : storedUserReady('user1') || registrationFieldReady('user1') ? 'user2' : 'user1';
-      setRegistrationStage(stage);
+      setRegistrationStage('users');
       setTimeout(() => {
-        const target = state.registrationStage === 'user1' ? 'user1Name' : state.registrationStage === 'user1Complete' ? 'continueUser2Btn' : state.registrationStage === 'user2' ? 'user2Name' : 'openHubBtn';
+        const target = setupReady().allReady ? 'openHubBtn' : storedUserReady('user1') && !storedUserReady('user2') ? 'user2Name' : 'user1Name';
         $(target)?.focus();
       }, 0);
     }
@@ -2746,8 +3563,8 @@
     function handoverButtonLabel(userId, user) {
       const userNumber = userId === 'user1' ? 'USER 1' : 'USER 2';
       const displayName = cleanTooltipText(user?.display_name || '');
-      const normalizedName = displayName.toUpperCase();
-      return normalizedName && normalizedName !== userNumber ? `HANDOVER TO ${userNumber}: ${normalizedName}` : `HANDOVER TO ${userNumber}`;
+      const readableTarget = displayName || userNumber;
+      return {text: 'Handover', aria: `Handover to ${readableTarget}`};
     }
 
     function updateHubCards() {
@@ -2770,7 +3587,15 @@
         const user = userById(button.dataset.switchGo);
         const ready = setupReady().allReady;
         button.disabled = state.busy;
-        button.textContent = ready ? handoverButtonLabel(button.dataset.switchGo, user) : `SET UP ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`;
+        if (ready) {
+          const label = handoverButtonLabel(button.dataset.switchGo, user);
+          button.textContent = label.text;
+          button.setAttribute('aria-label', label.aria);
+        } else {
+          const setupTarget = button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2';
+          button.textContent = 'Set up';
+          button.setAttribute('aria-label', `Set up ${setupTarget}`);
+        }
       });
     }
 
@@ -2826,17 +3651,30 @@
       applyUserTheme();
       updateSetupGuide();
       renderStatusStrip(state.repo);
+      renderTestMode();
     }
 
     async function loadSettings() {
       const data = await apiGet('/api/settings');
       state.settings = data.settings;
+      const storedSnapshot = restoreTestModeSnapshotFromStorage();
+      if (localStorage.getItem('pandaCollaborator.testModeActive') === 'true' && storedSnapshot?.settings) {
+        state.testMode.normalSettingsSnapshot = storedSnapshot.settings;
+        state.testMode.normalRepoPath = storedSnapshot.repoPath || '';
+        state.testMode.normalProjectFilesDirectory = storedSnapshot.projectFilesDirectory || '';
+        state.testMode.active = true;
+        state.settings = fakeTestSettingsFrom(state.testMode.normalSettingsSnapshot);
+      }
       renderSettings();
       const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
       applyActiveProfileDefaults({forceRepo: !savedPath});
+      renderTestMode();
+      if (state.testMode.active) {
+        showResult('Recovered TEST MODE from a prior app session. Quit TEST MODE to restore normal Darrin and Pam state.');
+        return;
+      }
       if (!state.settings.setup_completed) {
-        showResult('Registration needed. The registration screen is open: register User 1, then User 2, then use the Collaborator Hub.');
-        openSetupWizard();
+        showResult('Registration needed before handover, sessions, or safe handoff creation. Working Tree scan remains available.');
       }
     }
 
@@ -2849,8 +3687,7 @@
           openSetupWizard();
           throw new Error('Finish the highlighted setup step before saving.');
         }
-        const data = await api('/api/settings', state.settings);
-        state.settings = data.settings;
+        await persistSettings();
         renderSettings();
         applyActiveProfileDefaults({forceRepo: true});
         const names = state.settings.users.map(user => user.display_name).join(' / ');
@@ -2870,6 +3707,11 @@
     }
 
     async function persistSettings() {
+      if (state.testMode.active) {
+        renderSettings();
+        localStorage.setItem('pandaCollaborator.testModeSettings', JSON.stringify(state.settings));
+        return state.settings;
+      }
       const data = await api('/api/settings', state.settings);
       state.settings = data.settings;
       renderSettings();
@@ -2901,7 +3743,7 @@
         });
         state.settings = data.suggestions;
         renderSettings();
-        setRegistrationStage(storedUserReady('user1') ? (storedUserReady('user2') ? 'hub' : 'user2') : 'user1');
+        setRegistrationStage('users');
         showResult(autoFillSummary(data));
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
@@ -2918,9 +3760,9 @@
         if (!storedUserReady('user1')) {
           throw new Error('Finish User 1 name, repo, agent, title, Codex account, Claude account, Claude paths, and Git author identity before continuing.');
         }
-        renderSettings();
-        setRegistrationStage('user1Complete');
-        showResult('User 1 registered. Review the next-step confirmation, then continue to User 2.');
+        await saveCurrentSettings();
+        setRegistrationStage('users');
+        showResult('User 1 saved. User 2 remains visible on the same setup screen.');
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
@@ -2928,18 +3770,14 @@
       }
     }
 
-    async function registerUser2AndOpenHub() {
+    async function registerUser2AndStay() {
       setBusy(true);
       try {
         syncRegistrationFieldsToState('user2');
-        if (!storedUserReady('user1')) setRegistrationStage('user1');
-        if (!storedUserReady('user1')) throw new Error('Register User 1 first.');
-        if (!storedUserReady('user2')) throw new Error('Finish User 2 name, repo, agent, title, Codex account, Claude account, Claude paths, and Git author identity before opening the Hub.');
-        state.settings.active_user_id = 'user2';
+        if (!storedUserReady('user2')) throw new Error('Finish User 2 name, repo, agent, title, Codex account, Claude account, Claude paths, and Git author identity before saving.');
         await saveCurrentSettings();
-        setRegistrationStage('hub');
-        closeSetupWizard();
-        showResult('Registration complete. Collaborator Hub is ready. Use HANDOVER TO USER 1 or HANDOVER TO USER 2 to automate the handover.');
+        setRegistrationStage('users');
+        showResult('User 2 saved. User 1 remains visible on the same setup screen.');
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
@@ -3435,16 +4273,33 @@
     $('clearPauseBtn').addEventListener('click', () => pauseWorkflow(false));
     $('searchBtn').addEventListener('click', runSearch);
     $('packagesBtn').addEventListener('click', loadPackages);
+    $('testModeBtn').addEventListener('click', () => {
+      if (!state.testMode.active) enterTestMode();
+    });
+    $('createTestSandboxBtn').addEventListener('click', createTestSandbox);
+    $('runTestAgainBtn').addEventListener('click', runPcActionTest);
+    $('openTestEvidenceBtn').addEventListener('click', openTestEvidence);
+    $('quitTestModeBtn').addEventListener('click', () => quitTestMode());
+    $('quitTestModeBannerBtn').addEventListener('click', () => quitTestMode());
+    $('testChecklistMinBtn').addEventListener('click', () => {
+      state.testMode.checklistMinimized = !state.testMode.checklistMinimized;
+      renderTestChecklist();
+    });
+    $('testChecklistResetBtn').addEventListener('click', () => {
+      resetManualChecklist();
+      logManualTestStep('manual-checklist-reset', 'User reset the floating checklist.');
+    });
+    $('testChecklistLogBtn').addEventListener('click', async () => {
+      const log = await ensureManualTestLog();
+      showResult(`Manual TEST log path:<br><span class="path">${escapeHtml(log.log_path)}</span>`);
+    });
     $('openSetupBtn').addEventListener('click', openSetupWizard);
     $('switchUserBtn').addEventListener('click', openSetupWizard);
     $('closeSetupBtn').addEventListener('click', closeSetupWizard);
     $('autoFillSetupBtn').addEventListener('click', autoFillSetup);
-    $('registerBackBtn').addEventListener('click', () => {
-      setRegistrationStage(state.registrationStage === 'hub' ? 'user2' : state.registrationStage === 'user2' ? 'user1Complete' : 'user1');
-    });
+    $('registerBackBtn').addEventListener('click', () => setRegistrationStage('users'));
     $('registerUser1NextBtn').addEventListener('click', registerUser1AndContinue);
-    $('continueUser2Btn').addEventListener('click', () => setRegistrationStage('user2'));
-    $('registerUser2FinishBtn').addEventListener('click', registerUser2AndOpenHub);
+    $('registerUser2FinishBtn').addEventListener('click', registerUser2AndStay);
     $('openHubBtn').addEventListener('click', closeSetupWizard);
     $('applyProfileBtn').addEventListener('click', () => {
       applyActiveProfileDefaults({forceRepo: true});
@@ -3453,6 +4308,11 @@
     document.querySelectorAll('[data-switch-go]').forEach(button => {
       button.addEventListener('click', () => {
         performGoSwitch(button.dataset.switchGo);
+      });
+    });
+    document.querySelectorAll('[data-collapse-panel]').forEach(button => {
+      button.addEventListener('click', () => {
+        toggleRegistrationPanel(button.dataset.collapsePanel);
       });
     });
     document.querySelectorAll('[data-path-picker]').forEach(button => {
@@ -3479,6 +4339,17 @@
         closeSetupWizard();
       }
     });
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      const setupOpen = !$('setupOverlay').classList.contains('hidden');
+      if (setupOpen && setupReady().allReady) {
+        closeSetupWizard();
+        return;
+      }
+      document.activeElement?.blur?.();
+      document.querySelector('.repo-panel .panel-body')?.scrollTo?.({top: 0, left: 0});
+      document.querySelector('.status-window')?.scrollTo?.({top: 0, left: 0});
+    });
     $('resultBox').addEventListener('click', event => {
       const summaryButton = event.target.closest('button[data-summary-view]');
       if (summaryButton) {
@@ -3503,6 +4374,7 @@
 
     async function init() {
       startTooltipObserver();
+      startTestChecklistDrag();
       renderRules();
       const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
       if (savedPath) $('repoPath').value = savedPath;

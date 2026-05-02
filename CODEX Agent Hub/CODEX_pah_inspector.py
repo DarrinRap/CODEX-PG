@@ -973,7 +973,7 @@ def inspect_ui_wiring() -> list[Finding]:
         )
     )
     health_chip_tokens = [
-        '<button class="health-chip unknown" id="healthApi"',
+        '<button class="gbtn health-chip unknown" id="healthApi"',
         'data-health-target="api"',
         'data-health-target="routes"',
         'data-health-target="queue"',

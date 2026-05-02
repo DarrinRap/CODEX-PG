@@ -4,7 +4,7 @@ This is the simple way to open and set up PANDA Collaborator.
 
 ## What The Desktop Icon Does
 
-The desktop icon starts PANDA Collaborator and opens it in your browser.
+The desktop icon starts PANDA Collaborator and opens it in your browser. During development or automated restarts, use the no-browser launcher option and refresh the existing browser tab instead of opening duplicate tabs.
 
 The app runs locally on your computer at:
 
@@ -17,7 +17,7 @@ Nothing is sent to the internet by the app just because you open it.
 ## First-Time Setup
 
 1. Double-click the **PANDA Collaborator** icon on your Desktop.
-2. Wait a few seconds for your browser to open.
+2. Wait a few seconds for your browser to open, or refresh the existing PANDA tab if it is already open.
 3. Registration should open automatically if setup is not finished.
 4. Register **User 1** first.
 5. Type the User 1 name.

@@ -70,7 +70,10 @@ PANDA Collaborator supports exactly two local user profiles.
 
 The setup and hub flow:
 
-- opens registration automatically when setup is incomplete;
+- prompts for registration when setup is incomplete without blocking repository-only Working Tree scanning;
+- keeps the Working Tree panel usable before setup is complete, with scan controls that remain reachable and a scan summary area that can scroll instead of clipping repository status;
+- keeps Working Tree Browse, Scan repository, and Packages controls visually separated: the repository path picker owns its own row, Scan repository and Packages occupy separate action columns, and narrow screens stack them rather than letting buttons touch;
+- supports Escape as a recovery key after scan/status interactions by clearing stuck focus and returning scrollable Working Tree and Status regions to the top;
 - requires User 1 registration first;
 - requires User 2 registration second;
 - opens the Collaborator Hub after both users are registered;
@@ -81,10 +84,10 @@ The setup and hub flow:
 - shows the active user's custom name in large uppercase text at the top of the screen;
 - uses clearly different complementary color themes for User 1 and User 2;
 - follows the PANDA-wide workflow rule without duplicating text: the five left-to-right workflow panels are the visible step guide, use arrow separators in their headers, and visually mark state with semantic header colors: user/current accent for the active step, yellow for pending, green for ready/done, and muted treatment for locked future steps;
-- keeps setup instructions progressive: while registering User 1, do not show User 2 or Collaborator Hub checklist rows; reveal User 2 only after User 1 is registered, then reveal the Hub only after User 2 is registered;
-- keeps the setup wizard visually compact: the dialog is capped at a compact width, the current registration step owns the available width, completed prior steps collapse to headers, locked future steps are hidden, and setup status lives in a compact footer strip instead of a duplicate full card;
+- keeps User 1 and User 2 registration side by side on one screen, so the user can compare names, colors, repository defaults, account labels, Claude paths, and Git identity without a surprise page jump;
+- keeps the setup wizard visually compact but wide enough for the paired forms: the Project Files Tracker row spans the dialog, User 1 and User 2 occupy equal columns on desktop, and the layout collapses to one column on small screens;
 - keeps the setup wizard body scrollable so all required User 1 and User 2 fields remain reachable on smaller or zoomed viewports;
-- shows an explicit User 1 registered confirmation panel after User 1 validates; the app must not silently jump from User 1 into User 2 registration without an explicit Continue to User 2 action;
+- saves User 1 in place and leaves User 2 visible on the same setup screen; User 2 registration must become activatable only after User 1 is stored and User 2's required fields are ready;
 - groups registration inputs into readable Profile and Accounts/tools/Git sections instead of presenting one unstructured slab of fields;
 - names missing required registration fields in the setup footer and on disabled registration action tooltips so a user can tell why User 1 or User 2 cannot yet be registered;
 - keeps User 1 and User 2 identity colors independent from the currently active workstation user: User 1 registration/workflow surfaces stay warm amber and User 2 registration/workflow surfaces stay cool cyan even when the other user is active in the header;
@@ -146,6 +149,7 @@ The preview is explicitly non-mutating. It does not apply patches, copy files in
 The project includes Windows helper scripts:
 
 - `CODEX_start_panda_collaborator.ps1` starts the local server and checks `/api/health`.
+- `CODEX_open_panda_collaborator.ps1` starts the local server if needed and opens PC in the browser when the user explicitly launches PC. Automation, development restarts, and tests should pass `-NoBrowser` so they refresh the existing tab instead of spawning duplicate tabs.
 - `CODEX_test_panda_collaborator.ps1` runs syntax checks, unit tests, and a live health probe when the server is running.
 
 ## Non-Goals For This MVP
@@ -175,6 +179,19 @@ PANDA must visually separate passive information from user actions.
 - The Create safe handoff button is the primary purpose action. It must be full-width or otherwise visually dominant in the Create Handoff panel, stay visible above secondary handoff actions, render grey when prerequisites are incomplete, and turn green only when the app state is ready to create the protected handoff package.
 - Across the app, safe action buttons that can currently be clicked must render green. Disabled safe actions must render grey. Dangerous actions such as Emergency Pause may retain warning/red treatment while enabled.
 - User identity colors are not button-ready colors. Amber and cyan identify User 1/User 2 surfaces; green identifies an activatable safe command.
+
+### Mandatory UI Review Gate
+
+Darrin has repeatedly flagged formatting and Bible regressions in PC. Every PC UI change must pass this gate before handoff:
+
+1. Read the current Design Bible / Bible-derived PC rules before editing UI.
+2. Run `python CODEX_ui_layout_applet.py` before and after the change.
+3. Run `python -m unittest -v tests.test_panda_collaborator`.
+4. Inspect the live browser at the actual viewport size being discussed.
+5. Look specifically for repeated failure modes: overlapping buttons, button text clipping, hidden horizontal overflow, duplicate controls for one action, clickable pill-looking controls, green applied to non-actions, user identity colors used as readiness colors, and narrow-width grids that still force desktop columns.
+6. Update this spec or the applet whenever Darrin identifies a new repeated visual failure.
+
+Completion language must be evidence-based: name the applet, tests, and visual review performed. If a live browser check was not performed, say so plainly.
 
 ### Start Session Workflow
 
@@ -209,6 +226,7 @@ PANDA must include a simple message/status window.
 Messages must:
 
 - be visible in the app;
+- use a single visible scrollbar in the Status Messages panel: the outer panel body clips overflow and the message body owns scrolling;
 - be saved to readable local files;
 - preserve author, timestamp, kind, text, and active user context;
 - be included in project history/search.

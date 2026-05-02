@@ -1,6 +1,6 @@
 # CODEX Project Memory
 
-Last updated: 2026-04-30 07:45:00 -07:00
+Last updated: 2026-05-01 20:05:00 -07:00
 
 This file is the durable memory for Codex work on the PG Testing + Audit desktop project. Future Codex chats should read this file first before making plans or edits.
 
@@ -43,6 +43,7 @@ Updated: 2026-04-30 07:50:00 -07:00
 - PAH/CD reporting pattern: for PAH, notify CD before substantive changes when practical, then send CD a concise verification summary after testing.
 - Resume priority order: check current mail first, read the latest handoff/resume context, check git status, check PAH/relay health when PAH is relevant, then work the highest-priority active dispatch.
 - Definition of done: work is not done until code, docs, tests, mailbox reports, and git state match the actual state, with remaining risk named plainly.
+- Completion coordination: whenever Codex completes a task, send CD a concise completion/report message and ask for help, direction, or the next action instead of going quiet.
 - Communication style preference: be direct, brief, evidence-based, and do not overstate certainty. Say `not proven yet` when that is the truth.
 - Safety hygiene: never write credentials, tokens, PHI, patient data, or approval-sensitive secrets into memory, mailbox, logs, reports, or test fixtures.
 - PAH performance harness direction: PAH needs a real pickup-latency, concurrency, endurance, and failure-injection harness. Smoke tests alone are not sufficient proof of reliability.
@@ -84,6 +85,23 @@ Use the existing Panda Gallery visual vocabulary as reference:
 - Quiet grey secondary text.
 - Stable bottom action bars.
 - Evidence stays attached to decisions.
+
+## Recurring Design Error Prevention Rule
+
+Updated: 2026-05-01 10:55:00 -07:00
+
+Darrin has repeatedly flagged Codex for design and formatting regressions. Future Codex sessions must review this section before any UI, mockup, applet, or frontend work and must treat it as a standing quality gate, not optional polish.
+
+Recurring mistakes to avoid:
+
+- Do not ship visual changes based only on code inspection. Run the relevant applet/checker and inspect the live browser or rendered mockup before saying the UI is fixed.
+- Do not let buttons overlap, touch, clip text, or stack unreadably at narrow widths. Check actual rendered screenshots, not just CSS intent.
+- Do not confuse action buttons with informational pills. Rectangular/square controls do work. Pillbox/chip controls are informational/status only. A clickable pill-looking control is a visual bug.
+- Do not use user identity colors as readiness colors. Green means an enabled safe action. Grey means disabled. Warning/red is reserved for danger, fail, or emergency states.
+- Do not create duplicate or competing controls for the same action. If multiple controls look similar, simplify the flow before adding more labels.
+- Do not call PC/PAH UI work complete until the written spec, applet checks, automated tests, and live visual review agree.
+
+For PANDA Collaborator specifically, run and review `C:\CODEX PG\CODEX PANDA Collaborator\CODEX_ui_layout_applet.py` before and after UI changes. It must include Bible checks for action-button shape, passive pill behavior, responsive stacking, and known overlap regressions.
 
 ## Codex Artifacts Created
 
@@ -130,7 +148,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-04-30 21:14:16 -07:00
+Last generated: 2026-05-01 17:35:20 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -339,6 +357,7 @@ Latest schema decisions sent to Claude through mailbox:
 - Q1 = Option B: structured `warnings[]` is canonical; no `missing_sources[]` in new Stage 1 output.
 - Q2 = Option A: shortened package/folder IDs with 8-character SHA256 suffix; full session_id/run_id remain in manifest.
 - Q3 = Option A: absolute local paths acceptable for Stage 1 local-only output, deferred redaction/relativization before external transfer.
+
 
 
 

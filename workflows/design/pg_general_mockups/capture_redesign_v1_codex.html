@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ledger Capture Redesign V1 - Guided Review Console</title>
+  <style>
+    :root {
+      --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-raised:#22223a;
+      --pane-selected:#2a2a4e; --stage:#0a0a14; --border-soft:#232336; --border:#2a2a3e;
+      --border-hover:#3a3a4e; --text:#e0ddd5; --text-muted:#9b9b9b; --text-dim:#666;
+      --accent-light:#f0b98c; --accent:#e8a87c; --accent-hover:#d4945a; --accent-soft:rgba(232,168,124,.12);
+      --accent-border:rgba(232,168,124,.45); --accent-ink:#1a1a2e; --ok:#7fb069;
+      --ok-soft:rgba(127,176,105,.12); --ok-border:rgba(127,176,105,.45);
+      --warn:#f39c12; --warn-soft:rgba(243,156,18,.12); --warn-border:rgba(243,156,18,.45);
+      --err:#e74c3c; --err-soft:rgba(231,76,60,.12); --err-border:rgba(231,76,60,.45);
+      --gap:#5fa0a8; --cyan:#66d9ef;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; background:var(--canvas); color:var(--text);
+      font-family:"Segoe UI","SF Pro","Noto Sans",sans-serif; font-size:13px;
+    }
+    .page { width:min(1320px, calc(100vw - 28px)); margin:18px auto 48px; }
+    .hero {
+      padding:14px 16px; border:1px solid var(--accent-border); border-radius:8px;
+      background:linear-gradient(90deg, rgba(232,168,124,.12), rgba(95,160,168,.08));
+      margin-bottom:16px;
+    }
+    .eyebrow, .label, .meta, .state-badge {
+      text-transform:uppercase; letter-spacing:0; color:var(--text-muted); font-weight:800;
+    }
+    h1, h2, h3, p { margin:0; }
+    h1 { font-size:28px; color:var(--accent-light); margin-top:3px; }
+    .hero p { margin-top:6px; color:var(--text-muted); line-height:1.35; max-width:1060px; }
+    .open-call {
+      margin-top:10px; padding:8px 10px; border-left:4px solid var(--gap);
+      background:rgba(95,160,168,.1); border-radius:4px; color:var(--text);
+    }
+    .state { margin:18px 0 30px; }
+    .state-head {
+      display:flex; align-items:flex-start; gap:12px; margin-bottom:10px;
+    }
+    .state-badge {
+      flex:0 0 auto; color:var(--accent-ink); background:var(--accent); border-radius:4px;
+      padding:5px 8px; font-size:12px;
+    }
+    .state h2 { color:var(--text); font-size:19px; }
+    .state-desc { color:var(--text-muted); margin-top:4px; line-height:1.3; }
+    .window {
+      height:760px; border:1px solid var(--border); border-radius:8px; overflow:hidden;
+      background:var(--stage); box-shadow:0 16px 34px rgba(0,0,0,.35);
+    }
+    .titlebar {
+      height:46px; display:flex; align-items:center; justify-content:space-between;
+      padding:0 14px; background:var(--chrome); border-bottom:1px solid var(--border);
+    }
+    .brand { display:flex; align-items:center; gap:9px; font-weight:800; font-size:17px; }
+    .pcmark {
+      width:28px; height:28px; border-radius:4px; display:grid; place-items:center;
+      background:var(--accent); color:var(--accent-ink); font-weight:900;
+    }
+    .top-status { display:flex; align-items:center; gap:8px; }
+    .pill {
+      display:inline-flex; align-items:center; min-height:24px; padding:0 9px;
+      border-radius:999px; border:1px solid var(--border-hover); background:var(--pane-raised);
+      color:var(--text-muted); font-weight:800; white-space:nowrap;
+    }
+    .pill.ok { color:var(--ok); border-color:var(--ok-border); background:var(--ok-soft); }
+    .pill.warn { color:var(--warn); border-color:var(--warn-border); background:var(--warn-soft); }
+    .pill.err { color:var(--err); border-color:var(--err-border); background:var(--err-soft); }
+    .button {
+      min-height:30px; padding:0 11px; border-radius:4px; border:1px solid var(--border-hover);
+      background:var(--pane-raised); color:var(--text); font-weight:800; display:inline-flex;
+      align-items:center; justify-content:center; white-space:nowrap;
+    }
+    .button.primary { background:var(--accent); border-color:var(--accent-hover); color:var(--accent-ink); }
+    .button.ok { background:var(--ok); border-color:var(--ok-border); color:#08110a; }
+    .button.warn { background:var(--warn); border-color:var(--warn-border); color:#170f02; }
+    .button.err { background:var(--err); border-color:var(--err-border); color:#160302; }
+    .button.ghost { background:transparent; color:var(--text-muted); }
+    .workspace { height:682px; padding:12px; display:grid; grid-template-rows:auto 1fr auto; gap:10px; }
+    .stepper {
+      min-height:54px; display:grid; grid-template-columns:1fr auto 1fr auto 1fr;
+      gap:10px; align-items:center; background:var(--pane); border:1px solid var(--border);
+      border-radius:6px; padding:8px 10px;
+    }
+    .step { display:flex; gap:8px; align-items:center; color:var(--text-muted); }
+    .step .num {
+      width:26px; height:26px; border:1px solid var(--border-hover); border-radius:4px;
+      display:grid; place-items:center; color:var(--text-muted); font-weight:900;
+    }
+    .step.active { color:var(--accent-light); }
+    .step.active .num { border-color:var(--accent-border); background:var(--accent-soft); color:var(--accent-light); }
+    .step.done { color:var(--ok); }
+    .step.done .num { border-color:var(--ok-border); background:var(--ok-soft); color:var(--ok); }
+    .line { height:1px; background:var(--border-hover); }
+    .banner {
+      padding:8px 10px; border-radius:4px; border:1px solid var(--border);
+      background:var(--pane-raised); font-weight:700; line-height:1.25;
+    }
+    .banner.ok { border-color:var(--ok-border); background:var(--ok-soft); color:var(--ok); }
+    .banner.warn { border-color:var(--warn-border); background:var(--warn-soft); color:var(--warn); }
+    .banner.err { border-color:var(--err-border); background:var(--err-soft); color:var(--err); }
+    .capture-grid { min-height:0; display:grid; grid-template-columns:minmax(0, 1fr) 355px; gap:10px; }
+    .main-pane, .side-pane {
+      min-height:0; background:var(--pane); border:1px solid var(--border); border-radius:6px; padding:10px;
+    }
+    .main-pane { display:grid; grid-template-rows:auto auto 1fr auto; gap:9px; }
+    .identity { display:grid; grid-template-columns:2fr 1.1fr 150px; gap:8px; }
+    .field { min-width:0; }
+    .label { display:block; font-size:11px; margin-bottom:4px; }
+    .hintable { text-decoration:underline dotted var(--text-dim); text-underline-offset:3px; }
+    .input, .textarea, .select {
+      min-height:32px; border:1px solid var(--border); border-radius:4px; background:var(--chrome);
+      color:var(--text); padding:7px 9px; font-weight:650; overflow:hidden; text-overflow:ellipsis;
+    }
+    .textarea { min-height:70px; line-height:1.3; font-weight:500; }
+    .textarea.tall { min-height:104px; }
+    .textarea.readonly, .input.readonly, .select.readonly { opacity:.72; background:#171724; }
+    .accordion { display:grid; gap:7px; min-height:0; }
+    .section-card {
+      border:1px solid var(--border); border-radius:6px; background:rgba(34,34,58,.45); overflow:hidden;
+    }
+    .section-title {
+      min-height:34px; display:flex; align-items:center; justify-content:space-between;
+      padding:0 9px; border-bottom:1px solid var(--border-soft);
+    }
+    .section-title strong { color:var(--text); }
+    .section-body { padding:8px 9px; }
+    .section-card.closed .section-body { display:none; }
+    .chev { color:var(--accent-light); font-weight:900; }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .tags { display:flex; gap:6px; flex-wrap:wrap; }
+    .tag {
+      border:1px solid var(--border-hover); background:var(--pane-raised); border-radius:4px;
+      padding:4px 6px; color:var(--text-muted); font-weight:700; font-size:12px;
+    }
+    .soft { color:var(--warn); font-weight:900; }
+    .actions { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .actions .right { display:flex; gap:8px; justify-content:flex-end; }
+    .side-pane { display:grid; grid-template-rows:auto 1fr auto; gap:9px; }
+    .reference {
+      border:1px dashed var(--border-hover); border-radius:6px; background:linear-gradient(135deg, #1c1c30, #11111c);
+      min-height:220px; display:grid; place-items:center; color:var(--text-muted); text-align:center; padding:12px;
+    }
+    .mini-list { display:grid; gap:6px; }
+    .mini-row { display:flex; justify-content:space-between; gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:4px; background:var(--chrome); }
+    .statusbar {
+      height:32px; display:flex; align-items:center; justify-content:space-between; padding:0 12px;
+      border-top:1px solid var(--border); background:var(--chrome); color:var(--text-muted); font-size:12px;
+    }
+    .empty-shell {
+      display:grid; place-items:center; min-height:370px; border:1px dashed var(--border-hover);
+      border-radius:6px; color:var(--text-muted); text-align:center; padding:24px;
+    }
+    .empty-shell h3 { color:var(--accent-light); font-size:22px; margin-bottom:8px; }
+    .dialog-overlay {
+      height:682px; display:grid; place-items:center; background:rgba(10,10,20,.72); padding:24px;
+    }
+    .dialog {
+      width:940px; max-width:100%; background:var(--pane); border:1px solid var(--accent-border);
+      border-radius:8px; box-shadow:0 18px 44px rgba(0,0,0,.55); overflow:hidden;
+    }
+    .dialog-head, .dialog-foot {
+      padding:10px 12px; background:var(--chrome); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .dialog-foot { border-top:1px solid var(--border); border-bottom:0; justify-content:flex-end; }
+    .draft-grid { padding:12px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+    .draft-card { position:relative; padding:10px; min-height:98px; border:1px solid var(--border); border-radius:6px; background:var(--pane-raised); }
+    .draft-card.selected { border-color:var(--accent-border); background:var(--accent-soft); }
+    .draft-title { font-weight:900; color:var(--text); margin-bottom:4px; }
+    .draft-summary { color:var(--text-muted); line-height:1.25; }
+    .draft-meta { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+    .tooltip {
+      position:absolute; right:-16px; top:78px; width:290px; padding:9px 10px; z-index:4;
+      background:#11111c; border:1px solid var(--accent-border); border-radius:6px;
+      box-shadow:0 12px 30px rgba(0,0,0,.5); color:var(--text); line-height:1.3;
+    }
+    .dropdown {
+      position:absolute; margin-top:4px; width:290px; background:var(--chrome); border:1px solid var(--accent-border);
+      border-radius:6px; overflow:hidden; box-shadow:0 12px 26px rgba(0,0,0,.45); z-index:3;
+    }
+    .option { padding:8px 10px; border-bottom:1px solid var(--border); }
+    .option:last-child { border-bottom:0; }
+    .option strong { color:var(--accent-light); display:block; }
+    .option span { color:var(--text-muted); font-size:12px; }
+    .relative { position:relative; }
+    .disabled-mask { opacity:.55; }
+    .note {
+      margin-top:10px; padding:8px 10px; border-left:4px solid var(--accent);
+      background:var(--accent-soft); border-radius:4px; color:var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Codex Capture Redesign V1</div>
+      <h1>Guided Review Console</h1>
+      <p>Design position: keep the proven PG v4 dark console and make Capture feel like a short guided review. The top stepper tells the user what to do, the center fields stay compact, and the right rail holds visual proof plus lock status. All action controls are rectangular. Pills are read-only status only.</p>
+      <div class="open-call">Open calls: tooltip discovery uses dotted-underlined labels instead of extra question buttons; Stage vocabulary uses Draft / Ready / Locked / Replaced / Retired / Amended to avoid the HR-feeling word "Accepted"; empty optional sections collapse to reduce visual load.</div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C1</span><div><h2>Picker dialog, 10 drafts</h2><p class="state-desc">PG-dark dialog, card grid, one clear primary action. Double-click or Enter on a card equals Open this draft.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill">10 drafts found</span><span class="pill ok">Ready</span></div></div>
+        <div class="dialog-overlay">
+          <div class="dialog">
+            <div class="dialog-head"><div><div class="eyebrow">Open a draft decision</div><h2>Choose the draft to review</h2></div><span class="pill">Double-click opens</span></div>
+            <div class="draft-grid">
+              <div class="draft-card selected"><div class="draft-title">Serialize ledger build plan v2</div><div class="draft-summary">Locks the Capture redesign implementation order after review.</div><div class="draft-meta"><span class="tag">Today 10:42</span><span class="tag">Design</span></div></div>
+              <div class="draft-card"><div class="draft-title">Retire old tab affordance</div><div class="draft-summary">Removes the confusing Verify tab from Capture until fixed.</div><div class="draft-meta"><span class="tag">Today 09:18</span><span class="tag">UX</span></div></div>
+              <div class="draft-card"><div class="draft-title">Adopt warm status banners</div><div class="draft-summary">Defines green, amber, and red Capture feedback states.</div><div class="draft-meta"><span class="tag">Yesterday</span><span class="tag">Bible</span></div></div>
+              <div class="draft-card"><div class="draft-title">Picker card tooltip behavior</div><div class="draft-summary">Documents hover preview and keyboard open behavior.</div><div class="draft-meta"><span class="tag">Yesterday</span><span class="tag">Interaction</span></div></div>
+              <div class="draft-card"><div class="draft-title">Decision title copy rule</div><div class="draft-summary">Renames Title to Decision title across Capture.</div><div class="draft-meta"><span class="tag">Apr 29</span></div></div>
+              <div class="draft-card"><div class="draft-title">Visual reference field</div><div class="draft-summary">Moves snippet controls into a named right rail.</div><div class="draft-meta"><span class="tag">Apr 29</span></div></div>
+            </div>
+            <div class="dialog-foot"><span class="button ghost">Cancel</span><span class="button primary">Open this draft</span></div>
+          </div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture picker</span><span>v4.72.1 design target</span></div>
+      </div>
+      <p class="note">Bible notes: replaces native light QDialog; avoids list-box jargon; uses rectangular dialog buttons and status pills only for readouts.</p>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C2</span><div><h2>Empty state, no draft loaded</h2><p class="state-desc">No dead form. The screen says exactly what is missing and gives one obvious next action.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill">No draft</span><span class="pill warn">Waiting</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step active"><span class="num">1</span><strong>Open draft</strong></div><div class="line"></div><div class="step"><span class="num">2</span><strong>Review and edit</strong></div><div class="line"></div><div class="step"><span class="num">3</span><strong>Lock decision</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="empty-shell"><div><h3>No draft is open</h3><p>Open a staged draft to review it, or start a new one if the chat did not create one yet.</p><div style="margin-top:14px; display:flex; gap:8px; justify-content:center;"><span class="button primary">Open staged draft</span><span class="button">Start blank draft</span></div></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Visual reference</div><div class="reference">A screenshot or mockup preview appears here after a draft is opened.</div><div class="mini-list"><div class="mini-row"><span>Source</span><strong>None</strong></div><div class="mini-row"><span>Freshness</span><strong>Not loaded</strong></div></div></div>
+          </div>
+          <div class="banner">Open a draft first. Capture will guide you through review and locking.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture</span><span>No staging file loaded</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C3</span><div><h2>Draft loaded default</h2><p class="state-desc">Primary fields and helpful sections are visible. Empty optional detail stays collapsed.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill ok">Draft loaded</span><span class="pill">Source fresh</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step done"><span class="num">1</span><strong>Draft open</strong></div><div class="line"></div><div class="step active"><span class="num">2</span><strong>Review and edit</strong></div><div class="line"></div><div class="step"><span class="num">3</span><strong>Lock decision</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="identity"><div class="field"><span class="label">Decision title</span><div class="input">Serialize ledger build plan v2</div></div><div class="field"><span class="label">Short ID</span><div class="input">serialize-ledger-build-plan-v2</div></div><div class="field"><span class="label">Stage</span><div class="select">Draft</div></div></div>
+              <div class="section-card"><div class="section-title"><strong>What was decided</strong><span class="chev">open</span></div><div class="section-body"><div class="textarea">Use a two-step Capture redesign process: first mockups, then implementation after Darrin chooses the winning structure.</div></div></div>
+              <div class="accordion">
+                <div class="section-card"><div class="section-title"><strong><span class="hintable">Why we chose this</span> <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea tall">The current Capture screen works technically but creates friction: unclear labels, no top guidance, too much visible detail, and a picker that does not match PG dark UI.</div></div></div>
+                <div class="split"><div class="section-card"><div class="section-title"><strong>The conversation that led here <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea">Q: Can this be easier to answer? A: Yes. Rename jargon, group fields, and teach the flow at the top.</div></div></div><div class="section-card closed"><div class="section-title"><strong>Linked Design Bible refs <span class="soft">!</span></strong><span class="chev">closed</span></div><div class="section-body"></div></div></div>
+                <div class="split"><div class="section-card closed"><div class="section-title"><strong>What we ruled out and why <span class="soft">!</span></strong><span class="chev">closed</span></div><div class="section-body"></div></div><div class="section-card closed"><div class="section-title"><strong>Related decisions</strong><span class="chev">closed</span></div><div class="section-body"></div></div></div>
+              </div>
+              <div class="actions"><span class="pill">Recommended fields show !</span><div class="right"><span class="button">Save draft</span><span class="button primary">Lock decision</span></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Visual reference (screenshot or mockup)</div><div class="reference">Mockup preview<br><span class="meta">AM_screen_a_v4_rebuild.html</span></div><div class="mini-list"><div class="mini-row"><span>Ready to lock</span><strong style="color:var(--ok)">Yes</strong></div><div class="mini-row"><span>Warnings</span><strong>0</strong></div></div></div>
+          </div>
+          <div class="banner ok">[ok] Draft has the required title, short ID, and decision summary.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture review</span><span>workflows/decisions/staging/proposed_serialize...</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C4</span><div><h2>Paths considered expanded</h2><p class="state-desc">The optional section opens without making the whole page overflow. It uses lay language instead of "forbidden alternatives."</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill ok">Draft loaded</span><span class="pill warn">1 note needed</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step done"><span class="num">1</span><strong>Draft open</strong></div><div class="line"></div><div class="step active"><span class="num">2</span><strong>Review and edit</strong></div><div class="line"></div><div class="step"><span class="num">3</span><strong>Lock decision</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="identity"><div class="field"><span class="label">Decision title</span><div class="input">Serialize ledger build plan v2</div></div><div class="field"><span class="label">Short ID</span><div class="input">serialize-ledger-build-plan-v2</div></div><div class="field"><span class="label">Stage</span><div class="select">Draft</div></div></div>
+              <div class="section-card"><div class="section-title"><strong>What was decided</strong><span class="chev">open</span></div><div class="section-body"><div class="textarea">Build Capture mockups first, then implement the chosen pattern.</div></div></div>
+              <div class="accordion">
+                <div class="section-card"><div class="section-title"><strong>Why we chose this <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea">Mockups let Darrin choose the UX before code hardens the wrong structure.</div></div></div>
+                <div class="section-card"><div class="section-title"><strong>What we ruled out and why <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea tall">1. Keep all fields visible: too much noise. 2. Keep native picker: breaks PG visual language. 3. Use tabbed capture/browse/verify as primary guidance: hides the real task order.</div></div></div>
+                <div class="split"><div class="section-card closed"><div class="section-title"><strong>The conversation that led here <span class="soft">!</span></strong><span class="chev">closed</span></div><div class="section-body"></div></div><div class="section-card closed"><div class="section-title"><strong>Tags</strong><span class="chev">closed</span></div><div class="section-body"></div></div></div>
+              </div>
+              <div class="actions"><span class="pill warn">1 recommended section open</span><div class="right"><span class="button">Save draft</span><span class="button primary">Lock decision</span></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Visual reference</div><div class="reference">Reference attached<br><span class="meta">capture_old_overflow.png</span></div><div class="mini-list"><div class="mini-row"><span>Warnings</span><strong style="color:var(--warn)">1</strong></div><div class="mini-row"><span>Can still lock</span><strong>Yes</strong></div></div></div>
+          </div>
+          <div class="banner warn">[!] Recommended: add Design Bible references before locking, if known.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture review</span><span>Optional detail expanded</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C5</span><div><h2>Stage dropdown open</h2><p class="state-desc">Stage names are plain-language and each option explains when to use it.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill">Editing stage</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step done"><span class="num">1</span><strong>Draft open</strong></div><div class="line"></div><div class="step active"><span class="num">2</span><strong>Review and edit</strong></div><div class="line"></div><div class="step"><span class="num">3</span><strong>Lock decision</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="identity"><div class="field"><span class="label">Decision title</span><div class="input">Serialize ledger build plan v2</div></div><div class="field"><span class="label">Short ID</span><div class="input">serialize-ledger-build-plan-v2</div></div><div class="field relative"><span class="label">Stage</span><div class="select">Draft</div><div class="dropdown"><div class="option"><strong>Draft</strong><span>Still being reviewed.</span></div><div class="option"><strong>Ready</strong><span>Looks right and can be locked next.</span></div><div class="option"><strong>Locked</strong><span>Permanent record after Lock decision.</span></div><div class="option"><strong>Amended</strong><span>Small note added later.</span></div><div class="option"><strong>Replaced</strong><span>A newer decision took over.</span></div><div class="option"><strong>Retired</strong><span>No longer used.</span></div></div></div></div>
+              <div class="section-card"><div class="section-title"><strong>What was decided</strong><span class="chev">open</span></div><div class="section-body"><div class="textarea">Use clear stage words in the capture review surface.</div></div></div>
+              <div class="accordion"><div class="section-card"><div class="section-title"><strong>Why we chose this <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea tall">"Accepted" can read like people/process approval. "Locked" matches the button and the ledger behavior.</div></div></div></div>
+              <div class="actions"><span class="pill">Dropdown uses tooltips as helper text</span><div class="right"><span class="button">Save draft</span><span class="button primary">Lock decision</span></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Visual reference</div><div class="reference">Stage vocabulary preview</div><div class="mini-list"><div class="mini-row"><span>Current stage</span><strong>Draft</strong></div></div></div>
+          </div>
+          <div class="banner">Choose the stage that describes the decision now. Locking will set it to Locked.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture review</span><span>Stage menu open</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C6</span><div><h2>Hard-required field empty</h2><p class="state-desc">The Lock action fails in red only when the user must fix something before the ledger can safely write.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill err">Cannot lock</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step done"><span class="num">1</span><strong>Draft open</strong></div><div class="line"></div><div class="step active"><span class="num">2</span><strong>Fix missing title</strong></div><div class="line"></div><div class="step"><span class="num">3</span><strong>Lock decision</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="identity"><div class="field"><span class="label">Decision title</span><div class="input" style="border-color:var(--err-border); color:var(--err)">Missing</div></div><div class="field"><span class="label">Short ID</span><div class="input">serialize-ledger-build-plan-v2</div></div><div class="field"><span class="label">Stage</span><div class="select">Draft</div></div></div>
+              <div class="section-card"><div class="section-title"><strong>What was decided</strong><span class="chev">open</span></div><div class="section-body"><div class="textarea">Build Capture mockups first, then implement.</div></div></div>
+              <div class="accordion"><div class="section-card"><div class="section-title"><strong>Why we chose this <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea tall">The title is empty because the draft parser did not recognize the chat heading.</div></div></div></div>
+              <div class="actions"><span class="pill err">Title required</span><div class="right"><span class="button">Save draft</span><span class="button primary disabled-mask">Lock decision</span></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Visual reference</div><div class="reference">Preview available after title is fixed.</div><div class="mini-list"><div class="mini-row"><span>Blocking issues</span><strong style="color:var(--err)">1</strong></div></div></div>
+          </div>
+          <div class="banner err">[x] Add a Decision title before locking. Capture cannot create a permanent record without it.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture review</span><span>Lock blocked</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C7</span><div><h2>Soft-required field empty</h2><p class="state-desc">A recommended field can be missing. The user sees amber, not a hard stop.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill warn">Lock with warning</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step done"><span class="num">1</span><strong>Draft open</strong></div><div class="line"></div><div class="step done"><span class="num">2</span><strong>Reviewed</strong></div><div class="line"></div><div class="step active"><span class="num">3</span><strong>Lock decision</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="identity"><div class="field"><span class="label">Decision title</span><div class="input">Serialize ledger build plan v2</div></div><div class="field"><span class="label">Short ID</span><div class="input">serialize-ledger-build-plan-v2</div></div><div class="field"><span class="label">Stage</span><div class="select">Draft</div></div></div>
+              <div class="section-card"><div class="section-title"><strong>What was decided</strong><span class="chev">open</span></div><div class="section-body"><div class="textarea">Proceed with the guided review console.</div></div></div>
+              <div class="accordion"><div class="section-card"><div class="section-title"><strong>Why we chose this <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea tall" style="border-color:var(--warn-border); color:var(--text-muted)">Recommended: helps future-you understand why. Empty is allowed, but Capture will record a warning.</div></div></div></div>
+              <div class="actions"><span class="pill warn">1 recommended field empty</span><div class="right"><span class="button">Go back and add why</span><span class="button primary">Lock anyway</span></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Visual reference</div><div class="reference">Screenshot attached</div><div class="mini-list"><div class="mini-row"><span>Can lock</span><strong style="color:var(--ok)">Yes</strong></div><div class="mini-row"><span>Warning</span><strong>Why missing</strong></div></div></div>
+          </div>
+          <div class="banner warn">[!] Locked as DECISION_0001. Warning: Why we chose this is missing.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture review</span><span>Recommended field warning</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C8</span><div><h2>Just locked, 60-second unlock window</h2><p class="state-desc">The form becomes read-only, the status turns green, and the reversible action is clearly time boxed.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill ok">Locked</span><span class="pill warn">Unlock 0:54</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step done"><span class="num">1</span><strong>Draft open</strong></div><div class="line"></div><div class="step done"><span class="num">2</span><strong>Reviewed</strong></div><div class="line"></div><div class="step done"><span class="num">3</span><strong>Locked as DECISION_0001</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="identity"><div class="field"><span class="label">Decision title</span><div class="input readonly">Serialize ledger build plan v2</div></div><div class="field"><span class="label">Short ID</span><div class="input readonly">serialize-ledger-build-plan-v2</div></div><div class="field"><span class="label">Stage</span><div class="select readonly">Locked</div></div></div>
+              <div class="section-card"><div class="section-title"><strong>What was decided</strong><span class="chev">open</span></div><div class="section-body"><div class="textarea readonly">Use the guided review console as the leading Capture candidate.</div></div></div>
+              <div class="accordion"><div class="section-card"><div class="section-title"><strong>Why we chose this <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea tall readonly">It fixes label clarity, flow guidance, picker mismatch, overflow, and warning language together.</div></div></div></div>
+              <div class="actions"><span class="pill ok">Permanent ID assigned</span><div class="right"><span class="button warn">Unlock decision</span></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Lock status</div><div class="reference">DECISION_0001<br><span class="meta">Unlock available for 0:54</span></div><div class="mini-list"><div class="mini-row"><span>Saved to ledger</span><strong style="color:var(--ok)">Yes</strong></div><div class="mini-row"><span>Staging draft</span><strong>Moved</strong></div></div></div>
+          </div>
+          <div class="banner ok">[ok] Locked as DECISION_0001. Click Unlock within 60 seconds to reverse.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Locked decision</span><span>workflows/decisions/DECISION_0001...</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C9</span><div><h2>Post-60 seconds locked</h2><p class="state-desc">The temporary undo path is gone. Later changes become explicit ledger actions.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill ok">Locked</span><span class="pill">Undo closed</span></div></div>
+        <div class="workspace">
+          <div class="stepper"><div class="step done"><span class="num">1</span><strong>Draft open</strong></div><div class="line"></div><div class="step done"><span class="num">2</span><strong>Reviewed</strong></div><div class="line"></div><div class="step done"><span class="num">3</span><strong>Decision locked</strong></div></div>
+          <div class="capture-grid">
+            <div class="main-pane">
+              <div class="identity"><div class="field"><span class="label">Decision title</span><div class="input readonly">Serialize ledger build plan v2</div></div><div class="field"><span class="label">Short ID</span><div class="input readonly">serialize-ledger-build-plan-v2</div></div><div class="field"><span class="label">Stage</span><div class="select readonly">Locked</div></div></div>
+              <div class="section-card"><div class="section-title"><strong>What was decided</strong><span class="chev">open</span></div><div class="section-body"><div class="textarea readonly">Capture now has a permanent decision record.</div></div></div>
+              <div class="accordion"><div class="section-card"><div class="section-title"><strong>Why we chose this <span class="soft">!</span></strong><span class="chev">open</span></div><div class="section-body"><div class="textarea tall readonly">The decision can no longer be silently changed. Future edits must be ledger-visible.</div></div></div></div>
+              <div class="actions"><span class="pill ok">Open Browse to inspect</span><div class="right"><span class="button">Amend</span><span class="button">Supersede</span><span class="button err">Retire</span></div></div>
+            </div>
+            <div class="side-pane"><div class="eyebrow">Permanent record</div><div class="reference">DECISION_0001 is locked<br><span class="meta">Undo window closed</span></div><div class="mini-list"><div class="mini-row"><span>Next action</span><strong>Browse or amend</strong></div></div></div>
+          </div>
+          <div class="banner ok">[ok] Decision locked. Open Browse to inspect, or use Amend / Supersede / Retire for later changes.</div>
+        </div>
+        <div class="statusbar"><span>Mode: Locked decision</span><span>Amend, Supersede, Retire available</span></div>
+      </div>
+    </section>
+
+    <section class="state">
+      <div class="state-head"><span class="state-badge">STATE C10</span><div><h2>Picker dialog with card tooltip</h2><p class="state-desc">The tooltip exposes internal detail only when needed, keeping the card itself readable.</p></div></div>
+      <div class="window">
+        <div class="titlebar"><div class="brand"><span class="pcmark">PG</span> Ledger Capture</div><div class="top-status"><span class="pill">10 drafts found</span><span class="pill ok">Ready</span></div></div>
+        <div class="dialog-overlay">
+          <div class="dialog">
+            <div class="dialog-head"><div><div class="eyebrow">Open a draft decision</div><h2>Choose the draft to review</h2></div><span class="pill">Hover shows detail</span></div>
+            <div class="draft-grid">
+              <div class="draft-card selected"><div class="draft-title">Serialize ledger build plan v2</div><div class="draft-summary">Locks the Capture redesign implementation order after review.</div><div class="draft-meta"><span class="tag">Today 10:42</span><span class="tag">Design</span></div><div class="tooltip"><strong>Full draft preview</strong><br>Title: Serialize ledger build plan v2<br>Short ID: serialize-ledger-build-plan-v2<br>Created: 2026-05-01 10:42<br>Summary: review the chosen Capture flow before implementation.</div></div>
+              <div class="draft-card"><div class="draft-title">Retire old tab affordance</div><div class="draft-summary">Removes confusing Verify exposure until bug #144 is fixed.</div><div class="draft-meta"><span class="tag">Today 09:18</span></div></div>
+              <div class="draft-card"><div class="draft-title">Adopt warm status banners</div><div class="draft-summary">Defines green, amber, and red Capture feedback states.</div><div class="draft-meta"><span class="tag">Yesterday</span></div></div>
+              <div class="draft-card"><div class="draft-title">Picker card tooltip behavior</div><div class="draft-summary">Documents hover preview and keyboard open behavior.</div><div class="draft-meta"><span class="tag">Yesterday</span></div></div>
+            </div>
+            <div class="dialog-foot"><span class="button ghost">Cancel</span><span class="button primary">Open this draft</span></div>
+          </div>
+        </div>
+        <div class="statusbar"><span>Mode: Capture picker</span><span>Tooltip preview visible</span></div>
+      </div>
+      <p class="note">Design answer: internal slugs are hidden from the primary card title but available in the tooltip for traceability.</p>
+    </section>
+  </main>
+</body>
+</html>

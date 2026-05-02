@@ -656,6 +656,12 @@ def test_pah_ui_pg_design_bible_tokens() -> None:
         '--font-ui: "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;',
         '--font-mono: "Cascadia Mono", Consolas, monospace;',
         "font: 13px/1.32 var(--font-ui);",
+        ".gbtn,",
+        "grid-template-rows: 48px 1fr 26px;",
+        ".statusbar",
+        "background: var(--chrome);",
+        '<footer class="footer statusbar">',
+        "node.className = `gbtn health-chip ${normalized}`;",
     )
     for snippet in required_snippets:
         assert_true(snippet in ui_text, f"PAH UI keeps PG design bible token: {snippet}")
@@ -675,6 +681,13 @@ def test_pah_ui_pg_design_bible_tokens() -> None:
     )
     for snippet in forbidden_palette:
         assert_true(snippet not in ui_text, f"PAH UI avoids non-Bible/ad-hoc palette value: {snippet}")
+    for forbidden_copy in ("registration", "register user", "onboarding", "create account", "account creation"):
+        assert_true(forbidden_copy not in ui_text.lower(), f"PAH UI does not expose registration/onboarding copy: {forbidden_copy}")
+    assert_true("min-height: 28px;" in ui_text, "PAH buttons use the PG gbtn 28px action height")
+    assert_true("rgba(127, 176, 105, .50)" in ui_text, "PAH enabled actions carry the green activatable affordance")
+    assert_true('class="gbtn primary" id="openSimpleMail"' in ui_text, "PAH keeps one main-screen primary action")
+    assert_true('class="gbtn secondary" id="copyWake"' in ui_text, "PAH detail copy action is no longer a second primary")
+    assert_true('class="gbtn health-chip unknown"' in ui_text, "PAH health detail controls use gbtn action grammar")
     assert_true(".notice" in ui_text and "background: var(--field);" in ui_text, "PAH notice uses a Bible surface token")
     assert_true("font: 12px/1.2 var(--font-ui);" in ui_text, "PAH progress card prose does not use mono")
     assert_true("inspector-glance" in ui_text, "PAH Inspector has an at-a-glance status strip")

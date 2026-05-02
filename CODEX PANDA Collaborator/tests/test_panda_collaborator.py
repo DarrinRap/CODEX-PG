@@ -90,6 +90,120 @@ class PandaCollaboratorSafetyTests(unittest.TestCase):
             shutil.rmtree(repo, ignore_errors=True)
 
 
+class PandaCollaboratorTestSandboxTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-test-sandbox-"))
+        self.old_root = pc.os.environ.get("PANDA_COLLABORATOR_TEST_SANDBOX_ROOT")
+        pc.os.environ["PANDA_COLLABORATOR_TEST_SANDBOX_ROOT"] = str(self.tmp / "pc-action-test")
+
+    def tearDown(self):
+        if self.old_root is None:
+            pc.os.environ.pop("PANDA_COLLABORATOR_TEST_SANDBOX_ROOT", None)
+        else:
+            pc.os.environ["PANDA_COLLABORATOR_TEST_SANDBOX_ROOT"] = self.old_root
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_create_test_sandbox_is_local_only_and_timestamped(self):
+        first = pc.create_test_sandbox()
+        second = pc.create_test_sandbox()
+
+        self.assertNotEqual(first["run_root"], second["run_root"])
+        self.assertTrue(Path(first["run_root"]).exists())
+        self.assertTrue(Path(first["fake_repo_path"], ".git").exists())
+        self.assertTrue(Path(first["fake_project_files_tracker_path"], "skills", "pg-project-sync", "MANIFEST.md").exists())
+        self.assertTrue(Path(first["fake_claude_desktop_path"]).exists())
+        self.assertTrue(Path(first["fake_claude_code_path"]).exists())
+        self.assertTrue(Path(first["evidence_screenshots_path"]).exists())
+        self.assertTrue(Path(first["evidence_reports_path"]).exists())
+        self.assertTrue(Path(first["run_state_path"]).exists())
+        self.assertFalse(first["external_side_effects"])
+        self.assertFalse(first["github_repo_created"])
+        self.assertFalse(first["git_remote_configured"])
+        self.assertFalse(first["destructive_git_commands_run"])
+
+        root = Path(pc.os.environ["PANDA_COLLABORATOR_TEST_SANDBOX_ROOT"]).resolve()
+        for key in (
+            "run_root",
+            "fake_repo_path",
+            "fake_project_files_tracker_path",
+            "fake_claude_desktop_path",
+            "fake_claude_code_path",
+            "evidence_screenshots_path",
+            "evidence_reports_path",
+            "run_state_path",
+        ):
+            Path(first[key]).resolve().relative_to(root)
+
+    def test_create_test_sandbox_repo_has_expected_status_states(self):
+        sandbox = pc.create_test_sandbox()
+        status = pc.repo_status(sandbox["fake_repo_path"])
+
+        self.assertGreaterEqual(status["counts"]["staged"], 1)
+        self.assertGreaterEqual(status["counts"]["unstaged"], 1)
+        self.assertGreaterEqual(status["counts"]["untracked"], 1)
+        self.assertGreaterEqual(status["counts"]["deleted"], 1)
+        self.assertEqual(status["counts"]["conflicted"], 0)
+        self.assertEqual(pc.safe_git(Path(sandbox["fake_repo_path"]), ["remote", "-v"], allow_failure=True).stdout.strip(), "")
+        self.assertIn("docs/conflict-note.md", Path(sandbox["run_state_path"]).read_text(encoding="utf-8"))
+
+    def test_manual_test_log_records_browser_steps_inside_sandbox(self):
+        log = pc.create_manual_test_log()
+        entry = pc.append_manual_test_log(
+            {
+                "log_path": log["log_path"],
+                "event": "click-run-test",
+                "detail": "User clicked Run Test.",
+                "status": "ok",
+            }
+        )
+
+        self.assertEqual(entry["entry"]["event"], "click-run-test")
+        log_path = Path(log["log_path"])
+        self.assertTrue(log_path.exists())
+        self.assertIn("click-run-test", log_path.read_text(encoding="utf-8"))
+        Path(log["run_root"]).resolve().relative_to(Path(pc.os.environ["PANDA_COLLABORATOR_TEST_SANDBOX_ROOT"]).resolve())
+        with self.assertRaises(pc.SafetyError):
+            pc.append_manual_test_log({"log_path": str(self.tmp / "outside.jsonl"), "event": "bad"})
+
+    def test_open_launcher_supports_no_browser_for_restarts(self):
+        script = (PROJECT_ROOT / "CODEX_open_panda_collaborator.ps1").read_text(encoding="utf-8")
+
+        self.assertIn("[switch]$NoBrowser", script)
+        self.assertIn("$IsRunning = Get-NetTCPConnection", script)
+        self.assertIn("if ($IsRunning)", script)
+        self.assertIn("Browser launch skipped. Refresh the existing tab:", script)
+        self.assertIn("Start-Process $Url", script)
+        self.assertLess(script.index("if ($IsRunning)"), script.index("if ($NoBrowser)"))
+        self.assertLess(script.index("if ($NoBrowser)"), script.index("Start-Process $Url"))
+
+    def test_run_pc_action_test_writes_pass_evidence_inside_run_folder(self):
+        result = pc.run_pc_action_test()
+
+        self.assertEqual(result["status"], "PASS")
+        run_root = Path(result["run_root"]).resolve()
+        self.assertTrue(Path(result["handoff_package_path"], "manifest.json").exists())
+        self.assertTrue(Path(result["daily_report_path"]).exists())
+        self.assertTrue(Path(result["evidence_json_path"]).exists())
+        self.assertTrue(Path(result["evidence_markdown_path"]).exists())
+        self.assertFalse(result["external_side_effects"])
+        self.assertFalse(result["destructive_git_commands_run"])
+        self.assertFalse(result["github_repo_created"])
+        self.assertTrue(result["real_values_redacted"])
+        self.assertGreaterEqual(len(result["messages_created"]), 2)
+        self.assertTrue(all(item["ok"] for item in result["checkpoints"]))
+        for key in ("handoff_package_path", "daily_report_path", "evidence_json_path", "evidence_markdown_path"):
+            Path(result[key]).resolve().relative_to(run_root)
+        report_text = Path(result["evidence_markdown_path"]).read_text(encoding="utf-8")
+        self.assertIn("PC Action Test PASS", report_text)
+        self.assertIn("Bob", report_text)
+        self.assertIn("Karen", report_text)
+        evidence = pc.read_test_evidence(result["evidence_markdown_path"])
+        self.assertEqual(evidence["path"], result["evidence_markdown_path"])
+        self.assertIn("PC Action Test PASS", evidence["content"])
+        with self.assertRaises(pc.SafetyError):
+            pc.read_test_evidence(str(run_root.parents[2] / "outside.md"))
+
+
 class PandaCollaboratorSettingsTests(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-settings-"))
@@ -343,11 +457,36 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
     def test_scan_repository_does_not_open_registration_wizard(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
         scan_function = html.split("async function scanRepo()", 1)[1].split("function activeOperatorContext()", 1)[0]
+        load_settings_function = html.split("async function loadSettings()", 1)[1].split("async function saveSettings", 1)[0]
 
         self.assertIn("api('/api/repo/scan'", scan_function)
         self.assertNotIn("openSetupWizard", scan_function)
         self.assertNotIn("setupReady().allReady", scan_function)
         self.assertIn("Repository scan complete. Setup is only required before handover", scan_function)
+        self.assertIn("Working Tree scan remains available", load_settings_function)
+        self.assertNotIn("openSetupWizard", load_settings_function)
+
+    def test_working_tree_panel_gets_room_and_wraps_controls(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertRegex(html, r"(?s)\.support-grid\s*\{.*?grid-template-rows:\s*minmax\(172px, \.62fr\) minmax\(86px, \.38fr\);")
+        self.assertRegex(html, r"(?s)\.repo-panel\s*\{.*?overflow:\s*hidden;")
+        self.assertRegex(html, r"(?s)\.repo-panel \.panel-body\s*\{.*?overflow-x:\s*hidden;.*?overflow-y:\s*auto;.*?grid-template-rows:\s*auto minmax\(44px, 1fr\);")
+        self.assertRegex(html, r"(?s)\.repo-scan-controls\s*\{.*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);.*?gap:\s*8px;")
+        self.assertRegex(html, r"(?s)\.repo-scan-controls label\s*\{.*?grid-column:\s*1 / -1;")
+        self.assertRegex(html, r"(?s)\.repo-scan-controls \.inline-picker\s*\{.*?grid-template-columns:\s*minmax\(0, 1fr\) minmax\(96px, auto\);.*?gap:\s*8px;")
+        self.assertRegex(html, r"(?s)@media \(max-width: 1200px\).*?\.repo-scan-controls\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);")
+        self.assertRegex(html, r"(?s)@media \(max-width: 1200px\).*?\.repo-scan-controls button\s*\{\s*width:\s*100%;")
+
+    def test_escape_key_recovers_from_scan_focus_and_scroll(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        escape_handler = html.split("document.addEventListener('keydown', event =>", 1)[1].split("$('resultBox').addEventListener", 1)[0]
+
+        self.assertIn("event.key !== 'Escape'", escape_handler)
+        self.assertIn("closeSetupWizard();", escape_handler)
+        self.assertIn("document.activeElement?.blur?.();", escape_handler)
+        self.assertIn("document.querySelector('.repo-panel .panel-body')?.scrollTo?.({top: 0, left: 0});", escape_handler)
+        self.assertIn("document.querySelector('.status-window')?.scrollTo?.({top: 0, left: 0});", escape_handler)
 
     def test_project_files_directory_uses_existing_pgsync_location(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -382,6 +521,64 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("button.textContent = ready ? handoverButtonLabel(button.dataset.switchGo, user)", html)
         self.assertIn(": `SET UP ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`", html)
         self.assertNotIn("GO / Switch", html)
+
+    def test_test_mode_has_visible_lifecycle_and_restore_controls(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="testModeBtn"', html)
+        self.assertIn('id="createTestSandboxBtn"', html)
+        self.assertIn('id="testStatusPill"', html)
+        self.assertIn('id="openTestEvidenceBtn"', html)
+        self.assertIn('id="quitTestModeBtn"', html)
+        self.assertIn('id="quitTestModeBannerBtn"', html)
+        self.assertIn('id="runTestAgainBtn"', html)
+        self.assertIn('id="testModeBanner"', html)
+        self.assertIn("body.test-mode", html)
+        self.assertIn("TEST MODE ACTIVE - FAKE USERS, FAKE ACCOUNTS, FAKE REPOSITORY", html)
+        self.assertIn("function enterTestMode()", html)
+        self.assertIn("async function createTestSandbox()", html)
+        self.assertIn("async function runPcActionTest()", html)
+        self.assertIn("async function openTestEvidence()", html)
+        self.assertIn("async function ensureManualTestLog()", html)
+        self.assertIn("async function logManualTestStep", html)
+        self.assertIn('id="testChecklist"', html)
+        self.assertIn("const manualTestChecklist = [", html)
+        self.assertIn("function renderTestChecklist()", html)
+        self.assertIn("function markManualChecklist(id)", html)
+        self.assertIn("function startTestChecklistDrag()", html)
+        self.assertIn("startTestChecklistDrag();", html)
+        self.assertIn("handle.addEventListener('pointerdown'", html)
+        self.assertIn("api('/api/test/sandbox'", html)
+        self.assertIn("api('/api/test/run'", html)
+        self.assertIn("api('/api/test/manual-log/start'", html)
+        self.assertIn("api('/api/test/manual-log/append'", html)
+        self.assertIn("apiGet(`/api/test/evidence?path=${encodeURIComponent(path)}`)", html)
+        self.assertIn("function quitTestMode(result = '')", html)
+        self.assertIn("function normalModeSanityCheck()", html)
+        self.assertIn("localStorage.setItem('pandaCollaborator.testModeSnapshot'", html)
+        self.assertIn("localStorage.removeItem('pandaCollaborator.testModeActive')", html)
+        self.assertIn("$('testModeBtn').addEventListener('click'", html)
+        self.assertIn("$('createTestSandboxBtn').addEventListener('click', createTestSandbox)", html)
+        self.assertIn("$('runTestAgainBtn').addEventListener('click', runPcActionTest)", html)
+        self.assertIn("$('openTestEvidenceBtn').addEventListener('click', openTestEvidence)", html)
+        self.assertIn("$('quitTestModeBtn').addEventListener('click', () => quitTestMode())", html)
+        self.assertIn("$('testChecklistMinBtn').addEventListener('click'", html)
+        self.assertIn("$('testChecklistLogBtn').addEventListener('click'", html)
+        self.assertIn("$('quitTestModeBannerBtn').addEventListener('click', () => quitTestMode())", html)
+
+    def test_test_mode_uses_bob_karen_and_does_not_persist_to_normal_settings(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("display_name: 'Bob'", html)
+        self.assertIn("display_name: 'Karen'", html)
+        self.assertIn("test-bob-codex@example.invalid", html)
+        self.assertIn("test-karen-claude@example.invalid", html)
+        self.assertIn("bob.test@example.invalid", html)
+        self.assertIn("karen.test@example.invalid", html)
+        self.assertIn("localStorage.setItem('pandaCollaborator.testModeSettings', JSON.stringify(state.settings));", html)
+        persist_function = html.split("async function persistSettings()", 1)[1].split("function autoFillSummary", 1)[0]
+        self.assertLess(persist_function.index("if (state.testMode.active)"), persist_function.index("api('/api/settings'"))
+        self.assertIn("TEST MODE quit complete. Normal Darrin and Pam state restored", html)
 
     def test_registration_headers_do_not_render_redundant_number_badges(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -423,6 +620,12 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.view-toggle button\.active:not\(:disabled\).*?\.segmented button\.active:not\(:disabled\)\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
         self.assertRegex(html, r"(?s)\.chip\s*\{.*?border-radius:\s*999px;")
         self.assertRegex(html, r"(?s)\.chip\s*\{.*?cursor:\s*default;")
+        self.assertRegex(html, r"(?s)\.test-status-pill\s*\{.*?border-radius:\s*999px;")
+        self.assertRegex(html, r"(?s)\.test-status-pill\s*\{.*?cursor:\s*default;")
+        self.assertRegex(html, r"(?s)\.test-mode-btn\s*\{.*?border-radius:\s*2px;")
+        self.assertRegex(html, r"(?s)\.quit-test-btn\s*\{.*?border-radius:\s*2px;")
+        self.assertIn("$('testModeBtn').classList.toggle('hidden', state.testMode.active);", html)
+        self.assertIn("$('openTestEvidenceBtn').classList.toggle('hidden'", html)
         self.assertIn('class="chip" id="scanTime"', html)
 
     def test_action_buttons_and_info_pills_get_lay_tooltips(self):
@@ -449,6 +652,7 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         delegated_handlers = {
             "data-switch-go": "querySelectorAll('[data-switch-go]')",
             "data-path-picker": "querySelectorAll('[data-path-picker]')",
+            "data-collapse-panel": "querySelectorAll('[data-collapse-panel]')",
             "data-side-view": "querySelectorAll('[data-side-view]')",
             "data-summary-view": "dataset.summaryView",
             "data-package-id": "dataset.packageId",
@@ -479,13 +683,22 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
         self.assertRegex(html, r"(?s)\.handoff-primary-action:disabled\s*\{.*?background:\s*linear-gradient\(180deg, #4a4a56, #353542\);")
 
-    def test_setup_dialog_is_centered_and_shows_compact_setup_columns(self):
+    def test_status_messages_use_one_scroll_container(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertRegex(html, r"(?s)\.setup-dialog\s*\{.*?width:\s*min\(960px, calc\(100vw - 72px\)\);")
-        self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);")
-        self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?overflow:\s*auto;")
-        self.assertRegex(html, r"(?s)\.setup-project-step \.wizard-step-body\s*\{.*?grid-template-columns:\s*minmax\(0, 1fr\) auto;")
+        self.assertRegex(html, r"(?s)\.status-panel \.panel-body\s*\{.*?overflow:\s*hidden;")
+        self.assertRegex(html, r"(?s)\.status-window\s*\{.*?height:\s*100%;.*?overflow:\s*auto;.*?scrollbar-gutter:\s*stable;")
+        self.assertIn('id="resultBox" class="empty status-window"', html)
+
+    def test_setup_dialog_is_centered_and_shows_side_by_side_registration(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertRegex(html, r"(?s)\.setup-dialog\s*\{.*?width:\s*min\(936px, calc\(100vw - 88px\)\);")
+        self.assertNotIn("width: min(1560px", html)
+        self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);")
+        self.assertRegex(html, r'(?s)\.wizard-grid\s*\{.*?"project project".*?"hub hub".*?"user1 user2";')
+        self.assertRegex(html, r"(?s)\.wizard-grid\s*\{.*?overflow:\s*hidden;")
+        self.assertRegex(html, r"(?s)\.setup-project-step \.wizard-step-body\s*\{.*?grid-template-columns:\s*minmax\(0, 1fr\) auto auto;")
         self.assertRegex(html, r"(?s)\.setup-project-step \.identity-note\s*\{.*?grid-column:\s*1 / -1;")
         self.assertIn('class="wizard-step wide setup-project-step"', html)
         self.assertIn('class="setup-dialog-status"', html)
@@ -495,35 +708,39 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn(".registration-panel.is-current .wizard-step-head", html)
         self.assertIn(".registration-panel.is-ready .wizard-step-head", html)
         self.assertIn(".registration-panel.is-pending .wizard-step-head", html)
-        self.assertRegex(html, r"(?s)\.registration-panel\.is-current\s*\{.*?grid-column:\s*1 / -1;")
-        self.assertRegex(html, r"(?s)\.registration-panel\.is-locked\s*\{.*?display:\s*none;")
-        self.assertRegex(html, r"(?s)\.registration-panel:not\(\.is-current\) \.wizard-step-body\s*\{.*?display:\s*none;")
+        current_panel_css = html.split(".registration-panel.is-current {", 1)[1].split("}", 1)[0]
+        locked_panel_css = html.split(".registration-panel.is-locked .wizard-step-head", 1)[0]
+        self.assertNotIn("grid-column: 1 / -1", current_panel_css)
+        self.assertNotIn(".registration-panel.is-locked {\n      display: none;", locked_panel_css)
+        self.assertNotIn(".registration-panel:not(.is-current) .wizard-step-body", html)
         self.assertIn("panel.dataset.registrationState", html)
         self.assertNotIn('registration-panel hidden" data-registration-stage="user2"', html)
         self.assertNotIn('registration-panel hidden" data-registration-stage="hub"', html)
         self.assertIn("panel.classList.toggle('is-current'", html)
         self.assertIn("panel.classList.toggle('is-locked'", html)
+        self.assertIn("panel.classList.toggle('is-collapsed'", html)
 
-    def test_user_one_registration_uses_confirmation_before_user_two(self):
+    def test_user_registration_stays_on_one_side_by_side_screen(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertIn('id="user1Transition"', html)
-        self.assertIn('id="continueUser2Btn"', html)
-        self.assertIn("user1Complete: 'USER 1 REGISTERED'", html)
-        self.assertIn("setRegistrationStage('user1Complete')", html)
-        self.assertIn("$('continueUser2Btn').addEventListener('click', () => setRegistrationStage('user2'))", html)
-        self.assertIn("stage === 'user1Complete' ? 'user1'", html)
-        self.assertIn("state.registrationStage === 'user1Complete' ? 'continueUser2Btn'", html)
-        self.assertIn("transitionOpen && panelStage !== 'user1'", html)
-        self.assertIn("document.querySelector('.wizard-grid')?.scrollTo?.({top: 0});", html)
+        self.assertNotIn('id="user1Transition"', html)
+        self.assertNotIn('id="continueUser2Btn"', html)
+        self.assertNotIn("user1Complete", html)
+        self.assertIn("users: 'REGISTER USERS'", html)
+        self.assertIn("setRegistrationStage('users')", html)
         self.assertIn("setupDialog.dataset.registrationStage = stage", html)
-        self.assertIn('.setup-dialog[data-registration-stage="user1Complete"] .setup-project-step', html)
-        self.assertIn("User 1 is ready. Click Continue to User 2", html)
+        self.assertIn("User 1 saved. User 2 remains visible on the same setup screen.", html)
         self.assertNotIn("setRegistrationStage('user2');\n        showResult('User 1 registered. Now register User 2.')", html)
-        self.assertRegex(html, r"(?s)\.registration-transition\s*\{.*?grid-column:\s*1 / -1;")
+        self.assertNotIn(".registration-transition", html)
         self.assertRegex(html, r"(?s)\.profile-defaults\s*\{.*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);")
-        self.assertRegex(html, r"(?s)@media \(max-width: 620px\).*?\.registration-transition \.wizard-step-body\s*\{.*?grid-template-columns:\s*minmax\(0, 1fr\);")
         self.assertIn("Accounts, tools, and Git identity", html)
+        self.assertIn("registrationCollapsed: {user1: true, user2: true}", html)
+        self.assertIn('data-collapse-panel="user1"', html)
+        self.assertIn('data-collapse-panel="user2"', html)
+        self.assertIn("function toggleRegistrationPanel(userId)", html)
+        self.assertIn("toggleRegistrationPanel(button.dataset.collapsePanel)", html)
+        self.assertRegex(html, r"(?s)\.registration-panel\.is-collapsed\s*\{.*?grid-template-rows:\s*auto;")
+        self.assertRegex(html, r"(?s)\.registration-panel\.is-collapsed \.wizard-step-body\s*\{.*?display:\s*none;")
 
     def test_user_two_registration_names_missing_fields(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -540,8 +757,10 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
             "gitAuthorEmailUser2",
         ):
             self.assertIn(f"['{field_id}'", html)
-        self.assertIn("Missing for ${state.registrationStage === 'user1' ? 'User 1' : 'User 2'}", html)
+        self.assertIn("User 1 needs ${missingUser1.join(', ')}", html)
+        self.assertIn("User 2 needs ${missingUser2.join(', ')}", html)
         self.assertIn("$('registerUser2FinishBtn').dataset.missingFields = registrationMissingFields('user2').join(', ');", html)
+        self.assertIn("$('registerUser2FinishBtn').disabled = state.busy || !storedUserReady('user1') || !registrationFieldReady('user2');", html)
 
     def test_main_screen_orders_controls_left_to_right_by_workflow(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")

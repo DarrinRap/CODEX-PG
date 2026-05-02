@@ -37,6 +37,7 @@ WEB_ROOT = APP_ROOT / "web"
 DEFAULT_PACKAGE_ROOT = APP_ROOT / "CODEX handoff packages"
 DEFAULT_SETTINGS_PATH = APP_ROOT / "CODEX settings" / "panda_collaborator_settings.local.json"
 DEFAULT_HISTORY_ROOT = APP_ROOT / "CODEX project history"
+DEFAULT_TEST_SANDBOX_ROOT = APP_ROOT / "PANDA test sandboxes" / "pc-action-test"
 DEFAULT_PROJECT_FILES_DIRECTORY = r"C:\panda-gallery"
 DEFAULT_CLAUDE_CODE_INBOX = Path(r"C:\panda-gallery\workflows\cc_mailbox\CC Inbox")
 
@@ -114,6 +115,10 @@ def settings_path() -> Path:
 
 def history_root_path() -> Path:
     return Path(os.environ.get("PANDA_COLLABORATOR_HISTORY_ROOT", DEFAULT_HISTORY_ROOT)).resolve()
+
+
+def test_sandbox_root_path() -> Path:
+    return Path(os.environ.get("PANDA_COLLABORATOR_TEST_SANDBOX_ROOT", DEFAULT_TEST_SANDBOX_ROOT)).resolve()
 
 
 def default_settings() -> dict[str, Any]:
@@ -954,6 +959,441 @@ def ensure_unique_dir(base: Path) -> Path:
         suffix += 1
     candidate.mkdir(parents=True, exist_ok=False)
     return candidate
+
+
+def ensure_path_inside(root: Path, path: Path) -> Path:
+    resolved_root = root.resolve()
+    resolved_path = path.resolve()
+    try:
+        resolved_path.relative_to(resolved_root)
+    except ValueError as exc:
+        raise SafetyError(f"Path escaped test sandbox root: {resolved_path}") from exc
+    return resolved_path
+
+
+def ensure_unique_test_run_dir(root: Path) -> Path:
+    runs_root = ensure_path_inside(root, root / "runs")
+    stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    candidate = ensure_path_inside(root, runs_root / stamp)
+    suffix = 1
+    while candidate.exists():
+        candidate = ensure_path_inside(root, runs_root / f"{stamp}_{suffix:02d}")
+        suffix += 1
+    candidate.mkdir(parents=True, exist_ok=False)
+    return candidate
+
+
+def test_write_text(root: Path, path: Path, content: str) -> None:
+    safe_path = ensure_path_inside(root, path)
+    if safe_path.exists():
+        raise SafetyError(f"Refusing to overwrite test file: {safe_path}")
+    safe_path.parent.mkdir(parents=True, exist_ok=True)
+    safe_path.write_text(content, encoding="utf-8", newline="\n")
+
+
+def create_test_sandbox() -> dict[str, Any]:
+    sandbox_root = test_sandbox_root_path()
+    run_root = ensure_unique_test_run_dir(sandbox_root)
+    run_id = run_root.name
+    fake_tracker = ensure_path_inside(sandbox_root, run_root / "fake-project-files-tracker")
+    fake_repo = ensure_path_inside(sandbox_root, run_root / "fake-repo")
+    fake_claude = ensure_path_inside(sandbox_root, run_root / "fake-claude")
+    evidence = ensure_path_inside(sandbox_root, run_root / "evidence")
+    screenshots = ensure_path_inside(sandbox_root, evidence / "screenshots")
+    reports = ensure_path_inside(sandbox_root, evidence / "reports")
+    for directory in (fake_tracker, fake_repo, fake_claude, screenshots, reports):
+        directory.mkdir(parents=True, exist_ok=False)
+
+    today = dt.datetime.now().strftime("%Y-%m-%d")
+    test_write_text(
+        sandbox_root,
+        fake_tracker / "skills" / "pg-project-sync" / "MANIFEST.md",
+        "\n".join(
+            [
+                "# PANDA TEST Project Files Tracker Manifest",
+                "",
+                "Local-only action test manifest.",
+                "No real project files, credentials, GitHub repos, or remotes are used.",
+            ]
+        ),
+    )
+    test_write_text(
+        sandbox_root,
+        fake_tracker / "workflows" / f"project_knowledge_sync_{today}" / "README.md",
+        "# PANDA TEST Sync Bundle\n\nFake sync bundle for local PC action tests.\n",
+    )
+    test_write_text(
+        sandbox_root,
+        fake_claude / "Claude Desktop Fake.exe",
+        "PANDA TEST PLACEHOLDER ONLY. This is not a real executable and must not be launched.\n",
+    )
+    test_write_text(
+        sandbox_root,
+        fake_claude / "Claude Code Fake.cmd",
+        "@echo off\necho PANDA TEST PLACEHOLDER ONLY - DO NOT RUN\nexit /b 1\n",
+    )
+
+    initial_files = {
+        "README.md": "# PANDA fake test repo\n\nLocal-only repository for PC action testing.\n",
+        "docs/handoff-notes.md": "# Handoff Notes\n\nInitial note before Bob and Karen test changes.\n",
+        "docs/old-note.md": "# Old Note\n\nThis file is deleted during sandbox setup to test deleted status.\n",
+        "docs/conflict-note.md": "# Conflict Seed\n\nReserved for the later conflict checkpoint.\n",
+        "src/sample.txt": "initial staged sample\n",
+    }
+    for rel_path, content in initial_files.items():
+        test_write_text(sandbox_root, fake_repo / rel_path, content)
+
+    safe_git(fake_repo, ["init"])
+    safe_git(fake_repo, ["config", "user.name", "PANDA Test"])
+    safe_git(fake_repo, ["config", "user.email", "panda-test@example.invalid"])
+    safe_git(fake_repo, ["add", "."])
+    safe_git(fake_repo, ["commit", "-m", "Initial fake PC action test repo"])
+    initial_head = safe_git(fake_repo, ["rev-parse", "HEAD"]).stdout.strip()
+
+    test_write_text(
+        sandbox_root,
+        fake_repo / "notes" / "bob-new-note.md",
+        "# Bob New Note\n\nUntracked local-only test note.\n",
+    )
+    (fake_repo / "docs" / "handoff-notes.md").write_text(
+        "# Handoff Notes\n\nInitial note before Bob and Karen test changes.\n\nBob edited this file but did not stage it.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    (fake_repo / "src" / "sample.txt").write_text(
+        "initial staged sample\nKaren staged this line.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    safe_git(fake_repo, ["add", "src/sample.txt"])
+    (fake_repo / "docs" / "old-note.md").unlink()
+
+    status = repo_status(str(fake_repo))
+    remote_check = safe_git(fake_repo, ["remote", "-v"], allow_failure=True).stdout.strip()
+    run_state = {
+        "schema_version": 1,
+        "phase": "local-only",
+        "run_id": run_id,
+        "created_at": local_timestamp(),
+        "run_root": str(run_root),
+        "fake_project_files_tracker_path": str(fake_tracker),
+        "fake_repo_path": str(fake_repo),
+        "fake_claude_desktop_path": str(fake_claude / "Claude Desktop Fake.exe"),
+        "fake_claude_code_path": str(fake_claude / "Claude Code Fake.cmd"),
+        "evidence_screenshots_path": str(screenshots),
+        "evidence_reports_path": str(reports),
+        "external_side_effects": False,
+        "github_repo_created": False,
+        "git_remote_configured": bool(remote_check),
+        "destructive_git_commands_run": False,
+        "git_initial_head": initial_head,
+        "git_status": status,
+        "users": {
+            "user1": {"display_name": "Bob", "git_author_email": "bob.test@example.invalid"},
+            "user2": {"display_name": "Karen", "git_author_email": "karen.test@example.invalid"},
+        },
+        "planned_conflict_checkpoint": "docs/conflict-note.md is reserved for a later explicit conflict test.",
+    }
+    run_state_path = run_root / "run-state.json"
+    run_state["run_state_path"] = str(run_state_path)
+    test_write_text(sandbox_root, run_state_path, json.dumps(run_state, indent=2) + "\n")
+    return run_state
+
+
+def test_operator_context(sandbox: dict[str, Any], user_id: str) -> dict[str, Any]:
+    is_user2 = user_id == "user2"
+    display_name = "Karen" if is_user2 else "Bob"
+    agent = "Claude Test" if is_user2 else "Codex Test"
+    return {
+        "user_id": user_id,
+        "display_name": display_name,
+        "codex_account": f"test-{display_name.lower()}-codex@example.invalid",
+        "claude_account": f"test-{display_name.lower()}-claude@example.invalid",
+        "claude_desktop_path": sandbox["fake_claude_desktop_path"],
+        "claude_code_path": sandbox["fake_claude_code_path"],
+        "project_files_directory": sandbox["fake_project_files_tracker_path"],
+        "git_author_name": f"{display_name} Test",
+        "git_author_email": f"{display_name.lower()}.test@example.invalid",
+        "repo_path": sandbox["fake_repo_path"],
+        "handoff_agent": agent,
+    }
+
+
+def test_checkpoint(checkpoints: list[dict[str, Any]], name: str, ok: bool, detail: str, data: Any = None) -> None:
+    item = {"name": name, "ok": bool(ok), "detail": detail}
+    if data is not None:
+        item["data"] = data
+    checkpoints.append(item)
+
+
+def action_test_markdown(result: dict[str, Any]) -> str:
+    checkpoints = result.get("checkpoints", [])
+    lines = [
+        f"# PC Action Test {result.get('status', 'UNKNOWN')}",
+        "",
+        f"Run: `{result.get('run_id', '')}`",
+        f"Created: {result.get('created_at', '')}",
+        f"Fake repo: `{result.get('fake_repo_path', '')}`",
+        f"Fake Project Files Tracker: `{result.get('fake_project_files_tracker_path', '')}`",
+        "",
+        "## Result",
+        "",
+        result.get("summary", ""),
+        "",
+        "## Checkpoints",
+        "",
+    ]
+    for item in checkpoints:
+        mark = "PASS" if item.get("ok") else "FAIL"
+        lines.append(f"- {mark}: {item.get('name', '')} - {item.get('detail', '')}")
+    lines.extend(
+        [
+            "",
+            "## Evidence",
+            "",
+            f"- Handoff package: `{result.get('handoff_package_path', '')}`",
+            f"- Daily report: `{result.get('daily_report_path', '')}`",
+            f"- JSON report: `{result.get('evidence_json_path', '')}`",
+            "",
+            "## Safety",
+            "",
+            f"- Destructive Git commands run: {str(result.get('destructive_git_commands_run', False)).lower()}",
+            f"- External side effects: {str(result.get('external_side_effects', False)).lower()}",
+            "- Real normal-state values: redacted",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_action_test_evidence(sandbox: dict[str, Any], result: dict[str, Any]) -> dict[str, str]:
+    reports = ensure_path_inside(test_sandbox_root_path(), Path(sandbox["evidence_reports_path"]))
+    stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    json_path = reports / f"PC_TEST_REPORT_{stamp}.json"
+    md_path = reports / f"PC_TEST_REPORT_{stamp}.md"
+    suffix = 1
+    while json_path.exists() or md_path.exists():
+        json_path = reports / f"PC_TEST_REPORT_{stamp}_{suffix:02d}.json"
+        md_path = reports / f"PC_TEST_REPORT_{stamp}_{suffix:02d}.md"
+        suffix += 1
+    result["evidence_json_path"] = str(json_path)
+    result["evidence_markdown_path"] = str(md_path)
+    test_write_text(test_sandbox_root_path(), json_path, json.dumps(result, indent=2) + "\n")
+    test_write_text(test_sandbox_root_path(), md_path, action_test_markdown(result) + "\n")
+    return {"json": str(json_path), "markdown": str(md_path)}
+
+
+def read_test_evidence(path_text: str) -> dict[str, Any]:
+    if not path_text:
+        raise CollaboratorError("Evidence path is required.")
+    root = test_sandbox_root_path()
+    path = ensure_path_inside(root, Path(path_text))
+    if not path.exists() or not path.is_file():
+        raise CollaboratorError("Evidence report not found.")
+    if path.suffix.lower() not in {".md", ".json"}:
+        raise SafetyError("Only Markdown and JSON test evidence can be opened.")
+    return {"ok": True, "path": str(path), "content": path.read_text(encoding="utf-8", errors="replace")[:24000]}
+
+
+def create_manual_test_log() -> dict[str, Any]:
+    root = test_sandbox_root_path()
+    logs_root = ensure_path_inside(root, root / "manual-runs")
+    stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    run_root = ensure_path_inside(root, logs_root / stamp)
+    suffix = 1
+    while run_root.exists():
+        run_root = ensure_path_inside(root, logs_root / f"{stamp}_{suffix:02d}")
+        suffix += 1
+    run_root.mkdir(parents=True, exist_ok=False)
+    log_path = run_root / "manual-test-log.jsonl"
+    test_write_text(
+        root,
+        log_path,
+        json.dumps(
+            {
+                "created_at": local_timestamp(),
+                "event": "manual-log-started",
+                "detail": "Manual PC TEST MODE browser run started.",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+    )
+    return {"ok": True, "run_id": run_root.name, "run_root": str(run_root), "log_path": str(log_path)}
+
+
+def append_manual_test_log(payload: dict[str, Any]) -> dict[str, Any]:
+    root = test_sandbox_root_path()
+    log_path = ensure_path_inside(root, Path(str(payload.get("log_path", ""))))
+    if log_path.name != "manual-test-log.jsonl" or not log_path.exists():
+        raise SafetyError("Manual test log path is invalid.")
+    row = {
+        "created_at": local_timestamp(),
+        "event": clean_setting_text(payload.get("event"), "manual-step", 80),
+        "detail": clean_setting_text(payload.get("detail"), "", 1000),
+        "status": clean_setting_text(payload.get("status"), "info", 16),
+    }
+    with log_path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(row, sort_keys=True) + "\n")
+    return {"ok": True, "log_path": str(log_path), "entry": row}
+
+
+def run_pc_action_test() -> dict[str, Any]:
+    sandbox = create_test_sandbox()
+    run_root = Path(sandbox["run_root"])
+    fake_repo = sandbox["fake_repo_path"]
+    checkpoints: list[dict[str, Any]] = []
+    old_package_root = os.environ.get("PANDA_COLLABORATOR_PACKAGE_ROOT")
+    old_history_root = os.environ.get("PANDA_COLLABORATOR_HISTORY_ROOT")
+    os.environ["PANDA_COLLABORATOR_PACKAGE_ROOT"] = str(run_root / "pc-output" / "packages")
+    os.environ["PANDA_COLLABORATOR_HISTORY_ROOT"] = str(run_root / "pc-output" / "history")
+
+    result: dict[str, Any] = {
+        "schema_version": 1,
+        "phase": "local-only",
+        "status": "RUNNING",
+        "run_id": sandbox["run_id"],
+        "created_at": local_timestamp(),
+        "run_root": sandbox["run_root"],
+        "fake_repo_path": fake_repo,
+        "fake_project_files_tracker_path": sandbox["fake_project_files_tracker_path"],
+        "fake_claude_desktop_path": sandbox["fake_claude_desktop_path"],
+        "fake_claude_code_path": sandbox["fake_claude_code_path"],
+        "evidence_reports_path": sandbox["evidence_reports_path"],
+        "evidence_screenshots_path": sandbox["evidence_screenshots_path"],
+        "users": ["Bob", "Karen"],
+        "checkpoints": checkpoints,
+        "normal_state_snapshot": "captured",
+        "normal_state_restored": "not_attempted",
+        "real_values_redacted": True,
+        "destructive_git_commands_run": False,
+        "external_side_effects": False,
+        "github_repo_created": False,
+    }
+
+    try:
+        repo = repo_status(fake_repo)
+        result["repo_scan"] = repo
+        counts = repo["counts"]
+        test_checkpoint(
+            checkpoints,
+            "Scan fake repo",
+            repo["dirty"] and counts["staged"] >= 1 and counts["unstaged"] >= 1 and counts["untracked"] >= 1 and counts["deleted"] >= 1,
+            f"Detected staged={counts['staged']}, unstaged={counts['unstaged']}, untracked={counts['untracked']}, deleted={counts['deleted']}.",
+            counts,
+        )
+
+        bob_context = test_operator_context(sandbox, "user1")
+        karen_context = test_operator_context(sandbox, "user2")
+        start = start_session({"path": fake_repo, "operator_context": bob_context})
+        result["start_session"] = {"start_work_enabled": start.get("start_work_enabled", False), "blockers": start.get("blockers", [])}
+        test_checkpoint(
+            checkpoints,
+            "Start session as Bob",
+            bool(start.get("start_work_enabled")),
+            "Start Work enabled for fake Bob." if start.get("start_work_enabled") else "Start Work was blocked.",
+            result["start_session"],
+        )
+
+        bob_message = create_message(
+            {
+                "kind": "note",
+                "author": "Bob",
+                "text": "Bob local-only action test note.",
+                "operator_context": bob_context,
+            }
+        )
+        karen_message = create_message(
+            {
+                "kind": "note",
+                "author": "Karen",
+                "text": "Karen local-only action test note.",
+                "operator_context": karen_context,
+            }
+        )
+        result["messages_created"] = [bob_message["id"], karen_message["id"]]
+        test_checkpoint(checkpoints, "Switch users and save messages", True, "Saved one Bob note and one Karen note.")
+
+        handoff = create_handoff_package(
+            fake_repo,
+            "Bob Karen local-only action test handoff",
+            "Codex Test",
+            "Local-only action test handoff generated inside the timestamped sandbox.",
+            bob_context,
+        )
+        result["handoff_package_path"] = handoff["package_dir"]
+        result["handoff_package_id"] = package_id_for_manifest(package_root_path(), Path(handoff["package_dir"]) / "manifest.json")
+        copies = handoff["uncommitted_protection"]["file_copies"]["copied"]
+        skipped = handoff["uncommitted_protection"]["file_copies"]["skipped"]
+        patches = handoff["uncommitted_protection"]["patches"]
+        test_checkpoint(
+            checkpoints,
+            "Create safe handoff",
+            len(patches) == 2 and len(copies) >= 3 and handoff["safety_receipt"]["stash_used"] is False,
+            f"Created package with {len(patches)} patches, {len(copies)} copied files, and {len(skipped)} skipped deleted paths.",
+            {"patches": len(patches), "copied": len(copies), "skipped": len(skipped)},
+        )
+
+        detail = read_package_detail(result["handoff_package_id"])
+        result["package_inspection"] = {
+            "branch_exists": detail["branch_exists"],
+            "patches": detail["counts"]["patches"],
+            "copied": detail["counts"]["copied"],
+            "skipped": detail["counts"]["skipped"],
+        }
+        test_checkpoint(
+            checkpoints,
+            "Inspect handoff package",
+            detail["branch_exists"] is True and detail["counts"]["patches"] == 2 and detail["counts"]["copied"] >= 3,
+            "Package manifest, protection branch, patches, and file copies are readable.",
+            result["package_inspection"],
+        )
+
+        conflict_seed = Path(fake_repo) / "docs" / "conflict-note.md"
+        post_handoff_status = repo_status(fake_repo)
+        result["conflict_checkpoint"] = {
+            "reserved_file": str(conflict_seed),
+            "current_conflicts": post_handoff_status["counts"]["conflicted"],
+            "mode": "non-destructive Phase 1 checkpoint",
+        }
+        test_checkpoint(
+            checkpoints,
+            "Conflict checkpoint",
+            conflict_seed.exists() and post_handoff_status["counts"]["conflicted"] == 0,
+            "Reserved conflict seed exists; no current conflict is present in Phase 1.",
+            result["conflict_checkpoint"],
+        )
+
+        daily = write_daily_report(bob_context, handoff)
+        result["daily_report_path"] = daily["path"]
+        test_checkpoint(checkpoints, "Write test history report", Path(daily["path"]).exists(), "Daily report written inside the test run folder.")
+
+        failed = next((item for item in checkpoints if not item["ok"]), None)
+        result["status"] = "FAIL" if failed else "PASS"
+        result["first_failure_plain_language"] = failed["detail"] if failed else ""
+        result["summary"] = (
+            "PC action test passed for the fake Bob/Karen local-only workflow."
+            if not failed
+            else f"PC action test failed: {failed['name']} - {failed['detail']}"
+        )
+    except Exception as exc:
+        test_checkpoint(checkpoints, "Unexpected runner error", False, str(exc))
+        result["status"] = "FAIL"
+        result["first_failure_plain_language"] = str(exc)
+        result["summary"] = f"PC action test failed unexpectedly: {exc}"
+    finally:
+        if old_package_root is None:
+            os.environ.pop("PANDA_COLLABORATOR_PACKAGE_ROOT", None)
+        else:
+            os.environ["PANDA_COLLABORATOR_PACKAGE_ROOT"] = old_package_root
+        if old_history_root is None:
+            os.environ.pop("PANDA_COLLABORATOR_HISTORY_ROOT", None)
+        else:
+            os.environ["PANDA_COLLABORATOR_HISTORY_ROOT"] = old_history_root
+
+    evidence = write_action_test_evidence(sandbox, result)
+    result["evidence"] = evidence
+    return result
 
 
 def ensure_unique_branch(repo: Path, desired: str) -> str:
@@ -1809,6 +2249,13 @@ class PandaHandler(BaseHTTPRequestHandler):
                 return json_response(self, {"ok": True, "package": read_package_detail(package_id)})
             except CollaboratorError as exc:
                 return json_response(self, {"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        if parsed.path == "/api/test/evidence":
+            params = urllib.parse.parse_qs(parsed.query)
+            path = params.get("path", [""])[0]
+            try:
+                return json_response(self, read_test_evidence(path))
+            except CollaboratorError as exc:
+                return json_response(self, {"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
         if parsed.path in {"/", "/index.html"}:
             return self.serve_file(WEB_ROOT / "index.html", "text/html; charset=utf-8")
         return json_response(self, {"ok": False, "error": "Not found"}, HTTPStatus.NOT_FOUND)
@@ -1821,6 +2268,14 @@ class PandaHandler(BaseHTTPRequestHandler):
                 return json_response(self, {"ok": True, "settings": save_settings(payload)})
             if parsed.path == "/api/setup/autofill":
                 return json_response(self, setup_autofill(payload))
+            if parsed.path == "/api/test/sandbox":
+                return json_response(self, {"ok": True, "sandbox": create_test_sandbox()})
+            if parsed.path == "/api/test/run":
+                return json_response(self, {"ok": True, "test": run_pc_action_test()})
+            if parsed.path == "/api/test/manual-log/start":
+                return json_response(self, create_manual_test_log())
+            if parsed.path == "/api/test/manual-log/append":
+                return json_response(self, append_manual_test_log(payload))
             if parsed.path == "/api/repo/scan":
                 return json_response(self, {"ok": True, "repo": repo_status(str(payload.get("path", "")))})
             if parsed.path == "/api/handoff/create":

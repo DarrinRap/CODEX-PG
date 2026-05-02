@@ -1,7 +1,7 @@
 # PAH Mail and Inspector UX Spec
 
 Status: active product and implementation spec
-Last updated: 2026-04-30 07:47 -07:00
+Last updated: 2026-04-30 22:10 -07:00
 Audience: Codex, Claude Desktop, Claude Code, and future PAH maintainers
 Primary user: Darrin
 
@@ -137,6 +137,34 @@ The top bar should always show:
 - Optional auto-refresh toggle
 
 The top bar should not show destructive or specialized cleanup controls in the first viewport. Cleanup/archive belongs in Advanced or a secondary menu.
+
+## 2026-04-30 Bible Visual Reset
+
+PAH must never open or embed PANDA Collaborator registration, onboarding, or account-creation screens. PAH is a mailroom/inspector console; if a route/state ever exposes `Register User`, `Registration`, `Onboarding`, or `Create account` copy inside PAH, that is a regression.
+
+PAH inherits the PG Design Bible surface scale:
+
+- `--canvas #14141f`
+- `--chrome #161625`
+- `--pane #1a1a2e`
+- `--pane-raised #22223a`
+- `--pane-selected #2a2a4e`
+
+White, near-white, pure black, Bootstrap-style, Material-style, and ad-hoc grey backgrounds are forbidden on PAH user-facing surfaces.
+
+Action controls must use the global `.gbtn` grammar: 28px action height, 4px radius, Bible surface backgrounds, semantic borders, and UI-font labels. Passive information may use pill/status treatment; a pill must not do work. Rectangles are actions.
+
+Enabled safe actions must carry the green activatable affordance. Disabled safe actions stay grey/muted. Dangerous actions keep warning/error treatment. User identity or brand colors are not readiness colors.
+
+The main PAH screen may have only one primary action in the top action band. Detail-panel commands such as `Copy wake line` are secondary unless they are the single screen purpose. Overlay surfaces may have their own one primary action, such as `Send` inside Mail.
+
+The bottom statusbar must be a 26px `--chrome` band using `.statusbar` / `.sb-*` grammar. It is status evidence, not a second card or oversized footer.
+
+Any PAH visual fix must be verified by all three checks before handoff:
+
+- `python CODEX_run_smoke_tests.py`
+- `python CODEX_pah_inspector.py`
+- live browser inspection at `http://127.0.0.1:8765/`
 
 ## Mail Surface Spec
 

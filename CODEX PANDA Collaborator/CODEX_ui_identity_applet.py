@@ -58,17 +58,47 @@ def main() -> int:
         "background: linear-gradient(180deg, #8ccf6f, #6da850)": "Green enabled-button background exists",
         "function registrationMissingFields(userId)": "Registration reports missing fields",
         "$('registerUser2FinishBtn').dataset.missingFields": "User 2 finish button explains missing fields",
-        'id="user1Transition"': "User 1 completion confirmation panel exists",
-        'id="continueUser2Btn"': "User 2 is opened by an explicit continue action",
-        "setRegistrationStage('user1Complete')": "User 1 registration no longer jumps straight to User 2",
-        "transitionOpen && panelStage !== 'user1'": "Future registration panels are hidden during User 1 confirmation",
-        '.setup-dialog[data-registration-stage="user1Complete"] .setup-project-step': "Confirmation mode hides prior setup sections",
+        "users: 'REGISTER USERS'": "Setup registration uses one shared two-user stage",
+        "grid-template-columns: repeat(2, minmax(360px, 1fr))": "User 1 and User 2 registration panels sit side by side on desktop",
+        "User 1 saved. User 2 remains visible on the same setup screen.": "User 1 save stays on the shared registration screen",
+        "await saveCurrentSettings();": "User 1 registration persists before User 2 can finish",
+        ".status-panel .panel-body": "Status Messages panel owns one hidden outer overflow layer",
+        "scrollbar-gutter: stable": "Status Messages scrolling has a stable single gutter",
+        "grid-template-columns: repeat(2, minmax(0, 1fr))": "Working Tree scan actions use separated two-column controls",
+        ".repo-scan-controls label": "Working Tree repository picker owns its own row",
+        "grid-column: 1 / -1": "Working Tree repository picker spans above scan actions",
+        "overflow-x: hidden": "Working Tree panel blocks stray horizontal divider scroll",
+        "document.addEventListener('keydown', event =>": "Escape recovery wiring exists",
+        "event.key !== 'Escape'": "Escape recovery only handles Escape",
+        "document.activeElement?.blur?.()": "Escape clears stuck button/input focus",
+        "document.querySelector('.repo-panel .panel-body')?.scrollTo?.({top: 0, left: 0});": "Escape returns Working Tree scroll position",
+        'id="testModeBtn"': "TEST MODE button exists",
+        'id="quitTestModeBtn"': "QUIT TEST MODE header button exists",
+        'id="quitTestModeBannerBtn"': "QUIT TEST MODE banner button exists",
+        "body.test-mode": "TEST MODE alert theme exists",
+        "function enterTestMode()": "TEST MODE entry function exists",
+        "function quitTestMode(result = '')": "TEST MODE quit/restore function exists",
+        "display_name: 'Bob'": "TEST MODE uses Bob as fake User 1",
+        "display_name: 'Karen'": "TEST MODE uses Karen as fake User 2",
+        "localStorage.setItem('pandaCollaborator.testModeSnapshot'": "TEST MODE captures a normal-state snapshot",
+        "localStorage.removeItem('pandaCollaborator.testModeActive')": "QUIT TEST MODE clears active test state",
+        "TEST MODE quit complete. Normal Darrin and Pam state restored": "QUIT TEST MODE reports Darrin/Pam restore",
         ".sequence-panel[data-user-tone].is-current": "Current workflow panel uses owned tone",
         ".registration-panel[data-user-tone].is-current": "Current registration panel uses owned tone",
         "var(--tone-accent, var(--user-accent))": "Register card name color prefers owned tone",
     }
     for needle, message in tone_checks.items():
         require(needle in html, message, failures)
+
+    forbidden_checks = {
+        'id="user1Transition"': "Old User 1 confirmation panel is removed",
+        'id="continueUser2Btn"': "Old Continue to User 2 jump button is removed",
+        "user1Complete": "Old User 1 completion stage is removed",
+        "document.querySelector('.wizard-grid')?.scrollTo?.({top: 0});": "Registration no longer jumps the wizard scroll position",
+        ".registration-panel:not(.is-current) .wizard-step-body": "Inactive registration bodies stay visible",
+    }
+    for needle, message in forbidden_checks.items():
+        require(needle not in html, message, failures)
 
     for user_id in ("user1", "user2"):
         require(f'data-hub-name="{user_id}"' in html, f"{user_id} display name binding exists", failures)
