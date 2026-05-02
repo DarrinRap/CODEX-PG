@@ -11,19 +11,30 @@ $TrayScript = Join-Path $ScriptRoot 'CODEX_start_agent_hub_tray.ps1'
 $Url = "http://127.0.0.1:$Port"
 
 function Test-PahServer {
+    $client = $null
     try {
-        $status = Invoke-RestMethod -Uri "$Url/api/status" -Method Get -TimeoutSec 2
-        return $null -ne $status
+        $client = New-Object System.Net.Sockets.TcpClient
+        $connect = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
+        if (-not $connect.AsyncWaitHandle.WaitOne(800)) {
+            return $false
+        }
+        $client.EndConnect($connect)
+        return $true
     }
     catch {
         return $false
     }
+    finally {
+        if ($client) { $client.Close() }
+    }
 }
 
 function Test-PahTrayRunning {
-    $escaped = [WildcardPattern]::Escape($TrayScript)
     $matches = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -like "*$escaped*" }
+        Where-Object {
+            $_.CommandLine -like '*CODEX_start_agent_hub_tray.ps1*' -and
+            $_.CommandLine -like "*-Port $Port*"
+        }
     return $null -ne $matches
 }
 

@@ -79,8 +79,22 @@ function Invoke-PahJson {
 }
 
 function Test-PahServer {
-    $status = Invoke-PahJson '/api/tray-status'
-    return $null -ne $status -and $status.ok
+    $client = $null
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $connect = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
+        if (-not $connect.AsyncWaitHandle.WaitOne(800)) {
+            return $false
+        }
+        $client.EndConnect($connect)
+        return $true
+    }
+    catch {
+        return $false
+    }
+    finally {
+        if ($client) { $client.Close() }
+    }
 }
 
 function Read-ServerUrlFromLog {

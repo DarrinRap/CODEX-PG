@@ -5045,6 +5045,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path == "/api/ping":
+            self.send_json({"ok": True, "service": "panda-agent-hub"})
+            return
         if parsed.path == "/api/cockpit":
             self.send_json(cockpit_payload())
             return
