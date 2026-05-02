@@ -1987,7 +1987,7 @@ body.quiet-mode .top-actions button[disabled] {
     <div class="top-actions">
       <label class="toggle"><input type="checkbox" id="autoRefresh"> Auto refresh</label>
       <button class="gbtn" id="refresh">Refresh</button>
-      <select id="cleanupMailbox" aria-label="Inbox to clean">
+      <select id="cleanupMailbox" aria-label="Inbox view and cleanup target" title="Show an inbox and choose the cleanup target">
         <option value="all">All inboxes</option>
         <option value="codex">Codex inbox</option>
         <option value="claude-desktop">Claude inbox</option>
@@ -2270,6 +2270,8 @@ let simpleMailSearch = '';
 let simpleMailSelectedPath = '';
 let simpleMailDraftPath = '';
 const simpleMailContentCache = {};
+const CLEANUP_MAILBOX_AGENT_IDS = ['codex', 'claude-desktop', 'claude-code'];
+const CLEANUP_MAILBOX_VALUES = new Set(['all', ...CLEANUP_MAILBOX_AGENT_IDS]);
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -2331,11 +2333,28 @@ function agentName(agentId) {
 }
 function mailboxName(agentId) {
   return {
+    'all': 'All inboxes',
     'darrin': 'Me',
     'codex': 'Codex',
     'claude-desktop': 'Claude',
     'claude-code': 'CC',
   }[agentId] || agentName(agentId);
+}
+function mailboxViewTitle(agentId) {
+  const id = agentId || 'darrin';
+  return id === 'all' ? mailboxName(id) : `${mailboxName(id)} mailbox`;
+}
+function cleanupMailboxValueFor(agentId) {
+  const id = String(agentId || 'all');
+  return CLEANUP_MAILBOX_VALUES.has(id) ? id : 'all';
+}
+function syncCleanupMailboxSelector() {
+  const selector = document.getElementById('cleanupMailbox');
+  if (!selector || document.activeElement === selector) return;
+  const value = queueFilter === 'mailbox'
+    ? cleanupMailboxValueFor(selectedAgentId)
+    : 'all';
+  selector.value = value;
 }
 function selectedAgent() {
   if (!selectedAgentId) return null;
@@ -2362,7 +2381,9 @@ function focusMailbox(agentId) {
   prefs.selectedAgentId = selectedAgentId;
   prefs.queueSearch = queueSearch;
   prefs.selectedId = selected?.id || '';
+  prefs.cleanupMailbox = cleanupMailboxValueFor(selectedAgentId);
   savePrefs();
+  if (!cockpit) return;
   render();
 }
 function focusRoutesHealth() {
@@ -3251,10 +3272,20 @@ function mailboxMessagesFor(agentId) {
   return Array.isArray(messages) ? messages : [];
 }
 function mailboxWaitingCount(agentId) {
+  if (agentId === 'all') return CLEANUP_MAILBOX_AGENT_IDS.reduce((total, id) => total + mailboxWaitingCount(id), 0);
   return mailboxMessagesFor(agentId).filter(item => item.unread || item.stale_unread || String(item.read_state || '').toLowerCase() === 'unread').length;
 }
 function mailboxQueue(agentId) {
   const id = agentId || 'darrin';
+  if (id === 'all') {
+    const seen = new Set();
+    return CLEANUP_MAILBOX_AGENT_IDS.flatMap(mailboxId => mailboxQueue(mailboxId).map(item => {
+      const scopedId = `${mailboxId}:${item.id}`;
+      if (seen.has(scopedId)) return null;
+      seen.add(scopedId);
+      return {...item, id: scopedId};
+    }).filter(Boolean));
+  }
   const seen = new Set();
   const physicalMessages = mailboxMessagesFor(id)
     .filter(item => item.unread || item.stale_unread || String(item.read_state || '').toLowerCase() === 'unread')
@@ -3589,7 +3620,7 @@ function render() {
   const systemText = queueFilter === 'diagnostics'
     ? 'Diagnostics view'
     : queueFilter === 'mailbox'
-    ? `${mailboxName(selectedAgentId || 'darrin')} mailbox`
+    ? mailboxViewTitle(selectedAgentId || 'darrin')
     : quietHome
     ? mailboxText
     : mailboxText;
@@ -3621,7 +3652,7 @@ function renderGuide(openOnYou, openOnAgents) {
   const title = queueFilter === 'diagnostics'
     ? 'Diagnostics'
     : queueFilter === 'mailbox'
-      ? `${mailboxName(selectedAgentId || 'darrin')} mailbox`
+      ? mailboxViewTitle(selectedAgentId || 'darrin')
     : agentFilter
       ? `${agentName(agentFilter)} queue`
     : selectedAgentId === 'darrin'
@@ -3667,6 +3698,7 @@ function renderFilters() {
   document.querySelectorAll('button.filter').forEach(button => {
     button.classList.toggle('active', button.dataset.filter === queueFilter);
   });
+  syncCleanupMailboxSelector();
   const clear = document.getElementById('clearAgentFilter');
   clear.hidden = !agentFilter && !selectedAgentId;
   clear.textContent = selectedAgentId ? `Clear ${agentName(selectedAgentId)}` : 'Clear agent';
@@ -4277,6 +4309,8 @@ function renderQueue(queue) {
         ? 'No threads are currently open on agents.'
         : queueFilter === 'diagnostics'
           ? 'No diagnostics available.'
+        : queueFilter === 'mailbox'
+          ? `${mailboxViewTitle(selectedAgentId || 'darrin')} is clear.`
         : 'No threads in this view.';
     const checkLine = lastCheck ? `Last mailbox check: ${fmtTime(lastCheck)}.` : 'Last mailbox check is not available yet.';
     setHTML('actionList', `<div class="empty"><strong>${esc(message)}</strong><br>${esc(checkLine)}</div>`);
@@ -4934,6 +4968,11 @@ document.getElementById('clearDiagnostics').addEventListener('click', async () =
     setNotice(`Clear diagnostics was blocked: ${err.message || err}`);
   }
 });
+document.getElementById('cleanupMailbox').addEventListener('change', event => {
+  const mailbox = event.target.value || 'all';
+  focusMailbox(mailbox);
+  setNotice(`${mailboxViewTitle(mailbox)} selected.`, 'ok');
+});
 document.getElementById('cleanupInboxes').addEventListener('click', async () => {
   try {
     const selector = document.getElementById('cleanupMailbox');
@@ -5101,6 +5140,7 @@ function applyPrefs() {
   if (selectedAgentId && selectedAgentId !== 'darrin' && !agentFilter) agentFilter = selectedAgentId;
   document.getElementById('autoRefresh').checked = Boolean(prefs.autoRefresh);
   document.getElementById('queueSearch').value = queueSearch;
+  document.getElementById('cleanupMailbox').value = cleanupMailboxValueFor(prefs.cleanupMailbox);
 }
 applyPrefs();
 configureAutoRefresh();

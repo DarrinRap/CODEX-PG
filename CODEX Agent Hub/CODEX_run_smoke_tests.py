@@ -793,6 +793,34 @@ def test_pah_ui_pg_design_bible_tokens() -> None:
     assert_true("latest_disk_write_age_seconds" in ui_text, "PAH UI surfaces latest Claude Code target disk-write age")
 
 
+def test_pah_ui_inbox_dropdown_wiring() -> None:
+    ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    assert_true(
+        'id="cleanupMailbox" aria-label="Inbox view and cleanup target"' in ui_text,
+        "PAH inbox dropdown is labeled as a visible scope control",
+    )
+    assert_true(
+        "document.getElementById('cleanupMailbox').addEventListener('change'" in ui_text,
+        "PAH inbox dropdown has a direct change listener",
+    )
+    assert_true(
+        "focusMailbox(mailbox);" in ui_text,
+        "PAH inbox dropdown changes the active mailbox view",
+    )
+    assert_true(
+        "if (!cockpit) return;" in ui_text,
+        "PAH inbox dropdown cannot render before cockpit data is loaded",
+    )
+    assert_true(
+        "function syncCleanupMailboxSelector()" in ui_text,
+        "PAH inbox dropdown stays synchronized with mailbox navigation",
+    )
+    assert_true(
+        "if (id === 'all')" in ui_text and "CLEANUP_MAILBOX_AGENT_IDS.flatMap" in ui_text,
+        "PAH All inboxes dropdown value renders a combined agent-inbox queue",
+    )
+
+
 def test_agent_progress_monitor_contract() -> None:
     with TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
@@ -3184,6 +3212,7 @@ def main() -> None:
     test_ready_payload_contract()
     test_mail_state_snapshot_sanitized_contract()
     test_pah_ui_pg_design_bible_tokens()
+    test_pah_ui_inbox_dropdown_wiring()
     test_agent_progress_monitor_contract()
     test_pah_inspector_cc_progress_sidecar_contract()
     test_codex_mailbox_sla_progress()
