@@ -1,6 +1,6 @@
 # CODEX Project Memory
 
-Last updated: 2026-05-01 20:05:00 -07:00
+Last updated: 2026-05-02 19:13:00 -07:00
 
 This file is the durable memory for Codex work on the PG Testing + Audit desktop project. Future Codex chats should read this file first before making plans or edits.
 
@@ -47,6 +47,20 @@ Updated: 2026-04-30 07:50:00 -07:00
 - Communication style preference: be direct, brief, evidence-based, and do not overstate certainty. Say `not proven yet` when that is the truth.
 - Safety hygiene: never write credentials, tokens, PHI, patient data, or approval-sensitive secrets into memory, mailbox, logs, reports, or test fixtures.
 - PAH performance harness direction: PAH needs a real pickup-latency, concurrency, endurance, and failure-injection harness. Smoke tests alone are not sufficient proof of reliability.
+
+## Launcher Tab Reuse Rule
+
+Updated: 2026-05-02 19:00:00 -07:00
+
+PC and PAH launchers must not rely on browser process `MainWindowTitle`, `SendKeys`, or cache-buster query strings to find an existing tab. That only works when the app tab is the active tab and causes duplicate tabs when the app is open in the background.
+
+Canonical behavior: app pages register a live browser client with their local server; launchers request `/api/launch-refresh/request`; the open tab acknowledges through `/api/launch-refresh/ack` and refreshes itself. Launchers must also track whether the acknowledging client is foreground/visible. A hidden/background/offscreen client must not suppress a visible launch; if only hidden clients acknowledge, open the canonical app URL. Future launcher fixes must diagnose with this app-mediated refresh contract before changing browser-opening code.
+
+## Visual Regression Rule
+
+Updated: 2026-05-02 19:13:00 -07:00
+
+Any PAH or PC change that adds header/topbar buttons, status chips, filters, tabs, or other persistent controls must include a responsive overflow check before closeout. Do not add controls into a fixed-height shell row without either bounded columns, wrapping, or a deliberate overflow menu. Required PAH check: run BA from PAH `/ba-applet`, open Layout Safety, and run `Probe PAH Layout`; it must pass at 1750, 1366, 1100, 940, and 820 px with no document/topbar/action horizontal overflow.
 
 ## Product Direction
 

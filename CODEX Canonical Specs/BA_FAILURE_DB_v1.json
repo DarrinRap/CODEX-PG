@@ -1,0 +1,157 @@
+{
+  "generated": "2026-05-01T20:05:00-07:00",
+  "bible_version": "PG Design Bible v1.4",
+  "note": "Verified against source code by Codex read-only audit pass",
+  "SOURCE_NOTES": {
+    "Panda Gallery": "Dispatch named panda_gallery/, but this checkout exposes the main app as top-level Python modules. Codex audited the top-level Panda Gallery modules.",
+    "PG Design Ledger": "Audited panda_ledger/. Reference panel findings are warnings because the file carries an explicit pg-lint:disable-file note for Bible reference rendering.",
+    "Relay Wizard": "panda_relay/ was not found. A relay/ tree exists, but the dispatched source path is absent; no Relay Wizard entries were added in this pass.",
+    "PANDA Vellum": "panda_vellum/ was not found; source not implemented at the dispatched path.",
+    "PANDA Collaborator": "panda_collab/ was not found; source not implemented at the dispatched path.",
+    "Clip Launcher": "Audited scripts/pg_clip_launcher.py.",
+    "Audit Module": "Audited audit_module/ screens.",
+    "Bible Applets": "Audited workflows/design/applets/."
+  },
+  "FAILURE_DB": {
+    "Panda Gallery": [
+      {
+        "id": "FAIL-PG-001",
+        "rule": "§10 #4",
+        "description": "The Save Changes dialog exposes two destructive/commit-like choices plus Save in one button row, with Save styled as the primary action while Don't Save shares the same row prominence.",
+        "bibleRef": "§10 #4: More than one primary button per screen is not allowed; one clear primary action only.",
+        "fixTarget": "dialogs.py — UnsavedChangesDialog button row",
+        "ccAction": "Demote Don't Save to the destructive/secondary treatment and leave Save as the only primary action in the dialog.",
+        "codexNote": "Verified in dialogs.py button row: Cancel, Don't Save, and Save are presented together; Save has the accent primary style."
+      }
+    ],
+    "PG Design Ledger": [],
+    "Relay Wizard": [],
+    "PANDA Vellum": [],
+    "PANDA Collaborator": [],
+    "Clip Launcher": [
+      {
+        "id": "FAIL-CL-001",
+        "rule": "§2.9",
+        "description": "Clip Launcher defines menu and editor QSS with hardcoded color literals instead of shared Bible tokens.",
+        "bibleRef": "§2.9: No hardcoded color literals in QSS strings; route colors through named tokens.",
+        "fixTarget": "scripts/pg_clip_launcher.py — POPUP_STYLE, CTX_ITEM_STYLE, CTX_TRAY_STYLE, EDITOR_STYLE",
+        "ccAction": "Replace literal colors with shared Bible token constants or a local token map that mirrors the canonical token names.",
+        "codexNote": "Verified literals include #14141f, #e8a87c, #444466, #0d0d1a, #2a2a4e, #3a1010, and #e74c3c."
+      }
+    ],
+    "Audit Module": [
+      {
+        "id": "FAIL-AM-001",
+        "rule": "§6.12",
+        "description": "Audit Module header action buttons are fixed at 24px tall, below the Bible standard button height.",
+        "bibleRef": "§6.12: Standard buttons use the required 28px height and approved button hierarchy.",
+        "fixTarget": "audit_module/v1/screen_b.py — ActionHeader._make_action",
+        "ccAction": "Raise header action buttons from 24px to the approved 28px button height and adjust padding to preserve alignment.",
+        "codexNote": "Verified setFixedHeight(24) plus QSS height: 24px in ActionHeader._make_action."
+      }
+    ],
+    "Bible Applets": [
+      {
+        "id": "FAIL-BA-001",
+        "rule": "§6.12",
+        "description": "AM UX Review applet primary and disabled CTA buttons are styled at 36px tall instead of the Bible standard 28px button height.",
+        "bibleRef": "§6.12: Standard buttons use the required 28px height and approved button hierarchy.",
+        "fixTarget": "workflows/design/applets/AM_UX_REVIEW_v1.html — .btn-primary and .btn-disabled",
+        "ccAction": "Set applet CTA button height to 28px and re-check surrounding spacing so the layout remains balanced.",
+        "codexNote": "Verified .btn-primary and .btn-disabled both declare height:36px."
+      }
+    ]
+  },
+  "WARN_DB": {
+    "Panda Gallery": [
+      {
+        "id": "WARN-PG-001",
+        "rule": "§2.9",
+        "description": "Comparison Mode top bar uses inline QSS color literals for the bar, title, and Add Image button.",
+        "bibleRef": "§2.9: No hardcoded color literals in QSS strings; route colors through named tokens.",
+        "fixTarget": "comparison_view.py — ComparisonView._build_ui top bar and Add Image button",
+        "ccAction": "Move the comparison toolbar QSS colors to shared Bible tokens or named style helpers.",
+        "codexNote": "Verified inline literals include #161625, #2a2a3e, #e8a87c, and #22223a."
+      }
+    ],
+    "PG Design Ledger": [
+      {
+        "id": "WARN-LD-001",
+        "rule": "§2.9",
+        "description": "Reference panel renders hardcoded color literals in inline QSS, but the file appears intentionally exempt as a Bible reference/palette surface.",
+        "bibleRef": "§2.9: No hardcoded color literals in QSS strings; route colors through named tokens.",
+        "fixTarget": "panda_ledger/verify/reference_panel.py — _section_header and _SwatchTile",
+        "ccAction": "Confirm whether the reference panel exemption remains valid; if not, replace decorative QSS literals with token helpers.",
+        "codexNote": "File begins with pg-lint:disable-file for intentional Bible reference rendering, so Codex classified this as WARN instead of FAIL."
+      }
+    ],
+    "Relay Wizard": [],
+    "PANDA Vellum": [],
+    "PANDA Collaborator": [],
+    "Clip Launcher": [],
+    "Audit Module": [
+      {
+        "id": "WARN-AM-001",
+        "rule": "§3.3",
+        "description": "Audit Module action text uses an off-scale 11.5px font size in action buttons.",
+        "bibleRef": "§3.3: Section/action text must use approved size, weight, spacing, and transform values.",
+        "fixTarget": "audit_module/v1/screen_b.py — ActionHeader._make_action",
+        "ccAction": "Round the action button font size to the closest approved Bible scale value and verify visual density.",
+        "codexNote": "Verified QSS font-size: 11.5px in ActionHeader._make_action."
+      }
+    ],
+    "Bible Applets": [
+      {
+        "id": "WARN-BA-001",
+        "rule": "§3.3",
+        "description": "PAH simple applet mockup label uses 18px text, which appears off the compact Bible UI type scale.",
+        "bibleRef": "§3.3: Section/action text must use approved size, weight, spacing, and transform values.",
+        "fixTarget": "workflows/design/applets/pah_simple_v1.html — .mockup-label",
+        "ccAction": "Move the mockup label to the nearest approved type token or document why the mockup requires an exception.",
+        "codexNote": "Verified .mockup-label declares font-size: 18px."
+      }
+    ]
+  },
+  "APP_PROFILES": {
+    "Panda Gallery": {
+      "pass": 62,
+      "fail": 1,
+      "warn": 1
+    },
+    "PG Design Ledger": {
+      "pass": 63,
+      "fail": 0,
+      "warn": 1
+    },
+    "Relay Wizard": {
+      "pass": 64,
+      "fail": 0,
+      "warn": 0
+    },
+    "PANDA Vellum": {
+      "pass": 64,
+      "fail": 0,
+      "warn": 0
+    },
+    "PANDA Collaborator": {
+      "pass": 64,
+      "fail": 0,
+      "warn": 0
+    },
+    "Clip Launcher": {
+      "pass": 63,
+      "fail": 1,
+      "warn": 0
+    },
+    "Audit Module": {
+      "pass": 62,
+      "fail": 1,
+      "warn": 1
+    },
+    "Bible Applets": {
+      "pass": 62,
+      "fail": 1,
+      "warn": 1
+    }
+  }
+}

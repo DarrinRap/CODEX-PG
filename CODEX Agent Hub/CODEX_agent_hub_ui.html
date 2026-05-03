@@ -118,14 +118,15 @@ button[disabled] { opacity: .48; cursor: default; }
   min-height: 0;
   min-width: 0;
   display: grid;
-  grid-template-rows: 48px 1fr 26px;
+  grid-template-rows: auto minmax(0, 1fr) 26px;
 }
 .topbar {
   display: grid;
-  grid-template-columns: minmax(180px, 248px) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(160px, 220px) minmax(180px, 1fr) minmax(0, 820px);
   align-items: center;
   gap: 12px;
-  padding: 0 12px;
+  min-height: 48px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--ink);
   color: var(--text);
@@ -214,7 +215,16 @@ button[disabled] { opacity: .48; cursor: default; }
 .topbar .system-state {
   color: var(--text);
 }
-.top-actions { display: flex; gap: 6px; align-items: center; }
+.top-actions {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+  align-items: center;
+}
+.top-actions > * { flex: 0 1 auto; }
 .top-actions select {
   min-height: 26px;
   border: 1px solid var(--border);
@@ -555,6 +565,7 @@ button.filter.active {
 }
 .steward-card.ok { border-color: rgba(47, 125, 74, .34); }
 .steward-card.warn { border-color: rgba(243, 156, 18, .48); }
+.steward-card.slow { border-color: rgba(231, 76, 60, .50); }
 .steward-card.err { border-color: rgba(231, 76, 60, .56); }
 .steward-top {
   display: flex;
@@ -575,6 +586,7 @@ button.filter.active {
 }
 .steward-card.ok .steward-dot { background: var(--ok); box-shadow: 0 0 7px rgba(127, 176, 105, .42); }
 .steward-card.warn .steward-dot { background: var(--warn); box-shadow: 0 0 7px rgba(243, 156, 18, .36); }
+.steward-card.slow .steward-dot { background: var(--err); box-shadow: 0 0 7px rgba(231, 76, 60, .36); }
 .steward-card.err .steward-dot { background: var(--err); box-shadow: 0 0 7px rgba(231, 76, 60, .44); }
 .steward-value {
   min-width: 0;
@@ -638,6 +650,14 @@ button.filter.active {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.cc-activity-stamp {
+  margin-top: 4px;
+  color: var(--quiet);
+  font: 10px/1.2 var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .cc-activity-summary {
   color: var(--muted);
   font-size: 12px;
@@ -679,6 +699,90 @@ button.filter.active {
   color: var(--warn);
   font-size: 11px;
 }
+.comm-speed-panel {
+  margin: 8px 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+}
+.comm-speed-panel.ok { border-color: rgba(47, 125, 74, .36); }
+.comm-speed-panel.warn { border-color: rgba(243, 156, 18, .48); }
+.comm-speed-panel.slow,
+.comm-speed-panel.err { border-color: rgba(231, 76, 60, .56); }
+.comm-speed-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.comm-speed-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.comm-speed-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.comm-speed-actions button {
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.comm-speed-status {
+  color: var(--text);
+  font-weight: 760;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comm-speed-summary {
+  color: var(--muted);
+  font-size: 12px;
+}
+.comm-speed-grid,
+.comm-speed-history {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.comm-speed-metric,
+.comm-speed-run {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--field);
+  padding: 6px 7px;
+}
+.comm-speed-label {
+  color: var(--quiet);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.comm-speed-value {
+  margin-top: 3px;
+  color: var(--text);
+  font: 13px/1.2 var(--font-mono);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comm-speed-run.ok { border-color: rgba(47, 125, 74, .34); }
+.comm-speed-run.warn { border-color: rgba(243, 156, 18, .46); }
+.comm-speed-run.slow,
+.comm-speed-run.err { border-color: rgba(231, 76, 60, .50); }
 .notice {
   margin: 10px 12px 0;
   border: 1px solid rgba(231, 76, 60, .62);
@@ -1993,6 +2097,7 @@ body.quiet-mode .top-actions button[disabled] {
         <option value="claude-desktop">Claude inbox</option>
         <option value="claude-code">CC inbox</option>
       </select>
+      <button class="gbtn" id="openBibleAudit">Bible Audit</button>
       <button class="gbtn" id="openInspector">Inspector</button>
       <button class="gbtn" id="cleanupInboxes">Clean inboxes</button>
       <button class="gbtn" id="archiveRead">Archive read</button>
@@ -2046,6 +2151,7 @@ body.quiet-mode .top-actions button[disabled] {
       <div class="health-explainer" id="healthExplainer" hidden></div>
       <div class="summary-strip" id="summaryStrip"></div>
       <div class="steward-panel" id="stewardPanel" hidden></div>
+      <div class="comm-speed-panel unknown" id="commSpeedPanel" hidden></div>
       <div class="cc-activity-panel unknown" id="ccActivityPanel" hidden></div>
       <div class="notice" id="notice" hidden></div>
       <div class="trust-strip" id="trustStrip" hidden></div>
@@ -2259,6 +2365,7 @@ const snoozedItems = loadSnoozedItems();
 let prefs = loadPrefs();
 let autoTimer = null;
 let refreshInFlight = false;
+let commSpeedRunning = false;
 const messagePreviewCache = {};
 let inspectorReport = null;
 let inspectorOpen = false;
@@ -2281,6 +2388,27 @@ function fmtTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
   return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+}
+function fmtDateTime(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 19);
+  return date.toLocaleString([], {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+function runStampLabel(label, value) {
+  const stamp = fmtDateTime(value);
+  return stamp === '--' ? `${label} --` : `${label} ${stamp}`;
+}
+function inspectorRunStamp(health) {
+  const stamp = fmtDateTime(health?.latest_report_at || health?.generated_at || '');
+  return stamp === '--' ? '' : ` Last run: ${stamp}.`;
 }
 function fmtMailTime(value) {
   if (!value) return '--';
@@ -2418,6 +2546,7 @@ function focusAgent(agentId) {
   prefs.queueSearch = queueSearch;
   prefs.selectedId = selected?.id || '';
   savePrefs();
+  if (!cockpit) return;
   render();
 }
 function focusPanel(filter) {
@@ -2432,6 +2561,7 @@ function focusPanel(filter) {
   prefs.queueSearch = queueSearch;
   prefs.selectedId = selected?.id || '';
   savePrefs();
+  if (!cockpit) return;
   render();
 }
 function focusQueueItem(filter, itemId) {
@@ -2445,11 +2575,13 @@ function focusQueueItem(filter, itemId) {
   prefs.selectedAgentId = '';
   prefs.selectedId = selected?.id || '';
   savePrefs();
+  if (!cockpit) return;
   render();
 }
 async function postJson(path, body) {
   const res = await fetch(path, {
     method: 'POST',
+    credentials: 'same-origin',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body || {})
   });
@@ -2470,7 +2602,7 @@ async function checkCcActivityNow() {
     if (!res.ok || payload.ok === false) throw new Error(payload.error || `CC activity check failed ${res.status}`);
     ccActivityOverride = payload;
     renderCcActivityPanel();
-    setNotice('Claude Code activity checked.', 'ok');
+    setNotice(`Claude Code activity checked at ${fmtDateTime(payload.checked_at)}.`, 'ok');
   } catch (err) {
     setNotice(`Claude Code activity check failed: ${err.message || err}`);
   } finally {
@@ -2940,9 +3072,10 @@ async function runInspectorNow() {
     renderInspectorPanel();
     const summary = payload.report?.summary || {};
     const counts = summary.counts || {};
+    const completedAt = payload.generated_at || payload.report?.generated_at || new Date().toISOString();
     await loadCockpit();
     setNotice(
-      `Inspector complete: ${counts.pass || 0} pass, ${counts.warn || 0} warning, ${counts.fail || 0} fail.`,
+      `Inspector complete at ${fmtDateTime(completedAt)}: ${counts.pass || 0} pass, ${counts.warn || 0} warning, ${counts.fail || 0} fail.`,
       counts.fail ? 'err' : 'ok'
     );
     return payload;
@@ -2955,6 +3088,11 @@ async function runInspectorNow() {
       control.textContent = labels.get(control) || 'Run Inspector';
     });
   }
+}
+function openBibleAuditApplet() {
+  const opened = window.open('/ba-applet', 'pah-ba-applet');
+  if (opened) opened.focus();
+  setNotice(`Bible Audit opened at ${fmtDateTime(new Date().toISOString())}.`, 'ok');
 }
 async function openInspectorPanel() {
   inspectorOpen = true;
@@ -2980,7 +3118,7 @@ function renderInspectorPanel() {
   const overall = inspectorOverall(report);
   const generated = payload.generated_at || report.generated_at || '';
   document.getElementById('inspectorMeta').textContent = generated
-    ? `Latest ${overall.toUpperCase()} report from ${fmtTime(generated)}`
+    ? `Latest ${overall.toUpperCase()} report from ${fmtDateTime(generated)}`
     : 'No inspector report found yet.';
   document.getElementById('inspectorGlance').innerHTML = [
     [overall, 'all', 'Overall', overall.toUpperCase()],
@@ -3341,7 +3479,7 @@ function severityRank(value) {
 }
 function statusClass(value) {
   const text = String(value || '').toLowerCase();
-  if (text.includes('err') || text.includes('fail')) return 'err';
+  if (text.includes('err') || text.includes('fail') || text.includes('slow')) return 'err';
   if (text.includes('warn') || text.includes('held') || text.includes('wake') || text.includes('wait')) return 'warn';
   if (text.includes('active')) return 'active';
   return 'ok';
@@ -3535,6 +3673,7 @@ function emptyCockpit() {
     git: {},
     wake: {},
     interaction_ledger: {events: [], discrepancy_count: 0, latest_discrepancy: null},
+    communication_speed: {latest: {}, previous: {}, last_10: []},
     load_error: false,
   };
 }
@@ -3637,6 +3776,7 @@ function render() {
   renderHealthExplainer();
   renderSummary(counts, cockpit.diagnostics || {});
   renderStewardPanel();
+  renderCommSpeedPanel();
   renderCcActivityPanel();
   renderTrustStrip(cockpit.interaction_ledger || {});
   currentVisibleQueue = visibleQueue;
@@ -3730,7 +3870,8 @@ function renderAgents(agents) {
   setHTML('agentList', agents.map(agent => {
     const actionCount = agentActionCount(agent.id);
     const displayCount = agent.id === 'darrin' ? Number(counts.open_on_darrin || 0) : actionCount;
-    const mailboxWaiting = agent.id === 'darrin' ? 0 : mailboxWaitingCount(agent.id) || Number(agent.waiting_count || agent.unread_count || agent.count_value || 0);
+    const agentUnread = Number(agent.unread_count || 0);
+    const mailboxWaiting = agentUnread || mailboxWaitingCount(agent.id);
     const dotStatus = displayCount
       ? agent.status
       : mailboxWaiting
@@ -3749,13 +3890,9 @@ function renderAgents(agents) {
       : statusLabel === 'all clear'
       ? 'status-ok'
       : '';
-    const inboxLabel = agent.id === 'darrin'
-      ? `${esc(counts.open_on_darrin || 0)} thread${Number(counts.open_on_darrin || 0) === 1 ? '' : 's'} open`
-      : displayCount
-      ? `${esc(displayCount)} thread${Number(displayCount) === 1 ? '' : 's'} open`
-      : mailboxWaiting
-      ? `${esc(mailboxWaiting)} unread mailbox item${mailboxWaiting === 1 ? '' : 's'}`
-      : '0 threads open';
+    const openLabel = `${displayCount} open`;
+    const unreadLabel = `${mailboxWaiting} unread`;
+    const inboxLabel = `${openLabel} · ${unreadLabel}`;
     return `
     <button class="agent ${agent.id === selectedAgentId ? 'selected' : ''}" data-agent-id="${esc(agent.id)}" data-agent-mailbox-waiting="${esc(mailboxWaiting)}" data-agent-action-count="${esc(actionCount)}" title="Show ${esc(agent.display_name)} details and actions">
       <div class="avatar">${esc(agent.code)}</div>
@@ -3763,8 +3900,8 @@ function renderAgents(agents) {
         <div class="agent-name"><span class="dot ${statusClass(dotStatus)}${agent.pulse ? ' pulse' : ''}"></span>${esc(agent.display_name)}</div>
         <div class="agent-note ${statusPillClass}" title="${esc(statusLabel)}">${esc(statusLabel)}</div>
       </div>
-      <div class="agent-count">${esc(displayCount)} thread${Number(displayCount) === 1 ? '' : 's'}</div>
-      <div class="agent-note">${inboxLabel}</div>
+      <div class="agent-count" title="${esc(openLabel)} thread${Number(displayCount) === 1 ? '' : 's'}">${esc(displayCount)} thread${Number(displayCount) === 1 ? '' : 's'}</div>
+      <div class="agent-note" title="${esc(inboxLabel)} mailbox/thread summary">${esc(inboxLabel)}</div>
       <div class="agent-action">${esc(actionLabel)}</div>
     </button>
   `}).join(''));
@@ -3982,6 +4119,26 @@ function componentLevel(component) {
   const level = String(component?.level || 'unknown');
   return ['ok', 'warn', 'err', 'unknown'].includes(level) ? level : 'unknown';
 }
+function commSpeedLevel(value) {
+  const level = String(value || 'unknown').toLowerCase();
+  return ['ok', 'warn', 'slow', 'err'].includes(level) ? level : 'unknown';
+}
+function commSpeedMs(value) {
+  const ms = Number(value || 0);
+  return ms ? `${Math.round(ms)} ms` : '--';
+}
+function commSpeedHistory() {
+  return cockpit?.communication_speed || {latest: {}, previous: {}, last_10: []};
+}
+function commSpeedLatest() {
+  return commSpeedHistory().latest || {};
+}
+function commSpeedDeltaText(run) {
+  const comparison = run?.comparison || {};
+  const delta = comparison.delta_vs_previous_ms;
+  if (delta === null || delta === undefined || Number(delta) === 0) return 'no delta';
+  return Number(delta) < 0 ? `${Math.abs(Number(delta))} ms faster` : `${Number(delta)} ms slower`;
+}
 function ccActivityCard() {
   if (ccActivityOverride?.card) return ccActivityOverride.card;
   const cards = cockpit?.agent_progress?.cards || [];
@@ -4016,6 +4173,8 @@ function renderCcActivityPanel() {
   const mailboxPath = mailbox.latest_path || '';
   const mailboxAge = mailbox.latest_age_seconds;
   const issues = Array.isArray(card.issues) ? card.issues : [];
+  const checkedAt = ccActivityOverride?.checked_at || card.checked_at || cockpit?.generated_at;
+  const checkedStamp = fmtDateTime(checkedAt);
   node.hidden = false;
   node.className = `cc-activity-panel ${esc(severity)}`;
   node.innerHTML = `
@@ -4023,6 +4182,7 @@ function renderCcActivityPanel() {
       <div>
         <div class="cc-activity-title"><span class="dot ${esc(statusClass(severity))}"></span>Claude Code Activity</div>
         <div class="cc-activity-status">${esc(card.phase || card.status || 'No active dispatch')}</div>
+        <div class="cc-activity-stamp">${esc(runStampLabel('Last checked:', checkedAt))}</div>
       </div>
       <div class="cc-activity-actions">
         <button class="gbtn secondary" id="checkCcActivityNow" type="button">Check now</button>
@@ -4038,7 +4198,7 @@ function renderCcActivityPanel() {
       ${ccActivityMetric('Targets', `${targetCount}`, targets.map(target => target.path || '').join('\n'))}
       ${ccActivityMetric('Scanned', `${card.scanned_files ?? targets.reduce((total, target) => total + Number(target.scanned_files || 0), 0)}`, 'Files scanned under expected target paths.')}
       ${ccActivityMetric('Warn/Error', `${card.warn_minutes || '--'}m / ${card.error_minutes || '--'}m`)}
-      ${ccActivityMetric('Checked', fmtTime(ccActivityOverride?.checked_at || card.checked_at || cockpit?.generated_at))}
+      ${ccActivityMetric('Checked', fmtTime(checkedAt), checkedStamp)}
     </div>
     <div class="cc-activity-path">${esc(latestWritePath || mailboxPath || card.sidecar_path || 'No visible disk path yet.')}</div>
     ${issues.length ? `<div class="cc-activity-issues">Issues: ${esc(issues.join(', '))}</div>` : ''}
@@ -4063,6 +4223,10 @@ function renderStewardPanel() {
   const counts = cockpit?.cockpit_state?.counts || {};
   const queue = cockpit?.action_queue || [];
   const latestDiscrepancy = ledger.latest_discrepancy || null;
+  const speedLatest = commSpeedLatest();
+  const speedDurations = speedLatest.durations_ms || {};
+  const speedLevel = commSpeedLevel(speedLatest.overall);
+  const speedHasRun = Boolean(speedLatest.run_id);
   const routeRows = cockpit?.routes || [];
   const attentionRoute = routeRows.find(route => route.status && route.status !== 'pass') || routeRows[0] || {};
   const monitorLabel = monitor.generated_at
@@ -4126,6 +4290,16 @@ function renderStewardPanel() {
       action: 'Review queue',
       target: 'queue',
     },
+    {
+      label: 'Comm Speed',
+      level: commSpeedRunning ? 'warn' : speedHasRun ? speedLevel : 'unknown',
+      value: commSpeedRunning ? 'Testing...' : speedHasRun ? speedLatest.label || String(speedLatest.overall || 'speed test') : 'No run yet',
+      note: speedHasRun ? `${commSpeedMs(speedDurations.end_to_end)} / ${fmtTime(speedLatest.created_at)}` : 'local harness ready',
+      title: speedHasRun ? `${speedLatest.label || speedLatest.overall}; ${commSpeedMs(speedDurations.end_to_end)} end to end.` : 'Run local PAH communication speed test.',
+      itemId: 'comm-speed',
+      action: commSpeedRunning ? 'Testing' : 'Speed test',
+      target: 'comm-speed',
+    },
     ...progressCards.map(card => ({
       label: card.label || 'Agent Progress',
       level: card.severity || 'unknown',
@@ -4168,6 +4342,10 @@ function renderStewardPanel() {
   `).join('');
   node.querySelectorAll('.steward-card[data-diagnostic-id]').forEach(card => {
     card.addEventListener('click', () => {
+      if (card.dataset.actionTarget === 'comm-speed') {
+        runCommunicationSpeedTest().catch(() => {});
+        return;
+      }
       if (card.dataset.actionTarget === 'queue') {
         focusPanel('all');
         return;
@@ -4175,6 +4353,99 @@ function renderStewardPanel() {
       focusQueueItem('diagnostics', card.dataset.diagnosticId || 'diag-suite');
     });
   });
+}
+function renderCommSpeedPanel() {
+  const node = document.getElementById('commSpeedPanel');
+  if (!node) return;
+  const history = commSpeedHistory();
+  const latest = history.latest || {};
+  const runs = Array.isArray(history.last_10) ? history.last_10 : [];
+  const durations = latest.durations_ms || {};
+  const comparison = latest.comparison || {};
+  const hasRun = Boolean(latest.run_id);
+  const level = commSpeedRunning ? 'warn' : hasRun ? commSpeedLevel(latest.overall) : 'unknown';
+  node.hidden = false;
+  node.className = `comm-speed-panel ${level}`;
+  const status = commSpeedRunning
+    ? 'Testing...'
+    : hasRun
+    ? latest.label || String(latest.overall || 'Comm speed')
+    : 'No speed test yet';
+  const summary = hasRun
+    ? `${commSpeedMs(durations.end_to_end)} end to end; ${commSpeedDeltaText(latest)}; baseline ${comparison.baseline_state || 'warming'}`
+    : 'Local PAH mailroom and cockpit harness.';
+  node.innerHTML = `
+    <div class="comm-speed-head">
+      <div>
+        <div class="comm-speed-title"><span class="dot ${esc(statusClass(level))}"></span><span>Communication Speed</span></div>
+        <div class="comm-speed-status">${esc(status)}</div>
+      </div>
+      <div class="comm-speed-actions">
+        <button class="gbtn secondary" id="runCommSpeed" type="button" ${commSpeedRunning ? 'disabled' : ''}>${commSpeedRunning ? 'Testing' : 'Speed test'}</button>
+        <button class="gbtn secondary" id="openCommSpeedLog" type="button" ${history.log_path ? '' : 'disabled'}>Open log</button>
+      </div>
+    </div>
+    <div class="comm-speed-summary">${esc(summary)}</div>
+    <div class="comm-speed-grid">
+      ${[
+        ['End to end', commSpeedMs(durations.end_to_end)],
+        ['Mailroom', commSpeedMs(durations.mailroom_total)],
+        ['Cockpit', commSpeedMs(durations.cockpit)],
+        ['P95', commSpeedMs(history.p95_end_to_end_ms)],
+      ].map(([label, value]) => `
+        <div class="comm-speed-metric">
+          <div class="comm-speed-label">${esc(label)}</div>
+          <div class="comm-speed-value">${esc(value)}</div>
+        </div>
+      `).join('')}
+    </div>
+    ${runs.length ? `
+      <div class="comm-speed-history">
+        ${runs.slice(0, 4).map(run => {
+          const runDurations = run.durations_ms || {};
+          const runLevel = commSpeedLevel(run.overall);
+          return `
+            <div class="comm-speed-run ${esc(runLevel)}" title="${esc(run.run_id || '')}">
+              <div class="comm-speed-label">${esc(fmtTime(run.created_at))}</div>
+              <div class="comm-speed-value">${esc(commSpeedMs(runDurations.end_to_end))}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    ` : ''}
+  `;
+  document.getElementById('runCommSpeed')?.addEventListener('click', () => runCommunicationSpeedTest().catch(() => {}));
+  document.getElementById('openCommSpeedLog')?.addEventListener('click', () => openCommunicationSpeedLog().catch(() => {}));
+}
+async function runCommunicationSpeedTest() {
+  if (commSpeedRunning) return;
+  commSpeedRunning = true;
+  renderStewardPanel();
+  renderCommSpeedPanel();
+  try {
+    const payload = await postJson('/api/run-communication-speed-test', {actor: 'darrin_or_codex', trigger: 'dashboard_button'});
+    cockpit.communication_speed = payload.history || cockpit.communication_speed || {};
+    const run = payload.run || {};
+    const tone = run.overall === 'ok' ? 'ok' : 'err';
+    setNotice(`${run.label || 'Comm speed'}: ${commSpeedMs((run.durations_ms || {}).end_to_end)}`, tone);
+  } catch (err) {
+    setNotice(`Communication speed test failed: ${err.message || err}`);
+  } finally {
+    commSpeedRunning = false;
+    renderStewardPanel();
+    renderCommSpeedPanel();
+  }
+}
+async function openCommunicationSpeedLog() {
+  const path = commSpeedHistory().log_path;
+  if (!path) return;
+  try {
+    const res = await fetch(`/api/open?path=${encodeURIComponent(path)}`);
+    if (!res.ok) throw new Error(`open failed ${res.status}`);
+    setNotice('Communication speed log open request sent.', 'ok');
+  } catch (err) {
+    setNotice(`Open speed log failed: ${err.message || err}`);
+  }
 }
 function latestArchiveSweep() {
   const monitor = cockpit?.health?.components?.periodic_monitor || {};
@@ -4636,6 +4907,7 @@ function renderDiagnostics(diagnostics) {
   const inspectorHealth = cockpit?.health?.components?.inspector || {};
   const inspectorLevel = componentLevel(inspectorHealth);
   const inspectorNeedsRun = inspectorLevel === 'warn' || inspectorLevel === 'err';
+  const inspectorDetail = `${inspectorHealth.detail || 'Inspector needs a fresh run.'}${inspectorRunStamp(inspectorHealth)}`;
   const inspectorButton = inspectorNeedsRun
     ? '<button class="diag-action" type="button" data-inspector-run="footer">Run Inspector</button>'
     : '';
@@ -4643,7 +4915,7 @@ function renderDiagnostics(diagnostics) {
     node.innerHTML = `
       ${fail ? '<button class="diag-action" type="button" data-diagnostics-action="failure">Failure</button>' : ''}
       ${inspectorButton}
-      <span class="diag-text">Diagnostics need review: ${esc(fail)} failed, ${esc(warn)} warning.${inspectorNeedsRun ? ` ${esc(inspectorHealth.detail || 'Inspector needs a fresh run.')}` : ''}</span>
+      <span class="diag-text">Diagnostics need review: ${esc(fail)} failed, ${esc(warn)} warning.${inspectorNeedsRun ? ` ${esc(inspectorDetail)}` : esc(inspectorRunStamp(inspectorHealth))}</span>
     `;
     const action = node.querySelector('button[data-diagnostics-action="failure"]');
     if (action) {
@@ -4660,14 +4932,15 @@ function renderDiagnostics(diagnostics) {
   if (inspectorNeedsRun) {
     node.innerHTML = `
       ${inspectorButton}
-      <span class="diag-text">${esc(inspectorHealth.detail || 'Inspector report needs a fresh run.')}</span>
+      <span class="diag-text">${esc(inspectorDetail)}</span>
     `;
     node.querySelector('button[data-inspector-run]')?.addEventListener('click', () => runInspectorNow().catch(() => {}));
     return;
   }
+  const inspectorStamp = inspectorRunStamp(inspectorHealth);
   const text = missing
-    ? `Diagnostics quiet. Classifier metadata gaps: ${missing}.`
-    : `Diagnostics quiet. ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass.`;
+    ? `Diagnostics quiet. Classifier metadata gaps: ${missing}.${inspectorStamp}`
+    : `Diagnostics quiet. ${diagnostics.checks_pass || 0}/${diagnostics.checks_total || 0} checks pass.${inspectorStamp}`;
   node.textContent = text;
 }
 document.getElementById('refresh').addEventListener('click', loadCockpit);
@@ -4782,6 +5055,7 @@ document.getElementById('stateAck').addEventListener('click', () => setLocalStat
 document.getElementById('stateCopied').addEventListener('click', () => setLocalState('copied'));
 document.getElementById('stateWaiting').addEventListener('click', () => setLocalState('waiting'));
 document.getElementById('stateHandled').addEventListener('click', () => setLocalState('handled'));
+document.getElementById('openBibleAudit').addEventListener('click', openBibleAuditApplet);
 document.getElementById('openInspector').addEventListener('click', () => openInspectorPanel());
 document.getElementById('runInspector').addEventListener('click', () => runInspectorNow().catch(() => {}));
 document.getElementById('inspectorPanel').addEventListener('click', event => {
@@ -4970,6 +5244,11 @@ document.getElementById('clearDiagnostics').addEventListener('click', async () =
 });
 document.getElementById('cleanupMailbox').addEventListener('change', event => {
   const mailbox = event.target.value || 'all';
+  if (!cockpit) {
+    prefs.cleanupMailbox = cleanupMailboxValueFor(mailbox);
+    savePrefs();
+    return;
+  }
   focusMailbox(mailbox);
   setNotice(`${mailboxViewTitle(mailbox)} selected.`, 'ok');
 });
@@ -5132,6 +5411,59 @@ function configureAutoRefresh() {
   document.getElementById('autoRefresh').checked = Boolean(prefs.autoRefresh);
   if (prefs.autoRefresh) autoTimer = window.setInterval(loadCockpit, AUTO_REFRESH_MS);
 }
+function launcherClientId() {
+  const key = 'pah.launchRefreshClientId';
+  try {
+    let value = window.sessionStorage.getItem(key);
+    if (!value) {
+      value = `pah-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      window.sessionStorage.setItem(key, value);
+    }
+    return value;
+  } catch (err) {
+    return `pah-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+}
+function startLauncherRefreshMonitor() {
+  const clientId = launcherClientId();
+  let currentToken = null;
+  let inFlight = false;
+  async function pulse() {
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      const response = await fetch('/api/launch-refresh/heartbeat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({client_id: clientId, seen_token: currentToken || ''}),
+        cache: 'no-store',
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const nextToken = payload?.token || '';
+      if (currentToken === null) {
+        currentToken = nextToken;
+      } else if (nextToken && nextToken !== currentToken) {
+        currentToken = nextToken;
+        try {
+          await fetch('/api/launch-refresh/ack', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({client_id: clientId, token: nextToken}),
+            keepalive: true,
+          });
+        } catch (err) {}
+        window.location.reload();
+      }
+    } catch (err) {
+      // Launcher refresh is best-effort; the normal dashboard continues to work.
+    } finally {
+      inFlight = false;
+    }
+  }
+  pulse();
+  window.setInterval(pulse, 1000);
+}
 function applyPrefs() {
   queueFilter = 'you';
   agentFilter = '';
@@ -5144,6 +5476,9 @@ function applyPrefs() {
 }
 applyPrefs();
 configureAutoRefresh();
+if (!new URLSearchParams(window.location.search).has('ba_layout_probe')) {
+  startLauncherRefreshMonitor();
+}
 loadCockpit();
 </script>
 </body>

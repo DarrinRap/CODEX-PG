@@ -172,9 +172,63 @@ class PandaCollaboratorTestSandboxTests(unittest.TestCase):
         self.assertIn("$IsRunning = Get-NetTCPConnection", script)
         self.assertIn("if ($IsRunning)", script)
         self.assertIn("Browser launch skipped. Refresh the existing tab:", script)
+        self.assertIn("function Invoke-PandaCollaboratorRefresh", script)
+        self.assertIn("api/launch-refresh/request", script)
+        self.assertIn("api/launch-refresh/state", script)
+        self.assertIn("foreground_ack_clients", script)
+        self.assertNotIn("SendKeys", script)
+        self.assertNotIn("_pc_launch", script)
+        self.assertIn("function Open-PandaCollaborator", script)
         self.assertIn("Start-Process $Url", script)
         self.assertLess(script.index("if ($IsRunning)"), script.index("if ($NoBrowser)"))
-        self.assertLess(script.index("if ($NoBrowser)"), script.index("Start-Process $Url"))
+        self.assertLess(script.index("if ($NoBrowser)"), script.index("\nOpen-PandaCollaborator"))
+
+    def test_launch_refresh_payload_contract(self):
+        original = json.loads(json.dumps(pc.LAUNCH_REFRESH_STATE))
+        try:
+            with pc.LAUNCH_REFRESH_LOCK:
+                pc.LAUNCH_REFRESH_STATE.clear()
+                pc.LAUNCH_REFRESH_STATE.update({"token": "", "issued_at": "", "clients": {}, "acks": {}})
+            heartbeat = pc.record_launch_refresh_client(
+                "test-client",
+                "",
+                {"visibility_state": "visible", "focused": True},
+            )
+            self.assertEqual(heartbeat["active_clients"], 1)
+            self.assertEqual(heartbeat["foreground_clients"], 1)
+            requested = pc.request_launch_refresh("unit-test")
+            self.assertTrue(requested["token"])
+            self.assertEqual(requested["active_clients"], 1)
+            self.assertEqual(requested["ack_clients"], 0)
+            acknowledged = pc.acknowledge_launch_refresh(
+                "test-client",
+                requested["token"],
+                {"visibility_state": "visible", "focused": True},
+            )
+            self.assertEqual(acknowledged["ack_clients"], 1)
+            self.assertEqual(acknowledged["foreground_ack_clients"], 1)
+            with pc.LAUNCH_REFRESH_LOCK:
+                pc.LAUNCH_REFRESH_STATE.clear()
+                pc.LAUNCH_REFRESH_STATE.update({"token": "", "issued_at": "", "clients": {}, "acks": {}})
+            hidden = pc.record_launch_refresh_client(
+                "hidden-client",
+                "",
+                {"visibility_state": "hidden", "focused": False},
+            )
+            self.assertEqual(hidden["active_clients"], 1)
+            self.assertEqual(hidden["foreground_clients"], 0)
+            hidden_request = pc.request_launch_refresh("unit-test")
+            hidden_ack = pc.acknowledge_launch_refresh(
+                "hidden-client",
+                hidden_request["token"],
+                {"visibility_state": "hidden", "focused": False},
+            )
+            self.assertEqual(hidden_ack["ack_clients"], 1)
+            self.assertEqual(hidden_ack["foreground_ack_clients"], 0)
+        finally:
+            with pc.LAUNCH_REFRESH_LOCK:
+                pc.LAUNCH_REFRESH_STATE.clear()
+                pc.LAUNCH_REFRESH_STATE.update(original)
 
     def test_run_pc_action_test_writes_pass_evidence_inside_run_folder(self):
         result = pc.run_pc_action_test()

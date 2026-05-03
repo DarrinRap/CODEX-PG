@@ -44,6 +44,7 @@ Rules:
 | `CODEX_TESTING_AUDIT_ARCHITECTURE_v1.md` | Codex canonical | Testing + Audit | Pipeline architecture, component boundaries, local prototype sequence, adapter seams, and dashboard/storage responsibilities. |
 | `CODEX_AUDIT_DASHBOARD_UX_SPEC_v1.md` | Codex canonical | Testing + Audit | Dashboard views, visual alignment, evidence review workflow, approval/email/archive UX, and local prototype acceptance criteria. |
 | `CODEX_COMPLIANCE_ADDENDUM_TESTING_AUDIT_v1.md` | Codex canonical | Testing + Audit | Privacy, PHI, Dropbox, AI, email, archive, logging, and stop-condition guardrails for MVP development. |
+| `BA_APPLET_FIX_SPEC_v1.md` | Codex canonical | PG Design Bible Audit / app QA | Repair contract for BA v1/v2 report integrity, not-audited handling, scanner correctness, and required action-feedback audit checks. |
 | `RELAY_SPEC_v0.3.md` | Codex canonical | PG Core Relay module | Role-aware Relay hub, duplicate detection/resolution, message templates, Dropbox receipts, tester/developer views, tester setup wizard, invite codes, BUGS.md capture, status updates, and settings contract. |
 | `RELAY_SPEC_v0.2.md` | Superseded | PG Core Relay module | Superseded by v0.3 after Relay tester setup Q&A decisions and §16 onboarding wizard amendment. |
 | `RELAY_SPEC_v0.1.md` | Superseded | PG Core Relay module | Historical base spec for the two-sided asynchronous bug-report relay. Superseded by v0.2 after Screen C hub decisions. |

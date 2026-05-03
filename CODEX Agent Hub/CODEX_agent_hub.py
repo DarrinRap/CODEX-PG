@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import html
 import json
 import os
 import re
@@ -21,6 +22,7 @@ import time
 import webbrowser
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import lru_cache
 from http.cookies import SimpleCookie
 from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -119,29 +121,57 @@ INTERACTION_LEDGER_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_interaction_ledge
 MESSAGE_AUDIT_STATE_PATH = HUB_ROOT / "CODEX state" / "CODEX_message_audit_state.local.json"
 PAH_MAIL_STATE_SNAPSHOT_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_mail_state_snapshot.local.json"
 PAH_STATE_PERF_LOG_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_mail_state_perf.local.jsonl"
+PAH_COMM_SPEED_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_comm_speed_tests.jsonl"
+PAH_COMM_SPEED_LATEST_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_comm_speed_latest.local.json"
 PERIODIC_HEALTH_LATEST_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_periodic_health_latest.json"
 INSPECTOR_LATEST_JSON_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.json"
 INSPECTOR_LATEST_MARKDOWN_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.md"
 CC_ACTIVE_DISPATCH_PATH = CC_MAILBOX_ROOT / "_state" / "active_dispatch.json"
 UI_PATH = HUB_ROOT / "CODEX_agent_hub_ui.html"
+BA_APPLET_PATH = PROJECT_ROOT / "CODEX BA Applet v2" / "PG_Design_Bible_Audit_v2.html"
 WRITE_TOKEN = secrets.token_urlsafe(32)
 ALLOW_SIMULATED_INBOUND = False
 LEGACY_MESSAGE_ENDPOINTS: set[str] = set()
+LAUNCH_REFRESH_STATE: dict[str, Any] = {
+    "token": "",
+    "issued_at": "",
+    "clients": {},
+    "acks": {},
+}
 MESSAGE_RETENTION_HOURS = 36
 TIMESTAMPED_MESSAGE_RE = re.compile(r"^20\d{6}.*\.md$", re.IGNORECASE)
 NOTIFICATION_LOCK = threading.Lock()
 MAILROOM_CANARY_LOCK = threading.Lock()
+COMM_SPEED_TEST_LOCK = threading.Lock()
 WATCHER_LOCK = threading.Lock()
 MESSAGE_AUDIT_LOCK = threading.Lock()
+LAUNCH_REFRESH_LOCK = threading.RLock()
 WATCHER_SNOOZE_DEFAULT_MINUTES = 15
+LAUNCH_REFRESH_CLIENT_TTL_SECONDS = 20
 STALE_UNREAD_SECONDS = 60
 MAILBOX_SLA_NORMAL_SECONDS = 15 * 60
 MAILBOX_SLA_URGENT_SECONDS = 2 * 60
 COMPOSE_STATE_MAX_SECONDS = 20 * 60
 DEFAULT_PROGRESS_WARN_MINUTES = 30
 DEFAULT_PROGRESS_ERROR_MINUTES = 45
+COMM_SPEED_STEP_THRESHOLDS_MS = {
+    "source_write": {"warn": 150, "slow": 300},
+    "read_state_write": {"warn": 100, "slow": 250},
+    "reply_write": {"warn": 150, "slow": 300},
+    "tombstone_write": {"warn": 100, "slow": 250},
+    "ledger_evidence": {"warn": 100, "slow": 250},
+}
+COMM_SPEED_AGGREGATE_THRESHOLDS_MS = {
+    "mailroom_total": {"warn": 500, "slow": 1000},
+    "cockpit": {"warn": 300, "slow": 1000},
+    "end_to_end": {"warn": 800, "slow": 1500},
+}
+COMM_SPEED_LEVEL_RANK = {"ok": 0, "warn": 1, "slow": 2, "err": 3}
+COMM_SPEED_HISTORY_LIMIT = 20
 EXPENSIVE_STATUS_CACHE_SECONDS = 5.0
-GIT_STATUS_CACHE_SECONDS = 5.0
+COMMUNICATION_DIAGNOSTICS_CACHE_SECONDS = 30.0
+GIT_STATUS_CACHE_SECONDS = 15.0
+QUARANTINE_STATUS_CACHE_SECONDS = 15.0
 EXPENSIVE_STATUS_CACHE_LOCK = threading.Lock()
 EXPENSIVE_STATUS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 MESSAGE_PARSE_CACHE_LOCK = threading.Lock()
@@ -880,6 +910,81 @@ def local_timestamp() -> str:
     return f"{now:%Y-%m-%d %H:%M:%S} {formatted_offset}".strip()
 
 
+def _launch_refresh_now() -> float:
+    return time.time()
+
+
+def _launch_refresh_prune(now: float | None = None) -> None:
+    current = _launch_refresh_now() if now is None else now
+    clients = LAUNCH_REFRESH_STATE.setdefault("clients", {})
+    stale = [
+        client_id
+        for client_id, record in clients.items()
+        if current - float(record.get("seen_at_epoch", 0.0)) > LAUNCH_REFRESH_CLIENT_TTL_SECONDS
+    ]
+    for client_id in stale:
+        clients.pop(client_id, None)
+    active_client_ids = set(clients)
+    acks = LAUNCH_REFRESH_STATE.setdefault("acks", {})
+    for token, records in list(acks.items()):
+        for client_id in list(records):
+            if client_id not in active_client_ids:
+                records.pop(client_id, None)
+        if not records and token != LAUNCH_REFRESH_STATE.get("token"):
+            acks.pop(token, None)
+
+
+def launch_refresh_payload() -> dict[str, Any]:
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        token = str(LAUNCH_REFRESH_STATE.get("token") or "")
+        clients = dict(LAUNCH_REFRESH_STATE.get("clients") or {})
+        acks = dict((LAUNCH_REFRESH_STATE.get("acks") or {}).get(token, {}))
+        return {
+            "ok": True,
+            "app": "panda-agent-hub",
+            "token": token,
+            "issued_at": LAUNCH_REFRESH_STATE.get("issued_at") or "",
+            "active_clients": len(clients),
+            "ack_clients": len(acks),
+        }
+
+
+def record_launch_refresh_client(client_id: str, seen_token: str = "") -> dict[str, Any]:
+    safe_id = compact(str(client_id or "anonymous"), 96)
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        LAUNCH_REFRESH_STATE.setdefault("clients", {})[safe_id] = {
+            "seen_at": local_timestamp(),
+            "seen_at_epoch": _launch_refresh_now(),
+            "seen_token": seen_token,
+        }
+    return launch_refresh_payload()
+
+
+def request_launch_refresh(source: str = "launcher") -> dict[str, Any]:
+    token = secrets.token_urlsafe(12)
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        LAUNCH_REFRESH_STATE["token"] = token
+        LAUNCH_REFRESH_STATE["issued_at"] = local_timestamp()
+        LAUNCH_REFRESH_STATE["source"] = compact(str(source or "launcher"), 80)
+        LAUNCH_REFRESH_STATE.setdefault("acks", {})[token] = {}
+    return launch_refresh_payload()
+
+
+def acknowledge_launch_refresh(client_id: str, token: str) -> dict[str, Any]:
+    safe_id = compact(str(client_id or "anonymous"), 96)
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        if token and token == LAUNCH_REFRESH_STATE.get("token"):
+            LAUNCH_REFRESH_STATE.setdefault("acks", {}).setdefault(token, {})[safe_id] = {
+                "ack_at": local_timestamp(),
+                "ack_at_epoch": _launch_refresh_now(),
+            }
+    return launch_refresh_payload()
+
+
 def load_messages() -> list[Message]:
     messages: list[Message] = []
     active_cache_keys: set[str] = set()
@@ -897,18 +1002,23 @@ def load_messages() -> list[Message]:
     return messages
 
 
+@lru_cache(maxsize=4096)
+def normalized_resolved_path_text(path_text: str) -> str:
+    try:
+        resolved = str(Path(path_text).resolve())
+    except OSError:
+        resolved = path_text
+    return os.path.normcase(resolved)
+
+
 def message_parent_in(msg: Message, folders: tuple[Path, ...]) -> bool:
     try:
-        parent = msg.path.parent.resolve()
+        parent = normalized_resolved_path_text(str(msg.path.parent))
     except OSError:
-        parent = msg.path.parent
+        parent = os.path.normcase(str(msg.path.parent))
     for folder in folders:
-        try:
-            if parent == folder.resolve():
-                return True
-        except OSError:
-            if str(parent) == str(folder):
-                return True
+        if parent == normalized_resolved_path_text(str(folder)):
+            return True
     return False
 
 
@@ -1848,6 +1958,10 @@ def quarantine_status() -> dict[str, Any]:
     }
 
 
+def cached_quarantine_status() -> dict[str, Any]:
+    return cached_expensive_status("quarantine_status", QUARANTINE_STATUS_CACHE_SECONDS, quarantine_status)
+
+
 def provider_is_configured(config: dict[str, Any], provider: str) -> bool:
     if provider == "twilio":
         twilio = config.get("twilio", {})
@@ -2168,7 +2282,10 @@ def build_decision_queue(
 
 
 def urgent_codex_request_rows(
-    messages: list[Message], read_state_data: dict[str, Any] | None = None, limit: int = 20
+    messages: list[Message],
+    read_state_data: dict[str, Any] | None = None,
+    limit: int = 20,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for msg in messages:
@@ -2176,7 +2293,7 @@ def urgent_codex_request_rows(
             continue
         if message_has_reply_tombstone(msg) or classify_thread_state(msg) == "closed":
             continue
-        read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+        read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
         age_seconds = max(0, int(time.time() - msg.modified))
         from_label = participant_label(msg.from_agent)
         rows.append(
@@ -2363,6 +2480,20 @@ def run_mailroom_transaction_canary(actor: str = "pah_inspector") -> dict[str, A
             "INTERACTION_LEDGER_PATH": INTERACTION_LEDGER_PATH,
             "MESSAGE_DIRS": MESSAGE_DIRS,
         }
+        with MESSAGE_PARSE_CACHE_LOCK:
+            original_parse_cache = dict(MESSAGE_PARSE_CACHE)
+            original_parse_metrics = dict(MESSAGE_PARSE_CACHE_METRICS)
+        with MESSAGE_VALIDATION_CACHE_LOCK:
+            original_validation_cache = dict(MESSAGE_VALIDATION_CACHE)
+            original_validation_metrics = dict(MESSAGE_VALIDATION_CACHE_METRICS)
+        durations_ms: dict[str, int] = {}
+        mailroom_started = time.perf_counter()
+
+        def timed_step(name: str, callback: Any) -> Any:
+            started = time.perf_counter()
+            result = callback()
+            durations_ms[name] = int((time.perf_counter() - started) * 1000)
+            return result
 
         def isolated_set_message_read_state(
             path_value: Path | str,
@@ -2382,35 +2513,63 @@ def run_mailroom_transaction_canary(actor: str = "pah_inspector") -> dict[str, A
             globals()["set_message_read_state"] = isolated_set_message_read_state
             clear_message_parse_cache()
 
-            original = create_message(
-                {
-                    "route": "codex_to_claude",
-                    "status": "Response",
-                    "subject": "PAH mailroom canary source",
-                    "thread_id": "PAH-MAILROOM-CANARY",
-                    "body": "Isolated canary source message.",
-                }
+            original = timed_step(
+                "source_write",
+                lambda: create_message(
+                    {
+                        "route": "codex_to_claude",
+                        "status": "Response",
+                        "subject": "PAH mailroom canary source",
+                        "thread_id": "PAH-MAILROOM-CANARY",
+                        "body": "Isolated canary source message.",
+                    }
+                ),
             )
             original_path = Path(str(original["path"]))
             original_exists = original_path.exists()
-            read_result = set_read_state_for_message(str(original_path), READ_STATE, actor=actor)
-            reply = create_message(
-                {
-                    "route": "codex_to_claude",
-                    "status": "Info",
-                    "subject": "PAH mailroom canary reply",
-                    "thread_id": "PAH-MAILROOM-CANARY",
-                    "reply_to": str(original["message_id"]),
-                    "body": "Isolated canary reply message.",
-                }
+            read_result = timed_step(
+                "read_state_write",
+                lambda: set_read_state_for_message(str(original_path), READ_STATE, actor=actor),
             )
-            tombstones = list(reply.get("reply_tombstones", []))
+            reply = timed_step(
+                "reply_write",
+                lambda: create_message(
+                    {
+                        "route": "codex_to_claude",
+                        "status": "Info",
+                        "subject": "PAH mailroom canary reply",
+                        "thread_id": "PAH-MAILROOM-CANARY",
+                        "body": "Isolated canary reply message.",
+                    }
+                ),
+            )
+            reply_from, reply_to = route_participants("codex_to_claude")
+            tombstones = timed_step(
+                "tombstone_write",
+                lambda: write_reply_tombstones(
+                    [str(original["message_id"])],
+                    reply_message_id=str(reply["message_id"]),
+                    reply_thread_id=str(reply["thread_id"]),
+                    reply_path=Path(str(reply["path"])),
+                    reply_from=reply_from,
+                    reply_to=reply_to,
+                    route="codex_to_claude",
+                    replied_at=datetime.now().astimezone().isoformat(timespec="seconds"),
+                    actor=actor,
+                ),
+            )
             tombstone_path = Path(str(tombstones[0].get("tombstone_path", ""))) if tombstones else Path("")
-            ledger_events = []
-            if interaction_ledger_path.exists():
-                for line in interaction_ledger_path.read_text(encoding="utf-8").splitlines():
-                    if line.strip():
-                        ledger_events.append(json.loads(line))
+
+            def ledger_evidence() -> list[dict[str, Any]]:
+                events: list[dict[str, Any]] = []
+                if interaction_ledger_path.exists():
+                    for line in interaction_ledger_path.read_text(encoding="utf-8").splitlines():
+                        if line.strip():
+                            events.append(json.loads(line))
+                return events
+
+            ledger_events = timed_step("ledger_evidence", ledger_evidence)
+            durations_ms["mailroom_total"] = int((time.perf_counter() - mailroom_started) * 1000)
             event_types = {str(event.get("event_type", "")) for event in ledger_events}
             checks = {
                 "source_written": original_exists,
@@ -2424,6 +2583,7 @@ def run_mailroom_transaction_canary(actor: str = "pah_inspector") -> dict[str, A
             return {
                 "ok": all(checks.values()),
                 "checks": checks,
+                "durations_ms": durations_ms,
                 "source_path": str(original_path),
                 "reply_path": str(reply["path"]),
                 "tombstone_path": str(tombstone_path) if tombstones else "",
@@ -2435,7 +2595,244 @@ def run_mailroom_transaction_canary(actor: str = "pah_inspector") -> dict[str, A
             for key, value in original_values.items():
                 globals()[key] = value
             globals()["set_message_read_state"] = original_set_message_read_state
-            clear_message_parse_cache()
+            with MESSAGE_PARSE_CACHE_LOCK:
+                MESSAGE_PARSE_CACHE.clear()
+                MESSAGE_PARSE_CACHE.update(original_parse_cache)
+                MESSAGE_PARSE_CACHE_METRICS.clear()
+                MESSAGE_PARSE_CACHE_METRICS.update(original_parse_metrics)
+            with MESSAGE_VALIDATION_CACHE_LOCK:
+                MESSAGE_VALIDATION_CACHE.clear()
+                MESSAGE_VALIDATION_CACHE.update(original_validation_cache)
+                MESSAGE_VALIDATION_CACHE_METRICS.clear()
+                MESSAGE_VALIDATION_CACHE_METRICS.update(original_validation_metrics)
+
+
+def comm_speed_worst_level(*levels: str) -> str:
+    normalized = [level if level in COMM_SPEED_LEVEL_RANK else "err" for level in levels]
+    return max(normalized or ["ok"], key=lambda level: COMM_SPEED_LEVEL_RANK[level])
+
+
+def comm_speed_duration_level(duration_ms: int | float, thresholds: dict[str, int]) -> str:
+    value = float(duration_ms or 0)
+    if value > float(thresholds.get("slow", 0) or 0):
+        return "slow"
+    if value > float(thresholds.get("warn", 0) or 0):
+        return "warn"
+    return "ok"
+
+
+def comm_speed_percentile(values: list[int], percentile: float) -> int:
+    if not values:
+        return 0
+    ordered = sorted(int(value or 0) for value in values)
+    if len(ordered) == 1:
+        return ordered[0]
+    position = (len(ordered) - 1) * (percentile / 100.0)
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    fraction = position - lower
+    return int(round(ordered[lower] + (ordered[upper] - ordered[lower]) * fraction))
+
+
+def comm_speed_successful_runs(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [run for run in runs if str(run.get("overall", "")).lower() in {"ok", "warn", "slow"}]
+
+
+def comm_speed_end_to_end_ms(run: dict[str, Any]) -> int:
+    durations = run.get("durations_ms", {}) if isinstance(run.get("durations_ms"), dict) else {}
+    return int(durations.get("end_to_end", 0) or 0)
+
+
+def load_communication_speed_runs(limit: int = COMM_SPEED_HISTORY_LIMIT) -> list[dict[str, Any]]:
+    if not PAH_COMM_SPEED_LOG_PATH.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in read_text(PAH_COMM_SPEED_LOG_PATH).splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows[-max(1, int(limit or COMM_SPEED_HISTORY_LIMIT)) :]
+
+
+def communication_speed_comparison(
+    durations_ms: dict[str, int],
+    prior_runs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    prior_successes = comm_speed_successful_runs(prior_runs)[-COMM_SPEED_HISTORY_LIMIT:]
+    prior_values = [comm_speed_end_to_end_ms(run) for run in prior_successes if comm_speed_end_to_end_ms(run)]
+    latest_ms = int(durations_ms.get("end_to_end", 0) or 0)
+    previous = prior_successes[-1] if prior_successes else {}
+    previous_ms = comm_speed_end_to_end_ms(previous) if previous else 0
+    p50 = comm_speed_percentile(prior_values, 50)
+    p95 = comm_speed_percentile(prior_values, 95)
+    p99 = comm_speed_percentile(prior_values, 99)
+    baseline_state = "ready" if len(prior_values) >= 3 else "warming"
+    trend_level = "ok"
+    trend = "baseline warming" if baseline_state == "warming" else "steady"
+    if previous_ms:
+        delta = latest_ms - previous_ms
+        trend = "faster" if delta < 0 else "slower" if delta > 0 else "same"
+    else:
+        delta = None
+    if baseline_state == "ready" and p50:
+        if latest_ms >= p50 * 3:
+            trend_level = "slow"
+        elif latest_ms >= p50 * 2:
+            trend_level = "warn"
+    return {
+        "baseline_state": baseline_state,
+        "previous_end_to_end_ms": previous_ms,
+        "delta_vs_previous_ms": delta,
+        "recent_p50_end_to_end_ms": p50,
+        "recent_p95_end_to_end_ms": p95,
+        "recent_p99_end_to_end_ms": p99,
+        "trend": trend,
+        "trend_level": trend_level,
+        "sample_size": len(prior_values),
+    }
+
+
+def classify_communication_speed_run(
+    durations_ms: dict[str, int],
+    checks: dict[str, bool],
+    comparison: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    levels: list[str] = []
+    metric_levels: dict[str, str] = {}
+    if not all(bool(value) for value in checks.values()):
+        levels.append("err")
+    for metric, thresholds in COMM_SPEED_STEP_THRESHOLDS_MS.items():
+        level = comm_speed_duration_level(durations_ms.get(metric, 0), thresholds)
+        metric_levels[metric] = level
+        levels.append(level)
+    for metric, thresholds in COMM_SPEED_AGGREGATE_THRESHOLDS_MS.items():
+        level = comm_speed_duration_level(durations_ms.get(metric, 0), thresholds)
+        metric_levels[metric] = level
+        levels.append(level)
+    if comparison:
+        levels.append(str(comparison.get("trend_level", "ok")))
+    overall = comm_speed_worst_level(*levels)
+    labels = {
+        "ok": "Comm speed OK",
+        "warn": "Comm speed warning",
+        "slow": "Comm speed slow",
+        "err": "Comm speed failed",
+    }
+    notes = [
+        f"{metric} {level}"
+        for metric, level in metric_levels.items()
+        if level in {"warn", "slow"}
+    ]
+    if overall == "err":
+        failed = [name for name, ok in checks.items() if not ok]
+        notes.extend(f"failed check: {name}" for name in failed)
+    return {
+        "overall": overall,
+        "label": labels[overall],
+        "metric_levels": metric_levels,
+        "notes": notes,
+    }
+
+
+def comm_speed_threshold_payload() -> dict[str, int]:
+    return {
+        "mailroom_total_warn_ms": COMM_SPEED_AGGREGATE_THRESHOLDS_MS["mailroom_total"]["warn"],
+        "mailroom_total_slow_ms": COMM_SPEED_AGGREGATE_THRESHOLDS_MS["mailroom_total"]["slow"],
+        "cockpit_warn_ms": COMM_SPEED_AGGREGATE_THRESHOLDS_MS["cockpit"]["warn"],
+        "cockpit_slow_ms": COMM_SPEED_AGGREGATE_THRESHOLDS_MS["cockpit"]["slow"],
+        "end_to_end_warn_ms": COMM_SPEED_AGGREGATE_THRESHOLDS_MS["end_to_end"]["warn"],
+        "end_to_end_slow_ms": COMM_SPEED_AGGREGATE_THRESHOLDS_MS["end_to_end"]["slow"],
+    }
+
+
+def communication_speed_history_payload(limit: int = COMM_SPEED_HISTORY_LIMIT) -> dict[str, Any]:
+    row_limit = max(1, int(limit or COMM_SPEED_HISTORY_LIMIT))
+    rows = load_communication_speed_runs(limit=max(row_limit, COMM_SPEED_HISTORY_LIMIT))
+    latest = rows[-1] if rows else {}
+    previous = rows[-2] if len(rows) >= 2 else {}
+    successes = comm_speed_successful_runs(rows)[-COMM_SPEED_HISTORY_LIMIT:]
+    values = [comm_speed_end_to_end_ms(run) for run in successes if comm_speed_end_to_end_ms(run)]
+    visible_limit = min(10, row_limit)
+    return {
+        "schema_version": 1,
+        "latest": latest,
+        "previous": previous,
+        "last_10": list(reversed(rows[-visible_limit:])),
+        "p50_end_to_end_ms": comm_speed_percentile(values, 50),
+        "p95_end_to_end_ms": comm_speed_percentile(values, 95),
+        "p99_end_to_end_ms": comm_speed_percentile(values, 99),
+        "sample_size": len(values),
+        "log_path": str(PAH_COMM_SPEED_LOG_PATH),
+        "latest_path": str(PAH_COMM_SPEED_LATEST_PATH),
+    }
+
+
+def persist_communication_speed_run(run: dict[str, Any]) -> dict[str, Any]:
+    atomic_append_text(PAH_COMM_SPEED_LOG_PATH, json.dumps(run, sort_keys=True) + "\n")
+    history = communication_speed_history_payload()
+    latest_payload = {
+        "schema_version": 1,
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "latest": run,
+        "history": history,
+    }
+    write_json(PAH_COMM_SPEED_LATEST_PATH, latest_payload)
+    return history
+
+
+def run_communication_speed_test(actor: str = "darrin_or_codex", trigger: str = "dashboard_button") -> dict[str, Any]:
+    with COMM_SPEED_TEST_LOCK:
+        started = time.perf_counter()
+        now = datetime.now().astimezone()
+        prior_runs = load_communication_speed_runs(limit=200)
+        canary = run_mailroom_transaction_canary(actor=actor)
+        durations_ms = dict(canary.get("durations_ms", {}))
+        cockpit_started = time.perf_counter()
+        cockpit_payload()
+        durations_ms["cockpit"] = int((time.perf_counter() - cockpit_started) * 1000)
+        durations_ms["end_to_end"] = int((time.perf_counter() - started) * 1000)
+        checks = {key: bool(value) for key, value in dict(canary.get("checks", {})).items()}
+        comparison = communication_speed_comparison(durations_ms, prior_runs)
+        classification = classify_communication_speed_run(durations_ms, checks, comparison)
+        run = {
+            "schema_version": 1,
+            "run_id": f"PAH-COMM-SPEED-{now.strftime('%Y%m%d-%H%M%S')}-{now.microsecond // 1000:03d}",
+            "created_at": now.isoformat(timespec="seconds"),
+            "actor": str(actor or "darrin_or_codex"),
+            "trigger": str(trigger or "dashboard_button"),
+            "overall": classification["overall"],
+            "label": classification["label"],
+            "baseline_state": comparison["baseline_state"],
+            "durations_ms": durations_ms,
+            "checks": checks,
+            "thresholds": comm_speed_threshold_payload(),
+            "comparison": comparison,
+            "metric_levels": classification["metric_levels"],
+            "notes": classification["notes"],
+        }
+        history = persist_communication_speed_run(run)
+        append_interaction_ledger_event(
+            "communication_speed_test_finished",
+            actor=str(actor or "darrin_or_codex"),
+            run_id=run["run_id"],
+            overall=run["overall"],
+            end_to_end_ms=durations_ms.get("end_to_end", 0),
+            mailroom_total_ms=durations_ms.get("mailroom_total", 0),
+            cockpit_ms=durations_ms.get("cockpit", 0),
+            log_path=PAH_COMM_SPEED_LOG_PATH,
+        )
+        return {
+            "ok": True,
+            "overall": run["overall"],
+            "run": run,
+            "history": history,
+            "log_path": str(PAH_COMM_SPEED_LOG_PATH),
+        }
 
 
 def dispatch_work_item(item_id: str) -> dict[str, Any]:
@@ -3512,13 +3909,17 @@ def cc_activity_payload() -> dict[str, Any]:
     }
 
 
-def codex_mailbox_sla_progress(messages: list[Message], read_state_data: dict[str, Any]) -> dict[str, Any]:
+def codex_mailbox_sla_progress(
+    messages: list[Message],
+    read_state_data: dict[str, Any],
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     now_ts = time.time()
     for msg in messages:
         if msg.to_agent != "codex" or not message_in_agent_inbox(msg, "codex"):
             continue
-        read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+        read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
         if not read_status["unread"]:
             continue
         age = max(0, int(now_ts - msg.modified))
@@ -3565,8 +3966,12 @@ def codex_mailbox_sla_progress(messages: list[Message], read_state_data: dict[st
     }
 
 
-def build_agent_progress_monitor(messages: list[Message], read_state_data: dict[str, Any]) -> dict[str, Any]:
-    cards = [cc_active_dispatch_progress(), codex_mailbox_sla_progress(messages, read_state_data)]
+def build_agent_progress_monitor(
+    messages: list[Message],
+    read_state_data: dict[str, Any],
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    cards = [cc_active_dispatch_progress(), codex_mailbox_sla_progress(messages, read_state_data, read_status_cache)]
     severity = health_level(*(str(card.get("severity", "unknown")).replace("fail", "err") for card in cards))
     return {
         "schema_version": 1,
@@ -3680,7 +4085,7 @@ def cached_expensive_status(name: str, ttl_seconds: float, builder: Any) -> dict
 def cached_communication_diagnostics() -> dict[str, Any]:
     return cached_expensive_status(
         "communication_diagnostics",
-        EXPENSIVE_STATUS_CACHE_SECONDS,
+        COMMUNICATION_DIAGNOSTICS_CACHE_SECONDS,
         lambda: run_communication_diagnostics(write_report=False),
     )
 
@@ -3689,13 +4094,22 @@ def cached_git_status() -> dict[str, Any]:
     return cached_expensive_status("git_status", GIT_STATUS_CACHE_SECONDS, git_status)
 
 
-def state(include_schema_validation: bool = True, include_message_audit: bool = True) -> dict[str, Any]:
+def state(
+    include_schema_validation: bool = True,
+    include_message_audit: bool = True,
+    include_quarantine_metadata: bool = True,
+) -> dict[str, Any]:
     profile = new_state_profile()
     profile["validation_mode"] = "full" if include_schema_validation else "fast_no_schema"
     profile["message_audit_mode"] = "full" if include_message_audit else "skipped_hot_path"
     try:
         messages = timed_state_step(profile, "load_messages", load_messages)
         read_state_data = timed_state_step(profile, "load_read_state", load_read_state)
+        read_status_cache = timed_state_step(
+            profile,
+            "build_read_status_cache",
+            lambda: {str(msg.path): message_read_status(msg.path, msg.message_id, msg.body, read_state_data) for msg in messages},
+        )
         archive_state_data = timed_state_step(profile, "load_thread_archive_state", load_thread_archive_state)
         decisions = timed_state_step(profile, "build_decision_queue_active", lambda: build_decision_queue(messages, write_file=False))
         all_decisions = timed_state_step(
@@ -3704,10 +4118,14 @@ def state(include_schema_validation: bool = True, include_message_audit: bool = 
             lambda: build_decision_queue(messages, write_file=False, include_inactive=True),
         )
         urgent_codex_requests = timed_state_step(
-            profile, "urgent_codex_request_rows", lambda: urgent_codex_request_rows(messages, read_state_data)
+            profile,
+            "urgent_codex_request_rows",
+            lambda: urgent_codex_request_rows(messages, read_state_data, read_status_cache=read_status_cache),
         )
         agent_progress = timed_state_step(
-            profile, "build_agent_progress_monitor", lambda: build_agent_progress_monitor(messages, read_state_data)
+            profile,
+            "build_agent_progress_monitor",
+            lambda: build_agent_progress_monitor(messages, read_state_data, read_status_cache),
         )
         validation = timed_state_step(
             profile, "validate_mailbox", lambda: validate_mailbox(messages, include_schema=include_schema_validation)
@@ -3742,29 +4160,54 @@ def state(include_schema_validation: bool = True, include_message_audit: bool = 
         unread_messages = timed_state_step(
             profile,
             "count_unread_messages",
-            lambda: sum(
-                1
-                for msg in messages
-                if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
-            ),
+            lambda: sum(1 for msg in messages if read_status_cache.get(str(msg.path), {}).get("unread")),
         )
         diagnostics = timed_state_step(profile, "cached_communication_diagnostics", cached_communication_diagnostics)
         route_tests = timed_state_step(profile, "route_test_status_refresh", lambda: route_test_status(refresh=True))
         work_board = timed_state_step(profile, "work_board_status", work_board_status)
         approvals = timed_state_step(profile, "approval_status", approval_status)
         adapters = timed_state_step(profile, "adapter_status", adapter_status)
-        quarantine = timed_state_step(profile, "quarantine_status", quarantine_status)
+        quarantine = timed_state_step(profile, "quarantine_status", cached_quarantine_status)
         decision_state = timed_state_step(profile, "decision_state_summary", decision_state_summary)
         agent_status = timed_state_step(
-            profile, "build_agent_status", lambda: build_agent_status(messages, read_state_data, work_board, decisions, thread_focus)
+            profile,
+            "build_agent_status",
+            lambda: build_agent_status(messages, read_state_data, work_board, decisions, thread_focus, read_status_cache),
         )
         watcher = timed_state_step(profile, "build_watcher_status", lambda: build_watcher_status(agent_status, route_tests))
         latest = timed_state_step(
-            profile, "serialize_latest", lambda: [message_to_json(msg, read_state_data, completed_threads) for msg in messages[:40]]
+            profile,
+            "serialize_latest",
+            lambda: [
+                message_to_json(
+                    msg,
+                    read_state_data,
+                    completed_threads,
+                    include_quarantine=include_quarantine_metadata,
+                    read_status_cache=read_status_cache,
+                )
+                for msg in messages[:40]
+            ],
         )
-        mailbox_overview = timed_state_step(profile, "build_mailbox_overview", lambda: build_mailbox_overview(messages, read_state_data))
+        mailbox_overview = timed_state_step(
+            profile,
+            "build_mailbox_overview",
+            lambda: build_mailbox_overview(
+                messages,
+                read_state_data,
+                include_quarantine=include_quarantine_metadata,
+                read_status_cache=read_status_cache,
+            ),
+        )
         agent_mailboxes = timed_state_step(
-            profile, "build_agent_mailbox_messages", lambda: build_agent_mailbox_messages(messages, read_state_data)
+            profile,
+            "build_agent_mailbox_messages",
+            lambda: build_agent_mailbox_messages(
+                messages,
+                read_state_data,
+                include_quarantine=include_quarantine_metadata,
+                read_status_cache=read_status_cache,
+            ),
         )
         validation_state = timed_state_step(profile, "validation_state_summary", validation_state_summary)
         read_summary = timed_state_step(profile, "read_state_summary", lambda: read_state_summary(read_state_data))
@@ -3962,17 +4405,21 @@ def inspector_freshness_component() -> dict[str, Any]:
             "Inspector freshness",
             "No Inspector report has been generated yet.",
             latest_json_path=str(INSPECTOR_LATEST_JSON_PATH),
+            latest_report_at="",
             age_seconds=None,
             max_age_seconds=max_age_seconds,
             run_now_hint="Run CODEX_pah_inspector.py or use the PAH Inspector action before trusting cached findings.",
         )
-    age_seconds = max(0, int(time.time() - INSPECTOR_LATEST_JSON_PATH.stat().st_mtime))
+    latest_stat = INSPECTOR_LATEST_JSON_PATH.stat()
+    age_seconds = max(0, int(time.time() - latest_stat.st_mtime))
+    latest_report_at = mtime_iso(float(latest_stat.st_mtime))
     return health_component(
         "ok" if age_seconds <= max_age_seconds else "warn",
         "Inspector freshness",
         f"Latest Inspector report is {human_duration(age_seconds)} old.",
         latest_json_path=str(INSPECTOR_LATEST_JSON_PATH),
         latest_markdown_path=str(INSPECTOR_LATEST_MARKDOWN_PATH),
+        latest_report_at=latest_report_at,
         age_seconds=age_seconds,
         max_age_seconds=max_age_seconds,
         stale=age_seconds > max_age_seconds,
@@ -4643,7 +5090,11 @@ def cockpit_thread_queue(thread_focus: dict[str, Any], limit: int = 80) -> list[
 
 
 def cockpit_payload() -> dict[str, Any]:
-    status_data = state(include_schema_validation=False, include_message_audit=False)
+    status_data = state(
+        include_schema_validation=False,
+        include_message_audit=False,
+        include_quarantine_metadata=False,
+    )
     generated_at = str(status_data.get("generated_at", datetime.now().isoformat(timespec="seconds")))
     routes = build_cockpit_routes(status_data)
     route_summary = summarize_cockpit_routes(routes)
@@ -4764,6 +5215,7 @@ def cockpit_payload() -> dict[str, Any]:
             "last_commit_message": str(git.get("last_commit_message", "")),
             "last_commit_iso": str(git.get("last_commit_iso", "")),
         },
+        "communication_speed": communication_speed_history_payload(),
         "read_only_actions": [
             {"id": "refresh", "label": "Refresh", "enabled": True, "destructive": False},
             {"id": "validate", "label": "Validate", "enabled": True, "destructive": False},
@@ -4857,12 +5309,29 @@ def tray_status_payload(cockpit: dict[str, Any] | None = None) -> dict[str, Any]
     }
 
 
+def cached_message_read_status(
+    msg: Message,
+    read_state_data: dict[str, Any] | None = None,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if read_status_cache is None:
+        return message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+    key = str(msg.path)
+    cached = read_status_cache.get(key)
+    if cached is None:
+        cached = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+        read_status_cache[key] = cached
+    return cached
+
+
 def message_to_json(
     msg: Message,
     read_state_data: dict[str, Any] | None = None,
     completed_threads: set[str] | None = None,
+    include_quarantine: bool = True,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+    read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
     age_seconds = max(0, int(time.time() - msg.modified))
     classifier_state = classify_thread_state(msg)
     thread_has_completion_evidence = bool(
@@ -4877,6 +5346,8 @@ def message_to_json(
     wake_candidate_agent = safe_slug(msg.to_agent).replace("-", "_") if msg.to_agent else ""
     wake_candidate_label = msg.to_agent or ""
     urgent_codex_request = is_urgent_codex_request_message(msg)
+    quarantine_allowed = quarantine_candidate_allowed(msg.path) if include_quarantine else False
+    quarantine_reason = default_quarantine_reason("schema", msg.summary or msg.title) if include_quarantine else ""
     return {
         "direction": msg.direction,
         "path": str(msg.path),
@@ -4905,13 +5376,18 @@ def message_to_json(
         "requires_darrin_authority": message_requires_darrin_authority(msg),
         "thread_has_completion_evidence": thread_has_completion_evidence,
         "status_badges": message_status_badges(msg, read_status["unread"]),
-        "quarantine_allowed": quarantine_candidate_allowed(msg.path),
-        "quarantine_reason": default_quarantine_reason("schema", msg.summary or msg.title),
+        "quarantine_allowed": quarantine_allowed,
+        "quarantine_reason": quarantine_reason,
         "summary": msg.summary or msg.body_preview,
     }
 
 
-def build_mailbox_overview(messages: list[Message], read_state_data: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def build_mailbox_overview(
+    messages: list[Message],
+    read_state_data: dict[str, Any] | None = None,
+    include_quarantine: bool = True,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     groups: dict[str, dict[str, Any]] = {}
     for msg in messages:
         row = groups.setdefault(
@@ -4925,7 +5401,12 @@ def build_mailbox_overview(messages: list[Message], read_state_data: dict[str, A
                 "messages": [],
             },
         )
-        item = message_to_json(msg, read_state_data)
+        item = message_to_json(
+            msg,
+            read_state_data,
+            include_quarantine=include_quarantine,
+            read_status_cache=read_status_cache,
+        )
         row["count"] += 1
         if item["unread"]:
             row["unread"] += 1
@@ -4938,7 +5419,11 @@ def build_mailbox_overview(messages: list[Message], read_state_data: dict[str, A
 
 
 def build_agent_mailbox_messages(
-    messages: list[Message], read_state_data: dict[str, Any] | None = None, limit: int = 80
+    messages: list[Message],
+    read_state_data: dict[str, Any] | None = None,
+    limit: int = 80,
+    include_quarantine: bool = True,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     boxes: dict[str, list[dict[str, Any]]] = {
         "darrin": [],
@@ -4947,7 +5432,7 @@ def build_agent_mailbox_messages(
         "claude-code": [],
     }
     for msg in messages:
-        read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
+        read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
         if not read_status["unread"]:
             continue
         targets: list[str] = []
@@ -4957,7 +5442,14 @@ def build_agent_mailbox_messages(
             targets.append(msg.to_agent)
         for target in dict.fromkeys(targets):
             if len(boxes[target]) < limit:
-                boxes[target].append(message_to_json(msg, read_state_data))
+                boxes[target].append(
+                    message_to_json(
+                        msg,
+                        read_state_data,
+                        include_quarantine=include_quarantine,
+                        read_status_cache=read_status_cache,
+                    )
+                )
     return boxes
 
 
@@ -4967,6 +5459,7 @@ def build_agent_status(
     work_board: dict[str, Any],
     decisions: list[dict[str, Any]],
     thread_focus: dict[str, Any] | None = None,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     now = datetime.now().timestamp()
     thread_focus = thread_focus or {}
@@ -5018,7 +5511,7 @@ def build_agent_status(
             waiting_messages = [
                 msg
                 for msg in inbound
-                if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
+                if cached_message_read_status(msg, read_state_data, read_status_cache)["unread"]
                 or msg.thread_status.lower() in {"waiting_on_agent", "waiting_on_darrin"}
                 or msg.status.lower() in {"open", "blocked"}
                 or msg.message_type.lower() in {"response_request", "dispatch", "decision_request"}
@@ -5057,7 +5550,7 @@ def build_agent_status(
         unread = sum(
             1
             for msg in inbound
-            if message_read_status(msg.path, msg.message_id, msg.body, read_state_data)["unread"]
+            if cached_message_read_status(msg, read_state_data, read_status_cache)["unread"]
         )
         urgent_waiting = [
             msg
@@ -5692,6 +6185,15 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_local_html(self, html: str, status: int = 200) -> None:
+        data = html.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Set-Cookie", f"pah_write_token={WRITE_TOKEN}; HttpOnly; SameSite=Strict; Path=/")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def trusted_write_request(self) -> bool:
         cookie = SimpleCookie()
         cookie.load(self.headers.get("Cookie", ""))
@@ -5715,6 +6217,9 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/ready":
             self.send_json(ready_payload())
             return
+        if parsed.path == "/api/launch-refresh/state":
+            self.send_json(launch_refresh_payload())
+            return
         if parsed.path == "/api/cockpit":
             self.send_json(cockpit_payload())
             return
@@ -5729,6 +6234,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/cc-activity":
             self.send_json(cc_activity_payload())
+            return
+        if parsed.path == "/api/communication-speed-tests":
+            query = parse_qs(parsed.query)
+            try:
+                limit = int((query.get("limit") or ["20"])[0])
+            except (TypeError, ValueError):
+                limit = 20
+            self.send_json({"ok": True, "history": communication_speed_history_payload(limit=max(1, min(100, limit)))})
             return
         if parsed.path == "/api/status":
             self.send_json(state())
@@ -5777,21 +6290,54 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"ok": False, "error": "Path not found or outside project"}, 404)
             return
-        data = html_page().encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Set-Cookie", f"pah_write_token={WRITE_TOKEN}; HttpOnly; SameSite=Strict; Path=/")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        if parsed.path in {"/ba", "/ba/", "/ba-applet", "/ba-applet/"}:
+            if BA_APPLET_PATH.exists():
+                self.send_local_html(read_text(BA_APPLET_PATH))
+            else:
+                self.send_local_html(
+                    "<!doctype html><html><body><h1>BA Applet unavailable</h1>"
+                    f"<p>Missing file: {html.escape(str(BA_APPLET_PATH))}</p></body></html>",
+                    status=404,
+                )
+            return
+        self.send_local_html(html_page())
 
     def do_POST(self) -> None:
         parsed_path = urlparse(self.path).path
+        if parsed_path in {
+            "/api/launch-refresh/heartbeat",
+            "/api/launch-refresh/request",
+            "/api/launch-refresh/ack",
+        }:
+            if self.client_address[0] not in {"127.0.0.1", "::1"}:
+                self.send_json({"ok": False, "error": "Launch refresh is loopback-only"}, 403)
+                return
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
+            if parsed_path == "/api/launch-refresh/heartbeat":
+                self.send_json(
+                    record_launch_refresh_client(
+                        str(payload.get("client_id", "")),
+                        str(payload.get("seen_token", "")),
+                    )
+                )
+                return
+            if parsed_path == "/api/launch-refresh/request":
+                self.send_json(request_launch_refresh(str(payload.get("source", "launcher"))))
+                return
+            self.send_json(
+                acknowledge_launch_refresh(
+                    str(payload.get("client_id", "")),
+                    str(payload.get("token", "")),
+                )
+            )
+            return
         if parsed_path not in {
             "/api/test-notification",
             "/api/write-decision-queue",
             "/api/run-diagnostics",
             "/api/run-inspector",
+            "/api/run-communication-speed-test",
             "/api/clear-diagnostics",
             "/api/cleanup-inbox-accumulation",
             "/api/archive-read-codex-inbox",
@@ -5906,6 +6452,17 @@ class Handler(BaseHTTPRequestHandler):
         if parsed_path == "/api/mailroom-canary":
             try:
                 result = run_mailroom_transaction_canary(actor=str(payload.get("actor") or "pah_inspector"))
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)}, 500)
+                return
+            self.send_json(result, 200 if result.get("ok") else 500)
+            return
+        if parsed_path == "/api/run-communication-speed-test":
+            try:
+                result = run_communication_speed_test(
+                    actor=str(payload.get("actor") or "darrin_or_codex"),
+                    trigger=str(payload.get("trigger") or "dashboard_button"),
+                )
             except Exception as exc:
                 self.send_json({"ok": False, "error": str(exc)}, 500)
                 return

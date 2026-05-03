@@ -559,7 +559,10 @@ def test_mailroom_transaction_canary_is_isolated() -> None:
         "MESSAGE_DIRS": agent_hub.MESSAGE_DIRS,
         "set_message_read_state": agent_hub.set_message_read_state,
     }
+    agent_hub.load_messages()
+    cache_before = agent_hub.message_parse_cache_metrics()
     result = agent_hub.run_mailroom_transaction_canary(actor="smoke")
+    cache_after = agent_hub.message_parse_cache_metrics()
     assert_true(result["ok"], "mailroom transaction canary passes")
     for name, ok in result["checks"].items():
         assert_true(ok, f"mailroom transaction canary check passes: {name}")
@@ -568,8 +571,135 @@ def test_mailroom_transaction_canary_is_isolated() -> None:
         {"message_sent", "message_read_marked", "message_reply_tombstoned"}.issubset(set(result["event_types"])),
         "mailroom canary records send/read/reply ledger events",
     )
+    assert_true(cache_after["entries"] == cache_before["entries"], "mailroom canary preserves warm parse cache entries")
+    assert_true(cache_after["clears"] == cache_before["clears"], "mailroom canary does not leave global cache clears behind")
     for key, value in original_values.items():
         assert_true(getattr(agent_hub, key) == value, f"mailroom canary restores {key}")
+
+
+def test_communication_speed_classification_and_history() -> None:
+    checks = {
+        "source_written": True,
+        "read_state_written": True,
+        "reply_written": True,
+        "reply_tombstone_written": True,
+        "ledger_sent_event": True,
+        "ledger_read_event": True,
+        "ledger_tombstone_event": True,
+    }
+    durations = {
+        "source_write": 10,
+        "read_state_write": 10,
+        "reply_write": 10,
+        "tombstone_write": 10,
+        "ledger_evidence": 10,
+        "mailroom_total": 80,
+        "cockpit": 120,
+        "end_to_end": 220,
+    }
+    ok_result = agent_hub.classify_communication_speed_run(durations, checks, {"trend_level": "ok"})
+    assert_true(ok_result["overall"] == "ok", "communication speed classifier returns ok under thresholds")
+    warn_result = agent_hub.classify_communication_speed_run({**durations, "end_to_end": 900}, checks, {"trend_level": "ok"})
+    assert_true(warn_result["overall"] == "warn", "communication speed classifier returns warn over warn threshold")
+    slow_result = agent_hub.classify_communication_speed_run({**durations, "end_to_end": 1600}, checks, {"trend_level": "ok"})
+    assert_true(slow_result["overall"] == "slow", "communication speed classifier returns slow over slow threshold")
+    failed_checks = {**checks, "reply_written": False}
+    err_result = agent_hub.classify_communication_speed_run(durations, failed_checks, {"trend_level": "ok"})
+    assert_true(err_result["overall"] == "err", "communication speed classifier returns err on failed checks")
+
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        original_paths = {
+            "PAH_COMM_SPEED_LOG_PATH": agent_hub.PAH_COMM_SPEED_LOG_PATH,
+            "PAH_COMM_SPEED_LATEST_PATH": agent_hub.PAH_COMM_SPEED_LATEST_PATH,
+        }
+        try:
+            agent_hub.PAH_COMM_SPEED_LOG_PATH = root / "comm_speed.jsonl"
+            agent_hub.PAH_COMM_SPEED_LATEST_PATH = root / "comm_speed_latest.json"
+            run = {
+                "schema_version": 1,
+                "run_id": "PAH-COMM-SPEED-SMOKE",
+                "created_at": agent_hub.datetime.now().astimezone().isoformat(timespec="seconds"),
+                "actor": "smoke",
+                "trigger": "smoke",
+                "overall": "ok",
+                "label": "Comm speed OK",
+                "baseline_state": "warming",
+                "durations_ms": durations,
+                "checks": checks,
+                "thresholds": agent_hub.comm_speed_threshold_payload(),
+                "comparison": agent_hub.communication_speed_comparison(durations, []),
+                "metric_levels": ok_result["metric_levels"],
+                "notes": [],
+            }
+            history = agent_hub.persist_communication_speed_run(run)
+            assert_true(agent_hub.PAH_COMM_SPEED_LOG_PATH.exists(), "communication speed JSONL log is written")
+            assert_true(agent_hub.PAH_COMM_SPEED_LATEST_PATH.exists(), "communication speed latest JSON is written")
+            assert_true(history["latest"]["run_id"] == "PAH-COMM-SPEED-SMOKE", "communication speed history exposes latest run")
+            assert_true(len(history["last_10"]) == 1, "communication speed history bounds visible rows")
+            latest_payload = json.loads(agent_hub.PAH_COMM_SPEED_LATEST_PATH.read_text(encoding="utf-8"))
+            assert_true(latest_payload["latest"]["run_id"] == "PAH-COMM-SPEED-SMOKE", "latest summary stores current run")
+        finally:
+            for key, value in original_paths.items():
+                setattr(agent_hub, key, value)
+
+
+def test_communication_speed_test_runner_is_isolated() -> None:
+    checks = {
+        "source_written": True,
+        "read_state_written": True,
+        "reply_written": True,
+        "reply_tombstone_written": True,
+        "ledger_sent_event": True,
+        "ledger_read_event": True,
+        "ledger_tombstone_event": True,
+    }
+    durations = {
+        "source_write": 1,
+        "read_state_write": 1,
+        "reply_write": 1,
+        "tombstone_write": 1,
+        "ledger_evidence": 1,
+        "mailroom_total": 8,
+    }
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        original_values = {
+            "PAH_COMM_SPEED_LOG_PATH": agent_hub.PAH_COMM_SPEED_LOG_PATH,
+            "PAH_COMM_SPEED_LATEST_PATH": agent_hub.PAH_COMM_SPEED_LATEST_PATH,
+            "INTERACTION_LEDGER_PATH": agent_hub.INTERACTION_LEDGER_PATH,
+            "run_mailroom_transaction_canary": agent_hub.run_mailroom_transaction_canary,
+            "cockpit_payload": agent_hub.cockpit_payload,
+        }
+        try:
+            agent_hub.PAH_COMM_SPEED_LOG_PATH = root / "comm_speed.jsonl"
+            agent_hub.PAH_COMM_SPEED_LATEST_PATH = root / "comm_speed_latest.json"
+            agent_hub.INTERACTION_LEDGER_PATH = root / "interaction_ledger.jsonl"
+            agent_hub.run_mailroom_transaction_canary = lambda actor="smoke": {
+                "ok": True,
+                "checks": checks,
+                "durations_ms": durations,
+            }
+            agent_hub.cockpit_payload = lambda: {"schema_version": 1}
+            result = agent_hub.run_communication_speed_test(actor="smoke", trigger="smoke")
+            assert_true(result["ok"], "communication speed runner returns ok response")
+            assert_true(result["run"]["overall"] == "ok", "communication speed runner classifies fast fake run as ok")
+            assert_true(result["history"]["latest"]["run_id"] == result["run"]["run_id"], "communication speed runner returns persisted latest history")
+            assert_true(agent_hub.PAH_COMM_SPEED_LOG_PATH.exists(), "communication speed runner writes JSONL log")
+            assert_true(agent_hub.PAH_COMM_SPEED_LATEST_PATH.exists(), "communication speed runner writes latest JSON")
+            assert_true(agent_hub.INTERACTION_LEDGER_PATH.exists(), "communication speed runner records interaction ledger event")
+            events = [
+                json.loads(line)
+                for line in agent_hub.INTERACTION_LEDGER_PATH.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            assert_true(
+                any(event.get("event_type") == "communication_speed_test_finished" for event in events),
+                "communication speed runner records finished event",
+            )
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
 
 
 def test_cockpit_payload_contract() -> None:
@@ -614,6 +744,8 @@ def test_cockpit_payload_contract() -> None:
     )
     assert_true("message_audit_summary" in payload["state_profile"]["steps"], "cockpit profiles audit summary step")
     assert_true(payload.get("mail_state_snapshot", {}).get("ok"), "cockpit writes a Phase 1 shadow mail-state snapshot")
+    assert_true("communication_speed" in payload, "cockpit carries communication speed history")
+    assert_true("last_10" in payload["communication_speed"], "communication speed history carries recent rows")
     assert_true("health" in payload, "cockpit carries canonical health summary")
     assert_true("components" in payload["health"], "health summary carries components")
     assert_true("server" in payload["health"]["components"], "health summary carries server component")
@@ -625,6 +757,26 @@ def test_cockpit_payload_contract() -> None:
         assert_true(payload["git"]["last_commit_iso"], "git payload carries last commit timestamp when repo metadata is available")
     ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
     assert_true("unread over 60s" not in ui_text, "UI derives stale threshold labels from cockpit_state")
+
+
+def test_cockpit_payload_skips_message_quarantine_checks() -> None:
+    original_quarantine_candidate_allowed = agent_hub.quarantine_candidate_allowed
+    original_validate_mailbox = agent_hub.validate_mailbox
+    try:
+        agent_hub.validate_mailbox = lambda messages, include_schema=True: []
+
+        def fail_quarantine_candidate(path: Path | str) -> bool:
+            raise AssertionError("cockpit hot path should not validate per-message quarantine candidates")
+
+        agent_hub.quarantine_candidate_allowed = fail_quarantine_candidate
+        payload = agent_hub.cockpit_payload()
+        assert_true(payload["schema_version"] == 1, "cockpit payload still builds without per-message quarantine checks")
+        latest = payload.get("simple_mail", {}).get("latest", [])
+        if latest:
+            assert_true(latest[0]["quarantine_allowed"] is False, "cockpit message rows keep quarantine metadata inert")
+    finally:
+        agent_hub.quarantine_candidate_allowed = original_quarantine_candidate_allowed
+        agent_hub.validate_mailbox = original_validate_mailbox
 
 
 def test_health_payload_contract() -> None:
@@ -655,6 +807,33 @@ def test_health_payload_contract() -> None:
     assert_true("problem_routes" in components["routes"], "routes health carries held/failed route detail")
     assert_true("stale" in components["inspector"], "inspector health carries freshness state")
     assert_true("delivery_levels" in components["mediated_messaging"], "mediated messaging health reports delivery levels")
+
+
+def test_inspector_freshness_component_exposes_report_timestamp() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        latest_json = root / "latest.json"
+        latest_markdown = root / "latest.md"
+        latest_json.write_text(
+            json.dumps({"summary": {"overall": "pass", "counts": {"pass": 1, "warn": 0, "fail": 0}}, "findings": []}),
+            encoding="utf-8",
+        )
+        latest_markdown.write_text("# Inspector report\n", encoding="utf-8")
+        stamp = time.time() - 30
+        os.utime(latest_json, (stamp, stamp))
+        original_values = {
+            "INSPECTOR_LATEST_JSON_PATH": agent_hub.INSPECTOR_LATEST_JSON_PATH,
+            "INSPECTOR_LATEST_MARKDOWN_PATH": agent_hub.INSPECTOR_LATEST_MARKDOWN_PATH,
+        }
+        try:
+            agent_hub.INSPECTOR_LATEST_JSON_PATH = latest_json
+            agent_hub.INSPECTOR_LATEST_MARKDOWN_PATH = latest_markdown
+            component = agent_hub.inspector_freshness_component()
+            assert_true(bool(component.get("latest_report_at")), "inspector health exposes latest report timestamp")
+            assert_true("T" in component["latest_report_at"], "inspector latest report timestamp is ISO-like")
+        finally:
+            for key, value in original_values.items():
+                setattr(agent_hub, key, value)
 
 
 def test_health_payload_uses_snapshot_when_available() -> None:
@@ -743,7 +922,7 @@ def test_pah_ui_pg_design_bible_tokens() -> None:
         '--font-mono: "Cascadia Mono", Consolas, monospace;',
         "font: 13px/1.32 var(--font-ui);",
         ".gbtn,",
-        "grid-template-rows: 48px 1fr 26px;",
+        "grid-template-rows: auto minmax(0, 1fr) 26px;",
         ".statusbar",
         "background: var(--chrome);",
         '<footer class="footer statusbar">',
@@ -812,6 +991,17 @@ def test_pah_ui_inbox_dropdown_wiring() -> None:
         "PAH inbox dropdown cannot render before cockpit data is loaded",
     )
     assert_true(
+        "function focusAgent(agentId)" in ui_text
+        and "function focusPanel(filter)" in ui_text
+        and "function focusQueueItem(filter, itemId)" in ui_text
+        and ui_text.count("if (!cockpit) return;") >= 4,
+        "PAH focus buttons cannot render before cockpit data is loaded",
+    )
+    assert_true(
+        "prefs.cleanupMailbox = cleanupMailboxValueFor(mailbox);" in ui_text,
+        "PAH inbox dropdown preserves early selection without rendering before cockpit data loads",
+    )
+    assert_true(
         "function syncCleanupMailboxSelector()" in ui_text,
         "PAH inbox dropdown stays synchronized with mailbox navigation",
     )
@@ -819,6 +1009,93 @@ def test_pah_ui_inbox_dropdown_wiring() -> None:
         "if (id === 'all')" in ui_text and "CLEANUP_MAILBOX_AGENT_IDS.flatMap" in ui_text,
         "PAH All inboxes dropdown value renders a combined agent-inbox queue",
     )
+
+
+def test_pah_ui_communication_speed_wiring() -> None:
+    ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    assert_true('id="commSpeedPanel"' in ui_text, "PAH UI includes communication speed panel")
+    assert_true("function renderCommSpeedPanel()" in ui_text, "PAH UI renders communication speed history")
+    assert_true("async function runCommunicationSpeedTest()" in ui_text, "PAH UI has communication speed runner")
+    assert_true("credentials: 'same-origin'" in ui_text, "PAH UI posts protected actions with same-origin credentials")
+    assert_true("postJson('/api/run-communication-speed-test'" in ui_text, "PAH UI posts to communication speed endpoint")
+    assert_true("id=\"runCommSpeed\"" in ui_text, "PAH UI includes Speed test button")
+    assert_true("id=\"openCommSpeedLog\"" in ui_text, "PAH UI includes Open log button")
+    assert_true("Communication Speed" in ui_text, "PAH UI names the speed-test panel")
+    assert_true("Comm Speed" in ui_text, "PAH Steward panel exposes speed-test status at a glance")
+    assert_true("cockpit.communication_speed" in ui_text, "PAH UI updates cockpit communication speed state after run")
+    assert_true(
+        "/api/run-communication-speed-test" in inspector.supported_post_routes(),
+        "Inspector accepts communication speed POST route",
+    )
+
+
+def test_pah_ui_action_timestamps_wiring() -> None:
+    ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    assert_true("function fmtDateTime(value)" in ui_text, "PAH UI has a full date/time formatter")
+    assert_true("Last checked:" in ui_text, "CC Check now leaves a visible timestamp")
+    assert_true("cc-activity-stamp" in ui_text, "CC activity panel has timestamp styling")
+    assert_true("Claude Code activity checked at" in ui_text, "CC Check now notice includes timestamp")
+    assert_true("Inspector complete at" in ui_text, "Run Inspector notice includes timestamp")
+    assert_true("inspectorRunStamp(inspectorHealth)" in ui_text, "diagnostics footer includes Inspector run timestamp")
+    assert_true("report from ${fmtDateTime(generated)}" in ui_text, "Inspector panel shows report date/time")
+
+
+def test_pah_ba_applet_launcher_contract() -> None:
+    ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    assert_true('id="openBibleAudit"' in ui_text, "PAH topbar exposes Bible Audit launcher")
+    assert_true("function openBibleAuditApplet()" in ui_text, "PAH UI has a BA applet launcher function")
+    assert_true("window.open('/ba-applet', 'pah-ba-applet')" in ui_text, "BA launcher uses named tab reuse")
+    assert_true("Bible Audit opened at" in ui_text, "BA launcher reports a timestamped action notice")
+    assert_true("ba_layout_probe" in ui_text, "PAH supports BA layout probe mode without hidden launcher registration")
+    assert_true(hasattr(agent_hub, "BA_APPLET_PATH"), "PAH declares canonical BA applet path")
+    assert_true(str(agent_hub.BA_APPLET_PATH).endswith("PG_Design_Bible_Audit_v2.html"), "BA applet path targets v2 HTML")
+
+
+def test_pah_topbar_responsive_overflow_guard() -> None:
+    ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    assert_true(
+        "grid-template-rows: auto minmax(0, 1fr) 26px;" in ui_text,
+        "PAH shell lets the header grow instead of clipping at a fixed 48px row",
+    )
+    assert_true(
+        "grid-template-columns: minmax(160px, 220px) minmax(180px, 1fr) minmax(0, 820px);" in ui_text,
+        "PAH topbar action column is bounded so added buttons cannot force horizontal overflow",
+    )
+    assert_true("flex-wrap: wrap;" in ui_text, "PAH topbar actions wrap when browser zoom or width constrains them")
+    assert_true("justify-content: flex-end;" in ui_text, "PAH topbar actions stay aligned after wrapping")
+    assert_true(
+        ".top-actions > * { flex: 0 1 auto; }" in ui_text,
+        "PAH topbar controls may shrink/wrap within the bounded action column",
+    )
+
+
+def test_ba_swiss_army_upgrade_contract() -> None:
+    ba_text = agent_hub.BA_APPLET_PATH.read_text(encoding="utf-8")
+    assert_true('data-panel="feedback"' in ba_text, "BA includes Action Feedback panel")
+    assert_true('data-panel="reportqa"' in ba_text, "BA includes Report QA panel")
+    assert_true('data-panel="dispatch"' in ba_text, "BA includes Fix Dispatch panel")
+    assert_true('data-panel="runlog"' in ba_text, "BA includes Run Log panel")
+    assert_true("function checkButtonVisibleFeedback(src)" in ba_text, "BA scanner includes button feedback rule")
+    assert_true("BA_BASE_RUN_SCANNER=runScanner" in ba_text, "BA extends existing scanner instead of replacing it blindly")
+    assert_true("function analyzeReportText(text)" in ba_text, "BA includes report consistency analyzer")
+    assert_true("Failure contradiction" in ba_text, "BA detects failure-summary contradictions")
+    assert_true("BA_AUDIT_RECORDS" in ba_text, "BA has one canonical all-app audit record model")
+    assert_true("function baAuditCounts()" in ba_text, "BA derives score counts from canonical rows")
+    assert_true("function baIntegrityFindings()" in ba_text, "BA self-checks declared counts against rendered rows")
+    assert_true("BA COMPREHENSIVE AUDIT REPORT" in ba_text, "BA exports a comprehensive all-app report")
+    assert_true("Report model: BA v2 canonical rows" in ba_text, "BA report names the canonical row source")
+    assert_true("Excluded apps are not counted as passing" in ba_text, "BA separates unaudited apps from passing checks")
+    assert_true("function sectionRowCount(section,prefix)" in ba_text, "BA Report QA counts rendered finding rows")
+    assert_true("Failure row count mismatch" in ba_text, "BA Report QA catches failure header/body mismatches")
+    assert_true("Warning row count mismatch" in ba_text, "BA Report QA catches warning header/body mismatches")
+    assert_true("PG Design Bible Audit v2 \u2014 Relay" not in ba_text, "BA no longer exports the stale Relay-only report")
+    assert_true('id="probe-pah-layout"' in ba_text, "BA includes PAH responsive layout probe button")
+    assert_true("function probePahLayout()" in ba_text, "BA can run same-origin PAH layout overflow probes")
+    assert_true("?ba_layout_probe=1" in ba_text, "BA layout probe uses PAH probe mode to avoid launcher side effects")
+    assert_true("SEND FIX TO CC" in ba_text and "SEND FIX TO CD" in ba_text, "BA exposes CC/CD fix dispatch buttons")
+    assert_true("/api/create-message" in ba_text, "BA dispatch uses PAH create-message endpoint")
+    assert_true("BA_LOG_KEY='ba_upgrade_run_log_v1'" in ba_text, "BA has dated local run log storage")
+    assert_true("Direct PAH send unavailable; dispatch text copied" in ba_text, "BA has file-loaded copy fallback")
 
 
 def test_agent_progress_monitor_contract() -> None:
@@ -1680,6 +1957,44 @@ def test_tray_status_payload_contract() -> None:
     assert_true(stale_status["level"] == "attention", "tray status prioritizes stale unread messages")
     assert_true(stale_status["counts"]["stale_unread"] == 1, "tray status reports stale unread count")
     assert_true(stale_status["oldest_stale_unread_seconds"] == 90, "tray status reports oldest stale unread age")
+
+
+def test_dashboard_launcher_reuses_existing_browser_window() -> None:
+    launcher_text = Path(__file__).with_name("CODEX_launch_agent_hub_dashboard.ps1").read_text(encoding="utf-8")
+    tray_text = Path(__file__).with_name("CODEX_start_agent_hub_tray.ps1").read_text(encoding="utf-8")
+
+    assert_true("--new-window" not in launcher_text, "dashboard launcher does not force new browser windows")
+    assert_true("_pah_launch" not in launcher_text, "dashboard launcher does not make every launch URL unique")
+    assert_true("api/launch-refresh/request" in launcher_text, "dashboard launcher asks open tabs to refresh through PAH")
+    assert_true("api/launch-refresh/state" in launcher_text, "dashboard launcher waits for a tab refresh acknowledgement")
+    assert_true("SendKeys" not in launcher_text, "dashboard launcher is not limited to active-tab window titles")
+    assert_true("Start-Process -FilePath $edge -ArgumentList @($Url)" in launcher_text, "Edge fallback opens the canonical URL")
+    assert_true("Start-Process -FilePath $chrome -ArgumentList @($Url)" in launcher_text, "Chrome fallback opens the canonical URL")
+    assert_true("function Open-PahDashboard" in tray_text, "tray uses shared dashboard open behavior")
+    assert_true("api/launch-refresh/request" in tray_text, "tray asks open tabs to refresh through PAH")
+    assert_true("SendKeys" not in tray_text, "tray open is not limited to active-tab window titles")
+    assert_true("$OpenItem.Add_Click({ Open-PahDashboard })" in tray_text, "tray menu refreshes or reuses dashboard")
+    assert_true("$NotifyIcon.Add_DoubleClick({ Open-PahDashboard })" in tray_text, "tray double-click refreshes or reuses dashboard")
+
+
+def test_launch_refresh_payload_contract() -> None:
+    original = json.loads(json.dumps(agent_hub.LAUNCH_REFRESH_STATE))
+    try:
+        with agent_hub.LAUNCH_REFRESH_LOCK:
+            agent_hub.LAUNCH_REFRESH_STATE.clear()
+            agent_hub.LAUNCH_REFRESH_STATE.update({"token": "", "issued_at": "", "clients": {}, "acks": {}})
+        heartbeat = agent_hub.record_launch_refresh_client("test-client", "")
+        assert_true(heartbeat["active_clients"] == 1, "launch refresh heartbeat records an active tab")
+        requested = agent_hub.request_launch_refresh("smoke-test")
+        assert_true(requested["token"], "launch refresh request creates a token")
+        assert_true(requested["active_clients"] == 1, "launch refresh request preserves active tab count")
+        assert_true(requested["ack_clients"] == 0, "launch refresh starts without acknowledgements")
+        acknowledged = agent_hub.acknowledge_launch_refresh("test-client", requested["token"])
+        assert_true(acknowledged["ack_clients"] == 1, "launch refresh records tab acknowledgement")
+    finally:
+        with agent_hub.LAUNCH_REFRESH_LOCK:
+            agent_hub.LAUNCH_REFRESH_STATE.clear()
+            agent_hub.LAUNCH_REFRESH_STATE.update(original)
 
 
 def test_diagnostics() -> None:
@@ -3205,14 +3520,23 @@ def main() -> None:
     test_create_message_dry_run_does_not_write_mail()
     test_create_message_writes_reply_tombstone_for_active_message()
     test_mailroom_transaction_canary_is_isolated()
+    test_communication_speed_classification_and_history()
+    test_communication_speed_test_runner_is_isolated()
     test_cockpit_payload_contract()
+    test_cockpit_payload_skips_message_quarantine_checks()
     test_health_payload_contract()
+    test_inspector_freshness_component_exposes_report_timestamp()
     test_health_payload_uses_snapshot_when_available()
     test_periodic_health_monitor_summary_ignores_stale_failures()
     test_ready_payload_contract()
     test_mail_state_snapshot_sanitized_contract()
     test_pah_ui_pg_design_bible_tokens()
     test_pah_ui_inbox_dropdown_wiring()
+    test_pah_ui_communication_speed_wiring()
+    test_pah_ui_action_timestamps_wiring()
+    test_pah_ba_applet_launcher_contract()
+    test_pah_topbar_responsive_overflow_guard()
+    test_ba_swiss_army_upgrade_contract()
     test_agent_progress_monitor_contract()
     test_pah_inspector_cc_progress_sidecar_contract()
     test_codex_mailbox_sla_progress()
@@ -3230,6 +3554,8 @@ def main() -> None:
     test_cockpit_action_queue_ordering()
     test_urgent_codex_request_protocol()
     test_tray_status_payload_contract()
+    test_dashboard_launcher_reuses_existing_browser_window()
+    test_launch_refresh_payload_contract()
     test_diagnostics()
     test_notification_provider_status()
     test_safety_surfaces()

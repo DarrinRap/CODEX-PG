@@ -40,6 +40,14 @@ DEFAULT_HISTORY_ROOT = APP_ROOT / "CODEX project history"
 DEFAULT_TEST_SANDBOX_ROOT = APP_ROOT / "PANDA test sandboxes" / "pc-action-test"
 DEFAULT_PROJECT_FILES_DIRECTORY = r"C:\panda-gallery"
 DEFAULT_CLAUDE_CODE_INBOX = Path(r"C:\panda-gallery\workflows\cc_mailbox\CC Inbox")
+LAUNCH_REFRESH_CLIENT_TTL_SECONDS = 20
+LAUNCH_REFRESH_LOCK = threading.RLock()
+LAUNCH_REFRESH_STATE: dict[str, Any] = {
+    "token": "",
+    "issued_at": "",
+    "clients": {},
+    "acks": {},
+}
 
 FORBIDDEN_GIT_COMMANDS = [
     "git reset --hard",
@@ -98,6 +106,130 @@ def utc_stamp() -> str:
 
 def local_timestamp() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _launch_refresh_now() -> float:
+    return dt.datetime.now(dt.timezone.utc).timestamp()
+
+
+def _launch_refresh_prune(now: float | None = None) -> None:
+    current = _launch_refresh_now() if now is None else now
+    clients = LAUNCH_REFRESH_STATE.setdefault("clients", {})
+    stale = [
+        client_id
+        for client_id, record in clients.items()
+        if current - float(record.get("seen_at_epoch", 0.0)) > LAUNCH_REFRESH_CLIENT_TTL_SECONDS
+    ]
+    for client_id in stale:
+        clients.pop(client_id, None)
+    active_client_ids = set(clients)
+    acks = LAUNCH_REFRESH_STATE.setdefault("acks", {})
+    for token, records in list(acks.items()):
+        for client_id in list(records):
+            if client_id not in active_client_ids:
+                records.pop(client_id, None)
+        if not records and token != LAUNCH_REFRESH_STATE.get("token"):
+            acks.pop(token, None)
+
+
+def _launch_refresh_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _launch_refresh_client_is_foreground(record: dict[str, Any]) -> bool:
+    return str(record.get("visibility_state") or "").lower() == "visible" or _launch_refresh_bool(
+        record.get("focused")
+    )
+
+
+def _launch_refresh_client_record(payload: dict[str, Any], seen_token: str = "") -> dict[str, Any]:
+    return {
+        "seen_at": local_timestamp(),
+        "seen_at_epoch": _launch_refresh_now(),
+        "seen_token": seen_token,
+        "visibility_state": str(payload.get("visibility_state") or "")[:24],
+        "focused": _launch_refresh_bool(payload.get("focused")),
+        "user_agent": str(payload.get("user_agent") or "")[:180],
+    }
+
+
+def launch_refresh_payload() -> dict[str, Any]:
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        token = str(LAUNCH_REFRESH_STATE.get("token") or "")
+        clients = dict(LAUNCH_REFRESH_STATE.get("clients") or {})
+        acks = dict((LAUNCH_REFRESH_STATE.get("acks") or {}).get(token, {}))
+        foreground_clients = {
+            client_id: record
+            for client_id, record in clients.items()
+            if _launch_refresh_client_is_foreground(record)
+        }
+        foreground_acks = {
+            client_id: record
+            for client_id, record in acks.items()
+            if _launch_refresh_client_is_foreground(clients.get(client_id, {}))
+            or _launch_refresh_client_is_foreground(record)
+        }
+        return {
+            "ok": True,
+            "app": "panda-collaborator",
+            "token": token,
+            "issued_at": LAUNCH_REFRESH_STATE.get("issued_at") or "",
+            "active_clients": len(clients),
+            "ack_clients": len(acks),
+            "foreground_clients": len(foreground_clients),
+            "foreground_ack_clients": len(foreground_acks),
+        }
+
+
+def record_launch_refresh_client(
+    client_id: str,
+    seen_token: str = "",
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    safe_id = slugify(str(client_id or "anonymous"), "anonymous")[:96]
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        LAUNCH_REFRESH_STATE.setdefault("clients", {})[safe_id] = _launch_refresh_client_record(
+            metadata or {},
+            seen_token,
+        )
+    return launch_refresh_payload()
+
+
+def request_launch_refresh(source: str = "launcher") -> dict[str, Any]:
+    token = slugify(f"{utc_stamp()}-{os.urandom(6).hex()}", "launch")
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        LAUNCH_REFRESH_STATE["token"] = token
+        LAUNCH_REFRESH_STATE["issued_at"] = local_timestamp()
+        LAUNCH_REFRESH_STATE["source"] = str(source or "launcher")[:80]
+        LAUNCH_REFRESH_STATE.setdefault("acks", {})[token] = {}
+    return launch_refresh_payload()
+
+
+def acknowledge_launch_refresh(
+    client_id: str,
+    token: str,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    safe_id = slugify(str(client_id or "anonymous"), "anonymous")[:96]
+    with LAUNCH_REFRESH_LOCK:
+        _launch_refresh_prune()
+        if token and token == LAUNCH_REFRESH_STATE.get("token"):
+            if safe_id in LAUNCH_REFRESH_STATE.setdefault("clients", {}):
+                LAUNCH_REFRESH_STATE["clients"][safe_id].update(
+                    _launch_refresh_client_record(metadata or {}, str(token or ""))
+                )
+            LAUNCH_REFRESH_STATE.setdefault("acks", {}).setdefault(token, {})[safe_id] = {
+                "ack_at": local_timestamp(),
+                "ack_at_epoch": _launch_refresh_now(),
+                "visibility_state": str((metadata or {}).get("visibility_state") or "")[:24],
+                "focused": _launch_refresh_bool((metadata or {}).get("focused")),
+            }
+    return launch_refresh_payload()
 
 
 def slugify(value: str, fallback: str = "handoff") -> str:
@@ -2206,6 +2338,8 @@ class PandaHandler(BaseHTTPRequestHandler):
                     "generated_at": local_timestamp(),
                 },
             )
+        if parsed.path == "/api/launch-refresh/state":
+            return json_response(self, launch_refresh_payload())
         if parsed.path == "/api/settings":
             try:
                 return json_response(self, {"ok": True, "settings": load_settings()})
@@ -2264,6 +2398,32 @@ class PandaHandler(BaseHTTPRequestHandler):
         try:
             payload = self.read_json()
             parsed = urllib.parse.urlparse(self.path)
+            if parsed.path in {
+                "/api/launch-refresh/heartbeat",
+                "/api/launch-refresh/request",
+                "/api/launch-refresh/ack",
+            }:
+                if self.client_address[0] not in {"127.0.0.1", "::1"}:
+                    return json_response(self, {"ok": False, "error": "Launch refresh is loopback-only"}, HTTPStatus.FORBIDDEN)
+                if parsed.path == "/api/launch-refresh/heartbeat":
+                    return json_response(
+                        self,
+                        record_launch_refresh_client(
+                            str(payload.get("client_id", "")),
+                            str(payload.get("seen_token", "")),
+                            payload,
+                        ),
+                    )
+                if parsed.path == "/api/launch-refresh/request":
+                    return json_response(self, request_launch_refresh(str(payload.get("source", "launcher"))))
+                return json_response(
+                    self,
+                    acknowledge_launch_refresh(
+                        str(payload.get("client_id", "")),
+                        str(payload.get("token", "")),
+                        payload,
+                    ),
+                )
             if parsed.path == "/api/settings":
                 return json_response(self, {"ok": True, "settings": save_settings(payload)})
             if parsed.path == "/api/setup/autofill":

@@ -1,5 +1,13 @@
 # CODEX Current Handoff
 
+## Start Here - 2026-05-02 Fresh Chat Handoff
+
+The current authoritative handoff is:
+
+`C:\CODEX PG\CODEX Docs\CODEX_EXTENSIVE_HANDOFF_20260502_0723.md`
+
+Read that file before relying on older sections below. The older sections in this document include useful history, but the fresh handoff captures the latest PAH launcher fix, current dirty git state, latest open BA Applet v2 mailbox dispatch, and the instruction to keep unread-mail checks concise.
+
 Last updated: 2026-04-24 18:48:03 -07:00
 
 ## Current Status

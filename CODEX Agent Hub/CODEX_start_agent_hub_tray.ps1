@@ -31,6 +31,7 @@ if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
 
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $App = Join-Path $ScriptRoot 'CODEX_agent_hub.py'
@@ -59,6 +60,41 @@ $script:SnoozeUntil = [datetime]::MaxValue
 $script:NotificationLogPopupsEnabled = $false
 $script:NotificationPosition = 0
 $script:TrayPopupsDisabled = $true
+
+function New-PahLaunchUrl {
+    return $script:Url
+}
+
+function Invoke-PahDashboardRefresh {
+    try {
+        $body = @{ source = 'pah-tray-open' } | ConvertTo-Json -Compress
+        $response = Invoke-RestMethod -Uri "$script:Url/api/launch-refresh/request" -Method Post -Body $body -ContentType 'application/json' -TimeoutSec 2
+        if (-not $response.ok -or [int]$response.active_clients -lt 1) {
+            return $false
+        }
+        $token = [string]$response.token
+        for ($i = 0; $i -lt 30; $i++) {
+            Start-Sleep -Milliseconds 150
+            $state = Invoke-RestMethod -Uri "$script:Url/api/launch-refresh/state" -TimeoutSec 2
+            if ([string]$state.token -eq $token -and [int]$state.ack_clients -gt 0) {
+                return $true
+            }
+        }
+    }
+    catch {
+        return $false
+    }
+
+    return $false
+}
+
+function Open-PahDashboard {
+    if (Invoke-PahDashboardRefresh) {
+        return
+    }
+
+    Start-Process (New-PahLaunchUrl)
+}
 
 function Limit-Text {
     param([string]$Text, [int]$Max = 60)
@@ -261,7 +297,7 @@ $NotifyIcon.Visible = $true
 
 $Menu = New-Object System.Windows.Forms.ContextMenuStrip
 $OpenItem = $Menu.Items.Add('Open Dashboard')
-$OpenItem.Add_Click({ Start-Process $script:Url })
+$OpenItem.Add_Click({ Open-PahDashboard })
 
 $RefreshItem = $Menu.Items.Add('Refresh Status')
 $RefreshItem.Add_Click({ Update-TrayStatus })
@@ -338,7 +374,7 @@ $ExitItem.Add_Click({
 })
 
 $NotifyIcon.ContextMenuStrip = $Menu
-$NotifyIcon.Add_DoubleClick({ Start-Process $script:Url })
+$NotifyIcon.Add_DoubleClick({ Open-PahDashboard })
 $NotifyIcon.Text = 'PANDA Agent Hub'
 
 Set-NotificationPositionToEnd

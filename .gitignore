@@ -1,6 +1,7 @@
 # CODEX docs
 *.tmp
 *.bak
+*.bak_*
 *.log
 __pycache__/
 *.py[cod]
@@ -22,3 +23,6 @@ CODEX Agent Hub/CODEX notifications/*.jsonl
 CODEX Agent Hub/CODEX notifications/*.local.json
 CODEX Agent Hub/CODEX logs/
 CODEX Agent Hub/CODEX state/
+CODEX Agent Hub/CODEX reports/*probe*.png
+CODEX BA Applet v2/*_headless.png
+CODEX BA Applet v2/edge-profile*.local/

@@ -4370,6 +4370,7 @@
     async function init() {
       startTooltipObserver();
       startTestChecklistDrag();
+      startLauncherRefreshMonitor();
       renderRules();
       const savedPath = localStorage.getItem('pandaCollaborator.repoPath');
       if (savedPath) $('repoPath').value = savedPath;
@@ -4379,6 +4380,72 @@
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       }
+    }
+
+    function launcherClientId() {
+      const key = 'pandaCollaborator.launchRefreshClientId';
+      try {
+        let value = window.sessionStorage.getItem(key);
+        if (!value) {
+          value = `pc-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          window.sessionStorage.setItem(key, value);
+        }
+        return value;
+      } catch (error) {
+        return `pc-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+    }
+
+    function startLauncherRefreshMonitor() {
+      const clientId = launcherClientId();
+      let currentToken = null;
+      let inFlight = false;
+      function clientState(extra = {}) {
+        return {
+          client_id: clientId,
+          seen_token: currentToken || '',
+          visibility_state: document.visibilityState || '',
+          focused: document.hasFocus(),
+          user_agent: navigator.userAgent || '',
+          ...extra
+        };
+      }
+      async function pulse() {
+        if (inFlight) return;
+        inFlight = true;
+        try {
+          const response = await fetch('/api/launch-refresh/heartbeat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(clientState()),
+            cache: 'no-store'
+          });
+          if (!response.ok) return;
+          const payload = await response.json();
+          const nextToken = payload?.token || '';
+          if (currentToken === null) {
+            currentToken = nextToken;
+          } else if (nextToken && nextToken !== currentToken) {
+            currentToken = nextToken;
+            try {
+              window.focus();
+              await fetch('/api/launch-refresh/ack', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(clientState({token: nextToken})),
+                keepalive: true
+              });
+            } catch (error) {}
+            window.location.reload();
+          }
+        } catch (error) {
+          // Launcher refresh is best-effort; the app remains usable without it.
+        } finally {
+          inFlight = false;
+        }
+      }
+      pulse();
+      window.setInterval(pulse, 1000);
     }
 
     init();
