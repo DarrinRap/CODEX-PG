@@ -399,3 +399,121 @@ Created: 2026-05-03
 - "Properly vetted" means the spec is written down, checked for errors, oversights, conflicts, and ambiguities, and approved by Darrin or by an explicit current directive that names the vetted spec.
 - Diagnostics, mail checks, read-only investigation, and reporting can happen before the spec, but code/file implementation starts only after the vetted-spec gate is satisfied.
 
+## Chat 18 BA Handoff Addendum
+
+Created: 2026-05-03 15:30 -07:00
+
+Read this before continuing BA work in a new chat.
+
+### Current User Direction
+
+- Darrin requested handoff and new chat.
+- Keep updates honest and evidence-based.
+- Active rule from Darrin: do not guess; diagnose first, confirm diagnosis with test evidence before applying fixes; make small test applets/probes when useful.
+- Active memory rule: never start building/coding/development without a properly vetted spec.
+
+### BA Work Completed This Chat
+
+The production Bible Audit applet was corrected to use the CC Compact UX v3 mockup direction.
+
+Primary edited applet:
+
+- `C:\panda-gallery\workflows\design\applets\PG_Design_Bible_Audit_v1.html`
+
+Key BA changes:
+
+- Replaced the old visible top workflow/card structure with the CC-style compact window shell.
+- Added/verified production DOM structures: `.window`, `.titlebar`, `.focus-stripe`, `.workflow.workflow-steps`, `.wf-prefix`, `.mod-header`, `.summary-pane`, `.main-col`, `.statusbar`.
+- Moved workflow into left-to-right order: Choose app, Set gate, Recipients, Send mode, Run report.
+- Removed the mockup-only explanatory header at the top of the production page.
+- Removed the three decorative titlebar traffic dots from production.
+- Preserved existing BA control IDs and server API wiring.
+- Test Mode remained wired and verified.
+
+### BA Verification Evidence
+
+Latest BA self-audit after the top-trim change:
+
+- Generated: `2026-05-03T15:22:51-07:00`
+- Target: `Bible Audit`
+- Result: `0 fail / 0 warn / 0 unknown / 121 evidenced`
+- Evidence score: `100%`
+- Coverage debt: `0%`
+- Runtime verdict: `runtime_trusted`
+- Runtime screenshots saved under: `C:\panda-gallery\workflows\design\ba_runtime_artifacts\20260503_222250_bible-audit`
+
+Manual Playwright/browser checks performed:
+
+- Top trim check: window top moved from `183px` to `0px`.
+- Mockup-only page title/state block display: `none`.
+- Traffic-dot container display: `none`.
+- Run button behavior: `Run selected app` -> `Running...` -> `Run selected app`; run state `complete`; progress `100%`.
+- Test Mode behavior: expected `1`, detected `1`, matched `1`, missed `None`, unexpected `None`.
+
+Screenshot artifacts:
+
+- `C:\panda-gallery\workflows\design\ba_mockups\BA_LIVE_TOP_TRIMMED_20260503.png`
+- `C:\panda-gallery\workflows\design\ba_mockups\BA_LIVE_CC_RUN_BUTTON_VERIFIED_20260503.png`
+- `C:\panda-gallery\workflows\design\ba_mockups\BA_LIVE_CC_TEST_MODE_VERIFIED_20260503.png`
+
+Command verification:
+
+- `python -m pytest tests/test_ba_audit_runner.py -q` passed: `48 passed`
+- `python -m py_compile scripts/ba_audit_runner.py` passed
+
+### BA Dispatch Behavior Observed
+
+Darrin ran a BA test with auto-dispatch enabled to Codex in `Actionable only` mode.
+
+Observed behavior:
+
+- Audit completed cleanly.
+- Auto-dispatch state: `skipped`
+- Reason: `Skipped: no actionable findings.`
+- This was correct behavior because the clean BA report had `0` fail/warn/unknown findings.
+
+### Current `C:\panda-gallery` State
+
+`C:\panda-gallery` remains dirty/uncommitted. Preserve all dirty files unless Darrin explicitly asks for a commit or cleanup.
+
+Known dirty paths from final status:
+
+- `BUGS.md`
+- `relay/developer_hub.py`
+- `relay/hub_components.py`
+- `relay/settings_panel.py`
+- `scripts/ba_audit_runner.py`
+- `scripts/pg_clip_launcher_messages.json`
+- `tests/relay/test_developer_hub.py`
+- `tests/test_ba_audit_runner.py`
+- `workflows/design/BA_COMPACT_UX_V3_IMPLEMENTATION_LOCK.md`
+- `workflows/design/applets/PG_Design_Bible_Audit_v1.html`
+- `scripts/launch_ba_applet.ps1` untracked
+- BA specs, assets, mockups, and screenshots under `workflows/design/`
+
+Important boundary:
+
+- Do not touch Relay work unless Darrin explicitly authorizes it. Darrin previously warned not to conflict with CC on Relay.
+- Do not revert or delete dirty files from other agents.
+
+### Mailbox State At Handoff
+
+- Local read-state is stale/inflated; do not dump read-state JSON.
+- Mailbox active index had no Codex-owned active dispatch row.
+- Newest relevant CODEX Inbox item: `20260503_193906_CC_to_CODEX_ba_compact_ux_mockups_v3.md`.
+- That CC mockup mail was used as the BA UI authority in this chat.
+
+### CODEX PG Backup
+
+The handoff automation ran successfully.
+
+- CODEX PG backup commit: `e855e71 CODEX backup 2026-05-03 15:26:06`
+- Push to `origin/main` succeeded.
+
+### Recommended New Chat Start
+
+1. Read this addendum first.
+2. Confirm whether Darrin wants to review/commit the `C:\panda-gallery` BA changes.
+3. If testing BA again, use one selected app at a time. Latest clean BA self-audit is already valid as of `2026-05-03T15:22:51-07:00`.
+4. Do not claim BA is perfect across all Panda apps. It is verified for the `Bible Audit` selected target; other app summaries require individual reruns.
+

@@ -147,3 +147,23 @@ Latest automated handoff generated: 2026-05-03 15:26:05 -07:00
 - CODEX CHECKPOINT: save a progress checkpoint plus GitHub backup.
 - CODEX BACKUP: run GitHub backup only.
 - CODEX RESUME PG: start a new chat from memory and handoff files.
+
+## Manual Addendum After Automated Handoff
+
+Added: 2026-05-03 15:30 -07:00
+
+The automated handoff above is generic and says `C:\panda-gallery` is read-only. That is not the operative state for the latest BA work. Darrin explicitly authorized BA work in `C:\panda-gallery` during Chat 18.
+
+Current BA state:
+
+- Production BA applet updated: `C:\panda-gallery\workflows\design\applets\PG_Design_Bible_Audit_v1.html`
+- BA now follows the CC Compact UX v3 production shell: `.window`, `.titlebar`, `.focus-stripe`, `.workflow.workflow-steps`, `.summary-pane`, `.main-col`, `.statusbar`.
+- Top mockup-only explanatory block removed from production.
+- Three decorative titlebar dots removed from production.
+- Latest BA self-audit after top-trim: `0 fail / 0 warn / 0 unknown / 121 evidenced`, `100%` evidence score, `0%` coverage debt, `runtime_trusted`.
+- Latest BA audit timestamp: `2026-05-03T15:22:51-07:00`.
+- Test suite: `python -m pytest tests/test_ba_audit_runner.py -q` passed with `48 passed`.
+- Compile check: `python -m py_compile scripts/ba_audit_runner.py` passed.
+- Screenshot proof: `C:\panda-gallery\workflows\design\ba_mockups\BA_LIVE_TOP_TRIMMED_20260503.png`.
+
+Do not revert dirty `C:\panda-gallery` files. Relay files are dirty and should not be touched without explicit Darrin authorization because Relay work may belong to CC.
