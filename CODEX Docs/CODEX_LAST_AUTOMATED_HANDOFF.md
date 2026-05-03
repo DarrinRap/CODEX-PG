@@ -56,3 +56,16 @@ Latest automated handoff generated: 2026-05-03 15:40:07 -07:00
 - CODEX CHECKPOINT: save a progress checkpoint plus GitHub backup.
 - CODEX BACKUP: run GitHub backup only.
 - CODEX RESUME PG: start a new chat from memory and handoff files.
+
+## Manual Note After Chat 19 BA Push
+
+Added: 2026-05-03 15:40 -07:00
+
+The generic resume prompt still says `C:\panda-gallery` is read-only reference only. For the completed BA exception, read the `Chat 18 BA Handoff Addendum` in `C:\CODEX PG\CODEX Docs\CODEX_CURRENT_HANDOFF.md`.
+
+Current exception status:
+
+- BA commit `84273fd Fix Bible Audit compact UX` was pushed to `origin https://github.com/DarrinRap/PANDA-Gallery.git`.
+- Fresh Chat 19 BA verification passed: `0 fail / 0 warn / 0 unknown / 121 evidenced`, `100%` evidence score.
+- Pre-commit verification passed: `1175 passed, 1 skipped`.
+- Remaining `C:\panda-gallery` dirty files are unrelated Relay/Tracker/support files and must not be touched without explicit Darrin authorization.

@@ -403,6 +403,8 @@ Created: 2026-05-03
 
 Created: 2026-05-03 15:30 -07:00
 
+Updated: 2026-05-03 15:40 -07:00 after Chat 19 commit/push checkpoint.
+
 Read this before continuing BA work in a new chat.
 
 ### Current User Direction
@@ -460,6 +462,8 @@ Command verification:
 
 - `python -m pytest tests/test_ba_audit_runner.py -q` passed: `48 passed`
 - `python -m py_compile scripts/ba_audit_runner.py` passed
+- Chat 19 fresh BA audit command passed: `0 fail / 0 warn / 0 unknown / 121 evidenced`, `100%` evidence score.
+- Chat 19 pre-commit hook passed broader verification: `1175 passed, 1 skipped`.
 
 ### BA Dispatch Behavior Observed
 
@@ -474,7 +478,13 @@ Observed behavior:
 
 ### Current `C:\panda-gallery` State
 
-`C:\panda-gallery` remains dirty/uncommitted. Preserve all dirty files unless Darrin explicitly asks for a commit or cleanup.
+BA changes were committed and pushed in Chat 19.
+
+- Commit: `84273fd Fix Bible Audit compact UX`
+- Pushed to verified remote: `origin https://github.com/DarrinRap/PANDA-Gallery.git`
+- Branch state after push: `main...origin/main`
+
+`C:\panda-gallery` still has unrelated dirty/uncommitted files. Preserve all dirty files unless Darrin explicitly asks for a commit or cleanup.
 
 Known dirty paths from final status:
 
@@ -482,19 +492,16 @@ Known dirty paths from final status:
 - `relay/developer_hub.py`
 - `relay/hub_components.py`
 - `relay/settings_panel.py`
-- `scripts/ba_audit_runner.py`
 - `scripts/pg_clip_launcher_messages.json`
 - `tests/relay/test_developer_hub.py`
-- `tests/test_ba_audit_runner.py`
-- `workflows/design/BA_COMPACT_UX_V3_IMPLEMENTATION_LOCK.md`
-- `workflows/design/applets/PG_Design_Bible_Audit_v1.html`
-- `scripts/launch_ba_applet.ps1` untracked
-- BA specs, assets, mockups, and screenshots under `workflows/design/`
+- `tests/relay/test_track_b_session129.py` untracked
+- `workflows/design/TRACKER_UX_SPEC_v1.md` untracked
 
 Important boundary:
 
 - Do not touch Relay work unless Darrin explicitly authorizes it. Darrin previously warned not to conflict with CC on Relay.
 - Do not revert or delete dirty files from other agents.
+- BA is committed/pushed; do not recommit it unless new BA work is requested.
 
 ### Mailbox State At Handoff
 
@@ -505,16 +512,16 @@ Important boundary:
 
 ### CODEX PG Backup
 
-The handoff automation ran successfully.
+The handoff automation ran successfully in Chat 19.
 
-- CODEX PG backup commit: `e855e71 CODEX backup 2026-05-03 15:26:06`
+- CODEX PG backup commit: `ca506e8 CODEX backup 2026-05-03 15:40:08`
 - Push to `origin/main` succeeded.
 
 ### Recommended New Chat Start
 
 1. Read this addendum first.
-2. Confirm whether Darrin wants to review/commit the `C:\panda-gallery` BA changes.
-3. If testing BA again, use one selected app at a time. Latest clean BA self-audit is already valid as of `2026-05-03T15:22:51-07:00`.
+2. Confirm whether Darrin wants to work on Relay/Tracker dirty files, or pause implementation.
+3. If testing BA again, use one selected app at a time. Latest clean BA self-audit is valid as of Chat 19 fresh verification.
 4. Do not claim BA is perfect across all Panda apps. It is verified for the `Bible Audit` selected target; other app summaries require individual reruns.
 
 
