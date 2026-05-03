@@ -102,7 +102,7 @@ Important: do not write into `C:\panda-gallery`; all Codex-derived files belong 
 <!-- CODEX_AUTOMATED_HANDOFF_START -->
 ## Automated Handoff Snapshot
 
-Generated: 2026-05-01 17:35:20 -07:00
+Generated: 2026-05-03 15:26:05 -07:00
 Mode: `Handoff`
 
 - Last automated handoff: `C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md`
@@ -389,4 +389,13 @@ Recent mailbox topics:
 
 
 
+
+
+## Development Spec Gate Rule
+
+Created: 2026-05-03
+
+- Never start building, coding, implementation, refactoring, or development work without a properly vetted spec.
+- "Properly vetted" means the spec is written down, checked for errors, oversights, conflicts, and ambiguities, and approved by Darrin or by an explicit current directive that names the vetted spec.
+- Diagnostics, mail checks, read-only investigation, and reporting can happen before the spec, but code/file implementation starts only after the vetted-spec gate is satisfied.
 

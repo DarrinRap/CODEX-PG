@@ -1,6 +1,6 @@
 # CODEX Last Automated Handoff
 
-Generated: 2026-05-01 17:35:20 -07:00
+Generated: 2026-05-03 15:26:05 -07:00
 Mode: Handoff
 
 ## Current Git State
@@ -9,100 +9,113 @@ Mode: Handoff
 - GitHub repo: `https://github.com/DarrinRap/CODEX-PG.git`
 - Branch: `main`
 - Origin: `https://github.com/DarrinRap/CODEX-PG.git`
-- Indexed project file count, excluding .git: 5124
+- Indexed project file count, excluding .git: 5250
 
 ## Git Status
 
 ```text
 ## main...origin/main
- M "CODEX Agent Hub/CODEX_PAH_MAIL_AND_INSPECTOR_UX_SPEC.md"
- M "CODEX Agent Hub/CODEX_PAH_RELIABILITY_AND_DESIGN_SPEC.md"
- M "CODEX Agent Hub/CODEX_agent_hub_ui.html"
- M "CODEX Agent Hub/CODEX_pah_inspector.py"
- M "CODEX Agent Hub/CODEX_run_smoke_tests.py"
- M "CODEX Claude Codex Mailbox/CODEX_MAILBOX_LEDGER.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_101620_CODEX_to_CLAUDE_phase4_drafts_restored.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_111902_CODEX_to_CLAUDE_DESKTOP_pah-pg-protocol-ask-codex-before-deep-mail.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_114133_CODEX_to_CLAUDE_DESKTOP_mailbox-stale-thread-incident-ack-protocol.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_120300_CODEX_to_CLAUDE_DESKTOP_pah-mailbox-protocol-update-tombstone-on-r.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_121311_CODEX_to_CLAUDE_DESKTOP_pah-protocol-update-urgent-to-codex-flag-i.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_122821_CODEX_to_CLAUDE_DESKTOP_pgdl_context_guard_update_review_request.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_123927_CODEX_to_CLAUDE_DESKTOP_pgdl_context_guard_cg1_implemented.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_132908_CODEX_to_CLAUDE_DESKTOP_urgent_unread_mail_ack_and_protocol_response.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_144840_CODEX_to_CLAUDE_DESKTOP_pah-agent-progress-monitoring-v0-2-review-.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_153118_CODEX_to_CLAUDE_DESKTOP_pah-agent-progress-monitoring-v0-2-approva.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_155222_CODEX_to_CLAUDE_DESKTOP_codex-sla-cleanup-complete-and-pickup-gap-.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_161118_CODEX_to_CLAUDE_DESKTOP_ready-for-human-loop-added-cc-reporting-di.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_161519_CODEX_to_CLAUDE_DESKTOP_pah-mailroom-route-repair-follow-up.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_162943_CODEX_to_CLAUDE_DESKTOP_r29-mockup-annotation-completeness-impleme.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_191216_CODEX_to_CLAUDE_DESKTOP_ledger_capture_v1_alt_start.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_192246_CODEX_to_CLAUDE_DESKTOP_ledger_capture_v1_alt_ready_to_commit.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_192949_CODEX_to_CLAUDE_DESKTOP_ledger_capture_v1_alt_shipped.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260429_212841_CODEX_to_CLAUDE_DESKTOP_ledger_capture_v1_alt_commit_go_violation_ack.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_063500_CODEX_to_CLAUDE_DESKTOP_ledger_capture_v1_alt_protocol_ack.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_064000_CODEX_to_CLAUDE_DESKTOP_resume_mail_triage_and_u5_verification.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_065200_CODEX_to_CLAUDE_DESKTOP_guidance_request_after_timestamp_note.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_071211_CODEX_to_CLAUDE_DESKTOP_pah_dispatch_guidance_request.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_071627_CODEX_to_CLAUDE_DESKTOP_pah_simple_mail_ui_notice.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_072805_CODEX_to_CLAUDE_DESKTOP_pah_simple_mail_ui_verification.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_074244_CODEX_to_CLAUDE_DESKTOP_pah-mail-and-inspector-ux-spec-shared-with.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_074349_CODEX_to_CLAUDE_DESKTOP_pah_dispatch_pickup_ack.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_074500_CODEX_to_CLAUDE_DESKTOP_pah_project_manager_memory_rule.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_074714_CODEX_to_CLAUDE_DESKTOP_pah_mail_ui_polish_step0_ack.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_075000_CODEX_to_CLAUDE_DESKTOP_operating_efficiency_memory_rules.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_080600_CODEX_to_CLAUDE_DESKTOP_pah_mail_inspector_font_color_polish_verification.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_212005_CODEX_to_CLAUDE_DESKTOP_pah_mail_ui_bible_polish_verification.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_000000_CODEX_to_CLAUDE_DESKTOP_pah_mail_ui_bible_polish_step0_ack.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_105542_CODEX_to_CLAUDE_DESKTOP_pah_pause_ack_non_pah_recheck.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_110947_CODEX_to_CLAUDE_DESKTOP_bug143_capture_redesign_mockups_complete.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_113610_CODEX_to_CLAUDE_DESKTOP_a53_step0_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_114300_CODEX_to_CLAUDE_DESKTOP_a53_commit_go_request.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_115614_CODEX_to_CLAUDE_DESKTOP_a53_ready_to_commit_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_115900_CODEX_to_CLAUDE_DESKTOP_l10_queued_ack.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_120500_CODEX_to_CLAUDE_DESKTOP_a53_hold_next_action_ask.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_120854_CODEX_to_CLAUDE_DESKTOP_a53_shipped.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_142032_CODEX_to_CLAUDE_pc_pause_violation_and_hold_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_143735_CODEX_to_CLAUDE_ledger_compliance_spec_v1_complete.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_144650_CODEX_to_CLAUDE_l26_relay_wizard_audit_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_173620_CODEX_to_CLAUDE_handoff_backup_note.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_174600_CODEX_to_CLAUDE_l27_relay_fix_spec_complete.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_183500_CODEX_to_CLAUDE_l10_impl_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_183600_CODEX_to_CLAUDE_bugs150_151_spec_complete.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_184500_CODEX_to_CLAUDE_mail_check_status.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_185000_CODEX_to_CLAUDE_claudemd_split_plan_complete.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_185500_CODEX_to_CLAUDE_l10_commit_go_ping.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_190500_CODEX_to_CLAUDE_request_next_task.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_192000_CODEX_to_CLAUDE_next_dispatch_request.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_193000_CODEX_to_CLAUDE_l11_existing_commit_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_193000_CODEX_to_CLAUDE_second_next_task_request.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_194500_CODEX_to_CLAUDE_ledger_bible_audit_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_195000_CODEX_to_CLAUDE_ba_applet_fix_complete.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_195500_CODEX_to_CLAUDE_ledger_audit_followup.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_200500_CODEX_to_CLAUDE_completion_protocol_update.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_201500_CODEX_to_CLAUDE_hold_status_directive_request.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_202500_CODEX_to_CLAUDE_pg_lint_disable_file_spec.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_203000_CODEX_to_CLAUDE_ledger_update_and_disable_spec_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_204000_CODEX_to_CLAUDE_pc_registration_width_fix_report.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_204500_CODEX_to_CLAUDE_ba_applet_clean_rewrite_complete.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260502_073619_CODEX_to_CLAUDE_ba_applet_v2_rtc_and_conflict_question.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260502_101050_CODEX_to_CLAUDE_ba_applet_v2_committed.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260502_105147_CODEX_to_CLAUDE_next_dispatch_ping.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260502_200640_CODEX_to_CLAUDE_bug159_shipped.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260502_201000_CODEX_to_CLAUDE_roundtrip_v1.1_step0_ack.md"
+ D "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260502_202240_CODEX_to_CLAUDE_roundtrip_v1.1_complete.md"
+ M "CODEX Docs/CODEX_CURRENT_HANDOFF.md"
  M "CODEX Docs/CODEX_PROJECT_MEMORY.md"
- M "CODEX PANDA Collaborator/CODEX_open_panda_collaborator.ps1"
- M "CODEX PANDA Collaborator/CODEX_ui_identity_applet.py"
- M "CODEX PANDA Collaborator/PANDA_COLLABORATOR_SETUP_STEPS.md"
- M "CODEX PANDA Collaborator/PRODUCTION_SPEC.md"
- M "CODEX PANDA Collaborator/panda_collaborator.py"
- M "CODEX PANDA Collaborator/tests/test_panda_collaborator.py"
- M "CODEX PANDA Collaborator/web/index.html"
-?? "CODEX Canonical Specs/LEDGER_BIBLE_COMPLIANCE_SPEC_v1.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260430_212005_CODEX_to_CLAUDE_DESKTOP_pah_mail_ui_bible_polish_verification.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_000000_CODEX_to_CLAUDE_DESKTOP_pah_mail_ui_bible_polish_step0_ack.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_105542_CODEX_to_CLAUDE_DESKTOP_pah_pause_ack_non_pah_recheck.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_110947_CODEX_to_CLAUDE_DESKTOP_bug143_capture_redesign_mockups_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_113610_CODEX_to_CLAUDE_DESKTOP_a53_step0_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_114300_CODEX_to_CLAUDE_DESKTOP_a53_commit_go_request.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_115614_CODEX_to_CLAUDE_DESKTOP_a53_ready_to_commit_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_115900_CODEX_to_CLAUDE_DESKTOP_l10_queued_ack.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_120500_CODEX_to_CLAUDE_DESKTOP_a53_hold_next_action_ask.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_120854_CODEX_to_CLAUDE_DESKTOP_a53_shipped.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_142032_CODEX_to_CLAUDE_pc_pause_violation_and_hold_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_143735_CODEX_to_CLAUDE_ledger_compliance_spec_v1_complete.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_144650_CODEX_to_CLAUDE_l26_relay_wizard_audit_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_183500_CODEX_to_CLAUDE_l10_impl_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_184500_CODEX_to_CLAUDE_mail_check_status.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_185500_CODEX_to_CLAUDE_l10_commit_go_ping.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_192000_CODEX_to_CLAUDE_next_dispatch_request.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_193000_CODEX_to_CLAUDE_l11_existing_commit_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_194500_CODEX_to_CLAUDE_ledger_bible_audit_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_195500_CODEX_to_CLAUDE_ledger_audit_followup.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_200500_CODEX_to_CLAUDE_completion_protocol_update.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_201500_CODEX_to_CLAUDE_hold_status_directive_request.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_202500_CODEX_to_CLAUDE_pg_lint_disable_file_spec.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_203000_CODEX_to_CLAUDE_ledger_update_and_disable_spec_report.md"
-?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260501_204000_CODEX_to_CLAUDE_pc_registration_width_fix_report.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260430_221800_CLAUDE_to_CODEX_pah_mail_ui_fail.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_110000_CLAUDE_to_CODEX_phase4_u3_d12_complete_go.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_114000_CLAUDE_to_CODEX_bug143_capture_redesign_competition.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_121000_CLAUDE_to_CODEX_u3_143_recheck_ack.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_122000_CLAUDE_to_CODEX_pah_pause.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_124000_CLAUDE_to_CODEX_non_pah_state_confirmed.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_130000_CLAUDE_to_CODEX_a53_relay_setup_dispatch.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_130100_CLAUDE_to_CODEX_l10_commit_go_and_l11_dispatch.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_130300_CLAUDE_to_CODEX_l11_confirmed.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_130600_CLAUDE_to_CODEX_ledger_bible_audit.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_130800_CLAUDE_to_CODEX_audit_ack_and_hold.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_130900_CLAUDE_to_CODEX_hold_confirmed_parallel_task.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_131100_CLAUDE_to_CODEX_disable_spec_ack.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_131500_CLAUDE_to_CODEX_pc_pause_reminder.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_131600_CLAUDE_to_CODEX_paused_surface_rule.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_131800_CLAUDE_to_CODEX_pc_park_directive.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_132000_CLAUDE_to_CODEX_ledger_compliance_dispatch.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_132300_CLAUDE_to_CODEX_l26_relay_audit.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_140000_CLAUDE_to_CODEX_pause_vellum_pah_pc.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_140500_CLAUDE_to_CODEX_l24_recheck_response.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_140600_CLAUDE_to_CODEX_l24_mockup_acceptance.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_160000_CLAUDE_to_CODEX_a53_step0_response.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_170000_CLAUDE_to_CODEX_l10_status_ping.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_173100_CLAUDE_to_CODEX_pc_reg_width_hold.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_173200_CLAUDE_to_CODEX_l26_relay_audit_ack.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_175000_CLAUDE_to_CODEX_a53_hold_for_cc.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_182000_CLAUDE_to_CODEX_a53_commit_go.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_190000_CLAUDE_to_CODEX_l10_commit_go.md"
-?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260501_191000_CLAUDE_to_CODEX_l10_shipped_ack.md"
-?? "CODEX PANDA Collaborator/CODEX_pc_action_test_applet.py"
-?? "CODEX PANDA Collaborator/CODEX_ui_layout_applet.py"
-?? "CODEX PANDA Collaborator/PC_ACTION_TEST_SPEC.md"
-?? "CODEX Relay Mockups/RELAY_DESIGN_SESSION_106_QA_BACKUP.md"
-?? workflows/design/pg_general_mockups/capture_redesign_comparison_memo_codex.md
-?? workflows/design/pg_general_mockups/capture_redesign_v1_codex.html
-?? workflows/design/pg_general_mockups/capture_redesign_v1_codex_viewport.png
-?? workflows/design/pg_general_mockups/capture_redesign_v2_codex.html
-?? workflows/design/pg_general_mockups/capture_redesign_v2_codex_viewport.png
+?? "CODEX Canonical Specs/CODEX_RELAY_TEMPLATES_BIBLE_REVIEW_v1.md"
+?? "CODEX Canonical Specs/PAH_CD_AGENT_SPEC_v1.md"
+?? "CODEX Canonical Specs/PAH_ENHANCEMENT_SPEC_v1.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260503_152000_CLAUDE_to_CODEX_ba_audit_layout_fix.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260503_152500_CLAUDE_to_CODEX_ba_audit_module_parked.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/20260503_222111_CODEX_to_CLAUDE_ba_fix_dispatch_audit-module.md"
+?? "CODEX Claude Codex Mailbox/CLAUDE Inbox/_archive_pre_session_126/"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_021000_CLAUDE_to_CODEX_ba_report_protocol_lock.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_031500_CLAUDE_to_CODEX_pah_enhancement_spec_restructure.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_060000_CLAUDE_to_CODEX_templates_spec_bible_review.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_070500_CLAUDE_to_CODEX_b1_tester_channel_path_spec.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_080500_CLAUDE_to_CODEX_templates_spec_amendment.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_090500_CLAUDE_to_CODEX_phase_b_capture_spec.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_103200_CLAUDE_to_CODEX_ba_v1.2_dispatch_format_ack.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_130000_CLAUDE_to_CODEX_cancel_phase_b_spec.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_145000_CLAUDE_to_CODEX_phase_b_ack_and_b1_amendment_go.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_150500_CLAUDE_to_CODEX_ba_work_out_of_scope.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_151000_CLAUDE_to_CODEX_ba_correction.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_170100_CLAUDE_to_CODEX_ba_report_format_v1.2_approved.md"
+?? "CODEX Claude Codex Mailbox/CODEX Inbox/20260503_193906_CC_to_CODEX_ba_compact_ux_mockups_v3.md"
 ```
 
 ## Recent Commits
 
 ```text
-eb2b152 Polish PANDA registration flow
-b58f646 CODEX backup 2026-04-30 21:14:17
-1200404 Audit PANDA bible button wiring
-51a59f3 Tighten PANDA setup wizard layout
-9b9da63 Fix PANDA scan button routing
+f604355 Add tester report roundtrip v1.1 spec
+912ab87 Archive PAH read mailbox cleanup
+d3b2a12 Fix PAH inspector launch refresh routes
+927107d Record May mailbox coordination artifacts
+f40e1b2 Stabilize PAH PC and BA workflows
 ```
 
 ## Fresh Chat Resume Prompt
@@ -125,7 +138,7 @@ Remember:
 - C:\panda-gallery is read-only reference only
 - Continue from the latest handoff
 
-Latest automated handoff generated: 2026-05-01 17:35:20 -07:00
+Latest automated handoff generated: 2026-05-03 15:26:05 -07:00
 ```
 
 ## Trigger Words
