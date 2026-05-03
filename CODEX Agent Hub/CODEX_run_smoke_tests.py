@@ -1967,6 +1967,12 @@ def test_dashboard_launcher_reuses_existing_browser_window() -> None:
     assert_true("_pah_launch" not in launcher_text, "dashboard launcher does not make every launch URL unique")
     assert_true("api/launch-refresh/request" in launcher_text, "dashboard launcher asks open tabs to refresh through PAH")
     assert_true("api/launch-refresh/state" in launcher_text, "dashboard launcher waits for a tab refresh acknowledgement")
+    for route in (
+        "/api/launch-refresh/heartbeat",
+        "/api/launch-refresh/request",
+        "/api/launch-refresh/ack",
+    ):
+        assert_true(route in inspector.supported_post_routes(), f"Inspector accepts launch-refresh POST route {route}")
     assert_true("SendKeys" not in launcher_text, "dashboard launcher is not limited to active-tab window titles")
     assert_true("Start-Process -FilePath $edge -ArgumentList @($Url)" in launcher_text, "Edge fallback opens the canonical URL")
     assert_true("Start-Process -FilePath $chrome -ArgumentList @($Url)" in launcher_text, "Chrome fallback opens the canonical URL")
