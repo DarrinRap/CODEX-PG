@@ -162,7 +162,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-05-04 09:12:57 -07:00
+Last generated: 2026-05-04 09:40:58 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -415,6 +415,7 @@ Created: 2026-05-04
 - Do not write PHI, secrets, credentials, or patient data into follow-ups.
 - Prefer PAH mailbox routes/protocols over ad hoc file writes. Writing into `C:\panda-gallery` remains protected unless Darrin explicitly authorizes that specific CC mailbox action.
 - Keep nag volume low and useful: one consolidated follow-up per agent per check cycle unless there is an urgent or Darrin-blocking thread.
+
 
 
 

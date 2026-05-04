@@ -1,6 +1,6 @@
 # CODEX Last Automated Handoff
 
-Generated: 2026-05-04 09:12:57 -07:00
+Generated: 2026-05-04 09:40:58 -07:00
 Mode: Checkpoint
 
 ## Current Git State
@@ -9,7 +9,7 @@ Mode: Checkpoint
 - GitHub repo: `https://github.com/DarrinRap/CODEX-PG.git`
 - Branch: `main`
 - Origin: `https://github.com/DarrinRap/CODEX-PG.git`
-- Indexed project file count, excluding .git: 5352
+- Indexed project file count, excluding .git: 5355
 
 ## Git Status
 
@@ -20,11 +20,11 @@ Mode: Checkpoint
 ## Recent Commits
 
 ```text
+95cd776 Add CC CD mailbox follow-up rule
+cd8f029 Add draft Tracker validation spec
+2316089 Document Pane and PAH validation errata
+21f0a98 CODEX backup 2026-05-04 09:12:58
 a5f30a5 CODEX backup 2026-05-04 09:02:12
-13e6cf8 chore(BA): disposition PAH warning findings
-dd9fc76 fix(PAH): use durable ledger history for protocol v3 check
-23e36eb Add BA disposition ledger and spec
-6a3dc35 CODEX backup 2026-05-03 20:28:44
 ```
 
 ## Fresh Chat Resume Prompt
@@ -47,7 +47,7 @@ Remember:
 - C:\panda-gallery is read-only reference only
 - Continue from the latest handoff
 
-Latest automated handoff generated: 2026-05-04 09:12:57 -07:00
+Latest automated handoff generated: 2026-05-04 09:40:58 -07:00
 ```
 
 ## Trigger Words
