@@ -640,4 +640,12 @@ Current Panda Gallery state after push:
 - `main...origin/main`
 - Latest commit: `fb34dc8 Fix pytest Qt teardown crash`
 
+Relay dirty-state instruction:
+
+- Darrin explicitly chose to leave Relay uncommitted.
+- Do not stage, commit, revert, delete, or "clean up" Relay dirty files unless Darrin explicitly authorizes taking ownership of Relay work.
+- Relay dirty paths observed after the pytest teardown fix:
+  - `C:\panda-gallery\relay\developer_hub.py`
+  - `C:\panda-gallery\tests\relay\test_relay_templates_edit_state.py`
+- Codex only inspected these Relay diffs read-only to report their presence.
 
