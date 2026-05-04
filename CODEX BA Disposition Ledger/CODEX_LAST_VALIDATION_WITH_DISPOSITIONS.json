@@ -121,7 +121,7 @@
       "category": "freshness",
       "evidence": [],
       "id": "BA-VAL-FRESHNESS-0001",
-      "message": "Age 0.2h is within 24.0h warn threshold.",
+      "message": "Age 0.3h is within 24.0h warn threshold.",
       "recommendation": "",
       "status": "pass",
       "title": "Report age within policy"
@@ -160,11 +160,11 @@
       "cleanup_candidates": 0,
       "confirmed_issues": 0,
       "unreviewed_fails": 0,
-      "unreviewed_unknowns": 1,
+      "unreviewed_unknowns": 0,
       "unreviewed_warnings": 0
     },
-    "entries_applied": 3,
-    "entries_loaded": 14,
+    "entries_applied": 4,
+    "entries_loaded": 12,
     "finding_dispositions": {
       "BA-ACTION-PANDA-AGENT-HUB-0006": {
         "disposition": "investigated_no_action",
@@ -279,9 +279,15 @@
         "entry_finding_id": "BA-RUNTIME-PANDA-AGENT-HUB-0043",
         "match_type": "exact",
         "stale": false
+      },
+      "BA-WORKFLOW-ORDER-PANDA-AGENT-HUB-0001": {
+        "disposition": "coverage_gap",
+        "entry_finding_id": "BA-WORKFLOW-ORDER-PANDA-AGENT-HUB-0001",
+        "match_type": "exact",
+        "stale": false
       }
     },
-    "findings_covered": 19,
+    "findings_covered": 20,
     "ledger_schema_version": "CODEX_BA_DISPOSITION_LEDGER_v1",
     "note": "Raw BA report counts and validation verdict are unchanged; this is a review overlay for triage.",
     "raw_counts": {
@@ -292,7 +298,7 @@
     },
     "reviewed": {
       "accepted_risk": 0,
-      "coverage_gap": 0,
+      "coverage_gap": 1,
       "false_positive": 0,
       "fixed": 0,
       "investigated_no_action": 18,
@@ -301,7 +307,7 @@
     "schema_version": "BA_DISPOSITION_OVERLAY_v1",
     "stale_dispositions": 0,
     "target_app": "Panda Agent Hub",
-    "unmatched_entries": 11
+    "unmatched_entries": 8
   },
   "finding_disposition_requirements": {
     "BA-ACTION-PANDA-AGENT-HUB-0006": "heuristic_requires_trace",
@@ -325,7 +331,7 @@
     "BA-RUNTIME-PANDA-AGENT-HUB-0043": "confirmed_current",
     "BA-WORKFLOW-ORDER-PANDA-AGENT-HUB-0001": "coverage_gap"
   },
-  "generated_at": "2026-05-04T00:11:25-07:00",
+  "generated_at": "2026-05-04T00:18:41-07:00",
   "limitations": [
     "Structural validation does not prove findings are still current unless reproduction is requested.",
     "Static action-feedback findings remain heuristic until handler trace or runtime confirmation."

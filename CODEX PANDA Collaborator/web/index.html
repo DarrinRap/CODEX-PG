@@ -2203,12 +2203,12 @@
                 <div class="hub-card" data-hub-user="user1">
                   <span>User 1</span>
                   <strong data-hub-name="user1">User 1</strong>
-                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">HANDOVER TO USER 1</button>
+                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">Handover</button>
                 </div>
                 <div class="hub-card" data-hub-user="user2">
                   <span>User 2</span>
                   <strong data-hub-name="user2">User 2</strong>
-                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">HANDOVER TO USER 2</button>
+                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">Handover</button>
                 </div>
               </div>
             </div>
@@ -2505,13 +2505,13 @@
                   <span>User 1</span>
                   <strong data-hub-name="user1">User 1</strong>
                   <small data-hub-account="user1">Account details needed</small>
-                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">HANDOVER TO USER 1</button>
+                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">Handover</button>
                 </div>
                 <div class="hub-card" data-hub-user="user2">
                   <span>User 2</span>
                   <strong data-hub-name="user2">User 2</strong>
                   <small data-hub-account="user2">Account details needed</small>
-                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">HANDOVER TO USER 2</button>
+                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">Handover</button>
                 </div>
               </div>
             </div>
@@ -3441,7 +3441,7 @@
       $('switchUserBtn').textContent = readiness.allReady ? 'Handover Users' : 'Setup Users';
       if (state.testMode.active) $('switchUserBtn').textContent = 'Test users';
       $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
-      $('registerUser2FinishBtn').disabled = state.busy || !storedUserReady('user1') || !registrationFieldReady('user2');
+      $('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');
       $('registerUser1NextBtn').dataset.missingFields = registrationMissingFields('user1').join(', ');
       $('registerUser2FinishBtn').dataset.missingFields = registrationMissingFields('user2').join(', ');
       $('openHubBtn').disabled = state.busy || !readiness.allReady;
@@ -3561,10 +3561,10 @@
     }
 
     function handoverButtonLabel(userId, user) {
-      const userNumber = userId === 'user1' ? 'USER 1' : 'USER 2';
+      const userNumber = userId === 'user1' ? 'User 1' : 'User 2';
       const displayName = cleanTooltipText(user?.display_name || '');
       const readableTarget = displayName || userNumber;
-      return {text: `HANDOVER TO ${userNumber}`, aria: `Handover to ${readableTarget}`};
+      return {text: 'Handover', aria: `Handover to ${readableTarget}`};
     }
 
     function updateHubCards() {
@@ -3587,9 +3587,14 @@
         const user = userById(button.dataset.switchGo);
         const ready = setupReady().allReady;
         button.disabled = state.busy;
+        const setupTarget = button.dataset.switchGo === 'user1' ? 'User 1' : 'User 2';
         const label = ready ? handoverButtonLabel(button.dataset.switchGo, user)
-          : {text: `SET UP ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`, aria: `Set up ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`};
-        button.textContent = ready ? handoverButtonLabel(button.dataset.switchGo, user).text : `SET UP ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`;
+          : {text: 'Set up', aria: `Set up ${setupTarget}`};
+        if (ready) {
+          button.textContent = label.text;
+        } else {
+          button.textContent = 'Set up';
+        }
         button.setAttribute('aria-label', label.aria);
       });
     }

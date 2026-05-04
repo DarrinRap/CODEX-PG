@@ -569,11 +569,13 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("Collaborator Hub / Handover", html)
         self.assertIn("$('switchUserBtn').addEventListener('click', openSetupWizard)", html)
         self.assertIn("button.disabled = state.busy;", html)
-        self.assertIn("HANDOVER TO USER 1", html)
-        self.assertIn("HANDOVER TO USER 2", html)
         self.assertIn("function handoverButtonLabel(userId, user)", html)
-        self.assertIn("button.textContent = ready ? handoverButtonLabel(button.dataset.switchGo, user)", html)
-        self.assertIn(": `SET UP ${button.dataset.switchGo === 'user1' ? 'USER 1' : 'USER 2'}`", html)
+        self.assertIn("return {text: 'Handover'", html)
+        self.assertIn("button.textContent = label.text;", html)
+        self.assertIn("button.textContent = 'Set up';", html)
+        self.assertIn("aria: `Set up ${setupTarget}`", html)
+        self.assertNotIn("HANDOVER TO USER 1", html)
+        self.assertNotIn("HANDOVER TO USER 2", html)
         self.assertNotIn("GO / Switch", html)
 
     def test_test_mode_has_visible_lifecycle_and_restore_controls(self):
@@ -814,7 +816,7 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("User 1 needs ${missingUser1.join(', ')}", html)
         self.assertIn("User 2 needs ${missingUser2.join(', ')}", html)
         self.assertIn("$('registerUser2FinishBtn').dataset.missingFields = registrationMissingFields('user2').join(', ');", html)
-        self.assertIn("$('registerUser2FinishBtn').disabled = state.busy || !storedUserReady('user1') || !registrationFieldReady('user2');", html)
+        self.assertIn("$('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');", html)
 
     def test_main_screen_orders_controls_left_to_right_by_workflow(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")

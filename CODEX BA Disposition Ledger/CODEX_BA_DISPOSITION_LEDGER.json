@@ -1,7 +1,7 @@
 {
   "schema_version": "CODEX_BA_DISPOSITION_LEDGER_v1",
   "created_at": "2026-05-03T20:55:00-07:00",
-  "updated_at": "2026-05-04T00:45:00-07:00",
+  "updated_at": "2026-05-04T00:00:00-07:00",
   "purpose": "Human/Codex disposition layer for BA findings. Raw BA reports stay unchanged; this file records investigated meaning and recommended action.",
   "source_report": "C:\\panda-gallery\\workflows\\design\\applets\\ba_audit_latest.json",
   "app_aliases": {
@@ -97,58 +97,7 @@
       "recommended_next_action": "No immediate app-code action. Runtime probe could verify checked-state visibility later."
     },
     {
-      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0006",
-      "app": "Vellum",
-      "ba_target": "PG Design Ledger",
-      "original_status": "warn",
-      "scanner": "pg_design_lint",
-      "disposition": "cleanup_candidate",
-      "confidence": "high",
-      "reviewed_by": "Codex",
-      "reviewed_at": "2026-05-03T20:55:00-07:00",
-      "evidence_reviewed": [
-        "panda_ledger/browse/trace_view.py:48"
-      ],
-      "reason": "2px spacing is a real lint hit against the PG spacing scale, but it is low-risk visual polish rather than an urgent behavior bug.",
-      "recommended_next_action": "Include in a small future Vellum style cleanup spec."
-    },
-    {
-      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0015/0016",
-      "app": "Vellum",
-      "ba_target": "PG Design Ledger",
-      "original_status": "warn",
-      "scanner": "pg_design_lint",
-      "disposition": "cleanup_candidate",
-      "confidence": "high",
-      "reviewed_by": "Codex",
-      "reviewed_at": "2026-05-03T20:55:00-07:00",
-      "evidence_reviewed": [
-        "panda_ledger/capture/qa_pair_widget.py:59"
-      ],
-      "reason": "6px margins are real lint hits against the PG spacing scale, duplicated by the scanner. Low-risk style cleanup.",
-      "recommended_next_action": "Include in a small future Vellum style cleanup spec; dedupe repeated BA rows if possible."
-    },
-    {
-      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0024/0025/0026/0027",
-      "app": "Vellum",
-      "ba_target": "PG Design Ledger",
-      "original_status": "warn",
-      "scanner": "pg_design_lint",
-      "disposition": "cleanup_candidate",
-      "confidence": "high",
-      "reviewed_by": "Codex",
-      "reviewed_at": "2026-05-03T20:55:00-07:00",
-      "evidence_reviewed": [
-        "panda_ledger/styles.py:141",
-        "panda_ledger/styles.py:145",
-        "panda_ledger/styles.py:158",
-        "panda_ledger/styles.py:162"
-      ],
-      "reason": "5px scrollbar radius values are real lint hits against the PG radius scale, but not urgent behavior issues.",
-      "recommended_next_action": "Include in a small future Vellum style cleanup spec."
-    },
-    {
-      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0009/0021/0022",
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0008/0018/0019",
       "app": "Vellum",
       "ba_target": "PG Design Ledger",
       "original_status": "warn",
@@ -163,10 +112,11 @@
         "panda_ledger/styles.py:40"
       ],
       "reason": "Findings point at a docstring/comment and centralized color token fallbacks. This looks like rule locality overreach unless the Design Bible forbids central token definitions.",
-      "recommended_next_action": "No app-code action now. Improve lint rule locality/context handling or document token-definition allowance."
+      "recommended_next_action": "No app-code action now. Improve lint rule locality/context handling or document token-definition allowance.",
+      "machine_match_note": "Updated after Vellum cleanup shifted BA lint row IDs; evidence paths remain the same."
     },
     {
-      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0023/0029/0030",
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0020/0022/0023",
       "app": "Vellum",
       "ba_target": "PG Design Ledger",
       "original_status": "warn",
@@ -183,7 +133,8 @@
         "panda_ledger/styles.py:769"
       ],
       "reason": "BA/lint is seeing generated QSS placeholders such as ui_family and mono_family. Those resolve from design spec typography defaults; this is likely scanner context loss rather than a confirmed app defect.",
-      "recommended_next_action": "No app-code action now. Improve lint scanner to resolve or exempt generated stylesheet variables."
+      "recommended_next_action": "No app-code action now. Improve lint scanner to resolve or exempt generated stylesheet variables.",
+      "machine_match_note": "Updated after Vellum cleanup shifted BA lint row IDs; evidence paths remain the same."
     },
     {
       "finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
@@ -202,7 +153,7 @@
       "recommended_next_action": "Add PySide workflow metadata or runtime layout probe later if Vellum workflow order must be gated."
     },
     {
-      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0006/0007/0009/0010/0011/0012/0013/0014/0015/0016/0017/0021/0024/0025/0026/0027/0028/0029",
       "app": "Vellum",
       "ba_target": "PG Design Ledger",
       "original_status": "unknown",
@@ -216,7 +167,7 @@
       ],
       "reason": "Informational lint rows are not actionable defects without a specific violated rule and approved target behavior.",
       "recommended_next_action": "Leave as coverage/context notes unless a future Vellum cleanup spec promotes specific rows.",
-      "machine_match_note": "Expanded from R09/R11/R19 info-group shorthand to exact BA lint IDs emitted by PG Design Ledger/Vellum BA report."
+      "machine_match_note": "Updated after Vellum cleanup shifted BA lint row IDs; this exact slash group matches current R09/R11/R19 info rows."
     },
     {
       "finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
@@ -280,6 +231,84 @@
       "reason": "PAH reports 14 open-on-agent threads and 0 owner-unknown threads. This is a real operational communication backlog to reconcile through protocol replies/archive state, not a PAH app-code bug.",
       "recommended_next_action": "Operational follow-up: reconcile the backlog through PAH-visible replies or Codex/PAH reconciliation before code changes.",
       "machine_match_note": "Exact PAH runtime warning for protocol.communication_backlog."
+    },
+    {
+      "finding_id": "BA-WORKFLOW-ORDER-PANDA-AGENT-HUB-0001",
+      "app": "Panda Agent Hub",
+      "ba_target": "Panda Agent Hub",
+      "original_status": "unknown",
+      "scanner": "workflow_order_static",
+      "disposition": "coverage_gap",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-04T00:55:00-07:00",
+      "evidence_reviewed": [
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html",
+        "BA report detail: html_controls=81",
+        "BA coverage matrix BIBLE-COV-009: covered_static_when_marked"
+      ],
+      "reason": "BA found 81 PAH HTML controls but no data-pg-order-group/data-pg-order markers, so it cannot statically prove Design Bible §1.7 workflow order. Investigation found no PAH-specific requirement that those markers already exist and no evidence of visible order breakage.",
+      "recommended_next_action": "No PAH app-code action now. Treat as coverage gap/scanner limitation unless PAH workflow-order proof becomes a release gate; then add explicit markers or a runtime geometry/order probe.",
+      "machine_match_note": "Exact PAH workflow-order unknown for missing HTML order markers."
+    }
+  ],
+  "resolved_entries": [
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0006",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "fixed",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/browse/trace_view.py:48"
+      ],
+      "reason": "2px spacing is a real lint hit against the PG spacing scale, but it is low-risk visual polish rather than an urgent behavior bug.",
+      "recommended_next_action": "Include in a small future Vellum style cleanup spec.",
+      "fixed_at": "2026-05-04T00:00:00-07:00",
+      "fix_summary": "Vellum cleanup applied approved PG spacing/radius scale values; BA no longer emits these cleanup warnings."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0015/0016",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "fixed",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/capture/qa_pair_widget.py:59"
+      ],
+      "reason": "6px margins are real lint hits against the PG spacing scale, duplicated by the scanner. Low-risk style cleanup.",
+      "recommended_next_action": "Include in a small future Vellum style cleanup spec; dedupe repeated BA rows if possible.",
+      "fixed_at": "2026-05-04T00:00:00-07:00",
+      "fix_summary": "Vellum cleanup applied approved PG spacing/radius scale values; BA no longer emits these cleanup warnings."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0024/0025/0026/0027",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "fixed",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/styles.py:141",
+        "panda_ledger/styles.py:145",
+        "panda_ledger/styles.py:158",
+        "panda_ledger/styles.py:162"
+      ],
+      "reason": "5px scrollbar radius values are real lint hits against the PG radius scale, but not urgent behavior issues.",
+      "recommended_next_action": "Include in a small future Vellum style cleanup spec.",
+      "fixed_at": "2026-05-04T00:00:00-07:00",
+      "fix_summary": "Vellum cleanup applied approved PG spacing/radius scale values; BA no longer emits these cleanup warnings."
     }
   ]
 }

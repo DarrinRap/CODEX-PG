@@ -74,20 +74,20 @@ The setup and hub flow:
 - keeps the Working Tree panel usable before setup is complete, with scan controls that remain reachable and a scan summary area that can scroll instead of clipping repository status;
 - keeps Working Tree Browse, Scan repository, and Packages controls visually separated: the repository path picker owns its own row, Scan repository and Packages occupy separate action columns, and narrow screens stack them rather than letting buttons touch;
 - supports Escape as a recovery key after scan/status interactions by clearing stuck focus and returning scrollable Working Tree and Status regions to the top;
-- requires User 1 registration first;
-- requires User 2 registration second;
+- presents User 1 and User 2 registration together on the same setup screen;
+- lets either user's registration action become activatable when that user's required fields are ready;
 - opens the Collaborator Hub after both users are registered;
-- shows explicit HANDOVER TO USER 1 and HANDOVER TO USER 2 action buttons in the Hub;
+- shows a visible Handover action button on each Hub user card, with a target-specific aria label such as `Handover to User 1`, `Handover to User 2`, or `Handover to {display_name}`;
 - keeps a persistent Setup Users / Handover Users button in the header so the handover workflow is never hidden in a side panel;
 - keeps Collaborator Hub user-card buttons clickable before setup is complete, using them to guide the user into setup instead of presenting dead disabled controls;
-- makes HANDOVER TO USER 1 / HANDOVER TO USER 2 automate the full handover process: save active user, apply that user's defaults, update the theme, and scan the repository;
+- makes each Hub Handover button automate the full handover process for its target user: save active user, apply that user's defaults, update the theme, and scan the repository;
 - shows the active user's custom name in large uppercase text at the top of the screen;
 - uses clearly different complementary color themes for User 1 and User 2;
 - follows the PANDA-wide workflow rule without duplicating text: the five left-to-right workflow panels are the visible step guide, use arrow separators in their headers, and visually mark state with semantic header colors: user/current accent for the active step, yellow for pending, green for ready/done, and muted treatment for locked future steps;
 - keeps User 1 and User 2 registration side by side on one screen, so the user can compare names, colors, repository defaults, account labels, Claude paths, and Git identity without a surprise page jump;
 - keeps the setup wizard visually compact but wide enough for the paired forms: the Project Files Tracker row spans the dialog, User 1 and User 2 occupy equal columns on desktop, and the layout collapses to one column on small screens;
 - keeps the setup wizard body scrollable so all required User 1 and User 2 fields remain reachable on smaller or zoomed viewports;
-- saves User 1 in place and leaves User 2 visible on the same setup screen; User 2 registration must become activatable only after User 1 is stored and User 2's required fields are ready;
+- saves each user in place and leaves both user forms visible on the same setup screen; User 1 and User 2 registration actions must each become activatable when that user's own required fields are ready;
 - groups registration inputs into readable Profile and Accounts/tools/Git sections instead of presenting one unstructured slab of fields;
 - names missing required registration fields in the setup footer and on disabled registration action tooltips so a user can tell why User 1 or User 2 cannot yet be registered;
 - keeps User 1 and User 2 identity colors independent from the currently active workstation user: User 1 registration/workflow surfaces stay warm amber and User 2 registration/workflow surfaces stay cool cyan even when the other user is active in the header;
@@ -171,7 +171,7 @@ The control center must stay safety-first. It may automate safe reading, scannin
 PANDA must visually separate passive information from user actions.
 
 - Information/status values must render as passive rounded pill chips. Examples: ready, idle, safe, branch, no repo, not scanned, counts, safety labels, active user labels, and other state-only indicators.
-- Action controls must render as squared or lightly rectangular buttons. Examples: HANDOVER TO USER 1, HANDOVER TO USER 2, Register, Browse, Scan repo, Start Session, Create safe handoff, Save Message, Search, Preview restore safety, and setup navigation.
+- Action controls must render as squared or lightly rectangular buttons. Examples: Handover, Register, Browse, Scan repo, Start Session, Create safe handoff, Save Message, Search, Preview restore safety, and setup navigation.
 - A pill must never perform work when clicked. If an element performs work, changes state, opens a picker, switches a user, saves data, scans, or creates a package, it must be a rectangular action button.
 - Disabled future actions may be visually dimmed or locked, but they must retain action-button shape so the user can tell they are unavailable commands, not passive information.
 - Tabs and segmented controls are still actions; keep them rectangular even when compact.
@@ -195,7 +195,7 @@ Completion language must be evidence-based: name the applet, tests, and visual r
 
 ### Start Session Workflow
 
-The app must provide a clear Start Session flow after a user presses HANDOVER TO USER 1 or HANDOVER TO USER 2.
+The app must provide a clear Start Session flow after a user presses a Hub Handover button for User 1 or User 2.
 
 The workflow should automate as much as possible:
 
