@@ -1,7 +1,7 @@
 {
   "schema_version": "CODEX_BA_DISPOSITION_LEDGER_v1",
   "created_at": "2026-05-03T20:55:00-07:00",
-  "updated_at": "2026-05-03T23:15:00-07:00",
+  "updated_at": "2026-05-04T00:45:00-07:00",
   "purpose": "Human/Codex disposition layer for BA findings. Raw BA reports stay unchanged; this file records investigated meaning and recommended action.",
   "source_report": "C:\\panda-gallery\\workflows\\design\\applets\\ba_audit_latest.json",
   "app_aliases": {
@@ -217,6 +217,69 @@
       "reason": "Informational lint rows are not actionable defects without a specific violated rule and approved target behavior.",
       "recommended_next_action": "Leave as coverage/context notes unless a future Vellum cleanup spec promotes specific rows.",
       "machine_match_note": "Expanded from R09/R11/R19 info-group shorthand to exact BA lint IDs emitted by PG Design Ledger/Vellum BA report."
+    },
+    {
+      "finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+      "app": "Panda Agent Hub",
+      "ba_target": "Panda Agent Hub",
+      "original_status": "warn",
+      "scanner": "action_feedback_static",
+      "disposition": "investigated_no_action",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-04T00:45:00-07:00",
+      "evidence_reviewed": [
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:2592",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:3092",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:3097",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:3606",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:4420",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:4552",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:5054",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:5139",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:5177",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:5190",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:5212",
+        "CODEX Agent Hub/CODEX_agent_hub_ui.html:5278"
+      ],
+      "reason": "Each warning has click wiring and trace evidence of user-visible feedback through setNotice, render, panel visibility/loading, local handling state, button disabled/text updates, confirmation dialogs, or refreshed cockpit data. BA's static action-feedback scanner remains conservative for indirect feedback paths.",
+      "recommended_next_action": "No PAH app-code action. Treat as investigated scanner limitation; improve BA feedback tracing if these indirect UI feedback patterns need automatic proof.",
+      "machine_match_note": "Slash group matches the current PAH action-feedback warning IDs after BA scanner false-positive cleanup."
+    },
+    {
+      "finding_id": "BA-RUNTIME-PANDA-AGENT-HUB-0017",
+      "app": "Panda Agent Hub",
+      "ba_target": "Panda Agent Hub",
+      "original_status": "warn",
+      "scanner": "runtime_check_pack",
+      "disposition": "investigated_no_action",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-04T00:45:00-07:00",
+      "evidence_reviewed": [
+        "CODEX Agent Hub/CODEX logs/CODEX_pah_inspector_latest.json",
+        "C:\\panda-gallery\\workflows\\cc_mailbox\\_state\\active_dispatch.json"
+      ],
+      "reason": "PAH correctly reports that the CC progress card is present but active_dispatch.json is absent, so CC activity can only be shown as idle. This is an operational/environment state, not a confirmed PAH app defect.",
+      "recommended_next_action": "No PAH app-code action. Have the CC sidecar writer create active_dispatch.json before treating CC activity as live-monitored.",
+      "machine_match_note": "Exact PAH runtime warning for endpoint.cc_active_dispatch_sidecar_readiness."
+    },
+    {
+      "finding_id": "BA-RUNTIME-PANDA-AGENT-HUB-0043",
+      "app": "Panda Agent Hub",
+      "ba_target": "Panda Agent Hub",
+      "original_status": "warn",
+      "scanner": "runtime_check_pack",
+      "disposition": "parked",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-04T00:45:00-07:00",
+      "evidence_reviewed": [
+        "CODEX Agent Hub/CODEX logs/CODEX_pah_inspector_latest.json"
+      ],
+      "reason": "PAH reports 14 open-on-agent threads and 0 owner-unknown threads. This is a real operational communication backlog to reconcile through protocol replies/archive state, not a PAH app-code bug.",
+      "recommended_next_action": "Operational follow-up: reconcile the backlog through PAH-visible replies or Codex/PAH reconciliation before code changes.",
+      "machine_match_note": "Exact PAH runtime warning for protocol.communication_backlog."
     }
   ]
 }

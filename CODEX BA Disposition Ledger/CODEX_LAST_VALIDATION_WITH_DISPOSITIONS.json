@@ -31,7 +31,7 @@
       "category": "scope",
       "evidence": [],
       "id": "BA-VAL-SCOPE-0001",
-      "message": "Validated single-target report for PG Design Ledger.",
+      "message": "Validated single-target report for Panda Agent Hub.",
       "recommendation": "",
       "status": "pass",
       "title": "Exactly one selected target"
@@ -49,7 +49,7 @@
       "category": "totals",
       "evidence": [],
       "id": "BA-VAL-TOTALS-0001",
-      "message": "Validated 66 check row(s).",
+      "message": "Validated 101 check row(s).",
       "recommendation": "",
       "status": "pass",
       "title": "Status totals match checks"
@@ -111,17 +111,17 @@
     {
       "category": "runtime",
       "evidence": [],
-      "id": "BA-VAL-RUNTIME-NA-0001",
-      "message": "No runtime adapter trust claim for PG Design Ledger.",
+      "id": "BA-VAL-RUNTIME-PAH-0001",
+      "message": "Validated 44 PAH Inspector runtime row(s); inspector URL is http://127.0.0.1:8765.",
       "recommendation": "",
       "status": "pass",
-      "title": "Runtime trust not applicable"
+      "title": "PAH runtime check pack maps to inspector evidence"
     },
     {
       "category": "freshness",
       "evidence": [],
       "id": "BA-VAL-FRESHNESS-0001",
-      "message": "Age 0.1h is within 24.0h warn threshold.",
+      "message": "Age 0.2h is within 24.0h warn threshold.",
       "recommendation": "",
       "status": "pass",
       "title": "Report age within policy"
@@ -139,7 +139,7 @@
       "category": "report_text",
       "evidence": [],
       "id": "BA-VAL-REPORTTEXT-0002",
-      "message": "2 fail / 15 warn / 35 unknown / 14 evidenced",
+      "message": "0 fail / 19 warn / 1 unknown / 81 evidenced",
       "recommendation": "",
       "status": "pass",
       "title": "Report text totals match JSON totals"
@@ -148,419 +148,189 @@
       "category": "history",
       "evidence": [],
       "id": "BA-VAL-HISTORY-0001",
-      "message": "Latest/progress/history target metadata agree.",
+      "message": "progress target_app mismatch",
       "recommendation": "",
-      "status": "pass",
-      "title": "Persistent artifact chain valid"
+      "status": "fail",
+      "title": "Persistent artifact chain invalid"
     }
   ],
   "dispatch_path": "",
   "disposition_overlay": {
     "active_remaining": {
-      "cleanup_candidates": 7,
+      "cleanup_candidates": 0,
       "confirmed_issues": 0,
       "unreviewed_fails": 0,
-      "unreviewed_unknowns": 0,
+      "unreviewed_unknowns": 1,
       "unreviewed_warnings": 0
     },
-    "entries_applied": 11,
-    "entries_loaded": 11,
+    "entries_applied": 3,
+    "entries_loaded": 14,
     "finding_dispositions": {
-      "BA-ACTION-PG-DESIGN-LEDGER-0001": {
+      "BA-ACTION-PANDA-AGENT-HUB-0006": {
         "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0001",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0007": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0009": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0017": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0018": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0019": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0026": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0027": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0028": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0029": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0030": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0031": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0032": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0033": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0046": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0048": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-ACTION-PANDA-AGENT-HUB-0050": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-ACTION-PANDA-AGENT-HUB-0006/0007/0009/0017/0018/0019/0026/0027/0028/0029/0030/0031/0032/0033/0046/0048/0050",
+        "match_type": "slash_group",
+        "stale": false
+      },
+      "BA-RUNTIME-PANDA-AGENT-HUB-0017": {
+        "disposition": "investigated_no_action",
+        "entry_finding_id": "BA-RUNTIME-PANDA-AGENT-HUB-0017",
         "match_type": "exact",
         "stale": false
       },
-      "BA-ACTION-PG-DESIGN-LEDGER-0002": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0002",
+      "BA-RUNTIME-PANDA-AGENT-HUB-0043": {
+        "disposition": "parked",
+        "entry_finding_id": "BA-RUNTIME-PANDA-AGENT-HUB-0043",
         "match_type": "exact",
-        "stale": false
-      },
-      "BA-ACTION-PG-DESIGN-LEDGER-0008": {
-        "disposition": "false_positive",
-        "entry_finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0008",
-        "match_type": "exact",
-        "stale": false
-      },
-      "BA-ACTION-PG-DESIGN-LEDGER-0009": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0009",
-        "match_type": "exact",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0001": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0002": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0003": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0004": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0005": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0006": {
-        "disposition": "cleanup_candidate",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0006",
-        "match_type": "exact",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0007": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0008": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0009": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0009/0021/0022",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0010": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0011": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0012": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0013": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0014": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0015": {
-        "disposition": "cleanup_candidate",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0015/0016",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0016": {
-        "disposition": "cleanup_candidate",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0015/0016",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0017": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0018": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0019": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0020": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0021": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0009/0021/0022",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0022": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0009/0021/0022",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0023": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0023/0029/0030",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0024": {
-        "disposition": "cleanup_candidate",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0024/0025/0026/0027",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0025": {
-        "disposition": "cleanup_candidate",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0024/0025/0026/0027",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0026": {
-        "disposition": "cleanup_candidate",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0024/0025/0026/0027",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0027": {
-        "disposition": "cleanup_candidate",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0024/0025/0026/0027",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0028": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0029": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0023/0029/0030",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0030": {
-        "disposition": "investigated_no_action",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0023/0029/0030",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0031": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0032": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0033": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0034": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0035": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-LINT-PG-DESIGN-LEDGER-0036": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
-        "match_type": "slash_group",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0001": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0002": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0003": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0004": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0005": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0006": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0007": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0008": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0009": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0010": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0011": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
-        "stale": false
-      },
-      "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0012": {
-        "disposition": "coverage_gap",
-        "entry_finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
-        "match_type": "wildcard",
         "stale": false
       }
     },
-    "findings_covered": 52,
+    "findings_covered": 19,
     "ledger_schema_version": "CODEX_BA_DISPOSITION_LEDGER_v1",
     "note": "Raw BA report counts and validation verdict are unchanged; this is a review overlay for triage.",
     "raw_counts": {
-      "fail": 2,
-      "pass": 14,
-      "unknown": 35,
-      "warn": 15
+      "fail": 0,
+      "pass": 81,
+      "unknown": 1,
+      "warn": 19
     },
     "reviewed": {
       "accepted_risk": 0,
-      "coverage_gap": 35,
-      "false_positive": 1,
+      "coverage_gap": 0,
+      "false_positive": 0,
       "fixed": 0,
-      "investigated_no_action": 9,
-      "parked": 0
+      "investigated_no_action": 18,
+      "parked": 1
     },
     "schema_version": "BA_DISPOSITION_OVERLAY_v1",
     "stale_dispositions": 0,
-    "target_app": "PG Design Ledger",
-    "unmatched_entries": 0
+    "target_app": "Panda Agent Hub",
+    "unmatched_entries": 11
   },
   "finding_disposition_requirements": {
-    "BA-ACTION-PG-DESIGN-LEDGER-0001": "heuristic_requires_trace",
-    "BA-ACTION-PG-DESIGN-LEDGER-0002": "heuristic_requires_trace",
-    "BA-ACTION-PG-DESIGN-LEDGER-0008": "heuristic_requires_trace",
-    "BA-ACTION-PG-DESIGN-LEDGER-0009": "heuristic_requires_trace",
-    "BA-LINT-PG-DESIGN-LEDGER-0001": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0002": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0003": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0004": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0005": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0006": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0007": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0008": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0009": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0010": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0011": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0012": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0013": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0014": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0015": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0016": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0017": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0018": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0019": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0020": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0021": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0022": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0023": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0024": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0025": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0026": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0027": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0028": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0029": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0030": "likely_current",
-    "BA-LINT-PG-DESIGN-LEDGER-0031": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0032": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0033": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0034": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0035": "coverage_gap",
-    "BA-LINT-PG-DESIGN-LEDGER-0036": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0001": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0002": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0003": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0004": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0005": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0006": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0007": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0008": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0009": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0010": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0011": "coverage_gap",
-    "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-0012": "coverage_gap"
+    "BA-ACTION-PANDA-AGENT-HUB-0006": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0007": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0009": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0017": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0018": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0019": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0026": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0027": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0028": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0029": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0030": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0031": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0032": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0033": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0046": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0048": "heuristic_requires_trace",
+    "BA-ACTION-PANDA-AGENT-HUB-0050": "heuristic_requires_trace",
+    "BA-RUNTIME-PANDA-AGENT-HUB-0017": "confirmed_current",
+    "BA-RUNTIME-PANDA-AGENT-HUB-0043": "confirmed_current",
+    "BA-WORKFLOW-ORDER-PANDA-AGENT-HUB-0001": "coverage_gap"
   },
-  "generated_at": "2026-05-03T23:11:05-07:00",
+  "generated_at": "2026-05-04T00:11:25-07:00",
   "limitations": [
     "Structural validation does not prove findings are still current unless reproduction is requested.",
     "Static action-feedback findings remain heuristic until handler trace or runtime confirmation."
   ],
-  "report_path": "workflows\\design\\applets\\ba_audit_latest.json",
+  "report_path": "C:\\panda-gallery\\workflows\\design\\applets\\ba_audit_latest.json",
   "reproduction": {
     "status": "not_requested"
   },
@@ -569,11 +339,11 @@
   "summary": {
     "blocked": 0,
     "drift": 0,
-    "errors": 0,
-    "infos": 17,
+    "errors": 1,
+    "infos": 16,
     "warnings": 0
   },
-  "target_app": "PG Design Ledger",
+  "target_app": "Panda Agent Hub",
   "validation_profile": "structural",
-  "validation_verdict": "report_trusted_with_findings"
+  "validation_verdict": "diagnostic_only"
 }
