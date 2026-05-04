@@ -606,4 +606,38 @@ Do not revert or delete it unless Darrin explicitly asks.
 
 Relay files were not touched in this calibration package.
 
+---
+
+## Chat 19 Pytest Teardown Fix Addendum
+
+Codex fixed the Windows/PySide pytest teardown crash that previously forced the BA calibration commit to use `--no-verify`.
+
+Panda Gallery commit:
+
+- `fb34dc8 Fix pytest Qt teardown crash`
+- Pushed to `origin/main` at `https://github.com/DarrinRap/PANDA-Gallery.git`
+
+Changed files:
+
+- `C:\panda-gallery\pytest.ini`
+- `C:\panda-gallery\tests\conftest.py`
+
+Technical summary:
+
+- Root `pytest.ini` now disables pytest's `unraisableexception` plugin with `-p no:unraisableexception`.
+- `tests\conftest.py` no longer forces explicit `gc.collect()` loops or `QApplication.deleteLater()` during `pytest_unconfigure`.
+- Reason: the suite reached 100%, then crashed during explicit/pytest-forced garbage collection of Qt wrappers. Letting Python/Qt unwind naturally is stable on this repo.
+
+Verification:
+
+- Reproduced old failure with plain `python -m pytest -q`: suite reached 100%, then crashed at `tests\conftest.py:62`.
+- Isolated root cause with `python -m pytest -q -p no:unraisableexception`: `1236 passed, 1 skipped`.
+- After fix, plain `python -m pytest -q` passed: `1236 passed, 1 skipped`.
+- Actual pre-commit gate passed during commit `fb34dc8`: `1236 passed, 1 skipped`; `pre-commit: all checks passed.`
+
+Current Panda Gallery state after push:
+
+- `main...origin/main`
+- Latest commit: `fb34dc8 Fix pytest Qt teardown crash`
+
 
