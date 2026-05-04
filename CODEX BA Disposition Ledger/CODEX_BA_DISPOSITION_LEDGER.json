@@ -1,0 +1,222 @@
+{
+  "schema_version": "CODEX_BA_DISPOSITION_LEDGER_v1",
+  "created_at": "2026-05-03T20:55:00-07:00",
+  "updated_at": "2026-05-03T23:15:00-07:00",
+  "purpose": "Human/Codex disposition layer for BA findings. Raw BA reports stay unchanged; this file records investigated meaning and recommended action.",
+  "source_report": "C:\\panda-gallery\\workflows\\design\\applets\\ba_audit_latest.json",
+  "app_aliases": {
+    "PG Design Ledger": "Vellum"
+  },
+  "disposition_values": [
+    "new",
+    "investigating",
+    "confirmed_issue",
+    "false_positive",
+    "coverage_gap",
+    "investigated_no_action",
+    "parked",
+    "fixed",
+    "accepted_risk",
+    "cleanup_candidate"
+  ],
+  "entries": [
+    {
+      "finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0001",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "fail",
+      "scanner": "action_feedback_static",
+      "disposition": "investigated_no_action",
+      "confidence": "medium",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/browse/browse_screen.py:69",
+        "panda_ledger/browse/browse_screen.py:74",
+        "panda_ledger/browse/browse_screen.py:82",
+        "panda_ledger/browse/browse_screen.py:88",
+        "panda_ledger/browse/browse_screen.py:92"
+      ],
+      "reason": "BA saw filter controls but nearby source shows combo boxes and checkbox connect to refresh handlers. Static scanner cannot prove visible runtime feedback, but no urgent app defect was confirmed.",
+      "recommended_next_action": "No app-code action now. Add a future PySide runtime/action-feedback adapter if Vellum feedback needs proof."
+    },
+    {
+      "finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0008",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "fail",
+      "scanner": "action_feedback_static",
+      "disposition": "false_positive",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/styles.py:203",
+        "panda_ledger/styles.py:204"
+      ],
+      "reason": "BA matched QPushButton inside generated QSS stylesheet text, not actual runtime button construction. This is scanner noise.",
+      "recommended_next_action": "Improve BA action scanner to ignore QSS/style template blocks; no Vellum app-code fix."
+    },
+    {
+      "finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0002",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "action_feedback_static",
+      "disposition": "investigated_no_action",
+      "confidence": "medium",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/capture/_capture_widgets.py:204",
+        "panda_ledger/capture/_capture_widgets.py:207",
+        "panda_ledger/capture/_capture_widgets.py:248",
+        "panda_ledger/capture/_capture_widgets.py:256"
+      ],
+      "reason": "Collapsible section header button is wired to toggle body visibility and chevron state. BA cannot prove runtime perception from static scan, but behavior evidence is present.",
+      "recommended_next_action": "No immediate app-code action. Consider runtime click probe only if this UI becomes a release gate."
+    },
+    {
+      "finding_id": "BA-ACTION-PG-DESIGN-LEDGER-0009",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "action_feedback_static",
+      "disposition": "investigated_no_action",
+      "confidence": "medium",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/verify/checklist_widget.py:269",
+        "panda_ledger/verify/checklist_widget.py:272",
+        "panda_ledger/verify/checklist_widget.py:273",
+        "panda_ledger/verify/checklist_widget.py:313",
+        "panda_ledger/verify/checklist_widget.py:320"
+      ],
+      "reason": "PASS/FAIL/SKIP buttons are checkable, exclusive, and emit result_changed. BA cannot prove visual styling/runtime feedback from static scan, but no defect was confirmed.",
+      "recommended_next_action": "No immediate app-code action. Runtime probe could verify checked-state visibility later."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0006",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "cleanup_candidate",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/browse/trace_view.py:48"
+      ],
+      "reason": "2px spacing is a real lint hit against the PG spacing scale, but it is low-risk visual polish rather than an urgent behavior bug.",
+      "recommended_next_action": "Include in a small future Vellum style cleanup spec."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0015/0016",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "cleanup_candidate",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/capture/qa_pair_widget.py:59"
+      ],
+      "reason": "6px margins are real lint hits against the PG spacing scale, duplicated by the scanner. Low-risk style cleanup.",
+      "recommended_next_action": "Include in a small future Vellum style cleanup spec; dedupe repeated BA rows if possible."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0024/0025/0026/0027",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "cleanup_candidate",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/styles.py:141",
+        "panda_ledger/styles.py:145",
+        "panda_ledger/styles.py:158",
+        "panda_ledger/styles.py:162"
+      ],
+      "reason": "5px scrollbar radius values are real lint hits against the PG radius scale, but not urgent behavior issues.",
+      "recommended_next_action": "Include in a small future Vellum style cleanup spec."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0009/0021/0022",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "investigated_no_action",
+      "confidence": "medium",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/capture/_dark_dialogs.py:42",
+        "panda_ledger/styles.py:35",
+        "panda_ledger/styles.py:40"
+      ],
+      "reason": "Findings point at a docstring/comment and centralized color token fallbacks. This looks like rule locality overreach unless the Design Bible forbids central token definitions.",
+      "recommended_next_action": "No app-code action now. Improve lint rule locality/context handling or document token-definition allowance."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0023/0029/0030",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "warn",
+      "scanner": "pg_design_lint",
+      "disposition": "investigated_no_action",
+      "confidence": "medium",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "panda_ledger/styles.py:55",
+        "panda_ledger/styles.py:56",
+        "panda_ledger/styles.py:63",
+        "panda_ledger/styles.py:757",
+        "panda_ledger/styles.py:769"
+      ],
+      "reason": "BA/lint is seeing generated QSS placeholders such as ui_family and mono_family. Those resolve from design spec typography defaults; this is likely scanner context loss rather than a confirmed app defect.",
+      "recommended_next_action": "No app-code action now. Improve lint scanner to resolve or exempt generated stylesheet variables."
+    },
+    {
+      "finding_id": "BA-WORKFLOW-ORDER-PG-DESIGN-LEDGER-*",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "unknown",
+      "scanner": "workflow_order_static",
+      "disposition": "coverage_gap",
+      "confidence": "high",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "BA report unknown group: 12 PySide workflow order unproven rows"
+      ],
+      "reason": "BA cannot prove PySide workflow order from current static markers. Unknown means coverage gap, not confirmed defect.",
+      "recommended_next_action": "Add PySide workflow metadata or runtime layout probe later if Vellum workflow order must be gated."
+    },
+    {
+      "finding_id": "BA-LINT-PG-DESIGN-LEDGER-0001/0002/0003/0004/0005/0007/0008/0010/0011/0012/0013/0014/0017/0018/0019/0020/0028/0031/0032/0033/0034/0035/0036",
+      "app": "Vellum",
+      "ba_target": "PG Design Ledger",
+      "original_status": "unknown",
+      "scanner": "pg_design_lint",
+      "disposition": "coverage_gap",
+      "confidence": "medium",
+      "reviewed_by": "Codex",
+      "reviewed_at": "2026-05-03T20:55:00-07:00",
+      "evidence_reviewed": [
+        "BA report unknown groups: R19 info x18, R11 info x4, R09 info x1"
+      ],
+      "reason": "Informational lint rows are not actionable defects without a specific violated rule and approved target behavior.",
+      "recommended_next_action": "Leave as coverage/context notes unless a future Vellum cleanup spec promotes specific rows.",
+      "machine_match_note": "Expanded from R09/R11/R19 info-group shorthand to exact BA lint IDs emitted by PG Design Ledger/Vellum BA report."
+    }
+  ]
+}
