@@ -694,12 +694,13 @@ def inspect_internal_contracts(status_payload: dict[str, Any] | None = None) -> 
     return findings
 
 
-def parse_jsonl(path: Path, max_lines: int = 5000) -> list[dict[str, Any]]:
+def parse_jsonl(path: Path, max_lines: int | None = 5000) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    selected_lines = lines if max_lines is None else lines[-max_lines:]
     events: list[dict[str, Any]] = []
-    for line in lines[-max_lines:]:
+    for line in selected_lines:
         if not line.strip():
             continue
         try:
@@ -713,6 +714,7 @@ def parse_jsonl(path: Path, max_lines: int = 5000) -> list[dict[str, Any]]:
 def inspect_ledger() -> list[Finding]:
     findings: list[Finding] = []
     events = parse_jsonl(agent_hub.INTERACTION_LEDGER_PATH)
+    all_events = parse_jsonl(agent_hub.INTERACTION_LEDGER_PATH, max_lines=None)
     findings.append(
         check(
             bool(events),
@@ -750,21 +752,21 @@ def inspect_ledger() -> list[Finding]:
             recent_event_types=sorted(event_types),
         )
     )
-    recent_protocol = [
+    protocol_events = [
         event
-        for event in events
+        for event in all_events
         if str(event.get("thread_id", "")) == "PAH-MAILBOX-PROTOCOL-V3"
         and str(event.get("event_type", "")) == "message_sent"
     ]
     findings.append(
         check(
-            len(recent_protocol) >= 2,
+            len(protocol_events) >= 2,
             "ledger.protocol_v3_messages",
             "Protocol v3 message ledgering",
             "CD and CC protocol-v3 coordination messages are present in the ledger.",
-            "Expected protocol-v3 CD/CC messages were not found in recent ledger events.",
-            found=len(recent_protocol),
-            messages=[event.get("message_id", "") for event in recent_protocol[-4:]],
+            "Expected protocol-v3 CD/CC messages were not found in the ledger.",
+            found=len(protocol_events),
+            messages=[event.get("message_id", "") for event in protocol_events[-4:]],
         )
     )
     return findings

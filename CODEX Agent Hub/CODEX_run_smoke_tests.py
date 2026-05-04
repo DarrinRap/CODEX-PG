@@ -836,6 +836,50 @@ def test_inspector_freshness_component_exposes_report_timestamp() -> None:
                 setattr(agent_hub, key, value)
 
 
+def test_inspector_protocol_v3_ledger_check_uses_durable_history() -> None:
+    with TemporaryDirectory() as temp_dir:
+        ledger_path = Path(temp_dir) / "CODEX_pah_interaction_ledger.jsonl"
+        rows = [
+            {
+                "event_type": "message_sent",
+                "thread_id": "PAH-MAILBOX-PROTOCOL-V3",
+                "message_id": "PAH-PROTOCOL-V3-CD",
+            },
+            {
+                "event_type": "message_sent",
+                "thread_id": "PAH-MAILBOX-PROTOCOL-V3",
+                "message_id": "PAH-PROTOCOL-V3-CC",
+            },
+        ]
+        rows.extend(
+            {
+                "event_type": "classifier_state_changed",
+                "thread_id": f"PAH-NOISE-{index}",
+                "message_id": f"PAH-NOISE-{index}",
+            }
+            for index in range(5005)
+        )
+        rows.extend(
+            [
+                {"event_type": "message_sent", "thread_id": "PAH-RECENT", "message_id": "PAH-RECENT-SENT"},
+                {"event_type": "archive_read_sweep_started", "thread_id": "PAH-RECENT"},
+                {"event_type": "archive_read_sweep_finished", "thread_id": "PAH-RECENT"},
+                {"event_type": "steward_check_finished", "thread_id": "PAH-RECENT"},
+            ]
+        )
+        ledger_path.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n", encoding="utf-8")
+        original_path = agent_hub.INTERACTION_LEDGER_PATH
+        try:
+            agent_hub.INTERACTION_LEDGER_PATH = ledger_path
+            findings = {finding.check_id: finding for finding in inspector.inspect_ledger()}
+            assert_true(
+                findings["ledger.protocol_v3_messages"].status == "pass",
+                "Inspector finds durable protocol-v3 message_sent events outside the recent ledger window",
+            )
+        finally:
+            agent_hub.INTERACTION_LEDGER_PATH = original_path
+
+
 def test_health_payload_uses_snapshot_when_available() -> None:
     cockpit = agent_hub.cockpit_payload()
     assert_true(cockpit.get("mail_state_snapshot", {}).get("ok"), "snapshot exists before fast health")
@@ -3532,6 +3576,7 @@ def main() -> None:
     test_cockpit_payload_skips_message_quarantine_checks()
     test_health_payload_contract()
     test_inspector_freshness_component_exposes_report_timestamp()
+    test_inspector_protocol_v3_ledger_check_uses_durable_history()
     test_health_payload_uses_snapshot_when_available()
     test_periodic_health_monitor_summary_ignores_stale_failures()
     test_ready_payload_contract()
