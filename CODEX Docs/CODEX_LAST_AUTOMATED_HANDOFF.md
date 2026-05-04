@@ -1,6 +1,6 @@
 # CODEX Last Automated Handoff
 
-Generated: 2026-05-03 15:40:07 -07:00
+Generated: 2026-05-03 20:28:43 -07:00
 Mode: Handoff
 
 ## Current Git State
@@ -9,7 +9,7 @@ Mode: Handoff
 - GitHub repo: `https://github.com/DarrinRap/CODEX-PG.git`
 - Branch: `main`
 - Origin: `https://github.com/DarrinRap/CODEX-PG.git`
-- Indexed project file count, excluding .git: 5251
+- Indexed project file count, excluding .git: 5263
 
 ## Git Status
 
@@ -20,11 +20,11 @@ Mode: Handoff
 ## Recent Commits
 
 ```text
-d00c676 Add BA handoff addendum
-e855e71 CODEX backup 2026-05-03 15:26:06
-f604355 Add tester report roundtrip v1.1 spec
-912ab87 Archive PAH read mailbox cleanup
-d3b2a12 Fix PAH inspector launch refresh routes
+d89c659 Document Relay dirty state boundary
+a790e56 Document pytest teardown fix
+cef31e3 Document BA calibration validator handoff
+882b55f CODEX backup 2026-05-03 18:55:38
+871a659 CODEX backup 2026-05-03 18:38:23
 ```
 
 ## Fresh Chat Resume Prompt
@@ -47,7 +47,7 @@ Remember:
 - C:\panda-gallery is read-only reference only
 - Continue from the latest handoff
 
-Latest automated handoff generated: 2026-05-03 15:40:07 -07:00
+Latest automated handoff generated: 2026-05-03 20:28:43 -07:00
 ```
 
 ## Trigger Words
@@ -56,16 +56,3 @@ Latest automated handoff generated: 2026-05-03 15:40:07 -07:00
 - CODEX CHECKPOINT: save a progress checkpoint plus GitHub backup.
 - CODEX BACKUP: run GitHub backup only.
 - CODEX RESUME PG: start a new chat from memory and handoff files.
-
-## Manual Note After Chat 19 BA Push
-
-Added: 2026-05-03 15:40 -07:00
-
-The generic resume prompt still says `C:\panda-gallery` is read-only reference only. For the completed BA exception, read the `Chat 18 BA Handoff Addendum` in `C:\CODEX PG\CODEX Docs\CODEX_CURRENT_HANDOFF.md`.
-
-Current exception status:
-
-- BA commit `84273fd Fix Bible Audit compact UX` was pushed to `origin https://github.com/DarrinRap/PANDA-Gallery.git`.
-- Fresh Chat 19 BA verification passed: `0 fail / 0 warn / 0 unknown / 121 evidenced`, `100%` evidence score.
-- Pre-commit verification passed: `1175 passed, 1 skipped`.
-- Remaining `C:\panda-gallery` dirty files are unrelated Relay/Tracker/support files and must not be touched without explicit Darrin authorization.
