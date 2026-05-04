@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC redesign · Package Inspector (read-only) · 4 states</title>
+<style>
+:root{
+  --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-2:#22223a; --pane-sel:#2a2a4e;
+  --border:#2a2a3e; --border-soft:#232336; --border-hover:#3a3a4e;
+  --text:#e0ddd5; --muted:#888888; --dim:#555555;
+  --accent:#e8a87c; --accent-soft:rgba(232,168,124,0.14); --accent-border:rgba(232,168,124,0.45);
+  --ok:#7fb069; --ok-soft:rgba(127,176,105,0.14); --ok-border:rgba(127,176,105,0.45);
+  --warn:#f39c12; --warn-soft:rgba(243,156,18,0.14); --warn-border:rgba(243,156,18,0.45);
+  --err:#e74c3c; --err-soft:rgba(231,76,60,0.14); --err-border:rgba(231,76,60,0.45);
+  --user1:#f2b36d; --user2:#5fa0a8;
+  --ui:"Segoe UI","SF Pro","Noto Sans",system-ui,sans-serif;
+  --mono:"Cascadia Mono","Consolas",monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+.doc-head .annot-block{margin-top:12px; padding:12px 14px; background:var(--pane-2); border-left:3px solid var(--ok); color:var(--muted); font-size:12px; line-height:1.5}
+.doc-head .annot-block b{color:var(--text)}
+
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column; font-family:var(--ui);
+}
+
+.pc-header{
+  display:flex; align-items:center; gap:18px; padding:10px 18px;
+  background:var(--chrome); border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.pc-header .brand{font-size:13px; font-weight:600; color:var(--text)}
+.pc-header .view-tag{
+  font-family:var(--ui); font-size:13px; font-weight:600; color:var(--accent);
+  padding:4px 10px; background:var(--accent-soft); border:1px solid var(--accent-border); border-radius:3px;
+}
+.pc-header .readonly-chip{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase;
+  padding:3px 9px; background:var(--pane-2); border:1px solid var(--border-hover);
+  color:var(--muted); border-radius:10px;
+}
+.pc-header .spacer{flex:1}
+
+.pc-body{flex:1; min-height:0; display:grid; grid-template-columns:280px 1fr; gap:0}
+
+/* Left rail: package list */
+.pkg-list{
+  display:flex; flex-direction:column;
+  background:var(--pane); border-right:1px solid var(--border);
+  overflow-y:auto;
+}
+.pkg-list-head{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 14px; background:var(--chrome); border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted);
+}
+.pkg-list-row{
+  display:flex; flex-direction:column; gap:3px; padding:10px 14px;
+  border-bottom:1px solid var(--border-soft); cursor:pointer;
+}
+.pkg-list-row:hover{background:var(--pane-2)}
+.pkg-list-row.selected{background:var(--pane-sel); border-left:3px solid var(--accent); padding-left:11px}
+.pkg-list-row .pkg-id{font-family:var(--mono); font-size:11px; color:var(--text); font-weight:600; letter-spacing:.2px}
+.pkg-list-row .pkg-meta{font-family:var(--mono); font-size:10px; color:var(--muted); display:flex; gap:10px}
+.pkg-list-row .pkg-warn{color:var(--warn); font-weight:600}
+
+/* Inspector body */
+.inspector{
+  display:flex; flex-direction:column; padding:18px 24px;
+  background:var(--canvas); overflow-y:auto; gap:16px;
+}
+.inspector-head{
+  display:flex; justify-content:space-between; align-items:flex-start; gap:14px;
+  padding-bottom:14px; border-bottom:1px solid var(--border);
+}
+.inspector-head .title-block .pkg-name{font-size:16px; font-weight:600; color:var(--text); margin-bottom:4px; font-family:var(--mono); letter-spacing:.3px}
+.inspector-head .title-block .pkg-sub{font-size:12px; color:var(--muted)}
+.inspector-head .actions{display:flex; gap:6px; flex-wrap:wrap}
+
+.btn{
+  font-family:var(--ui); font-size:12px; font-weight:600; padding:6px 12px;
+  border-radius:4px; cursor:pointer; border:1px solid var(--border-hover);
+  background:var(--pane-2); color:var(--text); min-height:28px;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.btn:disabled{background:var(--pane); color:var(--dim); border-color:var(--border-soft); cursor:not-allowed}
+
+.facts-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px 28px;
+}
+.fact-row{display:flex; flex-direction:column; gap:3px; padding-bottom:10px; border-bottom:1px solid var(--border-soft)}
+.fact-row:last-child{border-bottom:none}
+.fact-row .lbl{font-family:var(--ui); font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); font-weight:600}
+.fact-row .val{font-family:var(--mono); font-size:12px; color:var(--text); word-break:break-all}
+.fact-row .val.empty{color:var(--dim); font-style:italic; font-family:var(--ui)}
+
+.section{
+  background:var(--pane); border:1px solid var(--border); border-radius:4px;
+  padding:14px 16px;
+}
+.section-head{
+  display:flex; justify-content:space-between; align-items:center;
+  margin:-14px -16px 12px; padding:10px 16px;
+  background:var(--chrome); border-bottom:1px solid var(--border-soft);
+  border-radius:4px 4px 0 0;
+}
+.section-title{font-size:12px; font-weight:700; color:var(--text); letter-spacing:.1px}
+.section-meta{font-family:var(--mono); font-size:10px; color:var(--muted)}
+
+/* Manifest viewer */
+.manifest-view{
+  background:var(--pane-2); border:1px solid var(--border); border-radius:3px;
+  padding:14px; max-height:340px; overflow:auto;
+  font-family:var(--mono); font-size:11.5px; color:var(--text); line-height:1.7;
+  white-space:pre;
+}
+.manifest-view .key{color:var(--accent)}
+.manifest-view .str{color:var(--ok)}
+.manifest-view .num{color:var(--user2)}
+.manifest-view .comment{color:var(--dim); font-style:italic}
+
+/* Pills */
+.pill{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 9px; font-family:var(--mono); font-size:10px;
+  letter-spacing:1px; text-transform:uppercase; font-weight:600;
+  border-radius:10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted);
+}
+.pill.ok{background:var(--ok-soft); border-color:var(--ok-border); color:var(--ok)}
+.pill.warn{background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)}
+.pill.err{background:var(--err-soft); border-color:var(--err-border); color:var(--err)}
+
+/* Validation banner */
+.validation-banner{
+  padding:12px 14px; border-radius:4px; display:flex; gap:12px; align-items:flex-start;
+  background:var(--warn-soft); border-left:3px solid var(--warn);
+}
+.validation-banner.err{background:var(--err-soft); border-left-color:var(--err)}
+.validation-banner .glyph{font-family:var(--mono); font-size:14px; color:var(--warn); font-weight:700; line-height:1}
+.validation-banner.err .glyph{color:var(--err)}
+.validation-banner .copy{flex:1; font-size:12px; line-height:1.5; color:var(--text)}
+.validation-banner .copy b{color:var(--warn)}
+.validation-banner.err .copy b{color:var(--err)}
+.validation-banner .copy ul{margin:6px 0 0 18px; color:var(--muted)}
+
+/* Empty state */
+.empty-inspector{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  flex:1; gap:10px; color:var(--muted); padding:60px;
+}
+.empty-inspector .glyph{font-family:var(--mono); font-size:36px; color:var(--dim)}
+.empty-inspector .msg{font-size:14px; color:var(--text); font-weight:500}
+.empty-inspector .sub{font-size:12px; color:var(--muted); max-width:380px; text-align:center; line-height:1.5}
+
+/* State switching */
+.stage > .state-block{display:none; align-self:stretch; flex-direction:column; gap:14px; align-items:center}
+#s1:checked ~ .stage > .state-block.s-empty{display:flex}
+#s2:checked ~ .stage > .state-block.s-loaded{display:flex}
+#s3:checked ~ .stage > .state-block.s-manifest{display:flex}
+#s4:checked ~ .stage > .state-block.s-warn{display:flex}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div class="eyebrow">PC redesign v1 · Surface 2 of 6</div>
+  <h1>Package Inspector (read-only) · 4 states</h1>
+  <div class="meta">
+    <span><b>spec ref:</b> CODEX_PC_UI_UX_REDESIGN_SPEC §6.8</span>
+    <span><b>viewport:</b> 1366×768 desktop</span>
+    <span><b>read-only:</b> hardcoded; no mutation actions present anywhere</span>
+  </div>
+  <div class="annot-block">
+    <b>Read-only contract enforced visually:</b> the inspector header carries a permanent "READ ONLY" chip; the action area only shows the 4 allowed actions (Open folder, Copy ID, Copy summary, View manifest). The 5 disallowed verbs (Restore, Apply patch, Checkout, Delete, Clean working tree) are not just missing — they are not in the DOM at all. There is no "More actions" overflow menu that could hide them. Per spec §6.8 + safety rules §3.
+  </div>
+</div>
+
+<input type="radio" name="s" id="s1" checked hidden>
+<input type="radio" name="s" id="s2" hidden>
+<input type="radio" name="s" id="s3" hidden>
+<input type="radio" name="s" id="s4" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">States</span>
+  <label for="s1">1 · empty (no package selected)</label>
+  <label for="s2">2 · loaded (clean package)</label>
+  <label for="s3">3 · manifest open</label>
+  <label for="s4">4 · validation warnings</label>
+</div>
+
+<div class="stage">
+
+  <!-- ============================================== -->
+  <!-- STATE 1 · empty — no package selected; left rail empty or with archived items; right pane shows empty state -->
+  <!-- ============================================== -->
+  <div class="state-block s-empty">
+    <div class="stage-cap">
+      <span class="num">STATE 1 · empty</span>
+      <span class="title-text">No package selected. Left rail shows the empty package list. Right pane shows the read-only empty state. No mutation actions exist anywhere.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Package Inspector</span>
+        <span class="readonly-chip" title="This view is read-only; no mutation actions are surfaced anywhere on this surface.">🔒 Read-only</span>
+        <div class="spacer"></div>
+      </div>
+      <div class="pc-body">
+        <div class="pkg-list">
+          <div class="pkg-list-head"><span>Packages</span><span style="color:var(--dim)">0</span></div>
+          <div class="empty-inspector" style="padding:40px 20px">
+            <span class="glyph">∅</span>
+            <span class="msg" style="font-size:12px">No packages yet</span>
+            <span class="sub" style="font-size:11px">Create a Safe Handoff to produce your first package. It will appear here for inspection.</span>
+          </div>
+        </div>
+        <div class="inspector">
+          <div class="empty-inspector">
+            <span class="glyph">⊡</span>
+            <span class="msg">No package selected</span>
+            <span class="sub">Select a package from the left rail to inspect its manifest, paths, and provenance. This view is read-only — the inspector cannot restore, apply, or modify any package contents.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- STATE 2 · loaded — package selected; full read-only summary visible; 4 allowed actions in header -->
+  <!-- ============================================== -->
+  <div class="state-block s-loaded">
+    <div class="stage-cap">
+      <span class="num">STATE 2 · loaded (clean package)</span>
+      <span class="title-text">Package <code style="font-family:var(--mono); background:var(--pane-2); padding:1px 6px; border-radius:2px">pkg_20260505_011500_handoff</code> selected. Full provenance visible. The 4 allowed actions sit in the header: Open folder, Copy ID, Copy summary, View manifest.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Package Inspector</span>
+        <span class="readonly-chip">🔒 Read-only</span>
+        <div class="spacer"></div>
+      </div>
+      <div class="pc-body">
+        <div class="pkg-list">
+          <div class="pkg-list-head"><span>Packages</span><span style="color:var(--muted)">3</span></div>
+          <div class="pkg-list-row selected">
+            <div class="pkg-id">pkg_20260505_011500_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>ac2e1aa</span></div>
+            <div class="pkg-meta"><span>just now</span></div>
+          </div>
+          <div class="pkg-list-row">
+            <div class="pkg-id">pkg_20260504_223000_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>9616b09</span></div>
+            <div class="pkg-meta"><span>2h ago</span></div>
+          </div>
+          <div class="pkg-list-row">
+            <div class="pkg-id">pkg_20260504_193500_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>c660f15</span></div>
+            <div class="pkg-meta"><span>5h ago</span></div>
+          </div>
+        </div>
+        <div class="inspector">
+          <div class="inspector-head">
+            <div class="title-block">
+              <div class="pkg-name">pkg_20260505_011500_handoff</div>
+              <div class="pkg-sub">Created at 2026-05-05 01:15:00 by Darrin · Source HEAD <code style="font-family:var(--mono); background:var(--pane-2); padding:1px 5px; border-radius:2px">ac2e1aa</code></div>
+            </div>
+            <div class="actions">
+              <!-- on click: opens the package folder in OS file explorer; read-only -->
+              <button class="btn">📁 Open folder</button>
+              <!-- on click: copies the package ID string to clipboard -->
+              <button class="btn">⧉ Copy ID</button>
+              <!-- on click: copies a one-line summary (id + branch + HEAD + paths) to clipboard -->
+              <button class="btn">⧉ Copy summary</button>
+              <!-- on click: expands the manifest section below — see state 3 -->
+              <button class="btn">📄 View manifest</button>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head"><span class="section-title">Provenance</span><span class="section-meta">read-only</span></div>
+            <div class="facts-grid">
+              <div class="fact-row"><span class="lbl">Package ID</span><span class="val">pkg_20260505_011500_handoff</span></div>
+              <div class="fact-row"><span class="lbl">Package path</span><span class="val">PANDA test sandboxes\handoff_20260505_011500\</span></div>
+              <div class="fact-row"><span class="lbl">Source repo</span><span class="val">C:\panda-gallery</span></div>
+              <div class="fact-row"><span class="lbl">Source branch</span><span class="val">main</span></div>
+              <div class="fact-row"><span class="lbl">Source HEAD</span><span class="val">ac2e1aa67d9f8c2b1e3a4f5d6c7b8a9e0f1d2c3b</span></div>
+              <div class="fact-row"><span class="lbl">Protection branch</span><span class="val">pc/handoff/2026-05-05-0115</span></div>
+              <div class="fact-row"><span class="lbl">Created at</span><span class="val">2026-05-05T01:15:00-07:00</span></div>
+              <div class="fact-row"><span class="lbl">Created by</span><span class="val">Darrin (User 1)</span></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head"><span class="section-title">Contents</span><span class="section-meta">files counted, not modified</span></div>
+            <div class="facts-grid" style="grid-template-columns:1fr 1fr 1fr">
+              <div class="fact-row"><span class="lbl">Included files</span><span class="val">142</span></div>
+              <div class="fact-row"><span class="lbl">Binary patch</span><span class="val">present (1.4 MB)</span></div>
+              <div class="fact-row"><span class="lbl">Handoff note</span><span class="val">present (~340 chars)</span></div>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px">
+              <span class="pill ok">✓ Manifest valid</span>
+              <span class="pill ok">✓ Patch verified</span>
+              <span class="pill ok">✓ Files staged</span>
+              <span class="pill ok">✓ Note attached</span>
+              <span class="pill ok">✓ Stable ID</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- STATE 3 · manifest open — View Manifest expanded; manifest content rendered as syntax-highlighted JSON; still read-only -->
+  <!-- ============================================== -->
+  <div class="state-block s-manifest">
+    <div class="stage-cap">
+      <span class="num">STATE 3 · manifest open</span>
+      <span class="title-text">User clicked "View manifest". Manifest renders inline as syntax-highlighted, scroll-bounded read-only JSON. No edit affordances. View Manifest button toggles to "Hide manifest". Same package, same actions — only the manifest panel state changes.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Package Inspector</span>
+        <span class="readonly-chip">🔒 Read-only</span>
+        <div class="spacer"></div>
+      </div>
+      <div class="pc-body">
+        <div class="pkg-list">
+          <div class="pkg-list-head"><span>Packages</span><span style="color:var(--muted)">3</span></div>
+          <div class="pkg-list-row selected">
+            <div class="pkg-id">pkg_20260505_011500_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>ac2e1aa</span></div>
+            <div class="pkg-meta"><span>just now</span></div>
+          </div>
+          <div class="pkg-list-row">
+            <div class="pkg-id">pkg_20260504_223000_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>9616b09</span></div>
+            <div class="pkg-meta"><span>2h ago</span></div>
+          </div>
+          <div class="pkg-list-row">
+            <div class="pkg-id">pkg_20260504_193500_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>c660f15</span></div>
+            <div class="pkg-meta"><span>5h ago</span></div>
+          </div>
+        </div>
+        <div class="inspector">
+          <div class="inspector-head">
+            <div class="title-block">
+              <div class="pkg-name">pkg_20260505_011500_handoff</div>
+              <div class="pkg-sub">Created at 2026-05-05 01:15:00 by Darrin · Source HEAD ac2e1aa</div>
+            </div>
+            <div class="actions">
+              <button class="btn">📁 Open folder</button>
+              <button class="btn">⧉ Copy ID</button>
+              <button class="btn">⧉ Copy summary</button>
+              <!-- on click: collapses the manifest panel back to its provenance-only state — see state 2 -->
+              <button class="btn" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)">📄 Hide manifest</button>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head"><span class="section-title">Manifest (read-only)</span><span class="section-meta">scroll · cannot be edited from this view</span></div>
+            <div class="manifest-view"><span class="comment">// pkg_20260505_011500_handoff/manifest.json — read-only</span>
+{
+  <span class="key">"package_id"</span>: <span class="str">"pkg_20260505_011500_handoff"</span>,
+  <span class="key">"schema_version"</span>: <span class="num">3</span>,
+  <span class="key">"created_at"</span>: <span class="str">"2026-05-05T01:15:00-07:00"</span>,
+  <span class="key">"created_by"</span>: {
+    <span class="key">"display_name"</span>: <span class="str">"Darrin"</span>,
+    <span class="key">"slot"</span>: <span class="str">"user1"</span>,
+    <span class="key">"git_identity"</span>: <span class="str">"drrap@denpc.local"</span>
+  },
+  <span class="key">"source"</span>: {
+    <span class="key">"repo"</span>: <span class="str">"C:\\panda-gallery"</span>,
+    <span class="key">"branch"</span>: <span class="str">"main"</span>,
+    <span class="key">"head"</span>: <span class="str">"ac2e1aa67d9f8c2b1e3a4f5d6c7b8a9e0f1d2c3b"</span>,
+    <span class="key">"protection_branch"</span>: <span class="str">"pc/handoff/2026-05-05-0115"</span>
+  },
+  <span class="key">"contents"</span>: {
+    <span class="key">"file_count"</span>: <span class="num">142</span>,
+    <span class="key">"binary_patch"</span>: { <span class="key">"path"</span>: <span class="str">"patch.bin"</span>, <span class="key">"size_bytes"</span>: <span class="num">1468224</span> },
+    <span class="key">"handoff_note"</span>: { <span class="key">"path"</span>: <span class="str">"NOTE.md"</span>, <span class="key">"chars"</span>: <span class="num">342</span> },
+    <span class="key">"stable_id"</span>: <span class="str">"sha256:0a7f...e3c1"</span>
+  },
+  <span class="key">"validation"</span>: {
+    <span class="key">"manifest_valid"</span>: <span class="num">true</span>,
+    <span class="key">"patch_verified"</span>: <span class="num">true</span>,
+    <span class="key">"files_staged"</span>: <span class="num">true</span>,
+    <span class="key">"warnings"</span>: []
+  }
+}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- STATE 4 · validation warnings — package has non-fatal warnings; banner surfaces them; package still inspectable, never auto-modified -->
+  <!-- ============================================== -->
+  <div class="state-block s-warn">
+    <div class="stage-cap">
+      <span class="num">STATE 4 · validation warnings</span>
+      <span class="title-text">Package built but the post-build validator surfaced 2 non-fatal warnings (handoff note exceeds 1000 chars; large binary patch). Warnings shown in a banner above the provenance grid. Package is still inspectable; no automatic mutation. The 4 read-only actions remain unchanged.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Package Inspector</span>
+        <span class="readonly-chip">🔒 Read-only</span>
+        <div class="spacer"></div>
+      </div>
+      <div class="pc-body">
+        <div class="pkg-list">
+          <div class="pkg-list-head"><span>Packages</span><span style="color:var(--muted)">3</span></div>
+          <div class="pkg-list-row selected">
+            <div class="pkg-id">pkg_20260504_193500_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>c660f15</span><span class="pkg-warn">⚠ 2</span></div>
+            <div class="pkg-meta"><span>5h ago</span></div>
+          </div>
+          <div class="pkg-list-row">
+            <div class="pkg-id">pkg_20260505_011500_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>ac2e1aa</span></div>
+            <div class="pkg-meta"><span>just now</span></div>
+          </div>
+          <div class="pkg-list-row">
+            <div class="pkg-id">pkg_20260504_223000_handoff</div>
+            <div class="pkg-meta"><span>main</span><span>9616b09</span></div>
+            <div class="pkg-meta"><span>2h ago</span></div>
+          </div>
+        </div>
+        <div class="inspector">
+          <div class="inspector-head">
+            <div class="title-block">
+              <div class="pkg-name">pkg_20260504_193500_handoff</div>
+              <div class="pkg-sub">Created at 2026-05-04 19:35:00 by Darrin · Source HEAD c660f15</div>
+            </div>
+            <div class="actions">
+              <button class="btn">📁 Open folder</button>
+              <button class="btn">⧉ Copy ID</button>
+              <button class="btn">⧉ Copy summary</button>
+              <button class="btn">📄 View manifest</button>
+            </div>
+          </div>
+          <div class="validation-banner">
+            <span class="glyph">⚠</span>
+            <div class="copy">
+              <b>2 validation warnings</b> — package is inspectable but flagged for review. The inspector does not auto-fix these; they are surfaced for the operator's awareness.
+              <ul>
+                <li>Handoff note exceeds 1000 chars (1247 chars). Long notes are accepted but may be hard to scan downstream.</li>
+                <li>Binary patch unusually large (12.4 MB). Verify the patch contains intended files; PC does not auto-prune.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head"><span class="section-title">Provenance</span><span class="section-meta">read-only</span></div>
+            <div class="facts-grid">
+              <div class="fact-row"><span class="lbl">Package ID</span><span class="val">pkg_20260504_193500_handoff</span></div>
+              <div class="fact-row"><span class="lbl">Package path</span><span class="val">PANDA test sandboxes\handoff_20260504_193500\</span></div>
+              <div class="fact-row"><span class="lbl">Source branch</span><span class="val">main</span></div>
+              <div class="fact-row"><span class="lbl">Source HEAD</span><span class="val">c660f1543a7b9c2d4e5f6a7b8c9d0e1f2a3b4c5d</span></div>
+              <div class="fact-row"><span class="lbl">Protection branch</span><span class="val">pc/handoff/2026-05-04-1935</span></div>
+              <div class="fact-row"><span class="lbl">Created at</span><span class="val">2026-05-04T19:35:00-07:00</span></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head"><span class="section-title">Contents</span><span class="section-meta">2 warnings</span></div>
+            <div class="facts-grid" style="grid-template-columns:1fr 1fr 1fr">
+              <div class="fact-row"><span class="lbl">Included files</span><span class="val">186</span></div>
+              <div class="fact-row"><span class="lbl">Binary patch</span><span class="val" style="color:var(--warn)">present (12.4 MB) ⚠</span></div>
+              <div class="fact-row"><span class="lbl">Handoff note</span><span class="val" style="color:var(--warn)">present (1247 chars) ⚠</span></div>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px">
+              <span class="pill ok">✓ Manifest valid</span>
+              <span class="pill ok">✓ Patch verified</span>
+              <span class="pill ok">✓ Files staged</span>
+              <span class="pill warn">⚠ Note long</span>
+              <span class="pill warn">⚠ Patch large</span>
+              <span class="pill ok">✓ Stable ID</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

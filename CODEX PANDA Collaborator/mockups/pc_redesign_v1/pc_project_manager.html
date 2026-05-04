@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC redesign · Project Manager · 4 states</title>
+<style>
+:root{
+  --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-2:#22223a; --pane-sel:#2a2a4e;
+  --border:#2a2a3e; --border-soft:#232336; --border-hover:#3a3a4e;
+  --text:#e0ddd5; --muted:#888888; --dim:#555555;
+  --accent:#e8a87c; --accent-soft:rgba(232,168,124,0.14); --accent-border:rgba(232,168,124,0.45);
+  --ok:#7fb069; --ok-soft:rgba(127,176,105,0.14); --ok-border:rgba(127,176,105,0.45);
+  --warn:#f39c12; --warn-soft:rgba(243,156,18,0.14); --warn-border:rgba(243,156,18,0.45);
+  --err:#e74c3c; --err-soft:rgba(231,76,60,0.14); --err-border:rgba(231,76,60,0.45);
+  --user1:#f2b36d; --user2:#5fa0a8;
+  --ui:"Segoe UI","SF Pro","Noto Sans",system-ui,sans-serif;
+  --mono:"Cascadia Mono","Consolas",monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column; font-family:var(--ui);
+}
+
+.pc-header{
+  display:flex; align-items:center; gap:14px; padding:10px 18px;
+  background:var(--chrome); border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.pc-header .brand{font-size:13px; font-weight:600; color:var(--text)}
+.pc-header .view-tag{
+  font-family:var(--ui); font-size:13px; font-weight:600; color:var(--accent);
+  padding:4px 10px; background:var(--accent-soft); border:1px solid var(--accent-border); border-radius:3px;
+}
+.pc-header .spacer{flex:1}
+.pc-header .search-box{
+  display:flex; align-items:center; gap:6px; min-width:280px;
+  background:var(--pane-2); border:1px solid var(--border-hover); border-radius:4px;
+  padding:5px 10px;
+}
+.pc-header .search-box input{
+  background:transparent; border:none; outline:none;
+  font-family:var(--ui); font-size:12px; color:var(--text); width:100%;
+}
+.pc-header .search-box input::placeholder{color:var(--dim)}
+.pc-header .search-box .glyph{font-family:var(--mono); font-size:13px; color:var(--dim)}
+
+.pm-body{
+  flex:1; min-height:0; display:grid; grid-template-columns:280px 1fr 320px; gap:0;
+}
+
+/* Left rail — collaborators + sessions */
+.pm-left{display:flex; flex-direction:column; background:var(--pane); border-right:1px solid var(--border); overflow-y:auto}
+.section-head{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 14px; background:var(--chrome); border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted);
+  font-weight:600; flex-shrink:0;
+}
+.section-head .count{color:var(--text); font-weight:700}
+.collab-row{
+  display:grid; grid-template-columns:24px 1fr auto; gap:8px; align-items:center;
+  padding:9px 14px; border-bottom:1px solid var(--border-soft); cursor:pointer;
+}
+.collab-row:hover{background:var(--pane-2)}
+.collab-row .avatar{
+  width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:11px; font-weight:700;
+  background:var(--user1); color:var(--canvas);
+}
+.collab-row.user2 .avatar{background:var(--user2); color:var(--canvas)}
+.collab-row .name{font-size:12.5px; font-weight:600; color:var(--text)}
+.collab-row .meta{font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:1px}
+.collab-row .pill{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; padding:2px 8px; border-radius:10px; background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok); flex-shrink:0}
+.collab-row .pill.idle{background:var(--pane-2); border-color:var(--border-hover); color:var(--muted)}
+.collab-row .pill.warn{background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)}
+
+.session-row{
+  display:flex; flex-direction:column; gap:3px;
+  padding:9px 14px; border-bottom:1px solid var(--border-soft); cursor:pointer;
+}
+.session-row:hover{background:var(--pane-2)}
+.session-row .top{display:flex; justify-content:space-between; align-items:center; gap:6px}
+.session-row .label{font-size:12px; font-weight:500; color:var(--text)}
+.session-row .duration{font-family:var(--mono); font-size:10.5px; color:var(--ok)}
+.session-row .duration.idle{color:var(--muted)}
+.session-row .meta{font-family:var(--mono); font-size:10px; color:var(--muted)}
+
+/* Center — recent handoffs + warnings */
+.pm-center{display:flex; flex-direction:column; padding:18px 22px; background:var(--canvas); overflow-y:auto; gap:14px}
+
+.pm-card{
+  background:var(--pane); border:1px solid var(--border); border-radius:4px;
+}
+.pm-card-head{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 14px; background:var(--chrome); border-bottom:1px solid var(--border-soft);
+  border-radius:4px 4px 0 0;
+}
+.pm-card-title{font-size:12.5px; font-weight:700; color:var(--text); letter-spacing:.1px}
+.pm-card-action{font-family:var(--ui); font-size:11px; color:var(--accent); cursor:pointer; padding:3px 8px; border:1px solid transparent; border-radius:3px}
+.pm-card-action:hover{border-color:var(--accent-border); background:var(--accent-soft)}
+.pm-card-body{padding:0}
+
+.handoff-table{width:100%; border-collapse:collapse}
+.handoff-table th{
+  text-align:left; padding:7px 14px; font-size:10px; letter-spacing:1px;
+  text-transform:uppercase; color:var(--muted); font-weight:600;
+  border-bottom:1px solid var(--border-soft); background:var(--pane);
+  font-family:var(--ui);
+}
+.handoff-table td{
+  padding:8px 14px; border-bottom:1px solid var(--border-soft); font-size:12px;
+  font-family:var(--ui);
+}
+.handoff-table tr:hover td{background:var(--pane-2)}
+.handoff-table .pkg-id{font-family:var(--mono); font-size:11px; color:var(--text); font-weight:600}
+.handoff-table .ts{font-family:var(--mono); font-size:11px; color:var(--muted)}
+.handoff-table .src{font-family:var(--mono); font-size:11px; color:var(--text)}
+.handoff-table .actor-stripe{display:inline-block; width:3px; height:14px; background:var(--user1); margin-right:6px; vertical-align:middle; border-radius:1px}
+.handoff-table .actor-stripe.user2{background:var(--user2)}
+.handoff-table .pill{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; padding:2px 7px; border-radius:10px; background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok); font-weight:600}
+.handoff-table .pill.warn{background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)}
+
+.warning-row{
+  display:grid; grid-template-columns:auto 1fr auto; gap:10px;
+  padding:10px 14px; border-bottom:1px solid var(--border-soft); align-items:center;
+}
+.warning-row:last-child{border-bottom:none}
+.warning-row .glyph{font-family:var(--mono); font-size:14px; color:var(--warn); font-weight:700; line-height:1}
+.warning-row .glyph.err{color:var(--err)}
+.warning-row .copy{font-size:12px; color:var(--text); line-height:1.45}
+.warning-row .copy .sub{font-size:11px; color:var(--muted); margin-top:2px}
+.warning-row .age{font-family:var(--mono); font-size:10.5px; color:var(--dim)}
+
+/* Recommendations */
+.recommendation{
+  display:flex; align-items:flex-start; gap:10px;
+  padding:10px 14px; border-bottom:1px solid var(--border-soft);
+}
+.recommendation:last-child{border-bottom:none}
+.recommendation .glyph{font-family:var(--mono); font-size:14px; color:var(--accent); line-height:1; margin-top:1px}
+.recommendation .copy{flex:1; font-size:12px; color:var(--text); line-height:1.45}
+.recommendation .copy b{color:var(--accent)}
+.recommendation .copy .sub{font-size:11px; color:var(--muted); margin-top:2px}
+
+/* Right rail — daily report + archive */
+.pm-right{display:flex; flex-direction:column; background:var(--pane); border-left:1px solid var(--border); overflow-y:auto}
+.archive-link{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:9px 14px; border-bottom:1px solid var(--border-soft); cursor:pointer;
+}
+.archive-link:hover{background:var(--pane-2)}
+.archive-link .label{font-size:12px; color:var(--text)}
+.archive-link .ts{font-family:var(--mono); font-size:10px; color:var(--muted)}
+
+.activity-row{
+  display:grid; grid-template-columns:60px 1fr; gap:8px;
+  padding:7px 14px; border-bottom:1px solid var(--border-soft); font-size:11.5px;
+}
+.activity-row .ts{font-family:var(--mono); font-size:10.5px; color:var(--dim)}
+.activity-row .body{color:var(--text); line-height:1.4}
+.activity-row .body b{color:var(--user1); font-weight:600}
+.activity-row .body b.user2{color:var(--user2)}
+
+/* Pills */
+.kbd{font-family:var(--mono); font-size:10.5px; padding:1px 6px; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:3px; color:var(--muted)}
+
+/* Search highlight */
+.search-active-hl{background:var(--accent-soft); padding:0 2px; border-radius:1px; color:var(--accent)}
+
+/* State switching */
+.stage > .state-block{display:none; align-self:stretch; flex-direction:column; gap:14px; align-items:center}
+#s1:checked ~ .stage > .state-block.s-default{display:flex}
+#s2:checked ~ .stage > .state-block.s-search{display:flex}
+#s3:checked ~ .stage > .state-block.s-archive{display:flex}
+#s4:checked ~ .stage > .state-block.s-warnings{display:flex}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div class="eyebrow">PC redesign v1 · Surface 3 of 6</div>
+  <h1>Project Manager · 4 states</h1>
+  <div class="meta">
+    <span><b>spec ref:</b> CODEX_PC_UI_UX_REDESIGN_SPEC §6.10</span>
+    <span><b>viewport:</b> 1366×768 desktop</span>
+    <span><b>posture:</b> dense operational overview, not a landing page</span>
+  </div>
+</div>
+
+<input type="radio" name="s" id="s1" checked hidden>
+<input type="radio" name="s" id="s2" hidden>
+<input type="radio" name="s" id="s3" hidden>
+<input type="radio" name="s" id="s4" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">States</span>
+  <label for="s1">1 · default overview</label>
+  <label for="s2">2 · search active</label>
+  <label for="s3">3 · handoff archive view</label>
+  <label for="s4">4 · warnings stack</label>
+</div>
+
+<div class="stage">
+
+  <!-- =========================================================== -->
+  <!-- STATE 1 · default overview — 3-column dense overview; collaborator activity, recent handoffs, daily report. -->
+  <!-- =========================================================== -->
+  <div class="state-block s-default">
+    <div class="stage-cap">
+      <span class="num">STATE 1 · default overview</span>
+      <span class="title-text">Three-column operational overview. Left: collaborators + open sessions. Center: recent handoffs (table) + recommendations. Right: daily reports + collaborator activity log. No hero, no decorative cards.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Project Manager</span>
+        <div class="spacer"></div>
+        <div class="search-box">
+          <span class="glyph">⌕</span>
+          <input type="text" placeholder="Search packages, sessions, collaborators…">
+          <span class="kbd">Ctrl K</span>
+        </div>
+      </div>
+      <div class="pm-body">
+        <!-- Left -->
+        <div class="pm-left">
+          <div class="section-head"><span>Active collaborators</span><span class="count">2</span></div>
+          <div class="collab-row">
+            <span class="avatar">D</span>
+            <div><div class="name">Darrin</div><div class="meta">User 1 · drrap@denpc.local</div></div>
+            <span class="pill">Active</span>
+          </div>
+          <div class="collab-row user2">
+            <span class="avatar">C</span>
+            <div><div class="name">Codex</div><div class="meta">User 2 · codex@codex-station</div></div>
+            <span class="pill idle">Idle 4m</span>
+          </div>
+          <div class="section-head"><span>Open sessions</span><span class="count">1</span></div>
+          <div class="session-row">
+            <div class="top"><span class="label">main · panda-gallery</span><span class="duration">22m</span></div>
+            <div class="meta">started by Darrin · ac2e1aa</div>
+          </div>
+          <div class="section-head"><span>Recent handoffs</span><span class="count">3</span></div>
+          <div class="session-row">
+            <div class="top"><span class="label">pkg_…0115</span><span class="duration">just now</span></div>
+            <div class="meta">Darrin → Codex · main · clean</div>
+          </div>
+          <div class="session-row">
+            <div class="top"><span class="label">pkg_…2230</span><span class="duration idle">2h ago</span></div>
+            <div class="meta">Codex → Darrin · main · clean</div>
+          </div>
+          <div class="session-row">
+            <div class="top"><span class="label">pkg_…1935</span><span class="duration idle">5h ago</span></div>
+            <div class="meta">Darrin → Codex · main · ⚠ 2 warns</div>
+          </div>
+        </div>
+        <!-- Center -->
+        <div class="pm-center">
+          <div class="pm-card">
+            <div class="pm-card-head"><span class="pm-card-title">Recent handoffs</span><span class="pm-card-action">View archive →</span></div>
+            <div class="pm-card-body">
+              <table class="handoff-table">
+                <thead><tr><th>Package</th><th>Branch · HEAD</th><th>Actor</th><th>Status</th><th>When</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="pkg-id">pkg_20260505_011500</span></td><td><span class="src">main · ac2e1aa</span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="pill">Clean</span></td><td><span class="ts">just now</span></td></tr>
+                  <tr><td><span class="pkg-id">pkg_20260504_223000</span></td><td><span class="src">main · 9616b09</span></td><td><span class="actor-stripe user2"></span>Codex → Darrin</td><td><span class="pill">Clean</span></td><td><span class="ts">2h ago</span></td></tr>
+                  <tr><td><span class="pkg-id">pkg_20260504_193500</span></td><td><span class="src">main · c660f15</span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="pill warn">2 warns</span></td><td><span class="ts">5h ago</span></td></tr>
+                  <tr><td><span class="pkg-id">pkg_20260504_073000</span></td><td><span class="src">main · 71bfb27</span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="pill">Clean</span></td><td><span class="ts">17h ago</span></td></tr>
+                  <tr><td><span class="pkg-id">pkg_20260503_220000</span></td><td><span class="src">main · 960292e</span></td><td><span class="actor-stripe user2"></span>Codex → Darrin</td><td><span class="pill">Clean</span></td><td><span class="ts">1d ago</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="pm-card">
+            <div class="pm-card-head"><span class="pm-card-title">Recommendations</span><span style="font-family:var(--mono); font-size:10px; color:var(--muted)">2 suggestions</span></div>
+            <div class="pm-card-body">
+              <div class="recommendation">
+                <span class="glyph">→</span>
+                <div class="copy"><b>Codex idle 4m</b> with the Darrin → Codex handoff still unacked. Ping or wait — handoff is reproducible.<div class="sub">No action required from PC; advisory only.</div></div>
+              </div>
+              <div class="recommendation">
+                <span class="glyph">→</span>
+                <div class="copy"><b>Daily report due in 2h</b> — last report covers up to 18:00 yesterday. Today's archive will roll over at 18:00.<div class="sub">Click View daily report to preview the running draft.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Right -->
+        <div class="pm-right">
+          <div class="section-head"><span>Daily report &amp; archive</span><span class="count">7</span></div>
+          <div class="archive-link"><span class="label">Today's report (live)</span><span class="ts">running</span></div>
+          <div class="archive-link"><span class="label">2026-05-04 daily</span><span class="ts">closed 18:00</span></div>
+          <div class="archive-link"><span class="label">2026-05-03 daily</span><span class="ts">archived</span></div>
+          <div class="archive-link"><span class="label">2026-05-02 daily</span><span class="ts">archived</span></div>
+          <div class="archive-link"><span class="label">Week of 2026-04-28</span><span class="ts">5 reports</span></div>
+          <div class="section-head"><span>Collaborator activity</span><span class="count">last 30m</span></div>
+          <div class="activity-row"><span class="ts">01:31</span><span class="body"><b>Darrin</b> started session on main</span></div>
+          <div class="activity-row"><span class="ts">01:18</span><span class="body"><b class="user2">Codex</b> read handoff package pkg_…2230</span></div>
+          <div class="activity-row"><span class="ts">01:15</span><span class="body"><b>Darrin</b> created handoff pkg_…0115</span></div>
+          <div class="activity-row"><span class="ts">01:14</span><span class="body"><b class="user2">Codex</b> registered as User 2</span></div>
+          <div class="activity-row"><span class="ts">01:13</span><span class="body"><b>Darrin</b> registered as User 1</span></div>
+          <div class="activity-row"><span class="ts">01:12</span><span class="body">PC started</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 2 · search active — operator typed "ac2e1aa" in search box; results filtered across packages, sessions, activity. -->
+  <!-- =========================================================== -->
+  <div class="state-block s-search">
+    <div class="stage-cap">
+      <span class="num">STATE 2 · search active</span>
+      <span class="title-text">Operator searched <code style="font-family:var(--mono); background:var(--pane-2); padding:1px 5px; border-radius:2px">ac2e1aa</code>. Results filter across all surfaces. Header search box highlighted in accent. Match terms emphasized inline. Press Esc to clear.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Project Manager</span>
+        <div class="spacer"></div>
+        <div class="search-box" style="border-color:var(--accent); min-width:320px">
+          <span class="glyph" style="color:var(--accent)">⌕</span>
+          <input type="text" value="ac2e1aa" style="color:var(--text)">
+          <span class="kbd" style="color:var(--accent); border-color:var(--accent-border)" title="Esc clears the search">Esc</span>
+        </div>
+      </div>
+      <div class="pm-body">
+        <div class="pm-left">
+          <div class="section-head"><span>Filtered: collaborators</span><span class="count">2 match</span></div>
+          <div class="collab-row">
+            <span class="avatar">D</span>
+            <div><div class="name">Darrin</div><div class="meta">last commit <span class="search-active-hl">ac2e1aa</span></div></div>
+            <span class="pill">Active</span>
+          </div>
+          <div class="collab-row user2">
+            <span class="avatar">C</span>
+            <div><div class="name">Codex</div><div class="meta">read <span class="search-active-hl">ac2e1aa</span> 11m ago</div></div>
+            <span class="pill idle">Idle</span>
+          </div>
+          <div class="section-head"><span>Filtered: sessions</span><span class="count">1 match</span></div>
+          <div class="session-row">
+            <div class="top"><span class="label">main · panda-gallery</span><span class="duration">22m</span></div>
+            <div class="meta">HEAD <span class="search-active-hl">ac2e1aa</span> · clean</div>
+          </div>
+        </div>
+        <div class="pm-center">
+          <div class="pm-card">
+            <div class="pm-card-head"><span class="pm-card-title">Filtered: handoffs</span><span style="font-family:var(--mono); font-size:10px; color:var(--accent)">1 match · <span style="color:var(--muted)">5 total</span></span></div>
+            <div class="pm-card-body">
+              <table class="handoff-table">
+                <thead><tr><th>Package</th><th>Branch · HEAD</th><th>Actor</th><th>Status</th><th>When</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="pkg-id">pkg_20260505_011500</span></td><td><span class="src">main · <span class="search-active-hl">ac2e1aa</span></span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="pill">Clean</span></td><td><span class="ts">just now</span></td></tr>
+                </tbody>
+              </table>
+              <div style="padding:10px 14px; font-size:11.5px; color:var(--muted); border-top:1px solid var(--border-soft)">
+                4 packages hidden — they did not match <span class="search-active-hl">ac2e1aa</span>. <a href="#" style="color:var(--accent); text-decoration:none">Show all</a>
+              </div>
+            </div>
+          </div>
+          <div class="pm-card">
+            <div class="pm-card-head"><span class="pm-card-title">Filtered: activity</span><span style="font-family:var(--mono); font-size:10px; color:var(--accent)">3 matches</span></div>
+            <div class="pm-card-body">
+              <div class="activity-row"><span class="ts">01:31</span><span class="body"><b>Darrin</b> committed <span class="search-active-hl">ac2e1aa</span> on main</span></div>
+              <div class="activity-row"><span class="ts">01:15</span><span class="body"><b>Darrin</b> created handoff pkg_…0115 at HEAD <span class="search-active-hl">ac2e1aa</span></span></div>
+              <div class="activity-row"><span class="ts">01:18</span><span class="body"><b class="user2">Codex</b> read package referencing <span class="search-active-hl">ac2e1aa</span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="pm-right">
+          <div class="section-head"><span>Search controls</span></div>
+          <div style="padding:14px; display:flex; flex-direction:column; gap:10px">
+            <div style="font-size:11.5px; color:var(--muted); line-height:1.5">Active query: <code style="font-family:var(--mono); background:var(--pane-2); padding:1px 6px; border-radius:2px; color:var(--accent)">ac2e1aa</code></div>
+            <div style="font-size:11.5px; color:var(--muted); line-height:1.5">Scope: packages · sessions · activity · collaborators</div>
+            <button style="font-family:var(--ui); font-size:12px; padding:6px 12px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--text); border-radius:4px; cursor:pointer; min-height:28px" title="Clear search and return to default overview">Clear search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 3 · handoff archive view — full archive table; filters by date / actor / status -->
+  <!-- =========================================================== -->
+  <div class="state-block s-archive">
+    <div class="stage-cap">
+      <span class="num">STATE 3 · handoff archive view</span>
+      <span class="title-text">Operator clicked "View archive". Full handoff archive expands as the dominant pane. Filter strip across the top: date / actor / status. Read-only — clicking a row opens Package Inspector (read-only) per spec §6.8.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Project Manager <span style="color:var(--muted); font-weight:400; margin:0 6px">›</span> Handoff archive</span>
+        <div class="spacer"></div>
+        <div class="search-box" style="min-width:240px"><span class="glyph">⌕</span><input type="text" placeholder="Filter archive…"></div>
+      </div>
+      <div style="display:flex; gap:8px; padding:10px 18px; background:var(--pane); border-bottom:1px solid var(--border); align-items:center">
+        <span style="font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-right:6px">Filter</span>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--accent-soft); border:1px solid var(--accent-border); color:var(--accent); border-radius:3px; cursor:pointer">All time</button>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted); border-radius:3px; cursor:pointer">Last 7 days</button>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted); border-radius:3px; cursor:pointer">Last 30 days</button>
+        <span style="width:1px; height:18px; background:var(--border); margin:0 6px"></span>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted); border-radius:3px; cursor:pointer">All actors</button>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted); border-radius:3px; cursor:pointer">Darrin only</button>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted); border-radius:3px; cursor:pointer">Codex only</button>
+        <span style="width:1px; height:18px; background:var(--border); margin:0 6px"></span>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted); border-radius:3px; cursor:pointer">All status</button>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--pane-2); border:1px solid var(--border-hover); color:var(--muted); border-radius:3px; cursor:pointer">Clean only</button>
+        <button style="font-family:var(--ui); font-size:11px; padding:4px 10px; background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn); border-radius:3px; cursor:pointer">Warned only</button>
+        <span style="flex:1"></span>
+        <span style="font-family:var(--mono); font-size:10.5px; color:var(--muted)">42 packages · 7d</span>
+      </div>
+      <div style="flex:1; overflow:auto; padding:0 18px">
+        <table class="handoff-table" style="width:100%">
+          <thead><tr style="background:var(--canvas)"><th>Package</th><th>Branch · HEAD</th><th>Actor</th><th>Files</th><th>Patch</th><th>Status</th><th>When</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pkg-id">pkg_20260505_011500</span></td><td><span class="src">main · ac2e1aa</span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="ts">142</span></td><td><span class="ts">1.4 MB</span></td><td><span class="pill">Clean</span></td><td><span class="ts">just now</span></td><td><a href="#" style="color:var(--accent); font-size:11px; text-decoration:none">Inspect →</a></td></tr>
+            <tr><td><span class="pkg-id">pkg_20260504_223000</span></td><td><span class="src">main · 9616b09</span></td><td><span class="actor-stripe user2"></span>Codex → Darrin</td><td><span class="ts">98</span></td><td><span class="ts">0.8 MB</span></td><td><span class="pill">Clean</span></td><td><span class="ts">2h ago</span></td><td><a href="#" style="color:var(--accent); font-size:11px; text-decoration:none">Inspect →</a></td></tr>
+            <tr><td><span class="pkg-id">pkg_20260504_193500</span></td><td><span class="src">main · c660f15</span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="ts">186</span></td><td><span class="ts">12.4 MB</span></td><td><span class="pill warn">2 warns</span></td><td><span class="ts">5h ago</span></td><td><a href="#" style="color:var(--accent); font-size:11px; text-decoration:none">Inspect →</a></td></tr>
+            <tr><td><span class="pkg-id">pkg_20260504_073000</span></td><td><span class="src">main · 71bfb27</span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="ts">7</span></td><td><span class="ts">28 KB</span></td><td><span class="pill">Clean</span></td><td><span class="ts">17h ago</span></td><td><a href="#" style="color:var(--accent); font-size:11px; text-decoration:none">Inspect →</a></td></tr>
+            <tr><td><span class="pkg-id">pkg_20260503_220000</span></td><td><span class="src">main · 960292e</span></td><td><span class="actor-stripe user2"></span>Codex → Darrin</td><td><span class="ts">1</span></td><td><span class="ts">3 KB</span></td><td><span class="pill">Clean</span></td><td><span class="ts">1d ago</span></td><td><a href="#" style="color:var(--accent); font-size:11px; text-decoration:none">Inspect →</a></td></tr>
+            <tr><td><span class="pkg-id">pkg_20260503_153000</span></td><td><span class="src">main · 2d5ebca</span></td><td><span class="actor-stripe"></span>Darrin → Codex</td><td><span class="ts">31</span></td><td><span class="ts">2.1 MB</span></td><td><span class="pill">Clean</span></td><td><span class="ts">1d ago</span></td><td><a href="#" style="color:var(--accent); font-size:11px; text-decoration:none">Inspect →</a></td></tr>
+            <tr><td><span class="pkg-id">pkg_20260503_080000</span></td><td><span class="src">main · 7b75e49</span></td><td><span class="actor-stripe user2"></span>Codex → Darrin</td><td><span class="ts">19</span></td><td><span class="ts">412 KB</span></td><td><span class="pill warn">1 warn</span></td><td><span class="ts">1d ago</span></td><td><a href="#" style="color:var(--accent); font-size:11px; text-decoration:none">Inspect →</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 4 · warnings stack — multiple non-fatal warnings/blocked items surfaced; operator can triage at a glance -->
+  <!-- =========================================================== -->
+  <div class="state-block s-warnings">
+    <div class="stage-cap">
+      <span class="num">STATE 4 · warnings stack</span>
+      <span class="title-text">Multiple non-fatal warnings/blocked items present. Project Manager surfaces them as a triage stack. Each row is one issue; click opens the relevant surface. Recommendations card highlights the highest-impact next step.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="view-tag">Project Manager</span>
+        <div class="spacer"></div>
+        <div class="search-box"><span class="glyph">⌕</span><input type="text" placeholder="Search…"></div>
+      </div>
+      <div class="pm-body">
+        <div class="pm-left">
+          <div class="section-head"><span>Active collaborators</span><span class="count">2</span></div>
+          <div class="collab-row">
+            <span class="avatar">D</span>
+            <div><div class="name">Darrin</div><div class="meta">User 1 · active 22m</div></div>
+            <span class="pill warn">Tree dirty</span>
+          </div>
+          <div class="collab-row user2">
+            <span class="avatar">C</span>
+            <div><div class="name">Codex</div><div class="meta">User 2 · idle 14m</div></div>
+            <span class="pill idle">Idle</span>
+          </div>
+          <div class="section-head"><span>Open sessions</span><span class="count">1</span></div>
+          <div class="session-row">
+            <div class="top"><span class="label">main · panda-gallery</span><span class="duration" style="color:var(--warn)">blocked 6m</span></div>
+            <div class="meta">handoff blocked · 7 dirty</div>
+          </div>
+        </div>
+        <div class="pm-center">
+          <div class="pm-card">
+            <div class="pm-card-head"><span class="pm-card-title" style="color:var(--warn)">Warnings &amp; blocked items</span><span style="font-family:var(--mono); font-size:10px; color:var(--warn)">4 active</span></div>
+            <div class="pm-card-body">
+              <div class="warning-row"><span class="glyph err">⛔</span><div class="copy"><b style="color:var(--err)">Handoff blocked — dirty tree</b><div class="sub">Darrin's working tree has 7 uncommitted changes. PC will not handoff until cleaned.</div></div><span class="age">6m</span></div>
+              <div class="warning-row"><span class="glyph">⚠</span><div class="copy"><b>Codex idle 14m</b><div class="sub">Last activity at 01:18 reading pkg_…2230. No new actions since.</div></div><span class="age">14m</span></div>
+              <div class="warning-row"><span class="glyph">⚠</span><div class="copy"><b>Daily report due in 1h 15m</b><div class="sub">Today's report rolls over at 18:00. Currently 12 entries.</div></div><span class="age">1h 15m</span></div>
+              <div class="warning-row"><span class="glyph">⚠</span><div class="copy"><b>Old handoff with warnings</b><div class="sub">pkg_20260504_193500 carries 2 validation warnings (large patch, long note). Inspect for context.</div></div><span class="age">5h</span></div>
+            </div>
+          </div>
+          <div class="pm-card">
+            <div class="pm-card-head"><span class="pm-card-title">Recommendations</span><span style="font-family:var(--mono); font-size:10px; color:var(--accent)">priority order</span></div>
+            <div class="pm-card-body">
+              <div class="recommendation"><span class="glyph">→</span><div class="copy"><b>1. Resolve dirty tree</b> in Darrin's session before handoff. Commit the 7 changes or stash them, then re-scan.<div class="sub">This unblocks the active session.</div></div></div>
+              <div class="recommendation"><span class="glyph">→</span><div class="copy"><b>2. Inspect pkg_…1935</b> to confirm the validation warnings are acceptable for the downstream consumer.<div class="sub">No PC action needed — operator review only.</div></div></div>
+              <div class="recommendation"><span class="glyph">→</span><div class="copy"><b>3. Daily report rollover</b> at 18:00 will close today's archive automatically.<div class="sub">No action; advisory.</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="pm-right">
+          <div class="section-head"><span>Today's report (live)</span><span class="count">12 entries</span></div>
+          <div class="activity-row"><span class="ts">01:31</span><span class="body"><b>Darrin</b> committed ac2e1aa</span></div>
+          <div class="activity-row"><span class="ts">01:30</span><span class="body" style="color:var(--warn)">⚠ session blocked · dirty tree</span></div>
+          <div class="activity-row"><span class="ts">01:18</span><span class="body"><b class="user2">Codex</b> read pkg_…2230</span></div>
+          <div class="activity-row"><span class="ts">01:15</span><span class="body"><b>Darrin</b> created pkg_…0115</span></div>
+          <div class="activity-row"><span class="ts">01:14</span><span class="body"><b class="user2">Codex</b> registered</span></div>
+          <div class="section-head"><span>Yesterday's archive</span></div>
+          <div class="archive-link"><span class="label">2026-05-04 daily</span><span class="ts">closed 18:00</span></div>
+          <div class="archive-link"><span class="label">2026-05-03 daily</span><span class="ts">archived</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

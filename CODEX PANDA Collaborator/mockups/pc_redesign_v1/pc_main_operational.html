@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC redesign · Main operational view · 6 states</title>
+<style>
+:root{
+  --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-2:#22223a; --pane-sel:#2a2a4e;
+  --border:#2a2a3e; --border-soft:#232336; --border-hover:#3a3a4e;
+  --text:#e0ddd5; --muted:#888888; --dim:#555555;
+  --accent:#e8a87c; --accent-soft:rgba(232,168,124,0.14); --accent-border:rgba(232,168,124,0.45); --accent-ink:#14141f;
+  --ok:#7fb069; --ok-soft:rgba(127,176,105,0.14); --ok-border:rgba(127,176,105,0.45);
+  --warn:#f39c12; --warn-soft:rgba(243,156,18,0.14); --warn-border:rgba(243,156,18,0.45);
+  --err:#e74c3c; --err-soft:rgba(231,76,60,0.14); --err-border:rgba(231,76,60,0.45);
+  --user1:#f2b36d; --user2:#5fa0a8;
+  --ui:"Segoe UI","SF Pro","Noto Sans",system-ui,sans-serif;
+  --mono:"Cascadia Mono","Consolas",monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+/* PC viewport — pixel-honest 1366×768 desktop */
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column;
+  font-family:var(--ui);
+}
+
+/* Header */
+.pc-header{
+  display:flex; align-items:center; gap:18px;
+  padding:10px 18px; background:var(--chrome);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.pc-header .brand{font-size:13px; font-weight:600; color:var(--text)}
+.pc-header .active-user{
+  font-family:var(--ui); font-size:18px; font-weight:700; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--text);
+  padding:0 10px; border-left:3px solid var(--user1); margin-left:6px;
+}
+.pc-header .role-tag{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--muted);
+  padding:3px 8px; background:var(--pane-2); border:1px solid var(--border);
+  border-radius:12px;
+}
+.pc-header .spacer{flex:1}
+.pc-header .test-mode-chip{
+  font-family:var(--mono); font-size:10px; letter-spacing:1.4px;
+  text-transform:uppercase; font-weight:700;
+  padding:4px 10px; background:var(--warn-soft); border:1px solid var(--warn);
+  color:var(--warn); border-radius:3px;
+}
+.pc-header .pause-chip{
+  font-family:var(--mono); font-size:10px; letter-spacing:1.4px;
+  text-transform:uppercase; font-weight:700;
+  padding:4px 10px; background:var(--err-soft); border:1px solid var(--err);
+  color:var(--err); border-radius:3px;
+}
+
+/* Statusbar — precision data row, ~26px */
+.pc-statusbar{
+  display:flex; align-items:center; gap:14px;
+  padding:0 18px; height:26px;
+  background:var(--pane); border-bottom:1px solid var(--border-soft);
+  font-family:var(--mono); font-size:11px; color:var(--muted);
+  flex-shrink:0;
+  overflow:hidden;
+}
+.pc-statusbar .pill{
+  padding:1px 8px; background:var(--pane-2);
+  border:1px solid var(--border); border-radius:10px;
+  color:var(--muted); white-space:nowrap;
+}
+.pc-statusbar .pill b{color:var(--text); font-weight:600}
+.pc-statusbar .pill.dirty{border-color:var(--warn-border); color:var(--warn); background:var(--warn-soft)}
+.pc-statusbar .pill.clean{border-color:var(--ok-border); color:var(--ok); background:var(--ok-soft)}
+.pc-statusbar .pill.unknown{border-color:var(--err-border); color:var(--err); background:var(--err-soft)}
+.pc-statusbar .path{
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--text); padding:0 6px;
+}
+
+/* Workflow guide — 5 panels in arrow progression */
+.workflow-guide{
+  display:grid; grid-template-columns:repeat(5, 1fr); gap:0;
+  padding:14px 18px; background:var(--canvas);
+  border-bottom:1px solid var(--border-soft);
+  flex-shrink:0;
+}
+.wg-step{
+  display:flex; flex-direction:column; gap:4px;
+  padding:10px 14px; background:var(--pane);
+  border:1px solid var(--border); border-right:none;
+  position:relative;
+}
+.wg-step:first-child{border-radius:4px 0 0 4px}
+.wg-step:last-child{border-right:1px solid var(--border); border-radius:0 4px 4px 0}
+.wg-step .step-head{display:flex; align-items:center; gap:6px}
+.wg-step .step-num{
+  width:18px; height:18px; border-radius:9px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  background:var(--pane-2); color:var(--muted); border:1px solid var(--border-hover);
+}
+.wg-step .step-label{font-size:11.5px; font-weight:600; color:var(--text)}
+.wg-step .step-state{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--dim); margin-top:2px}
+.wg-step.complete .step-num{background:var(--ok-soft); color:var(--ok); border-color:var(--ok-border)}
+.wg-step.complete .step-state{color:var(--ok)}
+.wg-step.active{background:var(--pane-sel); border-color:var(--accent-border)}
+.wg-step.active .step-num{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.wg-step.active .step-state{color:var(--accent)}
+.wg-step.attention .step-num{background:var(--warn-soft); color:var(--warn); border-color:var(--warn-border)}
+.wg-step.attention .step-state{color:var(--warn)}
+.wg-step.blocked .step-num{background:var(--err-soft); color:var(--err); border-color:var(--err-border)}
+.wg-step.blocked .step-state{color:var(--err)}
+.wg-step .arrow{
+  position:absolute; right:-8px; top:50%; transform:translateY(-50%);
+  width:14px; height:14px; background:var(--pane); border-top:1px solid var(--border);
+  border-right:1px solid var(--border); transform:translateY(-50%) rotate(45deg);
+  z-index:1;
+}
+.wg-step:last-child .arrow{display:none}
+
+/* Main content — 3-column body */
+.pc-body{
+  display:grid; grid-template-columns:340px 1fr 320px;
+  flex:1; min-height:0; gap:0;
+}
+
+/* Left rail — User 1 / User 2 setup + Hub cards */
+.left-rail{
+  display:flex; flex-direction:column; gap:12px;
+  padding:14px; background:var(--pane);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+}
+.user-card{
+  background:var(--pane-2); border:1px solid var(--border);
+  border-left:3px solid var(--user1);
+  border-radius:4px; padding:10px 12px;
+}
+.user-card.user2{border-left-color:var(--user2)}
+.user-card .uc-head{display:flex; align-items:center; gap:8px; margin-bottom:6px}
+.user-card .uc-name{font-size:13px; font-weight:600; color:var(--text)}
+.user-card .uc-slot{font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-left:auto}
+.user-card .uc-row{display:flex; justify-content:space-between; gap:10px; padding:3px 0; font-size:11.5px}
+.user-card .uc-row .lbl{color:var(--muted)}
+.user-card .uc-row .val{color:var(--text); font-family:var(--mono); font-size:11px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.user-card .uc-row .val.path{font-size:10.5px}
+.user-card .uc-row .val.empty{color:var(--dim); font-style:italic}
+.user-card .uc-status{
+  margin-top:6px; padding:4px 8px; font-family:var(--mono);
+  font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  border-radius:10px; display:inline-block;
+}
+.uc-status.ready{background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok)}
+.uc-status.incomplete{background:var(--pane); border:1px solid var(--border-hover); color:var(--muted)}
+.uc-status.warn{background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)}
+
+/* Center column — Working tree + messages */
+.center-col{
+  display:flex; flex-direction:column; gap:12px;
+  padding:14px; background:var(--canvas);
+  overflow-y:auto;
+}
+
+.pc-panel{
+  background:var(--pane); border:1px solid var(--border);
+  border-radius:4px; padding:12px 14px;
+}
+.pc-panel .panel-head{
+  display:flex; justify-content:space-between; align-items:center;
+  margin:-12px -14px 10px; padding:8px 14px;
+  background:var(--chrome); border-bottom:1px solid var(--border-soft);
+  border-radius:4px 4px 0 0;
+}
+.pc-panel .panel-title{
+  font-family:var(--ui); font-size:12px; font-weight:700;
+  color:var(--text); letter-spacing:.1px;
+}
+.pc-panel .panel-meta{font-family:var(--mono); font-size:10px; color:var(--muted)}
+
+.wt-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:5px 0; font-size:12px; border-bottom:1px solid var(--border-soft)}
+.wt-row:last-child{border-bottom:none}
+.wt-row .lbl{color:var(--muted); flex-shrink:0}
+.wt-row .val{font-family:var(--mono); font-size:11.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+.wt-row .val.path{flex:1; text-align:right}
+.wt-row .pill{padding:2px 8px; font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; border-radius:10px; flex-shrink:0}
+.wt-row .pill.dirty{background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)}
+.wt-row .pill.clean{background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok)}
+.wt-row .pill.unknown{background:var(--err-soft); border:1px solid var(--err-border); color:var(--err)}
+
+.wt-controls{display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-soft)}
+
+/* Buttons */
+.btn{
+  font-family:var(--ui); font-size:12px; font-weight:600;
+  padding:6px 12px; border-radius:4px; cursor:pointer;
+  border:1px solid transparent; min-height:28px;
+  display:inline-flex; align-items:center; gap:5px;
+  background:var(--pane-2); color:var(--text); border-color:var(--border-hover);
+}
+.btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.btn:disabled{
+  background:var(--pane); color:var(--dim); border-color:var(--border-soft);
+  cursor:not-allowed;
+}
+.btn:disabled:hover{border-color:var(--border-soft); color:var(--dim)}
+.btn-safe{background:var(--ok); color:#14141f; border-color:var(--ok); font-weight:700}
+.btn-safe:hover{filter:brightness(1.08); color:#14141f}
+.btn-safe:disabled{background:var(--pane); color:var(--dim); border-color:var(--border-soft); filter:none}
+.btn-warn{background:var(--pane-2); color:var(--warn); border-color:var(--warn-border)}
+.btn-warn:hover{background:var(--warn-soft); color:var(--warn); border-color:var(--warn)}
+.btn-danger{background:var(--err); color:#ffffff; border-color:var(--err); font-weight:700}
+.btn-danger:hover{filter:brightness(1.08); color:#ffffff}
+
+/* Messages panel */
+.messages{
+  flex:1; min-height:140px; max-height:240px;
+  display:flex; flex-direction:column; gap:0;
+  background:var(--canvas); border:1px solid var(--border-soft);
+  border-radius:4px; padding:6px 0; overflow-y:auto;
+}
+.msg{display:grid; grid-template-columns:80px 90px 1fr; gap:10px; padding:5px 12px; font-size:11.5px; border-bottom:1px solid var(--border-soft)}
+.msg:last-child{border-bottom:none}
+.msg .ts{font-family:var(--mono); font-size:10.5px; color:var(--dim)}
+.msg .kind{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--muted)}
+.msg .body{color:var(--text)}
+.msg.info .kind{color:var(--muted)}
+.msg.success .kind{color:var(--ok)}
+.msg.warn .kind{color:var(--warn)}
+.msg.err .kind{color:var(--err)}
+.msg.wait .kind{color:var(--accent)}
+
+/* Right rail — Create Safe Handoff */
+.right-rail{
+  display:flex; flex-direction:column; gap:12px;
+  padding:14px; background:var(--pane);
+  border-left:1px solid var(--border);
+  overflow-y:auto;
+}
+.handoff-panel{flex-shrink:0}
+.handoff-summary{display:flex; flex-direction:column; gap:6px; margin-bottom:12px}
+.handoff-summary .hs-row{display:flex; justify-content:space-between; gap:8px; font-size:11.5px; padding:3px 0; border-bottom:1px solid var(--border-soft)}
+.handoff-summary .hs-row:last-child{border-bottom:none}
+.handoff-summary .hs-lbl{color:var(--muted)}
+.handoff-summary .hs-val{font-family:var(--mono); font-size:10.5px; color:var(--text); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.handoff-pills{display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px}
+.handoff-pills .pill{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; padding:3px 8px; background:var(--pane-2); border:1px solid var(--border); border-radius:10px; color:var(--muted)}
+.handoff-pills .pill.ok{background:var(--ok-soft); border-color:var(--ok-border); color:var(--ok)}
+.handoff-pills .pill.warn{background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)}
+
+.btn-handoff{
+  width:100%; height:48px; font-size:14px; font-weight:700;
+  padding:0 18px; border-radius:4px;
+  background:var(--ok); color:#14141f; border:1px solid var(--ok);
+  cursor:pointer; font-family:var(--ui);
+}
+.btn-handoff:hover{filter:brightness(1.08)}
+.btn-handoff:disabled{background:var(--pane-2); color:var(--dim); border-color:var(--border-soft); cursor:not-allowed; filter:none}
+
+.blocked-reason{
+  font-size:11.5px; color:var(--warn); margin-top:6px;
+  padding:6px 10px; background:var(--warn-soft); border-left:3px solid var(--warn);
+  border-radius:3px; line-height:1.4;
+}
+.blocked-reason.err{color:var(--err); background:var(--err-soft); border-left-color:var(--err)}
+
+/* State switching */
+.stage > .state-block{display:none; align-self:stretch; flex-direction:column; gap:14px; align-items:center}
+#s1:checked ~ .stage > .state-block.s-fresh{display:flex}
+#s2:checked ~ .stage > .state-block.s-user1{display:flex}
+#s3:checked ~ .stage > .state-block.s-ready{display:flex}
+#s4:checked ~ .stage > .state-block.s-dirty{display:flex}
+#s5:checked ~ .stage > .state-block.s-test{display:flex}
+#s6:checked ~ .stage > .state-block.s-pause{display:flex}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div class="eyebrow">PC redesign v1 · Surface 1 of 6</div>
+  <h1>Main Operational View · 6 states</h1>
+  <div class="meta">
+    <span><b>app:</b> PANDA Collaborator</span>
+    <span><b>source:</b> CODEX PG/CODEX PANDA Collaborator/web/index.html</span>
+    <span><b>viewport:</b> 1366×768 desktop (narrow-width covered separately)</span>
+    <span><b>spec ref:</b> CODEX_PC_UI_UX_REDESIGN_SPEC §6.1–6.7</span>
+  </div>
+</div>
+
+<input type="radio" name="s" id="s1" checked hidden>
+<input type="radio" name="s" id="s2" hidden>
+<input type="radio" name="s" id="s3" hidden>
+<input type="radio" name="s" id="s4" hidden>
+<input type="radio" name="s" id="s5" hidden>
+<input type="radio" name="s" id="s6" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">States</span>
+  <label for="s1">1 · fresh (no users, no tree)</label>
+  <label for="s2">2 · user 1 set up</label>
+  <label for="s3">3 · ready (clean tree)</label>
+  <label for="s4">4 · dirty tree (warning)</label>
+  <label for="s5">5 · test mode active</label>
+  <label for="s6">6 · emergency pause active</label>
+</div>
+
+<div class="stage">
+
+  <!-- =========================================================== -->
+  <!-- STATE 1 · fresh — no users registered, no working tree selected -->
+  <!-- =========================================================== -->
+  <div class="state-block s-fresh">
+    <div class="stage-cap">
+      <span class="num">STATE 1 · fresh</span>
+      <span class="title-text">App just opened. No users registered. No working tree selected. Workflow guide shows step 1 active; Create Safe Handoff blocked with stacked reasons. Header shows no active user yet.</span>
+    </div>
+    <div class="pc-viewport">
+      <!-- Header -->
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span style="color:var(--dim); font-size:11px; font-style:italic">No active user</span>
+        <div class="spacer"></div>
+        <span class="role-tag" title="Production mode (not test mode)">Production</span>
+      </div>
+      <!-- Statusbar -->
+      <div class="pc-statusbar">
+        <span class="pill" title="No working tree selected">No tree</span>
+        <span class="pill" title="No branch (no tree selected)">branch <b>—</b></span>
+        <span class="pill" title="No HEAD SHA (no tree selected)">HEAD <b>—</b></span>
+        <span class="pill unknown" title="Working tree state unknown — select a path and scan">Unknown</span>
+        <span class="path" title="No path selected">—</span>
+      </div>
+      <!-- Workflow guide -->
+      <div class="workflow-guide">
+        <div class="wg-step active"><div class="step-head"><span class="step-num">1</span><span class="step-label">Setup users</span></div><div class="step-state">Active</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">2</span><span class="step-label">Confirm tree</span></div><div class="step-state">Not started</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">3</span><span class="step-label">Start session</span></div><div class="step-state">Not started</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">4</span><span class="step-label">Review activity</span></div><div class="step-state">Not started</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">5</span><span class="step-label">Create handoff</span></div><div class="step-state">Not started</div></div>
+      </div>
+      <!-- Body -->
+      <div class="pc-body">
+        <!-- Left rail -->
+        <div class="left-rail">
+          <div class="user-card">
+            <div class="uc-head"><span class="uc-name">User 1</span><span class="uc-slot">Slot 1</span></div>
+            <div class="uc-row"><span class="lbl">Display name</span><span class="val empty">not set</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val empty">not set</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val empty">not set</span></div>
+            <span class="uc-status incomplete">Incomplete</span>
+          </div>
+          <div class="user-card user2">
+            <div class="uc-head"><span class="uc-name">User 2</span><span class="uc-slot">Slot 2</span></div>
+            <div class="uc-row"><span class="lbl">Display name</span><span class="val empty">not set</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val empty">not set</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val empty">not set</span></div>
+            <span class="uc-status incomplete">Incomplete</span>
+          </div>
+          <!-- on click: open user 1 setup form -->
+          <button class="btn" style="width:100%">Set up User 1 →</button>
+        </div>
+
+        <!-- Center column -->
+        <div class="center-col">
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">last scan: never</span></div>
+            <div class="wt-row"><span class="lbl">Selected root</span><span class="val empty" style="color:var(--dim); font-style:italic">No path selected</span></div>
+            <div class="wt-row"><span class="lbl">Branch</span><span class="val">—</span></div>
+            <div class="wt-row"><span class="lbl">HEAD</span><span class="val">—</span></div>
+            <div class="wt-row"><span class="lbl">Status</span><span class="pill unknown">Unknown</span></div>
+            <div class="wt-controls">
+              <!-- on click: open path picker -->
+              <button class="btn">Browse…</button>
+              <!-- on click: scan working tree (disabled until path selected) -->
+              <button class="btn" disabled aria-disabled="true" title="Select a working tree first.">Scan working tree</button>
+            </div>
+          </div>
+
+          <div class="pc-panel" style="flex:1; display:flex; flex-direction:column">
+            <div class="panel-head"><span class="panel-title">Messages &amp; activity</span><span class="panel-meta">0 messages</span></div>
+            <div class="messages">
+              <div class="msg info"><span class="ts">01:12:04</span><span class="kind">Info</span><span class="body">PANDA Collaborator started. Set up User 1 to begin.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right rail — Handoff -->
+        <div class="right-rail">
+          <div class="pc-panel handoff-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff</span></div>
+            <div class="handoff-summary">
+              <div class="hs-row"><span class="hs-lbl">Git root</span><span class="hs-val" style="color:var(--dim); font-style:italic">—</span></div>
+              <div class="hs-row"><span class="hs-lbl">Branch</span><span class="hs-val">—</span></div>
+              <div class="hs-row"><span class="hs-lbl">HEAD</span><span class="hs-val">—</span></div>
+              <div class="hs-row"><span class="hs-lbl">Output</span><span class="hs-val">—</span></div>
+            </div>
+            <div class="handoff-pills">
+              <span class="pill">Manifest pending</span>
+              <span class="pill">Patch pending</span>
+              <span class="pill">Files pending</span>
+            </div>
+            <!-- on click: blocked while users not set up + tree not selected -->
+            <button class="btn-handoff" disabled aria-disabled="true" title="Cannot handoff: User 1 + User 2 must be set up and a working tree must be selected.">Create Safe Handoff</button>
+            <div class="blocked-reason">
+              <b>Blocked</b> — set up User 1, set up User 2, and select a working tree before handoff.
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Session</span></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <!-- on click: blocked while no users set up -->
+              <button class="btn btn-safe" disabled aria-disabled="true" title="Cannot start session: no users set up.">Start session</button>
+              <!-- on click: blocked, session not active -->
+              <button class="btn btn-warn" disabled aria-disabled="true" title="No active session.">End session</button>
+              <!-- on click: emergency pause — always available even disabled state shows as warning red -->
+              <button class="btn btn-danger" title="Emergency pause: stops all PC operations and writes incident evidence. Available at any time.">Emergency pause</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 2 · user 1 set up — Darrin registered as User 1; User 2 still pending; tree not selected -->
+  <!-- =========================================================== -->
+  <div class="state-block s-user1">
+    <div class="stage-cap">
+      <span class="num">STATE 2 · user 1 set up</span>
+      <span class="title-text">User 1 (Darrin) registered. User 2 still empty. Tree not selected. Active user shows in header. Workflow guide step 1 marked complete; step 2 active.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="active-user">DARRIN</span>
+        <span class="role-tag">User 1</span>
+        <div class="spacer"></div>
+        <span class="role-tag">Production</span>
+      </div>
+      <div class="pc-statusbar">
+        <span class="pill" title="No working tree selected">No tree</span>
+        <span class="pill">branch <b>—</b></span>
+        <span class="pill">HEAD <b>—</b></span>
+        <span class="pill unknown">Unknown</span>
+        <span class="path">—</span>
+      </div>
+      <div class="workflow-guide">
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Setup users</span></div><div class="step-state">User 1 ready · User 2 pending</div><div class="arrow"></div></div>
+        <div class="wg-step active"><div class="step-head"><span class="step-num">2</span><span class="step-label">Confirm tree</span></div><div class="step-state">Active</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">3</span><span class="step-label">Start session</span></div><div class="step-state">Not started</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">4</span><span class="step-label">Review activity</span></div><div class="step-state">Not started</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">5</span><span class="step-label">Create handoff</span></div><div class="step-state">Not started</div></div>
+      </div>
+      <div class="pc-body">
+        <div class="left-rail">
+          <div class="user-card">
+            <div class="uc-head"><span class="uc-name">Darrin</span><span class="uc-slot">User 1</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path" title="C:\panda-gallery">C:\panda-gallery</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">drrap@denpc.local</span></div>
+            <div class="uc-row"><span class="lbl">Handover</span><span class="val">available</span></div>
+            <span class="uc-status ready">Ready</span>
+          </div>
+          <div class="user-card user2">
+            <div class="uc-head"><span class="uc-name">User 2</span><span class="uc-slot">Slot 2</span></div>
+            <div class="uc-row"><span class="lbl">Display name</span><span class="val empty">not set</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val empty">not set</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val empty">not set</span></div>
+            <span class="uc-status incomplete">Incomplete</span>
+          </div>
+          <!-- on click: open user 2 setup form -->
+          <button class="btn" style="width:100%">Set up User 2 →</button>
+        </div>
+        <div class="center-col">
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">last scan: never</span></div>
+            <div class="wt-row"><span class="lbl">Selected root</span><span class="val empty" style="color:var(--dim); font-style:italic">No path selected — Darrin's path will be used by default</span></div>
+            <div class="wt-row"><span class="lbl">Branch</span><span class="val">—</span></div>
+            <div class="wt-row"><span class="lbl">HEAD</span><span class="val">—</span></div>
+            <div class="wt-row"><span class="lbl">Status</span><span class="pill unknown">Unknown</span></div>
+            <div class="wt-controls">
+              <!-- on click: open path picker -->
+              <button class="btn">Browse…</button>
+              <!-- on click: use Darrin's registered path -->
+              <button class="btn">Use Darrin's path</button>
+              <!-- on click: scan; disabled until path resolved -->
+              <button class="btn" disabled aria-disabled="true" title="Select a working tree first.">Scan working tree</button>
+            </div>
+          </div>
+          <div class="pc-panel" style="flex:1; display:flex; flex-direction:column">
+            <div class="panel-head"><span class="panel-title">Messages &amp; activity</span><span class="panel-meta">2 messages</span></div>
+            <div class="messages">
+              <div class="msg info"><span class="ts">01:12:04</span><span class="kind">Info</span><span class="body">PANDA Collaborator started. Set up User 1 to begin.</span></div>
+              <div class="msg success"><span class="ts">01:13:21</span><span class="kind">Success</span><span class="body">User 1 (Darrin) registered. Local path: C:\panda-gallery</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="right-rail">
+          <div class="pc-panel handoff-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff</span></div>
+            <div class="handoff-summary">
+              <div class="hs-row"><span class="hs-lbl">Git root</span><span class="hs-val">—</span></div>
+              <div class="hs-row"><span class="hs-lbl">Branch</span><span class="hs-val">—</span></div>
+              <div class="hs-row"><span class="hs-lbl">HEAD</span><span class="hs-val">—</span></div>
+              <div class="hs-row"><span class="hs-lbl">Output</span><span class="hs-val">—</span></div>
+            </div>
+            <div class="handoff-pills">
+              <span class="pill">Manifest pending</span>
+              <span class="pill">Patch pending</span>
+              <span class="pill">Files pending</span>
+            </div>
+            <button class="btn-handoff" disabled aria-disabled="true" title="Cannot handoff: User 2 must be set up and a working tree must be selected.">Create Safe Handoff</button>
+            <div class="blocked-reason"><b>Blocked</b> — User 2 not set up; working tree not selected.</div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Session</span></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <button class="btn btn-safe" disabled aria-disabled="true" title="Cannot start session: User 2 not set up.">Start session</button>
+              <button class="btn btn-warn" disabled aria-disabled="true" title="No active session.">End session</button>
+              <button class="btn btn-danger" title="Emergency pause.">Emergency pause</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 3 · ready — both users set up, working tree clean, ready to handoff -->
+  <!-- =========================================================== -->
+  <div class="state-block s-ready">
+    <div class="stage-cap">
+      <span class="num">STATE 3 · ready (clean tree)</span>
+      <span class="title-text">Both users registered. Working tree scanned, clean. All workflow steps complete except handoff. Create Safe Handoff is the dominant green primary; all blockers cleared.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="active-user">DARRIN</span>
+        <span class="role-tag">User 1</span>
+        <div class="spacer"></div>
+        <span class="role-tag">Production</span>
+      </div>
+      <div class="pc-statusbar">
+        <span class="pill"><b>panda-gallery</b></span>
+        <span class="pill">branch <b>main</b></span>
+        <span class="pill">HEAD <b>ac2e1aa</b></span>
+        <span class="pill clean">Clean</span>
+        <span class="path" title="C:\panda-gallery">C:\panda-gallery</span>
+      </div>
+      <div class="workflow-guide">
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Setup users</span></div><div class="step-state">Complete</div><div class="arrow"></div></div>
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Confirm tree</span></div><div class="step-state">Complete</div><div class="arrow"></div></div>
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Start session</span></div><div class="step-state">Active 18m</div><div class="arrow"></div></div>
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Review activity</span></div><div class="step-state">Reviewed</div><div class="arrow"></div></div>
+        <div class="wg-step active"><div class="step-head"><span class="step-num">5</span><span class="step-label">Create handoff</span></div><div class="step-state">Ready</div></div>
+      </div>
+      <div class="pc-body">
+        <div class="left-rail">
+          <div class="user-card">
+            <div class="uc-head"><span class="uc-name">Darrin</span><span class="uc-slot">User 1 · active</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">C:\panda-gallery</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">drrap@denpc.local</span></div>
+            <div class="uc-row"><span class="lbl">Handover</span><span class="val">available</span></div>
+            <span class="uc-status ready">Ready</span>
+          </div>
+          <div class="user-card user2">
+            <div class="uc-head"><span class="uc-name">Codex</span><span class="uc-slot">User 2</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">C:\CODEX PG</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">codex@codex-station</span></div>
+            <div class="uc-row"><span class="lbl">Handover</span><span class="val">available</span></div>
+            <span class="uc-status ready">Ready</span>
+          </div>
+        </div>
+        <div class="center-col">
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">last scan: 14:22:08</span></div>
+            <div class="wt-row"><span class="lbl">Selected root</span><span class="val path">C:\panda-gallery</span></div>
+            <div class="wt-row"><span class="lbl">Branch</span><span class="val">main</span></div>
+            <div class="wt-row"><span class="lbl">HEAD</span><span class="val">ac2e1aa</span></div>
+            <div class="wt-row"><span class="lbl">Status</span><span class="pill clean">Clean</span></div>
+            <div class="wt-row"><span class="lbl">Untracked / modified</span><span class="val">0 / 0</span></div>
+            <div class="wt-controls">
+              <button class="btn">Browse…</button>
+              <button class="btn">Scan working tree</button>
+            </div>
+          </div>
+          <div class="pc-panel" style="flex:1; display:flex; flex-direction:column">
+            <div class="panel-head"><span class="panel-title">Messages &amp; activity</span><span class="panel-meta">5 messages</span></div>
+            <div class="messages">
+              <div class="msg info"><span class="ts">01:12:04</span><span class="kind">Info</span><span class="body">PANDA Collaborator started.</span></div>
+              <div class="msg success"><span class="ts">01:13:21</span><span class="kind">Success</span><span class="body">User 1 (Darrin) registered.</span></div>
+              <div class="msg success"><span class="ts">01:14:55</span><span class="kind">Success</span><span class="body">User 2 (Codex) registered.</span></div>
+              <div class="msg success"><span class="ts">01:15:30</span><span class="kind">Success</span><span class="body">Working tree scan complete: clean.</span></div>
+              <div class="msg success"><span class="ts">01:15:34</span><span class="kind">Success</span><span class="body">Session started. Ready to create handoff.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="right-rail">
+          <div class="pc-panel handoff-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff</span></div>
+            <div class="handoff-summary">
+              <div class="hs-row"><span class="hs-lbl">Git root</span><span class="hs-val">C:\panda-gallery</span></div>
+              <div class="hs-row"><span class="hs-lbl">Branch</span><span class="hs-val">main</span></div>
+              <div class="hs-row"><span class="hs-lbl">HEAD</span><span class="hs-val">ac2e1aa</span></div>
+              <div class="hs-row"><span class="hs-lbl">Protection branch</span><span class="hs-val">pc/handoff/2026-05-05-0115</span></div>
+              <div class="hs-row"><span class="hs-lbl">Output</span><span class="hs-val">PANDA test sandboxes\…</span></div>
+            </div>
+            <div class="handoff-pills">
+              <span class="pill ok">Manifest ready</span>
+              <span class="pill ok">Patch ready</span>
+              <span class="pill ok">Files ready</span>
+              <span class="pill ok">Note ready</span>
+            </div>
+            <!-- on click: builds handoff package, writes evidence, advances workflow guide step 5 -->
+            <button class="btn-handoff">Create Safe Handoff</button>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Session</span></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <button class="btn btn-safe" disabled aria-disabled="true" title="Session already active.">Start session</button>
+              <!-- on click: prompts confirmation, then ends session -->
+              <button class="btn btn-warn">End session</button>
+              <button class="btn btn-danger" title="Emergency pause.">Emergency pause</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 4 · dirty tree — working tree has uncommitted changes; handoff blocked with explicit reason -->
+  <!-- =========================================================== -->
+  <div class="state-block s-dirty">
+    <div class="stage-cap">
+      <span class="num">STATE 4 · dirty tree</span>
+      <span class="title-text">Working tree scan found 7 uncommitted changes. Status pill is amber-warn. Create Safe Handoff disabled with the dirty count surfaced. PC will not handoff a dirty tree without explicit operator action — passive evidence of risk; no auto-clean.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="active-user">DARRIN</span>
+        <span class="role-tag">User 1</span>
+        <div class="spacer"></div>
+        <span class="role-tag">Production</span>
+      </div>
+      <div class="pc-statusbar">
+        <span class="pill"><b>panda-gallery</b></span>
+        <span class="pill">branch <b>main</b></span>
+        <span class="pill">HEAD <b>ac2e1aa</b></span>
+        <span class="pill dirty">Dirty · 7</span>
+        <span class="path" title="C:\panda-gallery">C:\panda-gallery</span>
+      </div>
+      <div class="workflow-guide">
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Setup users</span></div><div class="step-state">Complete</div><div class="arrow"></div></div>
+        <div class="wg-step attention"><div class="step-head"><span class="step-num">!</span><span class="step-label">Confirm tree</span></div><div class="step-state">Needs attention · 7 dirty</div><div class="arrow"></div></div>
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Start session</span></div><div class="step-state">Active 22m</div><div class="arrow"></div></div>
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Review activity</span></div><div class="step-state">Reviewed</div><div class="arrow"></div></div>
+        <div class="wg-step blocked"><div class="step-head"><span class="step-num">×</span><span class="step-label">Create handoff</span></div><div class="step-state">Blocked · dirty tree</div></div>
+      </div>
+      <div class="pc-body">
+        <div class="left-rail">
+          <div class="user-card">
+            <div class="uc-head"><span class="uc-name">Darrin</span><span class="uc-slot">User 1 · active</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">C:\panda-gallery</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">drrap@denpc.local</span></div>
+            <div class="uc-row"><span class="lbl">Handover</span><span class="val">available</span></div>
+            <span class="uc-status ready">Ready</span>
+          </div>
+          <div class="user-card user2">
+            <div class="uc-head"><span class="uc-name">Codex</span><span class="uc-slot">User 2</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">C:\CODEX PG</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">codex@codex-station</span></div>
+            <div class="uc-row"><span class="lbl">Handover</span><span class="val">available</span></div>
+            <span class="uc-status ready">Ready</span>
+          </div>
+        </div>
+        <div class="center-col">
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">last scan: 14:22:08</span></div>
+            <div class="wt-row"><span class="lbl">Selected root</span><span class="val path">C:\panda-gallery</span></div>
+            <div class="wt-row"><span class="lbl">Branch</span><span class="val">main</span></div>
+            <div class="wt-row"><span class="lbl">HEAD</span><span class="val">ac2e1aa</span></div>
+            <div class="wt-row"><span class="lbl">Status</span><span class="pill dirty">Dirty</span></div>
+            <div class="wt-row"><span class="lbl">Untracked / modified</span><span class="val" style="color:var(--warn)">2 / 5</span></div>
+            <div class="wt-controls">
+              <button class="btn">Browse…</button>
+              <!-- on click: re-scan; PC never auto-cleans, so dirty stays dirty -->
+              <button class="btn">Re-scan</button>
+            </div>
+          </div>
+          <div class="pc-panel" style="flex:1; display:flex; flex-direction:column">
+            <div class="panel-head"><span class="panel-title">Messages &amp; activity</span><span class="panel-meta">7 messages</span></div>
+            <div class="messages">
+              <div class="msg success"><span class="ts">01:14:55</span><span class="kind">Success</span><span class="body">User 2 (Codex) registered.</span></div>
+              <div class="msg warn"><span class="ts">01:15:30</span><span class="kind">Warning</span><span class="body">Working tree scan: 7 uncommitted changes (2 untracked, 5 modified). Handoff blocked.</span></div>
+              <div class="msg success"><span class="ts">01:15:34</span><span class="kind">Success</span><span class="body">Session started.</span></div>
+              <div class="msg wait"><span class="ts">01:30:12</span><span class="kind">Wait-user</span><span class="body">Commit or stash dirty changes, then re-scan to unblock handoff.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="right-rail">
+          <div class="pc-panel handoff-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff</span></div>
+            <div class="handoff-summary">
+              <div class="hs-row"><span class="hs-lbl">Git root</span><span class="hs-val">C:\panda-gallery</span></div>
+              <div class="hs-row"><span class="hs-lbl">Branch</span><span class="hs-val">main</span></div>
+              <div class="hs-row"><span class="hs-lbl">HEAD</span><span class="hs-val">ac2e1aa</span></div>
+              <div class="hs-row"><span class="hs-lbl">Protection branch</span><span class="hs-val">would create at HEAD</span></div>
+            </div>
+            <div class="handoff-pills">
+              <span class="pill warn">Tree dirty · 7</span>
+              <span class="pill ok">Manifest ready</span>
+              <span class="pill ok">Patch ready</span>
+              <span class="pill ok">Files ready</span>
+            </div>
+            <button class="btn-handoff" disabled aria-disabled="true" title="Cannot handoff a dirty tree. Commit or stash 7 uncommitted changes, then re-scan.">Create Safe Handoff</button>
+            <div class="blocked-reason"><b>Blocked — dirty tree</b><br>Commit or stash 7 uncommitted changes (2 untracked, 5 modified) before handoff. PC will not auto-clean the tree.</div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Session</span></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <button class="btn btn-safe" disabled aria-disabled="true" title="Session already active.">Start session</button>
+              <button class="btn btn-warn">End session</button>
+              <button class="btn btn-danger" title="Emergency pause.">Emergency pause</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 5 · test mode active — Bob/Karen fake users; sandbox path; warn-amber TEST MODE chip pinned -->
+  <!-- =========================================================== -->
+  <div class="state-block s-test">
+    <div class="stage-cap">
+      <span class="num">STATE 5 · test mode active</span>
+      <span class="title-text">PC running in TEST MODE with Bob/Karen fake users in a sandbox path. Header shows TEST MODE chip in warn-amber. Test identity colors are visually distinct from User 1/User 2 production accents — Bob and Karen don't use the orange/teal stripes.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="active-user" style="border-left-color:var(--warn)">BOB</span>
+        <span class="role-tag" style="background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)">Test User · slot 1</span>
+        <div class="spacer"></div>
+        <span class="test-mode-chip">⚠ Test mode</span>
+      </div>
+      <div class="pc-statusbar">
+        <span class="pill" title="Sandbox tree, not production"><b>sandbox</b></span>
+        <span class="pill">branch <b>test/handoff-smoke</b></span>
+        <span class="pill">HEAD <b>1a2b3c4</b></span>
+        <span class="pill clean">Clean</span>
+        <span class="path" title="PANDA test sandboxes\sandbox_a">PANDA test sandboxes\sandbox_a</span>
+      </div>
+      <div class="workflow-guide">
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Setup users</span></div><div class="step-state">Bob + Karen</div><div class="arrow"></div></div>
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Confirm tree</span></div><div class="step-state">Sandbox</div><div class="arrow"></div></div>
+        <div class="wg-step complete"><div class="step-head"><span class="step-num">✓</span><span class="step-label">Start session</span></div><div class="step-state">Test 8m</div><div class="arrow"></div></div>
+        <div class="wg-step active"><div class="step-head"><span class="step-num">4</span><span class="step-label">Review activity</span></div><div class="step-state">Test in progress</div><div class="arrow"></div></div>
+        <div class="wg-step"><div class="step-head"><span class="step-num">5</span><span class="step-label">Create handoff</span></div><div class="step-state">Test handoff allowed</div></div>
+      </div>
+      <div class="pc-body">
+        <div class="left-rail">
+          <div class="user-card" style="border-left-color:var(--warn)">
+            <div class="uc-head"><span class="uc-name">Bob</span><span class="uc-slot" style="color:var(--warn)">Test · slot 1</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">sandbox_a</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">bob@test-fixture</span></div>
+            <span class="uc-status warn">Test fixture</span>
+          </div>
+          <div class="user-card user2" style="border-left-color:var(--warn)">
+            <div class="uc-head"><span class="uc-name">Karen</span><span class="uc-slot" style="color:var(--warn)">Test · slot 2</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">sandbox_b</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">karen@test-fixture</span></div>
+            <span class="uc-status warn">Test fixture</span>
+          </div>
+          <button class="btn btn-warn" style="width:100%" title="Quit test mode and return to production. Drops fake users; production users restored.">Quit test mode</button>
+        </div>
+        <div class="center-col">
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">last scan: 14:08:11</span></div>
+            <div class="wt-row"><span class="lbl">Selected root</span><span class="val path">PANDA test sandboxes\sandbox_a</span></div>
+            <div class="wt-row"><span class="lbl">Branch</span><span class="val">test/handoff-smoke</span></div>
+            <div class="wt-row"><span class="lbl">HEAD</span><span class="val">1a2b3c4</span></div>
+            <div class="wt-row"><span class="lbl">Status</span><span class="pill clean">Clean</span></div>
+            <div class="wt-row"><span class="lbl">Sandbox</span><span class="pill" style="background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)">test fixture</span></div>
+          </div>
+          <div class="pc-panel" style="flex:1; display:flex; flex-direction:column">
+            <div class="panel-head"><span class="panel-title">Messages &amp; activity</span><span class="panel-meta">test session</span></div>
+            <div class="messages">
+              <div class="msg warn"><span class="ts">01:08:00</span><span class="kind">Test mode</span><span class="body">Test mode entered. Production users hidden. Bob/Karen fixtures loaded.</span></div>
+              <div class="msg success"><span class="ts">01:08:11</span><span class="kind">Success</span><span class="body">Sandbox tree scan: clean.</span></div>
+              <div class="msg success"><span class="ts">01:08:14</span><span class="kind">Success</span><span class="body">Test session started. Evidence will be written under test-evidence/.</span></div>
+              <div class="msg info"><span class="ts">01:14:33</span><span class="kind">Test action</span><span class="body">Bob initiated handoff smoke. Awaiting Karen confirmation.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="right-rail">
+          <div class="pc-panel handoff-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff <span style="color:var(--warn); font-family:var(--mono); font-size:9.5px; letter-spacing:1px; margin-left:6px">TEST</span></span></div>
+            <div class="handoff-summary">
+              <div class="hs-row"><span class="hs-lbl">Sandbox root</span><span class="hs-val">sandbox_a</span></div>
+              <div class="hs-row"><span class="hs-lbl">Branch</span><span class="hs-val">test/handoff-smoke</span></div>
+              <div class="hs-row"><span class="hs-lbl">Output</span><span class="hs-val">test-evidence/…</span></div>
+            </div>
+            <div class="handoff-pills">
+              <span class="pill" style="background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)">Test handoff</span>
+              <span class="pill ok">Manifest ready</span>
+              <span class="pill ok">Patch ready</span>
+              <span class="pill ok">Files ready</span>
+            </div>
+            <!-- on click: produces test-handoff package in test-evidence/, never touches production -->
+            <button class="btn-handoff" style="background:var(--warn); border-color:var(--warn)">Create Test Handoff</button>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Session</span></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <button class="btn btn-safe" disabled aria-disabled="true" title="Test session already active.">Start session</button>
+              <button class="btn btn-warn">End test session</button>
+              <button class="btn btn-danger" title="Emergency pause (still applies in test mode).">Emergency pause</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 6 · emergency pause active — red banner pinned, all primary actions disabled, resume control surfaced -->
+  <!-- =========================================================== -->
+  <div class="state-block s-pause">
+    <div class="stage-cap">
+      <span class="num">STATE 6 · emergency pause active</span>
+      <span class="title-text">Operator pressed Emergency Pause. PC stops all operations, writes incident evidence, surfaces a red banner explaining what's paused. All primary actions disabled. Resume button surfaced as the only path forward.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span class="active-user" style="border-left-color:var(--err)">DARRIN</span>
+        <span class="role-tag" style="background:var(--err-soft); border-color:var(--err-border); color:var(--err)">Paused</span>
+        <div class="spacer"></div>
+        <span class="pause-chip">⛔ Emergency pause</span>
+      </div>
+      <div class="pc-statusbar">
+        <span class="pill"><b>panda-gallery</b></span>
+        <span class="pill">branch <b>main</b></span>
+        <span class="pill">HEAD <b>ac2e1aa</b></span>
+        <span class="pill" style="background:var(--err-soft); border-color:var(--err-border); color:var(--err)">Paused</span>
+        <span class="path">C:\panda-gallery</span>
+      </div>
+      <!-- Pause banner — replaces the workflow guide while paused -->
+      <div style="padding:14px 18px; background:var(--err-soft); border-bottom:2px solid var(--err); display:flex; gap:14px; align-items:flex-start">
+        <span style="font-family:var(--mono); font-size:18px; font-weight:700; color:var(--err); line-height:1">⛔</span>
+        <div style="flex:1">
+          <div style="font-size:13px; font-weight:700; color:var(--err); margin-bottom:4px">Emergency pause active — all PC operations halted</div>
+          <div style="font-size:12px; color:var(--text); line-height:1.5">
+            Paused at 01:31:42 by Darrin. Incident evidence written to <code style="font-family:var(--mono); font-size:11px; background:var(--pane-2); padding:1px 5px; border-radius:2px">incidents/2026-05-05_013142.json</code>.
+            Active session preserved; handoff package not built. Working tree untouched. Resume only after the operational concern is addressed.
+          </div>
+        </div>
+        <!-- on click: resume PC operations; logs operator + reason; clears pause banner -->
+        <button class="btn btn-safe" style="font-size:13px; padding:8px 18px; height:36px" title="Resume PC operations. Logs operator and reason; clears pause banner.">Resume PC</button>
+      </div>
+      <div class="pc-body">
+        <div class="left-rail">
+          <div class="user-card">
+            <div class="uc-head"><span class="uc-name">Darrin</span><span class="uc-slot">User 1 · paused</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">C:\panda-gallery</span></div>
+            <div class="uc-row"><span class="lbl">Git identity</span><span class="val">drrap@denpc.local</span></div>
+            <span class="uc-status warn">Paused</span>
+          </div>
+          <div class="user-card user2">
+            <div class="uc-head"><span class="uc-name">Codex</span><span class="uc-slot">User 2 · paused</span></div>
+            <div class="uc-row"><span class="lbl">Local path</span><span class="val path">C:\CODEX PG</span></div>
+            <span class="uc-status warn">Paused</span>
+          </div>
+        </div>
+        <div class="center-col">
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">scans paused</span></div>
+            <div class="wt-row"><span class="lbl">Selected root</span><span class="val path">C:\panda-gallery</span></div>
+            <div class="wt-row"><span class="lbl">Branch</span><span class="val">main</span></div>
+            <div class="wt-row"><span class="lbl">HEAD</span><span class="val">ac2e1aa</span></div>
+            <div class="wt-row"><span class="lbl">Status</span><span class="pill" style="background:var(--err-soft); border-color:var(--err-border); color:var(--err)">Scans paused</span></div>
+            <div class="wt-controls">
+              <button class="btn" disabled aria-disabled="true" title="Browse disabled while emergency pause is active.">Browse…</button>
+              <button class="btn" disabled aria-disabled="true" title="Scan disabled while emergency pause is active.">Re-scan</button>
+            </div>
+          </div>
+          <div class="pc-panel" style="flex:1; display:flex; flex-direction:column">
+            <div class="panel-head"><span class="panel-title">Messages &amp; activity</span><span class="panel-meta">9 messages</span></div>
+            <div class="messages">
+              <div class="msg success"><span class="ts">01:15:34</span><span class="kind">Success</span><span class="body">Session started.</span></div>
+              <div class="msg info"><span class="ts">01:18:02</span><span class="kind">Info</span><span class="body">Working tree scan: clean.</span></div>
+              <div class="msg err"><span class="ts">01:31:42</span><span class="kind">Pause</span><span class="body">Emergency pause activated by Darrin. All operations halted. Incident evidence written.</span></div>
+              <div class="msg wait"><span class="ts">01:31:43</span><span class="kind">Wait-user</span><span class="body">Resolve the operational concern, then click Resume PC to continue.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="right-rail">
+          <div class="pc-panel handoff-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff</span></div>
+            <div class="handoff-summary">
+              <div class="hs-row"><span class="hs-lbl">Git root</span><span class="hs-val">C:\panda-gallery</span></div>
+              <div class="hs-row"><span class="hs-lbl">Branch</span><span class="hs-val">main</span></div>
+              <div class="hs-row"><span class="hs-lbl">HEAD</span><span class="hs-val">ac2e1aa</span></div>
+            </div>
+            <div class="handoff-pills">
+              <span class="pill" style="background:var(--err-soft); border-color:var(--err-border); color:var(--err)">Paused</span>
+              <span class="pill">Manifest deferred</span>
+              <span class="pill">Patch deferred</span>
+            </div>
+            <button class="btn-handoff" disabled aria-disabled="true" title="Cannot handoff while emergency pause is active. Resume PC to unblock.">Create Safe Handoff</button>
+            <div class="blocked-reason err"><b>Blocked — emergency pause</b><br>All operations are paused. Resume PC to unblock the handoff path.</div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Session</span></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <button class="btn btn-safe" disabled aria-disabled="true" title="Cannot start a new session during emergency pause.">Start session</button>
+              <button class="btn btn-warn" disabled aria-disabled="true" title="Cannot end session during emergency pause; resume first.">End session</button>
+              <!-- on click: SAME button as the banner Resume PC; both clear the pause -->
+              <button class="btn btn-safe" title="Resume PC operations. Same effect as the Resume PC button in the pause banner above.">Resume PC</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer note: this surface is the main operational view; Package Inspector / Project Manager / narrow-width are separate mockup files in this folder. -->
+</body>
+</html>

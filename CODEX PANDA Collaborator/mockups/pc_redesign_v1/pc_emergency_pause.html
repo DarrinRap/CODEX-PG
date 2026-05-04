@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC redesign · Emergency Pause focused · 4 states</title>
+<style>
+:root{
+  --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-2:#22223a; --pane-sel:#2a2a4e;
+  --border:#2a2a3e; --border-soft:#232336; --border-hover:#3a3a4e;
+  --text:#e0ddd5; --muted:#888888; --dim:#555555;
+  --accent:#e8a87c; --accent-soft:rgba(232,168,124,0.14); --accent-border:rgba(232,168,124,0.45);
+  --ok:#7fb069; --ok-soft:rgba(127,176,105,0.14); --ok-border:rgba(127,176,105,0.45);
+  --warn:#f39c12; --warn-soft:rgba(243,156,18,0.14); --warn-border:rgba(243,156,18,0.45);
+  --err:#e74c3c; --err-soft:rgba(231,76,60,0.14); --err-border:rgba(231,76,60,0.45);
+  --user1:#f2b36d; --user2:#5fa0a8;
+  --ui:"Segoe UI","SF Pro","Noto Sans",system-ui,sans-serif;
+  --mono:"Cascadia Mono","Consolas",monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+.doc-head .annot-block{margin-top:12px; padding:12px 14px; background:var(--err-soft); border-left:3px solid var(--err); color:var(--text); font-size:12px; line-height:1.5}
+.doc-head .annot-block b{color:var(--err)}
+
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column; font-family:var(--ui);
+  position:relative;
+}
+.pc-viewport.paused{border-color:var(--err); border-width:2px}
+
+.pc-header{
+  display:flex; align-items:center; gap:14px; padding:10px 18px;
+  background:var(--chrome); border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.pc-header.paused{background:var(--err-soft); border-bottom:2px solid var(--err)}
+.pc-header .brand{font-size:13px; font-weight:600; color:var(--text)}
+.pc-header .pause-banner{
+  display:flex; align-items:center; gap:8px;
+  padding:5px 14px; background:var(--err); color:var(--text);
+  font-family:var(--ui); font-size:13px; font-weight:700; letter-spacing:.5px;
+  text-transform:uppercase; border-radius:3px;
+}
+.pc-header .pause-banner .glyph{font-family:var(--mono); font-size:14px}
+.pc-header .incident-id{
+  font-family:var(--mono); font-size:11px; color:var(--err);
+  padding:3px 9px; background:var(--err-soft); border:1px solid var(--err-border);
+  border-radius:10px;
+}
+.pc-header .spacer{flex:1}
+
+.pc-body{flex:1; min-height:0; display:flex; flex-direction:column; padding:0; background:var(--canvas); overflow-y:auto}
+
+/* Default (idle) state — Emergency Pause as a button, not active */
+.idle-state{padding:32px; display:flex; flex-direction:column; gap:18px; max-width:920px; margin:0 auto}
+.idle-state h2{font-size:16px; font-weight:600; color:var(--text); margin-bottom:6px}
+.idle-state p{font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:14px}
+
+/* Pause card — shown in pause states */
+.pause-detail-card{
+  margin:18px 22px; padding:18px 20px;
+  background:var(--err-soft); border:1px solid var(--err);
+  border-radius:6px; display:flex; flex-direction:column; gap:14px;
+}
+.pause-detail-card .pdc-head{display:flex; align-items:center; gap:14px}
+.pause-detail-card .pdc-glyph{font-family:var(--mono); font-size:32px; color:var(--err); line-height:1; font-weight:700}
+.pause-detail-card .pdc-title{font-size:18px; font-weight:700; color:var(--err)}
+.pause-detail-card .pdc-sub{font-size:12px; color:var(--text); margin-top:2px}
+.pause-detail-card .pdc-actor{font-size:11.5px; color:var(--muted); font-family:var(--mono); margin-top:6px}
+
+.pause-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px;
+  margin:0 22px;
+}
+.pause-card{
+  background:var(--pane); border:1px solid var(--border); border-radius:4px;
+}
+.pc-head{
+  padding:10px 14px; background:var(--chrome); border-bottom:1px solid var(--border-soft);
+  border-radius:4px 4px 0 0; display:flex; justify-content:space-between; align-items:center;
+}
+.pc-title{font-size:12.5px; font-weight:700; color:var(--text)}
+.pc-meta{font-family:var(--mono); font-size:10px; color:var(--muted)}
+
+.fact-row{display:flex; justify-content:space-between; gap:10px; padding:6px 14px; font-size:12px; border-bottom:1px solid var(--border-soft)}
+.fact-row:last-child{border-bottom:none}
+.fact-row .lbl{color:var(--muted)}
+.fact-row .val{font-family:var(--mono); font-size:11.5px; color:var(--text)}
+.fact-row .val.path{font-size:10.5px}
+.fact-row .pill{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; padding:2px 8px; border-radius:10px}
+.fact-row .pill.preserved{background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok)}
+.fact-row .pill.deferred{background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)}
+.fact-row .pill.untouched{background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok)}
+
+.pause-actions{
+  display:flex; gap:10px; padding:14px 22px 22px; flex-wrap:wrap;
+}
+
+.btn{
+  font-family:var(--ui); font-size:12px; font-weight:600; padding:7px 14px;
+  border-radius:4px; cursor:pointer; border:1px solid var(--border-hover);
+  background:var(--pane-2); color:var(--text); min-height:30px;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.btn:disabled{background:var(--pane); color:var(--dim); border-color:var(--border-soft); cursor:not-allowed}
+
+.btn-resume{background:var(--ok); color:var(--canvas); border:1px solid var(--ok); font-weight:700; min-height:36px; padding:0 22px; font-size:13px}
+.btn-resume:hover{filter:brightness(1.08); color:var(--canvas)}
+
+.btn-emergency{background:var(--err); color:#ffffff; border:1px solid var(--err); font-weight:700; min-height:36px; padding:0 22px; font-size:13px}
+.btn-emergency:hover{filter:brightness(1.08); color:#ffffff}
+
+.btn-incident{background:var(--pane-2); color:var(--err); border:1px solid var(--err-border)}
+.btn-incident:hover{background:var(--err-soft); color:var(--err)}
+
+/* Incident log */
+.incident-log{
+  margin:0 22px 22px; background:var(--pane); border:1px solid var(--border); border-radius:4px;
+  max-height:280px; overflow-y:auto;
+}
+.log-row{
+  display:grid; grid-template-columns:80px 1fr; gap:10px;
+  padding:6px 14px; font-size:11.5px; border-bottom:1px solid var(--border-soft);
+  font-family:var(--ui);
+}
+.log-row:last-child{border-bottom:none}
+.log-row .ts{font-family:var(--mono); font-size:10.5px; color:var(--dim)}
+.log-row .body{color:var(--text); line-height:1.45}
+.log-row .body.err{color:var(--err); font-weight:600}
+.log-row .body.warn{color:var(--warn)}
+.log-row .body.ok{color:var(--ok)}
+
+/* Confirm modal — for pause + resume */
+.confirm-modal{
+  position:absolute; inset:0; z-index:100;
+  background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center;
+}
+.confirm-dialog{
+  width:520px; background:var(--pane); border:1px solid var(--err); border-radius:4px;
+  padding:22px 24px; display:flex; flex-direction:column; gap:12px;
+  box-shadow:0 24px 60px rgba(0,0,0,0.5);
+}
+.confirm-dialog h3{font-size:16px; font-weight:700; color:var(--err); margin:0}
+.confirm-dialog p{font-size:12.5px; color:var(--text); line-height:1.6; margin:0}
+.confirm-dialog p.muted{color:var(--muted); font-size:11.5px}
+.confirm-dialog ul{font-size:12px; color:var(--text); margin:0 0 0 18px; line-height:1.7}
+.confirm-dialog .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:8px}
+
+.reason-input{
+  width:100%; background:var(--pane-2); border:1px solid var(--border-hover);
+  color:var(--text); font-family:var(--ui); font-size:12px;
+  padding:8px 10px; border-radius:3px; outline:none;
+  resize:none; min-height:60px;
+}
+.reason-input:focus{border-color:var(--accent)}
+
+/* State switching */
+.stage > .state-block{display:none; align-self:stretch; flex-direction:column; gap:14px; align-items:center}
+#s1:checked ~ .stage > .state-block.s-idle{display:flex}
+#s2:checked ~ .stage > .state-block.s-confirm{display:flex}
+#s3:checked ~ .stage > .state-block.s-paused{display:flex}
+#s4:checked ~ .stage > .state-block.s-resume{display:flex}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div class="eyebrow">PC redesign v1 · Surface 5 of 6</div>
+  <h1>Emergency Pause (focused) · 4 states</h1>
+  <div class="meta">
+    <span><b>spec ref:</b> CODEX_PC_UI_UX_REDESIGN_SPEC §6.12 + §3 (safety rules)</span>
+    <span><b>viewport:</b> 1366×768 desktop</span>
+    <span><b>visual signature:</b> red border, red banner, full-stop language</span>
+  </div>
+  <div class="annot-block">
+    <b>Why a focused mockup:</b> Emergency Pause is the safety rip-cord. It must be visible from any operational state, never hidden behind menus, and once active must dominate the viewport with explicit semantics. The spec at §6.12 demands red/error treatment, rectangular action button, clear current state, clear explanation of what is paused, clear path to resume. This mockup shows all four phases of the pause lifecycle: idle (button accessible) → confirm-pause → paused (incident detail surfaced) → resume-confirm.
+  </div>
+</div>
+
+<input type="radio" name="s" id="s1" checked hidden>
+<input type="radio" name="s" id="s2" hidden>
+<input type="radio" name="s" id="s3" hidden>
+<input type="radio" name="s" id="s4" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">States</span>
+  <label for="s1">1 · idle (button accessible)</label>
+  <label for="s2">2 · pause confirm modal</label>
+  <label for="s3">3 · paused (incident active)</label>
+  <label for="s4">4 · resume confirm modal</label>
+</div>
+
+<div class="stage">
+
+  <!-- =========================================================== -->
+  <!-- STATE 1 · idle — PC running normally; Emergency Pause button visible in header (always-on placement) -->
+  <!-- =========================================================== -->
+  <div class="state-block s-idle">
+    <div class="stage-cap">
+      <span class="num">STATE 1 · idle</span>
+      <span class="title-text">PC operating normally. Emergency Pause button is always reachable in the header — never hidden in menus or low-contrast secondary areas. Red semantic, rectangular, prominent. Reachable from any operational state.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span style="font-size:13px; color:var(--text); padding:0 10px; border-left:3px solid var(--user1); margin-left:6px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase">DARRIN</span>
+        <span style="font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase; padding:3px 8px; background:var(--pane-2); border:1px solid var(--border); color:var(--muted); border-radius:12px">User 1 · session active 22m</span>
+        <div class="spacer"></div>
+        <!-- on click: opens pause-confirm modal — see state 2; never pauses without explicit operator confirmation -->
+        <button class="btn-emergency" title="Emergency Pause: stops all PC operations and writes incident evidence. Requires confirmation. Always available.">⛔ Emergency Pause</button>
+      </div>
+      <div class="pc-body">
+        <div class="idle-state">
+          <h2>PC Emergency Pause — operator-controlled safety stop</h2>
+          <p>This is the <b>focused detail view</b> for the Emergency Pause control. In normal operation, PC runs without intervention. The Emergency Pause button in the header (top-right) is always reachable and stops all PC operations on demand.</p>
+          <h2 style="margin-top:14px">When to use Emergency Pause</h2>
+          <ul style="font-size:12px; color:var(--text); margin:0 0 14px 18px; line-height:1.7">
+            <li>You notice PC behaving unexpectedly (UI freeze, unexplained log activity, unusual git operation about to execute).</li>
+            <li>You need to take a phone call mid-handoff and want to guarantee nothing advances while you're away.</li>
+            <li>An automated test is about to write to a path you didn't expect, and you want to inspect before letting it proceed.</li>
+            <li>Any reason at all. PC pauses on demand. No justification required from the UI.</li>
+          </ul>
+          <h2 style="margin-top:14px">What pause does</h2>
+          <ul style="font-size:12px; color:var(--text); margin:0 0 14px 18px; line-height:1.7">
+            <li>Halts all background scans, ack polls, and pending writes.</li>
+            <li>Disables every primary action in the UI (Create Safe Handoff, Start Session, etc.).</li>
+            <li>Writes incident evidence to <code style="font-family:var(--mono); background:var(--pane-2); padding:1px 6px; border-radius:2px">incidents/&lt;ts&gt;.json</code>.</li>
+            <li>Preserves the current session, working tree, and any in-progress handoff package.</li>
+            <li><b>Never</b> auto-rolls-back, auto-commits, or auto-cleans the working tree. Pause is a freeze, not a revert.</li>
+          </ul>
+          <h2 style="margin-top:14px">What pause does NOT do</h2>
+          <ul style="font-size:12px; color:var(--text); margin:0 0 14px 18px; line-height:1.7">
+            <li>Discard work — pause never deletes or rewrites anything.</li>
+            <li>Push to remote — pause is local-only.</li>
+            <li>Force-finish an in-progress handoff — the package stays in its build dir until you resume or discard.</li>
+            <li>Lock files — operator can still edit files manually outside PC; pause is about PC's own activity.</li>
+          </ul>
+          <p style="margin-top:18px; padding:12px 14px; background:var(--pane-2); border-left:3px solid var(--accent); color:var(--text)"><b style="color:var(--accent)">Tip:</b> Press <code style="font-family:var(--mono); background:var(--pane); padding:1px 6px; border-radius:2px">Ctrl + Esc</code> from anywhere in the app to invoke Emergency Pause without reaching for the button.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 2 · confirm modal — operator clicked Emergency Pause; modal asks to confirm + capture optional reason -->
+  <!-- =========================================================== -->
+  <div class="state-block s-confirm">
+    <div class="stage-cap">
+      <span class="num">STATE 2 · pause confirm modal</span>
+      <span class="title-text">Operator clicked Emergency Pause. Confirmation modal appears. Optional reason field for incident evidence. Confirm button is red+prominent; Cancel is neutral. Pause never fires without explicit confirmation — guards against accidental click.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <div class="brand">PANDA Collaborator</div>
+        <span style="font-size:13px; color:var(--text); padding:0 10px; border-left:3px solid var(--user1); margin-left:6px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase">DARRIN</span>
+        <span style="font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase; padding:3px 8px; background:var(--pane-2); border:1px solid var(--border); color:var(--muted); border-radius:12px">User 1 · session active 22m</span>
+        <div class="spacer"></div>
+        <button class="btn-emergency" style="background:var(--err-soft); color:var(--err); border-color:var(--err)" disabled aria-disabled="true" title="Pause confirmation in progress.">⛔ Emergency Pause</button>
+      </div>
+      <div class="pc-body" style="position:relative">
+        <div class="idle-state" style="opacity:0.4">
+          <h2>PC Emergency Pause</h2>
+          <p>Awaiting confirmation…</p>
+        </div>
+        <div class="confirm-modal">
+          <div class="confirm-dialog">
+            <h3>⛔ Confirm Emergency Pause?</h3>
+            <p>This will stop all PC operations immediately. No work will be lost. The current session, working tree, and any in-progress handoff package will be preserved as-is.</p>
+            <p class="muted">PC will:</p>
+            <ul>
+              <li>Halt background scans, ack polls, and pending writes</li>
+              <li>Disable all primary actions until you resume</li>
+              <li>Write incident evidence to <code style="font-family:var(--mono); background:var(--pane-2); padding:1px 5px; border-radius:2px">incidents/2026-05-05_013142.json</code></li>
+              <li>Preserve current session, working tree, in-progress packages</li>
+            </ul>
+            <p class="muted" style="margin-top:6px">Optional — capture a reason for the incident log:</p>
+            <textarea class="reason-input" placeholder="Why are you pausing? (optional, written to incident evidence)">Noticed unexpected git activity during scan. Want to inspect before continuing.</textarea>
+            <div class="actions">
+              <!-- on click: closes modal, returns to idle state — no pause fires -->
+              <button class="btn">Cancel</button>
+              <!-- on click: writes incident json with reason, halts operations, advances to state 3 -->
+              <button class="btn-emergency">⛔ Confirm pause</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 3 · paused — incident active; UI dominated by red banner; full incident detail; resume option only -->
+  <!-- =========================================================== -->
+  <div class="state-block s-paused">
+    <div class="stage-cap">
+      <span class="num">STATE 3 · paused (incident active)</span>
+      <span class="title-text">Pause confirmed. Viewport dominated by red. Incident detail card shows what's paused, what's preserved, and the incident path on disk. Incident log streams from the moment of pause forward. Resume PC button is the only safe path to continue.</span>
+    </div>
+    <div class="pc-viewport paused">
+      <div class="pc-header paused">
+        <div class="brand">PANDA Collaborator</div>
+        <div class="pause-banner"><span class="glyph">⛔</span>Emergency pause active</div>
+        <span class="incident-id" title="Incident ID — also the filename stem for the incident JSON on disk">incident_20260505_013142</span>
+        <div class="spacer"></div>
+        <span style="font-family:var(--mono); font-size:11px; color:var(--err); font-weight:600">Paused 0:00:18</span>
+      </div>
+      <div class="pc-body">
+        <div class="pause-detail-card">
+          <div class="pdc-head">
+            <span class="pdc-glyph">⛔</span>
+            <div>
+              <div class="pdc-title">All PC operations halted</div>
+              <div class="pdc-sub">Paused at 2026-05-05 01:31:42 by Darrin. Reason: "Noticed unexpected git activity during scan. Want to inspect before continuing."</div>
+              <div class="pdc-actor">Incident evidence: <code style="font-family:var(--mono); background:var(--pane); padding:1px 6px; border-radius:2px; color:var(--err)">incidents/2026-05-05_013142.json</code></div>
+            </div>
+          </div>
+        </div>
+        <div class="pause-grid">
+          <div class="pause-card">
+            <div class="pc-head"><span class="pc-title">What's paused</span><span class="pc-meta">3 streams halted</span></div>
+            <div class="fact-row"><span class="lbl">Background working-tree scans</span><span class="pill deferred">Halted</span></div>
+            <div class="fact-row"><span class="lbl">Setup-test ack polls</span><span class="pill deferred">Halted</span></div>
+            <div class="fact-row"><span class="lbl">Daily report rollover timer</span><span class="pill deferred">Halted</span></div>
+            <div class="fact-row"><span class="lbl">In-progress handoff build (pkg_…0115)</span><span class="pill deferred">Frozen</span></div>
+            <div class="fact-row"><span class="lbl">Session — main · panda-gallery</span><span class="pill preserved">Preserved</span></div>
+          </div>
+          <div class="pause-card">
+            <div class="pc-head"><span class="pc-title">What's preserved (untouched)</span><span class="pc-meta">no destructive ops fire</span></div>
+            <div class="fact-row"><span class="lbl">Working tree</span><span class="pill untouched">Untouched</span></div>
+            <div class="fact-row"><span class="lbl">HEAD · ac2e1aa</span><span class="pill untouched">Unchanged</span></div>
+            <div class="fact-row"><span class="lbl">Branch · main</span><span class="pill untouched">Unchanged</span></div>
+            <div class="fact-row"><span class="lbl">Protection branches</span><span class="pill untouched">As-was</span></div>
+            <div class="fact-row"><span class="lbl">Recent handoff packages</span><span class="pill untouched">Read-only</span></div>
+          </div>
+        </div>
+        <div class="pause-actions">
+          <!-- on click: opens resume confirm modal — see state 4; never resumes silently -->
+          <button class="btn-resume">▶ Resume PC</button>
+          <!-- on click: opens the incident json in the OS file explorer or text viewer; read-only -->
+          <button class="btn-incident">📁 Open incident evidence</button>
+          <!-- on click: copies the incident ID to clipboard for hand-off to support / handoff notes -->
+          <button class="btn-incident">⧉ Copy incident ID</button>
+          <span style="flex:1"></span>
+          <span style="font-family:var(--mono); font-size:11px; color:var(--err); align-self:center; padding:6px 0">All other actions disabled while paused</span>
+        </div>
+        <div class="incident-log">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--chrome); border-bottom:1px solid var(--border-soft); border-radius:4px 4px 0 0"><span style="font-size:12px; font-weight:700; color:var(--text)">Incident log</span><span style="font-family:var(--mono); font-size:10px; color:var(--muted)">streaming from pause moment</span></div>
+          <div class="log-row"><span class="ts">01:31:42.018</span><span class="body err">⛔ Emergency Pause activated by Darrin</span></div>
+          <div class="log-row"><span class="ts">01:31:42.019</span><span class="body">Reason captured: "Noticed unexpected git activity during scan. Want to inspect before continuing."</span></div>
+          <div class="log-row"><span class="ts">01:31:42.020</span><span class="body">Halting background scan worker (PID 28941) — graceful shutdown</span></div>
+          <div class="log-row"><span class="ts">01:31:42.024</span><span class="body">Halting setup-test ack poll worker (PID 28942) — graceful shutdown</span></div>
+          <div class="log-row"><span class="ts">01:31:42.027</span><span class="body">Halting daily report rollover timer</span></div>
+          <div class="log-row"><span class="ts">01:31:42.031</span><span class="body">In-progress handoff build (pkg_…0115) frozen at stage: file-stage (4/8 stages complete)</span></div>
+          <div class="log-row"><span class="ts">01:31:42.038</span><span class="body ok">Working tree state captured: HEAD ac2e1aa, branch main, clean</span></div>
+          <div class="log-row"><span class="ts">01:31:42.041</span><span class="body ok">Session state preserved: session_20260505_011500</span></div>
+          <div class="log-row"><span class="ts">01:31:42.054</span><span class="body ok">Incident evidence written: incidents/2026-05-05_013142.json (1.2 KB)</span></div>
+          <div class="log-row"><span class="ts">01:31:42.057</span><span class="body err">All operations halted. PC is paused. Click Resume PC to continue.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 4 · resume confirm — operator clicked Resume PC; modal asks to confirm; explains what resumes -->
+  <!-- =========================================================== -->
+  <div class="state-block s-resume">
+    <div class="stage-cap">
+      <span class="num">STATE 4 · resume confirm modal</span>
+      <span class="title-text">Operator clicked Resume PC. Confirmation modal appears explaining what resumes and what doesn't. Resume is symmetric to pause: requires explicit confirmation, captures optional reason, writes resume event to incident JSON. Cancel returns to paused state.</span>
+    </div>
+    <div class="pc-viewport paused">
+      <div class="pc-header paused">
+        <div class="brand">PANDA Collaborator</div>
+        <div class="pause-banner"><span class="glyph">⛔</span>Emergency pause active</div>
+        <span class="incident-id">incident_20260505_013142</span>
+        <div class="spacer"></div>
+        <span style="font-family:var(--mono); font-size:11px; color:var(--err); font-weight:600">Paused 0:04:23</span>
+      </div>
+      <div class="pc-body" style="position:relative">
+        <div class="pause-detail-card" style="opacity:0.4">
+          <div class="pdc-head">
+            <span class="pdc-glyph">⛔</span>
+            <div>
+              <div class="pdc-title">All PC operations halted</div>
+              <div class="pdc-sub">Awaiting resume confirmation…</div>
+            </div>
+          </div>
+        </div>
+        <div class="confirm-modal">
+          <div class="confirm-dialog" style="border-color:var(--ok); width:540px">
+            <h3 style="color:var(--ok)">▶ Resume PC operations?</h3>
+            <p>This will lift the pause and restart all halted streams. The incident JSON will be appended with a resume event, and PC returns to its previous operational state.</p>
+            <p class="muted">PC will:</p>
+            <ul>
+              <li>Restart background working-tree scans (next scan in ~30s)</li>
+              <li>Restart setup-test ack polls (if any tester is in setup)</li>
+              <li>Re-arm the daily report rollover timer</li>
+              <li>Re-enable all primary actions (Create Safe Handoff, Start Session, etc.)</li>
+              <li>Append a resume event to <code style="font-family:var(--mono); background:var(--pane-2); padding:1px 5px; border-radius:2px">incidents/2026-05-05_013142.json</code></li>
+            </ul>
+            <p class="muted" style="margin-top:6px"><b style="color:var(--text)">In-progress handoff (pkg_…0115)</b> remains frozen at file-stage 4/8 — you can resume the build manually from the handoff panel after PC resumes.</p>
+            <p class="muted">Optional — capture a resolution note:</p>
+            <textarea class="reason-input" placeholder="What did you check? (optional, appended to incident evidence)">Confirmed git activity was the legitimate post-commit hook; resume is safe.</textarea>
+            <div class="actions">
+              <!-- on click: closes modal, returns to paused state (state 3) — pause persists -->
+              <button class="btn">Cancel — stay paused</button>
+              <!-- on click: writes resume event, restarts streams, advances to idle state (PC operational); session_20260505_011500 still active -->
+              <button class="btn-resume">▶ Confirm resume</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

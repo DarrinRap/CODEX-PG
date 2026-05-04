@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC redesign · Narrow-width layout (820px) · 3 states</title>
+<style>
+:root{
+  --canvas:#14141f; --chrome:#161625; --pane:#1a1a2e; --pane-2:#22223a; --pane-sel:#2a2a4e;
+  --border:#2a2a3e; --border-soft:#232336; --border-hover:#3a3a4e;
+  --text:#e0ddd5; --muted:#888888; --dim:#555555;
+  --accent:#e8a87c; --accent-soft:rgba(232,168,124,0.14); --accent-border:rgba(232,168,124,0.45);
+  --ok:#7fb069; --ok-soft:rgba(127,176,105,0.14); --ok-border:rgba(127,176,105,0.45);
+  --warn:#f39c12; --warn-soft:rgba(243,156,18,0.14); --warn-border:rgba(243,156,18,0.45);
+  --err:#e74c3c; --err-soft:rgba(231,76,60,0.14); --err-border:rgba(231,76,60,0.45);
+  --user1:#f2b36d; --user2:#5fa0a8;
+  --ui:"Segoe UI","SF Pro","Noto Sans",system-ui,sans-serif;
+  --mono:"Cascadia Mono","Consolas",monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+.doc-head .annot-block{margin-top:12px; padding:12px 14px; background:var(--pane-2); border-left:3px solid var(--accent); color:var(--text); font-size:12px; line-height:1.5}
+.doc-head .annot-block b{color:var(--accent)}
+
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+/* Pixel-honest 820×900 narrow viewport */
+.pc-viewport{
+  width:820px; max-width:100%; height:900px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column; font-family:var(--ui);
+}
+
+.pc-header{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  background:var(--chrome); border-bottom:1px solid var(--border); flex-shrink:0;
+  flex-wrap:wrap;
+}
+.pc-header .brand{font-size:12px; font-weight:600; color:var(--text); flex-shrink:0}
+.pc-header .active-user{
+  font-family:var(--ui); font-size:14px; font-weight:700; letter-spacing:.8px;
+  text-transform:uppercase; color:var(--text);
+  padding:0 8px; border-left:3px solid var(--user1);
+}
+.pc-header .role-tag{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:1px;
+  text-transform:uppercase; color:var(--muted);
+  padding:2px 7px; background:var(--pane-2); border:1px solid var(--border);
+  border-radius:10px; flex-shrink:0;
+}
+.pc-header .spacer{flex:1; min-width:1px}
+.pc-header .pause-btn{
+  font-family:var(--ui); font-size:11px; font-weight:700; padding:5px 10px;
+  background:var(--err); color:#ffffff; border:1px solid var(--err);
+  border-radius:3px; cursor:pointer; min-height:26px;
+}
+
+/* Statusbar: passive pills, narrow-friendly */
+.pc-statusbar{
+  display:flex; align-items:center; gap:6px; padding:0 14px;
+  height:24px; background:var(--pane); border-bottom:1px solid var(--border-soft);
+  font-family:var(--mono); font-size:10.5px; color:var(--muted);
+  flex-shrink:0; overflow-x:auto;
+}
+.pc-statusbar .pill{padding:1px 7px; background:var(--pane-2); border:1px solid var(--border); border-radius:9px; flex-shrink:0; white-space:nowrap}
+.pc-statusbar .pill.dirty{background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)}
+.pc-statusbar .pill.clean{background:var(--ok-soft); border-color:var(--ok-border); color:var(--ok)}
+.pc-statusbar .pill b{color:var(--text); font-weight:600}
+.pc-statusbar .path{
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--text); padding:0 4px; font-size:10px;
+}
+
+/* Vertical workflow stepper for narrow */
+.workflow-stepper{
+  padding:10px 14px; background:var(--pane);
+  border-bottom:1px solid var(--border-soft); flex-shrink:0;
+}
+.workflow-stepper .ws-row{
+  display:flex; align-items:center; gap:8px;
+  padding:5px 0;
+}
+.workflow-stepper .ws-num{
+  width:18px; height:18px; border-radius:9px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  background:var(--pane-2); color:var(--muted); border:1px solid var(--border-hover);
+  flex-shrink:0;
+}
+.workflow-stepper .ws-num.complete{background:var(--ok-soft); color:var(--ok); border-color:var(--ok-border)}
+.workflow-stepper .ws-num.active{background:var(--accent); color:var(--canvas); border-color:var(--accent)}
+.workflow-stepper .ws-num.attention{background:var(--warn-soft); color:var(--warn); border-color:var(--warn-border)}
+.workflow-stepper .ws-num.blocked{background:var(--err-soft); color:var(--err); border-color:var(--err-border)}
+.workflow-stepper .ws-label{font-size:12px; color:var(--text); font-weight:500}
+.workflow-stepper .ws-state{font-family:var(--mono); font-size:9.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--dim); margin-left:auto; flex-shrink:0}
+.workflow-stepper .ws-state.complete{color:var(--ok)}
+.workflow-stepper .ws-state.active{color:var(--accent)}
+.workflow-stepper .ws-state.attention{color:var(--warn)}
+.workflow-stepper .ws-state.blocked{color:var(--err)}
+
+/* Body — single column at narrow width */
+.pc-body{
+  flex:1; min-height:0; display:flex; flex-direction:column;
+  padding:12px 14px; gap:12px; overflow-y:auto; background:var(--canvas);
+}
+
+/* User cards stacked vertically at narrow widths */
+.user-card{
+  background:var(--pane-2); border:1px solid var(--border);
+  border-left:3px solid var(--user1);
+  border-radius:4px; padding:9px 11px;
+}
+.user-card.user2{border-left-color:var(--user2)}
+.user-card .uc-head{display:flex; align-items:center; gap:8px; margin-bottom:5px}
+.user-card .uc-name{font-size:12.5px; font-weight:600; color:var(--text)}
+.user-card .uc-slot{font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-left:auto}
+.user-card .uc-row{display:flex; justify-content:space-between; gap:8px; padding:2px 0; font-size:11.5px}
+.user-card .uc-row .lbl{color:var(--muted)}
+.user-card .uc-row .val{color:var(--text); font-family:var(--mono); font-size:11px; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.user-card .uc-row .val.empty{color:var(--dim); font-style:italic; font-family:var(--ui)}
+.user-card .uc-status{
+  margin-top:5px; padding:3px 7px; font-family:var(--mono);
+  font-size:9.5px; letter-spacing:1px; text-transform:uppercase;
+  border-radius:9px; display:inline-block;
+}
+.uc-status.ready{background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok)}
+.uc-status.incomplete{background:var(--pane); border:1px solid var(--border-hover); color:var(--muted)}
+.uc-status.warn{background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)}
+
+/* Two-up grid for User 1 / User 2 cards at 820px (still side-by-side) */
+.users-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+
+.pc-panel{background:var(--pane); border:1px solid var(--border); border-radius:4px}
+.pc-panel .panel-head{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 12px; background:var(--chrome); border-bottom:1px solid var(--border-soft);
+  border-radius:4px 4px 0 0;
+}
+.pc-panel .panel-title{font-size:12px; font-weight:700; color:var(--text)}
+.pc-panel .panel-meta{font-family:var(--mono); font-size:10px; color:var(--muted)}
+.pc-panel .panel-body{padding:8px 12px}
+
+.wt-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:4px 0; font-size:12px; border-bottom:1px solid var(--border-soft)}
+.wt-row:last-child{border-bottom:none}
+.wt-row .lbl{color:var(--muted); flex-shrink:0}
+.wt-row .val{font-family:var(--mono); font-size:11.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; text-align:right; flex:1}
+.wt-row .pill{padding:2px 7px; font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; border-radius:10px; flex-shrink:0}
+.wt-row .pill.dirty{background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)}
+.wt-row .pill.clean{background:var(--ok-soft); border:1px solid var(--ok-border); color:var(--ok)}
+
+.btn{
+  font-family:var(--ui); font-size:11.5px; font-weight:600; padding:5px 10px;
+  border-radius:3px; cursor:pointer; border:1px solid var(--border-hover);
+  background:var(--pane-2); color:var(--text); min-height:26px;
+}
+.btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.btn:disabled{background:var(--pane); color:var(--dim); border-color:var(--border-soft); cursor:not-allowed}
+
+.btn-row{display:flex; gap:6px; flex-wrap:wrap; padding:8px 12px; border-top:1px solid var(--border-soft)}
+
+/* Handoff CTA — full width, primary action */
+.handoff-cta{
+  width:100%; padding:0 16px; min-height:44px; font-size:13px; font-weight:700;
+  background:var(--ok); color:var(--canvas); border:1px solid var(--ok);
+  border-radius:4px; cursor:pointer; font-family:var(--ui);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.handoff-cta:hover{filter:brightness(1.08)}
+.handoff-cta:disabled{background:var(--pane-2); color:var(--dim); border-color:var(--border-soft); cursor:not-allowed; filter:none}
+
+.blocked-reason{
+  font-size:11.5px; color:var(--warn); margin-top:6px;
+  padding:6px 10px; background:var(--warn-soft); border-left:3px solid var(--warn);
+  border-radius:3px; line-height:1.4;
+}
+
+.handoff-pills{display:flex; flex-wrap:wrap; gap:4px; margin-top:8px}
+.handoff-pills .pill{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; padding:2px 7px; background:var(--pane-2); border:1px solid var(--border); border-radius:10px; color:var(--muted)}
+.handoff-pills .pill.ok{background:var(--ok-soft); border-color:var(--ok-border); color:var(--ok)}
+.handoff-pills .pill.warn{background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)}
+
+/* Messages — narrow */
+.messages{max-height:160px; overflow-y:auto}
+.msg{display:grid; grid-template-columns:55px 60px 1fr; gap:6px; padding:4px 12px; font-size:11px; border-bottom:1px solid var(--border-soft)}
+.msg .ts{font-family:var(--mono); font-size:10px; color:var(--dim)}
+.msg .kind{font-family:var(--mono); font-size:9px; letter-spacing:.8px; text-transform:uppercase; color:var(--muted)}
+.msg .body{color:var(--text); overflow:hidden; text-overflow:ellipsis}
+.msg.success .kind{color:var(--ok)}
+.msg.warn .kind{color:var(--warn)}
+.msg.err .kind{color:var(--err)}
+
+/* Verification overlay — proves no horizontal overflow */
+.measurements-overlay{
+  position:absolute; top:8px; right:8px; z-index:60;
+  background:var(--pane); border:1px solid var(--accent-border);
+  padding:8px 10px; border-radius:3px; font-family:var(--mono); font-size:10px;
+  color:var(--accent); pointer-events:none;
+}
+.measurements-overlay div{padding:1px 0}
+.measurements-overlay b{color:var(--text); font-weight:600}
+
+/* State switching */
+.stage > .state-block{display:none; align-self:stretch; flex-direction:column; gap:14px; align-items:center}
+#s1:checked ~ .stage > .state-block.s-820{display:flex}
+#s2:checked ~ .stage > .state-block.s-940{display:flex}
+#s3:checked ~ .stage > .state-block.s-820-pause{display:flex}
+
+.viewport-wrap{position:relative}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div class="eyebrow">PC redesign v1 · Surface 6 of 6</div>
+  <h1>Narrow-width layout · 3 states</h1>
+  <div class="meta">
+    <span><b>spec ref:</b> CODEX_PC_UI_UX_REDESIGN_SPEC §8 (responsive)</span>
+    <span><b>viewports tested:</b> 820px (minimum) · 940px (narrow desktop/tablet)</span>
+    <span><b>requirement:</b> no horizontal page overflow at any tested width</span>
+  </div>
+  <div class="annot-block">
+    <b>What this mockup proves:</b> at the minimum operational width (820px) and narrow desktop/tablet (940px), PC's layout collapses cleanly without horizontal overflow, clipped buttons, hidden primary actions, or broken pill rows. The 5-panel horizontal workflow guide collapses to a vertical stepper. User 1 / User 2 cards stay side-by-side at 820px (each ~390px) and 940px (each ~450px), per spec §6.3 ("side-by-side on desktop and stacked on narrow widths" — confirmed both viewports above the desktop/narrow boundary). Working Tree, Messages, and Create Safe Handoff stack vertically below. The Emergency Pause button stays visible in the header.
+  </div>
+</div>
+
+<input type="radio" name="s" id="s1" checked hidden>
+<input type="radio" name="s" id="s2" hidden>
+<input type="radio" name="s" id="s3" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">States</span>
+  <label for="s1">1 · 820px ready (clean tree)</label>
+  <label for="s2">2 · 940px dirty tree (warning)</label>
+  <label for="s3">3 · 820px paused (emergency)</label>
+</div>
+
+<div class="stage">
+
+  <!-- =========================================================== -->
+  <!-- STATE 1 · 820px ready — minimum operational width; clean tree; ready to handoff; no overflow -->
+  <!-- =========================================================== -->
+  <div class="state-block s-820">
+    <div class="stage-cap">
+      <span class="num">STATE 1 · 820px ready (clean tree)</span>
+      <span class="title-text">Minimum operational width per spec §8. Both users registered, working tree clean, ready to handoff. Workflow guide collapsed to vertical stepper. Users still side-by-side (~390px each). Create Safe Handoff is full-width primary. No horizontal overflow.</span>
+    </div>
+    <div class="viewport-wrap">
+      <div class="pc-viewport">
+        <div class="pc-header">
+          <div class="brand">PC</div>
+          <span class="active-user">DARRIN</span>
+          <span class="role-tag">U1</span>
+          <div class="spacer"></div>
+          <button class="pause-btn" title="Emergency pause: stops all PC operations.">⛔ Pause</button>
+        </div>
+        <div class="pc-statusbar">
+          <span class="pill"><b>panda-gallery</b></span>
+          <span class="pill">main</span>
+          <span class="pill">ac2e1aa</span>
+          <span class="pill clean">Clean</span>
+          <span class="path" title="C:\panda-gallery">C:\panda-gallery</span>
+        </div>
+        <div class="workflow-stepper">
+          <div class="ws-row"><span class="ws-num complete">✓</span><span class="ws-label">1. Setup users</span><span class="ws-state complete">Complete</span></div>
+          <div class="ws-row"><span class="ws-num complete">✓</span><span class="ws-label">2. Confirm tree</span><span class="ws-state complete">Complete</span></div>
+          <div class="ws-row"><span class="ws-num complete">✓</span><span class="ws-label">3. Start session</span><span class="ws-state complete">Active 18m</span></div>
+          <div class="ws-row"><span class="ws-num complete">✓</span><span class="ws-label">4. Review activity</span><span class="ws-state complete">Reviewed</span></div>
+          <div class="ws-row"><span class="ws-num active">5</span><span class="ws-label">5. Create handoff</span><span class="ws-state active">Ready</span></div>
+        </div>
+        <div class="pc-body">
+          <div class="users-grid">
+            <div class="user-card">
+              <div class="uc-head"><span class="uc-name">Darrin</span><span class="uc-slot">U1 · active</span></div>
+              <div class="uc-row"><span class="lbl">Path</span><span class="val">C:\panda-gallery</span></div>
+              <div class="uc-row"><span class="lbl">Git</span><span class="val">drrap@denpc</span></div>
+              <span class="uc-status ready">Ready</span>
+            </div>
+            <div class="user-card user2">
+              <div class="uc-head"><span class="uc-name">Codex</span><span class="uc-slot">U2</span></div>
+              <div class="uc-row"><span class="lbl">Path</span><span class="val">C:\CODEX PG</span></div>
+              <div class="uc-row"><span class="lbl">Git</span><span class="val">codex@codex</span></div>
+              <span class="uc-status ready">Ready</span>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">scan 14:22:08</span></div>
+            <div class="panel-body">
+              <div class="wt-row"><span class="lbl">Branch</span><span class="val">main</span></div>
+              <div class="wt-row"><span class="lbl">HEAD</span><span class="val">ac2e1aa</span></div>
+              <div class="wt-row"><span class="lbl">Status</span><span class="pill clean">Clean</span></div>
+              <div class="wt-row"><span class="lbl">Untracked / modified</span><span class="val">0 / 0</span></div>
+            </div>
+            <div class="btn-row">
+              <button class="btn">Browse…</button>
+              <button class="btn">Re-scan</button>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff</span><span class="panel-meta">ready</span></div>
+            <div class="panel-body">
+              <div class="wt-row"><span class="lbl">Output</span><span class="val">PANDA test sandboxes\…</span></div>
+              <div class="handoff-pills">
+                <span class="pill ok">Manifest</span>
+                <span class="pill ok">Patch</span>
+                <span class="pill ok">Files</span>
+                <span class="pill ok">Note</span>
+              </div>
+              <button class="handoff-cta" style="margin-top:10px">⚐ Create Safe Handoff</button>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Messages</span><span class="panel-meta">5</span></div>
+            <div class="panel-body" style="padding:0">
+              <div class="messages">
+                <div class="msg success"><span class="ts">01:13</span><span class="kind">OK</span><span class="body">User 1 (Darrin) registered.</span></div>
+                <div class="msg success"><span class="ts">01:14</span><span class="kind">OK</span><span class="body">User 2 (Codex) registered.</span></div>
+                <div class="msg success"><span class="ts">01:15</span><span class="kind">OK</span><span class="body">Working tree scan: clean.</span></div>
+                <div class="msg success"><span class="ts">01:15</span><span class="kind">OK</span><span class="body">Session started.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="measurements-overlay">
+        <div><b>Width:</b> 820px (min)</div>
+        <div><b>Overflow-X:</b> none</div>
+        <div><b>Pills:</b> all visible</div>
+        <div><b>Buttons:</b> no clip</div>
+        <div><b>Pause:</b> reachable</div>
+        <div><b>Handoff:</b> full-width primary</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 2 · 940px dirty tree — narrow desktop / tablet; 7 dirty changes; handoff blocked; reason visible -->
+  <!-- =========================================================== -->
+  <div class="state-block s-940">
+    <div class="stage-cap">
+      <span class="num">STATE 2 · 940px dirty tree (warning)</span>
+      <span class="title-text">Narrow desktop / tablet width per spec §8. Working tree has 7 uncommitted changes; status pill is amber-warn; Create Safe Handoff disabled with full reason visible. Pills don't overflow; long path truncates middle. Stepper still vertical; users still side-by-side (~450px each).</span>
+    </div>
+    <div class="viewport-wrap">
+      <div class="pc-viewport" style="width:940px">
+        <div class="pc-header">
+          <div class="brand">PC</div>
+          <span class="active-user">DARRIN</span>
+          <span class="role-tag">User 1</span>
+          <span class="role-tag" style="background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn)">Tree dirty</span>
+          <div class="spacer"></div>
+          <button class="pause-btn">⛔ Pause</button>
+        </div>
+        <div class="pc-statusbar">
+          <span class="pill"><b>panda-gallery</b></span>
+          <span class="pill">branch <b>main</b></span>
+          <span class="pill">HEAD <b>ac2e1aa</b></span>
+          <span class="pill dirty">Dirty · 7</span>
+          <span class="path">C:\panda-gallery</span>
+        </div>
+        <div class="workflow-stepper">
+          <div class="ws-row"><span class="ws-num complete">✓</span><span class="ws-label">1. Setup users</span><span class="ws-state complete">Complete</span></div>
+          <div class="ws-row"><span class="ws-num attention">!</span><span class="ws-label">2. Confirm tree</span><span class="ws-state attention">7 dirty · needs attention</span></div>
+          <div class="ws-row"><span class="ws-num complete">✓</span><span class="ws-label">3. Start session</span><span class="ws-state complete">Active 22m</span></div>
+          <div class="ws-row"><span class="ws-num complete">✓</span><span class="ws-label">4. Review activity</span><span class="ws-state complete">Reviewed</span></div>
+          <div class="ws-row"><span class="ws-num blocked">×</span><span class="ws-label">5. Create handoff</span><span class="ws-state blocked">Blocked · dirty tree</span></div>
+        </div>
+        <div class="pc-body">
+          <div class="users-grid">
+            <div class="user-card">
+              <div class="uc-head"><span class="uc-name">Darrin</span><span class="uc-slot">User 1 · active</span></div>
+              <div class="uc-row"><span class="lbl">Local path</span><span class="val">C:\panda-gallery</span></div>
+              <div class="uc-row"><span class="lbl">Git identity</span><span class="val">drrap@denpc.local</span></div>
+              <span class="uc-status ready">Ready</span>
+            </div>
+            <div class="user-card user2">
+              <div class="uc-head"><span class="uc-name">Codex</span><span class="uc-slot">User 2 · idle</span></div>
+              <div class="uc-row"><span class="lbl">Local path</span><span class="val">C:\CODEX PG</span></div>
+              <div class="uc-row"><span class="lbl">Git identity</span><span class="val">codex@codex-station</span></div>
+              <span class="uc-status ready">Ready</span>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Working Tree</span><span class="panel-meta">scan 14:22:08 · 7 dirty</span></div>
+            <div class="panel-body">
+              <div class="wt-row"><span class="lbl">Branch</span><span class="val">main</span></div>
+              <div class="wt-row"><span class="lbl">HEAD</span><span class="val">ac2e1aa</span></div>
+              <div class="wt-row"><span class="lbl">Status</span><span class="pill dirty">Dirty</span></div>
+              <div class="wt-row"><span class="lbl">Untracked / modified</span><span class="val" style="color:var(--warn)">2 / 5</span></div>
+            </div>
+            <div class="btn-row">
+              <button class="btn">Browse…</button>
+              <button class="btn">Re-scan</button>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Create Safe Handoff</span><span class="panel-meta" style="color:var(--warn)">blocked</span></div>
+            <div class="panel-body">
+              <div class="wt-row"><span class="lbl">Branch</span><span class="val">main</span></div>
+              <div class="wt-row"><span class="lbl">HEAD</span><span class="val">ac2e1aa</span></div>
+              <div class="handoff-pills">
+                <span class="pill warn">Tree dirty · 7</span>
+                <span class="pill ok">Manifest</span>
+                <span class="pill ok">Patch</span>
+                <span class="pill ok">Files</span>
+              </div>
+              <button class="handoff-cta" disabled aria-disabled="true" title="Cannot handoff a dirty tree. Commit or stash 7 uncommitted changes, then re-scan." style="margin-top:10px">⚐ Create Safe Handoff</button>
+              <div class="blocked-reason"><b>Blocked — dirty tree</b><br>Commit or stash 7 uncommitted changes (2 untracked, 5 modified) before handoff. PC will not auto-clean.</div>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Messages</span><span class="panel-meta">7</span></div>
+            <div class="panel-body" style="padding:0">
+              <div class="messages">
+                <div class="msg success"><span class="ts">01:14</span><span class="kind">OK</span><span class="body">User 2 (Codex) registered.</span></div>
+                <div class="msg warn"><span class="ts">01:15</span><span class="kind">WARN</span><span class="body">Tree scan: 7 uncommitted (2 untracked, 5 modified). Handoff blocked.</span></div>
+                <div class="msg success"><span class="ts">01:15</span><span class="kind">OK</span><span class="body">Session started.</span></div>
+                <div class="msg" style="background:var(--accent-soft)"><span class="ts">01:30</span><span class="kind" style="color:var(--accent)">WAIT</span><span class="body">Commit or stash dirty changes, then re-scan to unblock handoff.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="measurements-overlay">
+        <div><b>Width:</b> 940px</div>
+        <div><b>Overflow-X:</b> none</div>
+        <div><b>Pills:</b> all visible</div>
+        <div><b>Path:</b> truncates · no clip</div>
+        <div><b>Block reason:</b> visible</div>
+        <div><b>Handoff:</b> grey-disabled</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- STATE 3 · 820px paused — emergency pause active at minimum width; banner dominates; resume reachable -->
+  <!-- =========================================================== -->
+  <div class="state-block s-820-pause">
+    <div class="stage-cap">
+      <span class="num">STATE 3 · 820px paused (emergency)</span>
+      <span class="title-text">Emergency pause active at minimum operational width. Red banner dominates the header. Sticky red border around viewport. Resume PC button reachable in the body. Incident detail compressed but complete. No horizontal overflow even at 820px.</span>
+    </div>
+    <div class="viewport-wrap">
+      <div class="pc-viewport" style="border:2px solid var(--err)">
+        <div class="pc-header" style="background:var(--err-soft); border-bottom:2px solid var(--err)">
+          <div class="brand">PC</div>
+          <span style="display:flex; align-items:center; gap:6px; padding:4px 10px; background:var(--err); color:var(--text); font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; border-radius:3px"><span style="font-family:var(--mono); font-size:13px">⛔</span>Paused</span>
+          <span style="font-family:var(--mono); font-size:10px; color:var(--err); padding:2px 7px; background:var(--err-soft); border:1px solid var(--err-border); border-radius:10px">incident_…3142</span>
+          <div class="spacer"></div>
+          <span style="font-family:var(--mono); font-size:11px; color:var(--err); font-weight:600">0:01:18</span>
+        </div>
+        <div class="pc-statusbar">
+          <span class="pill"><b>panda-gallery</b></span>
+          <span class="pill">main</span>
+          <span class="pill">ac2e1aa</span>
+          <span class="pill" style="background:var(--err-soft); border-color:var(--err-border); color:var(--err)">Paused</span>
+          <span class="path">C:\panda-gallery</span>
+        </div>
+        <div style="padding:14px; background:var(--err-soft); border-bottom:2px solid var(--err); display:flex; gap:12px; align-items:flex-start">
+          <span style="font-family:var(--mono); font-size:18px; color:var(--err); line-height:1; font-weight:700">⛔</span>
+          <div style="flex:1; min-width:0">
+            <div style="font-size:12.5px; font-weight:700; color:var(--err); margin-bottom:3px">All PC operations halted</div>
+            <div style="font-size:11px; color:var(--text); line-height:1.5">Paused 01:31:42 by Darrin. Reason: <i>"Noticed unexpected git activity during scan"</i>. Evidence: <code style="font-family:var(--mono); font-size:10px; background:var(--pane-2); padding:1px 4px; border-radius:2px">incidents/2026-05-05_013142.json</code>. Working tree untouched.</div>
+          </div>
+        </div>
+        <div class="pc-body">
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">What's paused</span><span class="panel-meta" style="color:var(--err)">3 streams halted</span></div>
+            <div class="panel-body">
+              <div class="wt-row"><span class="lbl">Background scans</span><span class="pill" style="background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)">Halted</span></div>
+              <div class="wt-row"><span class="lbl">Setup-test ack polls</span><span class="pill" style="background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)">Halted</span></div>
+              <div class="wt-row"><span class="lbl">Daily report timer</span><span class="pill" style="background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)">Halted</span></div>
+              <div class="wt-row"><span class="lbl">In-progress handoff</span><span class="pill" style="background:var(--warn-soft); border:1px solid var(--warn-border); color:var(--warn)">Frozen 4/8</span></div>
+              <div class="wt-row"><span class="lbl">Active session</span><span class="pill clean">Preserved</span></div>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">What's preserved</span><span class="panel-meta" style="color:var(--ok)">no destructive ops</span></div>
+            <div class="panel-body">
+              <div class="wt-row"><span class="lbl">Working tree</span><span class="pill clean">Untouched</span></div>
+              <div class="wt-row"><span class="lbl">HEAD</span><span class="val">ac2e1aa</span></div>
+              <div class="wt-row"><span class="lbl">Branch</span><span class="val">main · unchanged</span></div>
+              <div class="wt-row"><span class="lbl">Recent packages</span><span class="pill clean">Read-only</span></div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <!-- on click: opens resume confirm modal -->
+            <button class="handoff-cta" style="background:var(--ok); border-color:var(--ok)">▶ Resume PC</button>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <button class="btn" style="flex:1; min-width:0">📁 Open evidence</button>
+              <button class="btn" style="flex:1; min-width:0">⧉ Copy incident ID</button>
+            </div>
+          </div>
+          <div class="pc-panel">
+            <div class="panel-head"><span class="panel-title">Incident log</span><span class="panel-meta">last 5</span></div>
+            <div class="panel-body" style="padding:0">
+              <div class="messages" style="max-height:180px">
+                <div class="msg err"><span class="ts">01:31:42</span><span class="kind">PAUSE</span><span class="body">Emergency Pause activated by Darrin</span></div>
+                <div class="msg"><span class="ts">01:31:42</span><span class="kind">INFO</span><span class="body">3 worker threads halting…</span></div>
+                <div class="msg success"><span class="ts">01:31:42</span><span class="kind">OK</span><span class="body">Session preserved: session_20260505_011500</span></div>
+                <div class="msg success"><span class="ts">01:31:42</span><span class="kind">OK</span><span class="body">Incident evidence written (1.2 KB)</span></div>
+                <div class="msg err"><span class="ts">01:31:42</span><span class="kind">HALT</span><span class="body">PC paused. Click Resume PC to continue.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="measurements-overlay">
+        <div><b>Width:</b> 820px (min)</div>
+        <div><b>Overflow-X:</b> none</div>
+        <div><b>Pause banner:</b> dominates</div>
+        <div><b>Resume PC:</b> reachable</div>
+        <div><b>Buttons:</b> wrap, no clip</div>
+        <div><b>Incident detail:</b> visible</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
