@@ -405,6 +405,17 @@ Created: 2026-05-03
 - "Properly vetted" means the spec is written down, checked for errors, oversights, conflicts, and ambiguities, and approved by Darrin or by an explicit current directive that names the vetted spec.
 - Diagnostics, mail checks, read-only investigation, and reporting can happen before the spec, but code/file implementation starts only after the vetted-spec gate is satisfied.
 
+## CC/CD Mailbox Follow-Up Rule
+
+Created: 2026-05-04
+
+- Codex must regularly check PAH-visible Claude Desktop (CD) and Claude Code (CC) mailbox state, especially unread, open-on-agent, stale, pending-dispatch, and waiting-on-Darrin threads.
+- When CC or CD appears not to have fully read, acknowledged, or responded appropriately to assigned mail, Codex should send a concise PAH-visible follow-up/nag asking them to read the relevant mailbox item fully, respond in-thread, and state completion, blocker, or requested decision.
+- Follow-ups must be evidence-based: include thread/message IDs or paths when useful, avoid vague "check your mail" pings, and do not overstate certainty if the state is inferred from stale mailbox/read-state evidence.
+- Do not write PHI, secrets, credentials, or patient data into follow-ups.
+- Prefer PAH mailbox routes/protocols over ad hoc file writes. Writing into `C:\panda-gallery` remains protected unless Darrin explicitly authorizes that specific CC mailbox action.
+- Keep nag volume low and useful: one consolidated follow-up per agent per check cycle unless there is an urgent or Darrin-blocking thread.
+
 
 
 
