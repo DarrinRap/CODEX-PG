@@ -489,7 +489,10 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("'/api/path/pick'", html)
         self.assertIn("claude_desktop_path", html)
         self.assertIn("claude_code_path", html)
-        self.assertNotIn('<span class="step-num">4</span>', html)
+        # Phase 1: the only step-num="4" element is the workflow-guide review-activity stage.
+        # It must not appear as a wizard registration badge; verify it only appears inside .wg-step.
+        self.assertEqual(html.count('<span class="step-num">4</span>'), 1)
+        self.assertIn('data-wg-step="review-activity"', html)
 
     def test_repository_paths_have_folder_browse_buttons(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -639,11 +642,16 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
     def test_registration_headers_do_not_render_redundant_number_badges(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertNotIn('<span class="step-num">1</span>', html)
-        self.assertNotIn('<span class="step-num">2</span>', html)
-        self.assertNotIn('<span class="step-num">3</span>', html)
+        # The legacy panda-step-guide must stay gone — it caused redundant numbering on registration headers.
+        # Phase 1 introduces the new pc-redesign workflow-guide which uses .wg-step .step-num for its 5-stage
+        # arrow grid; that's the only legitimate occurrence of step-num going forward.
         self.assertNotIn('class="panda-step-guide"', html)
+        # Sequence-step numbering on the workflow-row registration headers is preserved.
         self.assertIn('class="sequence-step">1</span>', html)
+        # New workflow-guide step nums live inside .wg-step blocks and are the only step-num usage.
+        for badge_num in ("1", "2", "3", "4", "5"):
+            self.assertEqual(html.count(f'<span class="step-num">{badge_num}</span>'), 1,
+                             f"step-num {badge_num} should appear exactly once (in workflow-guide)")
 
     def test_heading_fonts_stay_compact_for_single_screen_fit(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -659,27 +667,33 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
     def test_active_user_banner_stays_inside_header_row(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertRegex(html, r"(?s)\.shell\s*\{.*?grid-template-rows:\s*60px minmax\(0, 1fr\);")
-        self.assertRegex(html, r"(?s)header\s*\{.*?display:\s*flex;")
-        self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?height:\s*38px;")
-        self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?overflow:\s*hidden;")
-        self.assertRegex(html, r"(?s)\.active-user-banner\s*\{.*?grid-template-columns:\s*auto minmax\(120px, 320px\) minmax\(0, 1fr\);")
-        self.assertRegex(html, r"(?s)\.active-user-banner small\s*\{.*?text-overflow:\s*ellipsis;")
+        # Phase 1 chrome: shell stacks header / statusbar / workflow-guide / main
+        self.assertRegex(html, r"(?s)\.shell\s*\{.*?grid-template-rows:\s*auto auto auto minmax\(0, 1fr\);")
+        # New pc-header is a flex row matching pc_main_operational.html
+        self.assertRegex(html, r"(?s)\.pc-header\s*\{.*?display:\s*flex;")
+        self.assertRegex(html, r"(?s)\.pc-header\s*\{.*?background:\s*var\(--chrome\);")
+        # Active-user pill inside pc-header (left-border-stripe style, identity-color via body theme)
+        self.assertRegex(html, r"(?s)\.pc-header \.active-user\s*\{.*?border-left:\s*3px solid var\(--user1\);")
+        self.assertRegex(html, r"(?s)body\.user-two \.pc-header \.active-user\s*\{.*?border-left-color:\s*var\(--user2\);")
+        # The activeUserName ID still lives inside the header row (JS-reachable)
+        self.assertIn('id="activeUserName" class="active-user"', html)
+        self.assertIn('id="activeUserTheme" class="role-tag"', html)
 
     def test_information_pills_and_action_buttons_are_visually_distinct(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertRegex(html, r"(?s)button\s*\{.*?border-radius:\s*2px;")
+        # Phase 1: Bible-aligned radius (4px = var(--radius-md)) and flat surface backgrounds
+        self.assertRegex(html, r"(?s)button\s*\{.*?border-radius:\s*var\(--radius-md\);")
         self.assertRegex(html, r"(?s)button\s*\{.*?box-shadow:\s*inset 0 1px 0")
-        self.assertRegex(html, r"(?s)button:not\(:disabled\):not\(\.danger\)\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
-        self.assertRegex(html, r"(?s)button:disabled\s*\{.*?background:\s*linear-gradient\(180deg, #4a4a56, #353542\);")
-        self.assertRegex(html, r"(?s)\.view-toggle button\.active:not\(:disabled\).*?\.segmented button\.active:not\(:disabled\)\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
+        self.assertRegex(html, r"(?s)button:not\(:disabled\):not\(\.danger\)\s*\{.*?background:\s*var\(--ok\);")
+        self.assertRegex(html, r"(?s)button:disabled\s*\{.*?background:\s*var\(--pane\);")
+        self.assertRegex(html, r"(?s)\.view-toggle button\.active:not\(:disabled\).*?\.segmented button\.active:not\(:disabled\)\s*\{.*?background:\s*var\(--ok\);")
         self.assertRegex(html, r"(?s)\.chip\s*\{.*?border-radius:\s*999px;")
         self.assertRegex(html, r"(?s)\.chip\s*\{.*?cursor:\s*default;")
         self.assertRegex(html, r"(?s)\.test-status-pill\s*\{.*?border-radius:\s*999px;")
         self.assertRegex(html, r"(?s)\.test-status-pill\s*\{.*?cursor:\s*default;")
-        self.assertRegex(html, r"(?s)\.test-mode-btn\s*\{.*?border-radius:\s*2px;")
-        self.assertRegex(html, r"(?s)\.quit-test-btn\s*\{.*?border-radius:\s*2px;")
+        self.assertRegex(html, r"(?s)\.test-mode-btn\s*\{.*?border-radius:\s*var\(--radius-md\);")
+        self.assertRegex(html, r"(?s)\.quit-test-btn\s*\{.*?border-radius:\s*var\(--radius-md\);")
         self.assertIn("$('testModeBtn').classList.toggle('hidden', state.testMode.active);", html)
         self.assertIn("$('openTestEvidenceBtn').classList.toggle('hidden'", html)
         self.assertIn('class="chip" id="scanTime"', html)
@@ -736,8 +750,10 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn('class="handoff-primary-action" id="handoffBtn" disabled>Create safe handoff</button>', html)
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?width:\s*100%;")
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?min-height:\s*48px;")
-        self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?background:\s*linear-gradient\(180deg, #8ccf6f, #6da850\);")
-        self.assertRegex(html, r"(?s)\.handoff-primary-action:disabled\s*\{.*?background:\s*linear-gradient\(180deg, #4a4a56, #353542\);")
+        # Phase 1: flat Bible surface backgrounds — no linear-gradient fills
+        self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?border-radius:\s*var\(--radius-md\);")
+        self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?background:\s*var\(--ok\);")
+        self.assertRegex(html, r"(?s)\.handoff-primary-action:disabled\s*\{.*?background:\s*var\(--pane\);")
 
     def test_status_messages_use_one_scroll_container(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")

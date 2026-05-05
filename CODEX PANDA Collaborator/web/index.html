@@ -188,10 +188,10 @@
     }
 
     button {
-      border: 1px solid var(--line);
-      background: var(--surface-2);
+      border: 1px solid var(--border-hover);
+      background: var(--pane-raised);
       color: var(--text);
-      border-radius: 2px;
+      border-radius: var(--radius-md);
       min-height: 24px;
       padding: 0 8px;
       cursor: pointer;
@@ -205,7 +205,7 @@
       opacity: 1;
       cursor: not-allowed;
       border-color: rgba(136, 136, 136, .38);
-      background: linear-gradient(180deg, #4a4a56, #353542);
+      background: var(--pane);
       color: #aaa7a0;
     }
     .primary {
@@ -217,7 +217,7 @@
     .shell {
       height: 100vh;
       display: grid;
-      grid-template-rows: 60px minmax(0, 1fr);
+      grid-template-rows: auto auto auto minmax(0, 1fr);
       overflow: hidden;
     }
 
@@ -336,6 +336,220 @@
       white-space: nowrap;
     }
 
+    /* === PC redesign Phase 1 — Bible-aligned chrome (header + statusbar + workflow guide) === */
+    /* Faithful port of mockups/pc_redesign_v1/pc_main_operational.html chrome.
+       Identity colors (--user1 amber / --user2 cyan) wired via body.user-one / body.user-two
+       theme classes (already established). Bible §2.x surfaces, §3.4 mono for precision data,
+       §4.x spacing/radius/motion. */
+
+    .pc-header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 10px 18px;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      min-width: 0;
+    }
+    .pc-header .brand {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      min-width: 0;
+      flex-shrink: 0;
+    }
+    .pc-header .brand .sub {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 400;
+      margin-left: 6px;
+    }
+    .pc-header .active-user {
+      font-family: var(--font-ui);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text);
+      padding: 0 10px;
+      border-left: 3px solid var(--user1);
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+    body.user-two .pc-header .active-user {
+      border-left-color: var(--user2);
+    }
+    body.test-mode .pc-header .active-user {
+      border-left-color: var(--warn);
+    }
+    .pc-header .active-user.empty {
+      color: var(--text-dim);
+      font-style: italic;
+      font-size: 11px;
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 400;
+      border-left-color: var(--border-hover);
+    }
+    .pc-header .role-tag {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      background: var(--pane-raised);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    .pc-header .spacer { flex: 1; }
+    .pc-header .test-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+    .pc-header .test-mode-chip {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 4px 10px;
+      background: var(--warn-soft);
+      border: 1px solid var(--warn);
+      color: var(--warn);
+      border-radius: var(--radius-sm);
+      display: none;
+      white-space: nowrap;
+    }
+    body.test-mode .pc-header .test-mode-chip { display: inline-flex; }
+    .pc-header .pause-chip {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 4px 10px;
+      background: var(--err-soft);
+      border: 1px solid var(--err);
+      color: var(--err);
+      border-radius: var(--radius-sm);
+      display: none;
+      white-space: nowrap;
+    }
+    body.is-paused .pc-header .pause-chip { display: inline-flex; }
+
+    /* Statusbar — precision data row, ~26px, mono pills */
+    .pc-statusbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 18px;
+      height: 26px;
+      background: var(--pane);
+      border-bottom: 1px solid var(--border-soft);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .pc-statusbar .pill {
+      padding: 1px 8px;
+      background: var(--pane-raised);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .pc-statusbar .pill b { color: var(--text); font-weight: 600; }
+    .pc-statusbar .pill.dirty { border-color: var(--warn-border); color: var(--warn); background: var(--warn-soft); }
+    .pc-statusbar .pill.clean { border-color: var(--ok-border); color: var(--ok); background: var(--ok-soft); }
+    .pc-statusbar .pill.unknown { border-color: var(--err-border); color: var(--err); background: var(--err-soft); }
+    .pc-statusbar .path {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+      padding: 0 6px;
+    }
+
+    /* Workflow guide — 5 panels in arrow progression with semantic state classes */
+    .workflow-guide {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      padding: 14px 18px;
+      background: var(--canvas);
+      border-bottom: 1px solid var(--border-soft);
+      flex-shrink: 0;
+    }
+    .wg-step {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 14px;
+      background: var(--pane);
+      border: 1px solid var(--border);
+      border-right: none;
+      position: relative;
+    }
+    .wg-step:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+    .wg-step:last-child { border-right: 1px solid var(--border); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+    .wg-step .step-head { display: flex; align-items: center; gap: 6px; }
+    .wg-step .step-num {
+      width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--pane-raised);
+      color: var(--text-muted);
+      border: 1px solid var(--border-hover);
+    }
+    .wg-step .step-label { font-size: 11.5px; font-weight: 600; color: var(--text); }
+    .wg-step .step-state {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .wg-step.complete .step-num { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-border); }
+    .wg-step.complete .step-state { color: var(--ok); }
+    .wg-step.active { background: var(--pane-selected); border-color: var(--accent-border); }
+    .wg-step.active .step-num { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .wg-step.active .step-state { color: var(--accent); }
+    .wg-step.attention .step-num { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-border); }
+    .wg-step.attention .step-state { color: var(--warn); }
+    .wg-step.blocked .step-num { background: var(--err-soft); color: var(--err); border-color: var(--err-border); }
+    .wg-step.blocked .step-state { color: var(--err); }
+    .wg-step .arrow {
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      background: var(--pane);
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      transform: translateY(-50%) rotate(45deg);
+      z-index: 1;
+    }
+    .wg-step:last-child .arrow { display: none; }
+    /* === End PC redesign Phase 1 chrome === */
+
     .test-controls {
       display: flex;
       align-items: center;
@@ -346,9 +560,9 @@
 
     .test-mode-btn {
       min-height: 30px;
-      border-radius: 2px;
+      border-radius: var(--radius-md);
       border-color: rgba(255, 223, 77, .6);
-      background: linear-gradient(180deg, #3b3942, #242430);
+      background: var(--pane-raised);
       color: #d9d4c5;
       text-transform: uppercase;
       white-space: nowrap;
@@ -382,7 +596,7 @@
 
     .quit-test-btn {
       min-height: 30px;
-      border-radius: 2px;
+      border-radius: var(--radius-md);
       border-color: rgba(255, 223, 77, .65);
       background: rgba(255, 223, 77, .12);
       color: #ffdf4d;
@@ -839,9 +1053,9 @@
     .handoff-primary-action {
       width: 100%;
       min-height: 48px;
-      border-radius: 2px;
+      border-radius: var(--radius-md);
       border-color: rgba(127, 176, 105, .78);
-      background: linear-gradient(180deg, #8ccf6f, #6da850);
+      background: var(--ok);
       color: #07140a;
       font-size: 16px;
       font-weight: 950;
@@ -852,13 +1066,13 @@
 
     .handoff-primary-action:hover:not(:disabled) {
       border-color: rgba(155, 220, 126, .95);
-      background: linear-gradient(180deg, #9bdc7e, #76b75a);
+      background: #9bdc7e;
     }
 
     .handoff-primary-action:disabled {
       opacity: 1;
       border-color: rgba(136, 136, 136, .38);
-      background: linear-gradient(180deg, #4a4a56, #353542);
+      background: var(--pane);
       color: #aaa7a0;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
     }
@@ -1577,13 +1791,13 @@
 
     button:not(:disabled):not(.danger) {
       border-color: rgba(127, 176, 105, .86);
-      background: linear-gradient(180deg, #8ccf6f, #6da850);
+      background: var(--ok);
       color: #07140a;
     }
 
     button:hover:not(:disabled):not(.danger) {
       border-color: rgba(155, 220, 126, .96);
-      background: linear-gradient(180deg, #9bdc7e, #76b75a);
+      background: #9bdc7e;
     }
 
     .danger:not(:disabled) {
@@ -1647,7 +1861,7 @@
     .view-toggle button.active:not(:disabled),
     .segmented button.active:not(:disabled) {
       border-color: rgba(127, 176, 105, .86);
-      background: linear-gradient(180deg, #8ccf6f, #6da850);
+      background: var(--ok);
       color: #07140a;
     }
 
@@ -2165,36 +2379,61 @@
 </head>
 <body>
   <div class="shell">
-    <header>
-      <div class="header-top">
-        <div class="brand">
-          <div class="mark">PC</div>
-          <div>
-            <h1>PANDA Collaborator</h1>
-            <span>Shared workstation handoff manager</span>
-          </div>
-        </div>
-        <div class="active-user-banner" id="activeUserBanner">
-          <span>Active user</span>
-          <strong id="activeUserName">SETUP NEEDED</strong>
-          <small id="activeUserTheme">Complete setup before handoff work</small>
-        </div>
-        <div class="status-strip" id="statusStrip">
-          <span class="chip">Ready</span>
-          <span class="chip ok">No destructive git</span>
-          <span class="chip ok">No stash safety</span>
-        </div>
-        <div class="test-controls" aria-label="PANDA test mode controls">
-          <button id="testModeBtn" class="test-mode-btn" type="button">Start Test Mode</button>
-          <span id="testStatusPill" class="test-status-pill" data-test-result="">Test Ready</span>
-          <button id="createTestSandboxBtn" class="test-mode-btn is-secondary hidden" type="button">Reset Sandbox</button>
-          <button id="runTestAgainBtn" class="test-mode-btn hidden" type="button">Run Test</button>
-          <button id="openTestEvidenceBtn" class="test-mode-btn is-secondary hidden" type="button">Open Evidence</button>
-          <button id="quitTestModeBtn" class="quit-test-btn hidden" type="button">Quit Test Mode</button>
-        </div>
-        <button id="switchUserBtn" class="switch-user-btn" type="button">Setup users</button>
+    <header class="pc-header" id="activeUserBanner">
+      <div class="brand">PANDA Collaborator <span class="sub">Shared workstation handoff manager</span></div>
+      <span id="activeUserName" class="active-user">SETUP NEEDED</span>
+      <span id="activeUserTheme" class="role-tag">Complete setup before handoff work</span>
+      <span class="spacer"></span>
+      <span class="test-mode-chip">⚠ Test mode</span>
+      <span class="pause-chip">⏸ Paused</span>
+      <div class="status-strip" id="statusStrip" hidden>
+        <span class="chip">Ready</span>
+        <span class="chip ok">No destructive git</span>
+        <span class="chip ok">No stash safety</span>
       </div>
+      <div class="test-controls" aria-label="PANDA test mode controls">
+        <button id="testModeBtn" class="test-mode-btn" type="button">Start Test Mode</button>
+        <span id="testStatusPill" class="test-status-pill" data-test-result="">Test Ready</span>
+        <button id="createTestSandboxBtn" class="test-mode-btn is-secondary hidden" type="button">Reset Sandbox</button>
+        <button id="runTestAgainBtn" class="test-mode-btn hidden" type="button">Run Test</button>
+        <button id="openTestEvidenceBtn" class="test-mode-btn is-secondary hidden" type="button">Open Evidence</button>
+        <button id="quitTestModeBtn" class="quit-test-btn hidden" type="button">Quit Test Mode</button>
+      </div>
+      <button id="switchUserBtn" class="switch-user-btn" type="button">Setup users</button>
     </header>
+    <div class="pc-statusbar">
+      <span class="pill" id="statusBarRepoLabel">No tree</span>
+      <span class="pill">branch <b id="statusBarBranch">—</b></span>
+      <span class="pill">HEAD <b id="statusBarHead">—</b></span>
+      <span class="pill unknown" id="statusBarTreeState">Unknown</span>
+      <span class="path" id="statusBarPath" title="No path selected">—</span>
+    </div>
+    <div class="workflow-guide" aria-label="Handoff workflow guide">
+      <div class="wg-step active" data-wg-step="setup">
+        <div class="step-head"><span class="step-num">1</span><span class="step-label">Setup users</span></div>
+        <div class="step-state">Active</div>
+        <div class="arrow"></div>
+      </div>
+      <div class="wg-step" data-wg-step="confirm-tree">
+        <div class="step-head"><span class="step-num">2</span><span class="step-label">Confirm tree</span></div>
+        <div class="step-state">Not started</div>
+        <div class="arrow"></div>
+      </div>
+      <div class="wg-step" data-wg-step="start-session">
+        <div class="step-head"><span class="step-num">3</span><span class="step-label">Start session</span></div>
+        <div class="step-state">Not started</div>
+        <div class="arrow"></div>
+      </div>
+      <div class="wg-step" data-wg-step="review-activity">
+        <div class="step-head"><span class="step-num">4</span><span class="step-label">Review activity</span></div>
+        <div class="step-state">Not started</div>
+        <div class="arrow"></div>
+      </div>
+      <div class="wg-step" data-wg-step="create-handoff">
+        <div class="step-head"><span class="step-num">5</span><span class="step-label">Create handoff</span></div>
+        <div class="step-state">Not started</div>
+      </div>
+    </div>
     <div id="testModeBanner" class="test-banner" data-test-result="">
       <span id="testModeBannerText">TEST MODE ACTIVE - FAKE USERS, FAKE ACCOUNTS, FAKE REPOSITORY</span>
       <button id="quitTestModeBannerBtn" class="quit-test-btn" type="button">Quit Test Mode</button>
