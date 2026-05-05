@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC v2 mockup — Test Mode</title>
+<style>
+:root {
+  --canvas: #14141f; --chrome: #161625; --pane: #1a1a2e; --pane-2: #22223a;
+  --user1: #e8a87c; --user2: #4dd9e0;
+  --ok: #6da850; --ok-soft: rgba(109, 168, 80, 0.14); --ok-border: rgba(109, 168, 80, 0.50);
+  --warn: #f39c12; --warn-soft: rgba(243, 156, 18, 0.14); --warn-border: rgba(243, 156, 18, 0.50);
+  --err: #e74c3c; --err-soft: rgba(231, 76, 60, 0.14); --err-border: rgba(231, 76, 60, 0.50);
+  /* Test-mode identity colors — yellow + magenta — visually distinct from User 1 (amber) / User 2 (cyan) */
+  --test-bob:    #ffdf4d;
+  --test-bob-soft: rgba(255, 223, 77, 0.12);
+  --test-bob-border: rgba(255, 223, 77, 0.50);
+  --test-karen:  #ff7adb;
+  --test-karen-soft: rgba(255, 122, 219, 0.12);
+  --test-karen-border: rgba(255, 122, 219, 0.50);
+  --text: #e0ddd5; --text-muted: #888888; --text-dim: #555555;
+  --border: #2a2a3e; --border-soft: #232336; --border-hover: #3a3a4e;
+  --accent: #e8a87c;
+  --font-ui: "Segoe UI","SF Pro Display","Noto Sans",system-ui,sans-serif;
+  --font-mono: "Cascadia Mono","Consolas",monospace;
+  --radius-sm: 2px; --radius-md: 4px; --radius-lg: 6px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--canvas);color:var(--text);font:13px/1.4 var(--font-ui);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100vh}
+
+.doc-head{padding:24px 32px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%);flex-shrink:0}
+.doc-head .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:1.6px;color:var(--accent);text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.doc-head h1{font-size:18px;font-weight:600;letter-spacing:.2px;margin-bottom:4px}
+.doc-head .meta{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.doc-head .meta b{color:var(--text-muted);font-weight:500}
+
+.stage{padding:16px 32px 32px;display:flex;justify-content:center;flex-shrink:0}
+
+.pc-viewport{
+  width:1366px; height:768px;
+  background:var(--canvas); border:2px solid var(--test-bob); border-radius:var(--radius-lg);
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  font-family:var(--font-ui);
+  position: relative;
+}
+
+/* PROMINENT TEST MODE INDICATOR — diagonal stripes corner watermark */
+.pc-viewport::before {
+  content: "TEST MODE";
+  position: absolute;
+  top: 28px; right: -50px;
+  background: var(--test-bob);
+  color: var(--canvas);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 5px 60px;
+  transform: rotate(45deg);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Top warn banner — unmistakable */
+.test-banner {
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 16px;
+  background: var(--test-bob);
+  color: var(--canvas);
+  border-bottom: 1px solid var(--canvas);
+  flex-shrink: 0;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.test-banner .icon { font-size: 16px; }
+.test-banner .spacer { flex: 1; }
+.test-banner .quit-btn {
+  background: var(--canvas); color: var(--test-bob);
+  border: 1px solid var(--canvas);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font: 700 11px/1 var(--font-ui);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pc-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  height: 42px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pc-header .brand { font-size: 13px; font-weight: 500; }
+.pc-header .sep { color: var(--text-dim); }
+.pc-header .active-user { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; padding: 0 4px; }
+.pc-header .active-user .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--test-bob); }
+.pc-header .active-user .name { color: var(--test-bob); }
+.pc-header .test-tag {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.2px;
+  text-transform: uppercase; font-weight: 700;
+  padding: 2px 7px;
+  background: var(--test-bob-soft);
+  border: 1px solid var(--test-bob);
+  color: var(--test-bob);
+  border-radius: var(--radius-sm);
+}
+.pc-header .repo-pills { display: flex; gap: 6px; margin-left: 8px; }
+.pc-header .repo-pill { font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); white-space: nowrap; }
+.pc-header .repo-pill.sandbox { border-color: var(--test-bob-border); color: var(--test-bob); background: var(--test-bob-soft); }
+.pc-header .repo-pill b { color: var(--text); font-weight: 600; }
+.pc-header .repo-pill.clean { border-color: var(--ok-border); color: var(--ok); background: var(--ok-soft); }
+.pc-header .spacer { flex: 1; }
+.pc-header .btn { height: 28px; padding: 0 12px; background: var(--pane-2); color: var(--text); border: 1px solid var(--border-hover); border-radius: var(--radius-md); font: 600 11.5px/1 var(--font-ui); cursor: pointer; }
+.pc-header .quit-test-btn {
+  background: var(--test-bob); color: var(--canvas); border-color: var(--test-bob);
+  font-weight: 700;
+}
+.pc-header .quit-test-btn:hover { filter: brightness(0.9); }
+.pc-header .test-pill {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 4px 10px; background: var(--ok-soft);
+  border: 1px solid var(--ok-border); color: var(--ok);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+.pc-header .test-pill.fail { background: var(--err-soft); border-color: var(--err-border); color: var(--err); }
+
+.workflow-rail {
+  display: flex; align-items: center;
+  height: 32px;
+  padding: 0 16px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.wr-step { display: flex; align-items: center; gap: 6px; padding: 0 8px; }
+.wr-step .dot { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.wr-step .label { font-size: 11px; font-weight: 500; white-space: nowrap; }
+.wr-step.complete .dot { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+.wr-step.complete .label { color: var(--ok); }
+.wr-step.test-active .dot { background: var(--test-bob); border: 1px solid var(--test-bob); color: var(--canvas); }
+.wr-step.test-active .label { color: var(--test-bob); font-weight: 600; }
+.wr-step.idle .dot { background: var(--pane-2); border: 1px solid var(--border); color: var(--text-dim); }
+.wr-step.idle .label { color: var(--text-muted); }
+.wr-chevron { width: 8px; height: 8px; border-top: 1px solid var(--border-hover); border-right: 1px solid var(--border-hover); transform: rotate(45deg); margin: 0 4px; opacity: 0.6; flex-shrink: 0; }
+
+.pc-body {
+  display: grid;
+  grid-template-columns: 280px 1fr 360px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.left-col { display: flex; flex-direction: column; background: var(--pane); border-right: 1px solid var(--border); overflow-y: auto; }
+.center-col { display: flex; flex-direction: column; background: var(--canvas); overflow-y: auto; }
+.right-col { display: flex; flex-direction: column; background: var(--pane); border-left: 1px solid var(--border); overflow-y: auto; }
+
+.sec { border-bottom: 1px solid var(--border-soft); }
+.sec-head { display: flex; align-items: center; height: 28px; padding: 0 12px; background: var(--chrome); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 700; color: var(--accent); gap: 8px; }
+.sec-head .right-tag { font-family: var(--font-mono); font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: auto; }
+.sec-head .right-tag.test { background: var(--test-bob-soft); border: 1px solid var(--test-bob); color: var(--test-bob); }
+.sec-head .right-tag.warn { background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); }
+.sec-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Test users — Bob (yellow) + Karen (magenta) — visually unrelated to amber/cyan production identities */
+.user-sec.test-bob { padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 5px; border-left: 3px solid var(--test-bob); }
+.user-sec.test-karen { padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 5px; border-left: 3px solid var(--test-karen); }
+.user-sec .user-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.user-sec .display-name { font-size: 13px; font-weight: 600; }
+.user-sec.test-bob .display-name { color: var(--test-bob); }
+.user-sec.test-karen .display-name { color: var(--test-karen); }
+.user-sec .test-pill {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px;
+  background: var(--test-bob-soft); border: 1px solid var(--test-bob); color: var(--test-bob);
+}
+.user-sec.test-karen .test-pill {
+  background: var(--test-karen-soft); border-color: var(--test-karen); color: var(--test-karen);
+}
+.user-sec .git-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-sec .switch-btn {
+  width: 100%; height: 28px; padding: 0 12px;
+  background: var(--pane-raised, var(--pane-2)); color: var(--text);
+  border-radius: var(--radius-md);
+  font: 600 11.5px/1 var(--font-ui); cursor: pointer;
+}
+.user-sec.test-bob .switch-btn { border: 1px solid var(--test-bob); }
+.user-sec.test-karen .switch-btn { border: 1px solid var(--test-karen); }
+
+.repo-row { display: flex; gap: 6px; align-items: center; }
+.repo-path-input {
+  flex: 1;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--test-bob);
+  background: var(--test-bob-soft);
+  border: 1px solid var(--test-bob-border);
+  padding: 5px 8px; border-radius: var(--radius-md);
+  height: 26px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.btn { height: 26px; padding: 0 10px; background: var(--pane-2); color: var(--text); border: 1px solid var(--border-hover); border-radius: var(--radius-md); font: 600 11.5px/1 var(--font-ui); cursor: pointer; }
+.btn.green { background: var(--ok); color: var(--canvas); border-color: var(--ok); height: 28px; width: 100%; font-weight: 700; }
+.pill-row { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
+.lc-pill { font-family: var(--font-mono); font-size: 10px; padding: 2px 7px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); white-space: nowrap; flex: 0 0 auto; }
+.lc-pill.clean { border-color: var(--ok-border); color: var(--ok); background: var(--ok-soft); }
+.lc-pill b { color: var(--text); font-weight: 600; }
+.last-scan { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+/* Status messages */
+.status-list { flex: 1; overflow-y: auto; padding: 4px 0; background: var(--pane); }
+.status-row { display: grid; grid-template-columns: 90px 1fr 110px; gap: 12px; padding: 7px 14px 7px 16px; border-bottom: 1px solid var(--border-soft); border-left: 4px solid var(--text-dim); align-items: start; }
+.status-row.success { border-left-color: var(--ok); }
+.status-row.test-info { border-left-color: var(--test-bob); }
+.status-row .ts { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.status-row .body-text { font-size: 13px; color: var(--text); line-height: 1.45; }
+.status-row .author { font-family: var(--font-mono); font-size: 10px; padding: 2px 7px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); text-align: center; justify-self: end; white-space: nowrap; }
+.status-row .author.test-bob { color: var(--test-bob); border-color: var(--test-bob-border); background: var(--test-bob-soft); }
+
+.qm-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+.qm-textarea { width: 100%; height: 36px; resize: none; background: var(--pane); border: 1px solid var(--border-hover); border-radius: var(--radius-md); color: var(--text); font: 12px/1.4 var(--font-ui); padding: 4px 8px; }
+.start-session-btn { width: 100%; height: 40px; background: var(--ok); color: var(--canvas); border: 1px solid var(--ok); border-radius: var(--radius-md); font: 700 13px/1 var(--font-ui); cursor: pointer; }
+
+.handoff-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+.meta-pills.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.meta-pill { font-family: var(--font-mono); font-size: 10.5px; padding: 2px 7px; background: var(--pane-2); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta-pill b { color: var(--text); font-weight: 600; }
+.meta-pill.test { background: var(--test-bob-soft); border-color: var(--test-bob-border); color: var(--test-bob); }
+.handoff-input { width: 100%; height: 28px; background: var(--pane-2); border: 1px solid var(--border-hover); border-radius: var(--radius-md); padding: 0 8px; color: var(--text); font: 12px/1 var(--font-ui); }
+.handoff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.handoff-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; font-weight: 700; display: block; }
+.notes-textarea { width: 100%; height: 56px; resize: none; background: var(--pane-2); border: 1px solid var(--border-hover); border-radius: var(--radius-md); padding: 6px 8px; color: var(--text); font: 12px/1.4 var(--font-ui); }
+.handoff-primary-action { width: 100%; height: 48px; background: var(--ok); color: var(--canvas); border: 1px solid var(--ok); border-radius: var(--radius-md); font: 700 14px/1 var(--font-ui); cursor: pointer; }
+.end-session-btn { width: 100%; height: 28px; background: var(--pane-2); color: var(--warn); border: 1px solid var(--warn-border); border-radius: var(--radius-md); font: 600 11.5px/1 var(--font-ui); cursor: pointer; }
+
+.test-controls-row {
+  padding: 8px 12px;
+  background: var(--test-bob-soft);
+  border-bottom: 1px solid var(--test-bob);
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.test-controls-row .btn { font-size: 11px; padding: 0 9px; height: 26px; background: var(--pane-2); border: 1px solid var(--test-bob-border); color: var(--test-bob); }
+.test-controls-row .btn:hover { background: var(--test-bob); color: var(--canvas); }
+
+.pc-footer {
+  display: flex; align-items: center; gap: 14px;
+  height: 28px; padding: 0 16px;
+  background: var(--chrome); border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted);
+}
+.pc-footer .test-pill { padding: 2px 8px; background: var(--test-bob-soft); border: 1px solid var(--test-bob); border-radius: 10px; color: var(--test-bob); font-weight: 700; letter-spacing: 0.5px; }
+.pc-footer .spacer { flex: 1; }
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC redesign · v2 mockup · screen 11 of 12</div>
+  <h1>Test Mode — Bob &amp; Karen Sandbox</h1>
+  <div class="meta">
+    <span><b>State:</b> TEST MODE active · Bob (yellow) and Karen (magenta) fake users · sandbox repo</span>
+    <span><b>Identity colors:</b> test-bob #ffdf4d · test-karen #ff7adb — visually distinct from production amber/cyan</span>
+    <span><b>Viewport:</b> 1366×768 · zero page scroll</span>
+  </div>
+</header>
+
+<main class="stage">
+  <div class="pc-viewport">
+
+    <!-- Test mode banner — top of viewport, unmissable -->
+    <div class="test-banner">
+      <span class="icon">⚠</span>
+      <span>TEST MODE ACTIVE — Fake users · Fake accounts · Sandbox repo · Nothing here writes to production</span>
+      <span class="spacer"></span>
+      <button class="quit-btn">Quit Test Mode</button>
+    </div>
+
+    <!-- HEADER -->
+    <div class="pc-header">
+      <span class="brand">PANDA Collaborator</span>
+      <span class="sep">|</span>
+      <span class="active-user"><span class="dot"></span><span class="name">Bob</span></span>
+      <span class="test-tag">Test fixture · slot 1</span>
+      <div class="repo-pills">
+        <span class="repo-pill sandbox"><b>sandbox</b></span>
+        <span class="repo-pill">branch <b>test/handoff-smoke</b></span>
+        <span class="repo-pill">HEAD <b>1a2b3c4</b></span>
+        <span class="repo-pill clean">clean</span>
+      </div>
+      <span class="spacer"></span>
+      <span class="test-pill">Test Ready</span>
+      <button class="btn quit-test-btn">Quit Test Mode</button>
+    </div>
+
+    <!-- WORKFLOW RAIL — Step 4 in test-bob yellow -->
+    <div class="workflow-rail">
+      <div class="wr-step complete"><span class="dot">✓</span><span class="label">Register</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step complete"><span class="dot">✓</span><span class="label">Confirm repo</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step complete"><span class="dot">✓</span><span class="label">Hand over</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step test-active"><span class="dot">4</span><span class="label">Working (test)</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step idle"><span class="dot">5</span><span class="label">Hand off</span></div>
+    </div>
+
+    <div class="pc-body">
+      <!-- LEFT: Test working tree + Bob/Karen fake users -->
+      <div class="left-col">
+        <div class="sec">
+          <div class="sec-head"><span>Working Tree</span><span class="right-tag test">SANDBOX</span></div>
+          <div class="sec-body">
+            <div class="repo-row">
+              <span class="repo-path-input">PANDA test sandboxes\sandbox_a</span>
+              <button class="btn">Browse</button>
+            </div>
+            <button class="btn green">Scan Working Tree</button>
+            <div class="pill-row">
+              <span class="lc-pill">branch <b>test/handoff-smoke</b></span>
+              <span class="lc-pill">HEAD <b>1a2b3c4</b></span>
+              <span class="lc-pill clean">clean</span>
+            </div>
+            <span class="last-scan">last scan: 14:30:08 (test)</span>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>Test Bob</span></div>
+          <div class="user-sec test-bob">
+            <div class="user-head">
+              <span class="display-name">Bob</span>
+              <span class="test-pill">Test fixture</span>
+            </div>
+            <span class="git-id">bob@test-fixture · sandbox_a</span>
+            <button class="switch-btn" disabled style="opacity:0.5; cursor:not-allowed;">Switch to Bob</button>
+          </div>
+        </div>
+        <div class="sec" style="border-bottom:none;">
+          <div class="sec-head"><span>Test Karen</span></div>
+          <div class="user-sec test-karen">
+            <div class="user-head">
+              <span class="display-name">Karen</span>
+              <span class="test-pill">Test fixture</span>
+            </div>
+            <span class="git-id">karen@test-fixture · sandbox_b</span>
+            <button class="switch-btn">Switch to Karen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: Status messages + Quick Message + test controls strip -->
+      <div class="center-col">
+        <div class="test-controls-row">
+          <button class="btn">▶ Run Test</button>
+          <button class="btn">↺ Reset Sandbox</button>
+          <button class="btn">📁 Open Evidence</button>
+          <span style="flex:1"></span>
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--test-bob); align-self:center;">3 of 7 manual checks complete</span>
+        </div>
+        <div class="sec" style="flex:1; display:flex; flex-direction:column; min-height:0; border-bottom:1px solid var(--border-soft);">
+          <div class="sec-head"><span>Status Messages</span><span class="right-tag test">Test</span></div>
+          <div class="status-list">
+            <div class="status-row test-info">
+              <span class="ts">14:30:12</span>
+              <span class="body-text">TEST MODE entered. Bob and Karen fixtures created in sandbox_a/sandbox_b. No production state touched.</span>
+              <span class="author test-bob">PC-test</span>
+            </div>
+            <div class="status-row success">
+              <span class="ts">14:30:30</span>
+              <span class="body-text">Working tree scan complete in sandbox_a: clean. Branch test/handoff-smoke at 1a2b3c4.</span>
+              <span class="author test-bob">PC-test</span>
+            </div>
+            <div class="status-row success">
+              <span class="ts">14:30:45</span>
+              <span class="body-text">Test session started as Bob. Capturing evidence to PANDA test sandboxes\evidence_2026-05-04_1430.</span>
+              <span class="author test-bob">Bob</span>
+            </div>
+            <div class="status-row test-info">
+              <span class="ts">14:32:01</span>
+              <span class="body-text">▶ Manual check 3 of 7 complete: <strong>Verified Hand Off button enabled when all steps pass</strong>.</span>
+              <span class="author test-bob">PC-test</span>
+            </div>
+          </div>
+        </div>
+        <div class="sec" style="border-bottom:none;">
+          <div class="sec-head"><span>Quick Message</span></div>
+          <div class="qm-body">
+            <textarea class="qm-textarea" placeholder="Test note (saves to test evidence log)"></textarea>
+            <button class="start-session-btn">Continue Test</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Test handoff (no production write) -->
+      <div class="right-col">
+        <div class="sec" style="flex:1; display:flex; flex-direction:column; min-height:0; border-bottom:1px solid var(--border-soft);">
+          <div class="sec-head"><span>Test Handoff</span><span class="right-tag test">SANDBOX</span></div>
+          <div class="handoff-body">
+            <div class="meta-pills grid-2">
+              <span class="meta-pill test">Root: <b>sandbox_a</b></span>
+              <span class="meta-pill test">Branch: <b>test/...</b></span>
+              <span class="meta-pill test">HEAD: <b>1a2b3c4</b></span>
+              <span class="meta-pill">Protection: <b>n/a</b></span>
+              <span class="meta-pill">Patches: <b>0</b></span>
+              <span class="meta-pill">Files: <b>3</b></span>
+              <span class="meta-pill">Manifest: <b>test</b></span>
+            </div>
+            <div class="handoff-row">
+              <div>
+                <span class="handoff-label">Title</span>
+                <input class="handoff-input" type="text" value="Test handoff (Bob → Karen)">
+              </div>
+              <div>
+                <span class="handoff-label">Agent</span>
+                <input class="handoff-input" type="text" value="test-fixture">
+              </div>
+            </div>
+            <div>
+              <span class="handoff-label">Notes (test only — not persisted to settings)</span>
+              <textarea class="notes-textarea" placeholder="This handoff is sandboxed. Output goes to evidence log, not production state."></textarea>
+            </div>
+            <button class="handoff-primary-action">Run Test Handoff</button>
+            <button class="end-session-btn">End Test Session</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pc-footer">
+      <span class="test-pill">⚠ TEST MODE — Fake users, fake accounts, sandbox repo</span>
+      <span>Production state untouched · evidence: PANDA test sandboxes\evidence_2026-05-04_1430</span>
+      <span class="spacer"></span>
+    </div>
+  </div>
+</main>
+</body>
+</html>

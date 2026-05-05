@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC v2 mockup — Setup Users Modal (corrected)</title>
+<style>
+:root {
+  --canvas:        #14141f;
+  --chrome:        #161625;
+  --pane:          #1a1a2e;
+  --pane-2:        #22223a;
+  --pane-raised:   #22223a;
+  --user1:         #e8a87c;
+  --user1-soft:    rgba(232, 168, 124, 0.12);
+  --user1-border:  rgba(232, 168, 124, 0.45);
+  --user1-dim:     rgba(232, 168, 124, 0.25);
+  --user2:         #4dd9e0;
+  --user2-soft:    rgba(77, 217, 224, 0.12);
+  --user2-border:  rgba(77, 217, 224, 0.45);
+  --user2-dim:     rgba(77, 217, 224, 0.25);
+  --ok:            #6da850;
+  --ok-soft:       rgba(109, 168, 80, 0.14);
+  --ok-border:     rgba(109, 168, 80, 0.50);
+  --warn:          #f39c12;
+  --warn-soft:     rgba(243, 156, 18, 0.12);
+  --warn-border:   rgba(243, 156, 18, 0.45);
+  --err:           #e74c3c;
+  --text:          #e0ddd5;
+  --text-muted:    #888888;
+  --text-dim:      #555555;
+  --border:        #2a2a3e;
+  --border-soft:   #232336;
+  --border-hover:  #3a3a4e;
+  --accent:        #e8a87c;
+  --font-ui:       "Segoe UI", "SF Pro Display", "Noto Sans", system-ui, sans-serif;
+  --font-mono:     "Cascadia Mono", "Consolas", monospace;
+  --radius-sm:     2px;
+  --radius-md:     4px;
+  --radius-lg:     6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--canvas);
+  color: var(--text);
+  font: 13px/1.4 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.doc-head { padding: 24px 32px 14px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--pane) 0%, var(--canvas) 100%); flex-shrink: 0; }
+.doc-head .eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.6px; color: var(--accent); text-transform: uppercase; font-weight: 600; margin-bottom: 6px; }
+.doc-head h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; margin-bottom: 4px; }
+.doc-head .meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
+.doc-head .meta b { color: var(--text-muted); font-weight: 500; }
+
+.stage { padding: 16px 32px 32px; display: flex; justify-content: center; flex-shrink: 0; }
+
+.pc-viewport {
+  width: 1366px; height: 768px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  display: flex; flex-direction: column;
+  font-family: var(--font-ui);
+}
+
+/* Faint behind-app silhouette */
+.pc-behind {
+  position: absolute; inset: 0;
+  background: var(--canvas);
+  opacity: 0.5;
+  display: flex; flex-direction: column;
+  pointer-events: none;
+}
+.pc-behind .h { height: 42px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+.pc-behind .r { height: 32px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+.pc-behind .b { flex: 1; background: var(--canvas); }
+.pc-behind .f { height: 28px; background: var(--chrome); border-top: 1px solid var(--border); }
+
+/* Modal backdrop */
+.modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(8, 8, 14, 0.78);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  z-index: 30;
+}
+
+/* Modal card — 800px wide, centered */
+.modal-card {
+  width: 800px; max-width: 100%;
+  max-height: calc(768px - 48px);
+  background: var(--pane);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  height: 36px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+.modal-head .title-row { display: flex; align-items: baseline; gap: 8px; }
+.modal-head .eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+.modal-head .title { font-family: var(--font-mono); font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 700; color: var(--accent); }
+.modal-head .close-btn {
+  background: transparent;
+  border: 1px solid var(--border-hover);
+  color: var(--text-muted);
+  font: 600 14px/1 var(--font-ui);
+  height: 24px; width: 24px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.modal-head .close-btn:hover { color: var(--err); border-color: var(--err); }
+
+.modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-form {
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: var(--pane-2);
+  border-radius: var(--radius-md);
+  border-left: 3px solid transparent;
+}
+.modal-form.user1 { border-left-color: var(--user1); }
+.modal-form.user2 { border-left-color: var(--user2); }
+.modal-form .form-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.modal-form.user1 .form-head .label { color: var(--user1); }
+.modal-form.user2 .form-head .label { color: var(--user2); }
+.modal-form .display-name-tag {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+}
+.modal-form.user1 .display-name-tag { color: var(--user1); }
+.modal-form.user2 .display-name-tag { color: var(--user2); }
+
+.field-label {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+  display: block;
+}
+.field-input {
+  width: 100%;
+  height: 26px;
+  background: var(--pane);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  padding: 0 8px;
+  color: var(--text);
+  font: 11.5px/1 var(--font-ui);
+}
+.field-input.mono { font-family: var(--font-mono); font-size: 11px; }
+.field-input:focus { outline: 2px solid var(--user1-border); outline-offset: 0; }
+.field-input.empty { color: var(--text-dim); font-style: italic; }
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  align-items: stretch;
+}
+.field-row .browse-btn {
+  height: 26px; padding: 0 9px;
+  font-size: 10.5px;
+  background: var(--pane);
+  color: var(--text-muted);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+}
+.field-row .browse-btn:hover { color: var(--user1); border-color: var(--user1-border); }
+.field-group { display: flex; flex-direction: column; gap: 2px; }
+.field-divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 4px 0 2px;
+}
+.field-subhead {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.modal-foot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+}
+.modal-foot .save-btn {
+  height: 36px;
+  padding: 0 18px;
+  background: var(--ok);
+  border: 1px solid var(--ok);
+  color: var(--canvas);
+  border-radius: var(--radius-md);
+  font: 700 13px/1 var(--font-ui);
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  flex: 1;
+}
+.modal-foot .save-btn:hover { background: #82bf61; border-color: #82bf61; }
+.modal-foot .cancel-link {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  background: transparent; border: none;
+  padding: 0;
+}
+.modal-foot .cancel-link:hover { color: var(--user1); }
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC redesign · v2 mockup · screen 4 of 12</div>
+  <h1>Setup Users Modal — Corrected (per addendum §11)</h1>
+  <div class="meta">
+    <span><b>State:</b> User 1 filled (Darrin) · User 2 partial (Adam, some empty)</span>
+    <span><b>Viewport:</b> 1366×768 · zero page scroll</span>
+    <span><b>Spec:</b> CLAUDE-20260504-008301 §11 — NO Project Files Tracker, NO Collaborator Hub, NO identity banner; single Save Settings</span>
+  </div>
+</header>
+
+<main class="stage">
+  <div class="pc-viewport">
+    <!-- Behind-app silhouette so backdrop has context -->
+    <div class="pc-behind">
+      <div class="h"></div>
+      <div class="r"></div>
+      <div class="b"></div>
+      <div class="f"></div>
+    </div>
+
+    <!-- Modal backdrop + card -->
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div class="title-row">
+            <span class="eyebrow">Registration</span>
+            <span class="title">Setup Users</span>
+          </div>
+          <button class="close-btn" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- USER 1 FORM (filled — Darrin) -->
+          <div class="modal-form user1">
+            <div class="form-head">
+              <span class="label">User 1</span>
+              <span class="display-name-tag">Darrin</span>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Display name</label>
+              <input class="field-input" type="text" value="Darrin">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Repository path</label>
+              <div class="field-row">
+                <input class="field-input mono" type="text" value="C:\panda-gallery">
+                <button class="browse-btn">Browse</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Handoff agent</label>
+              <input class="field-input" type="text" value="Codex">
+            </div>
+            <div class="field-divider"></div>
+            <div class="field-subhead">Accounts, tools &amp; git identity</div>
+            <div class="field-group">
+              <label class="field-label">Codex account</label>
+              <input class="field-input" type="text" value="codex (Darrin)">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Claude account</label>
+              <input class="field-input" type="text" value="claude (Darrin)">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Claude Desktop path</label>
+              <div class="field-row">
+                <input class="field-input mono" type="text" value="C:\Users\Darrin\AppData\Local\Programs\Claude\Claude.exe">
+                <button class="browse-btn">Browse</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Claude Code path</label>
+              <div class="field-row">
+                <input class="field-input mono" type="text" value="C:\Users\Darrin\AppData\Local\Programs\claude-code\claude-code.exe">
+                <button class="browse-btn">Browse</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Git author name</label>
+              <input class="field-input" type="text" value="Darrin Rapoport">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Git author email</label>
+              <input class="field-input" type="text" value="darrin@example.com">
+            </div>
+          </div>
+
+          <!-- USER 2 FORM (partial — Adam) -->
+          <div class="modal-form user2">
+            <div class="form-head">
+              <span class="label">User 2</span>
+              <span class="display-name-tag">Adam</span>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Display name</label>
+              <input class="field-input" type="text" value="Adam">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Repository path</label>
+              <div class="field-row">
+                <input class="field-input mono empty" type="text" value="" placeholder="Click Browse to select…">
+                <button class="browse-btn">Browse</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Handoff agent</label>
+              <input class="field-input" type="text" value="Claude">
+            </div>
+            <div class="field-divider"></div>
+            <div class="field-subhead">Accounts, tools &amp; git identity</div>
+            <div class="field-group">
+              <label class="field-label">Codex account</label>
+              <input class="field-input empty" type="text" value="" placeholder="Not set">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Claude account</label>
+              <input class="field-input" type="text" value="claude (Adam)">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Claude Desktop path</label>
+              <div class="field-row">
+                <input class="field-input mono empty" type="text" value="" placeholder="Click Browse to select…">
+                <button class="browse-btn">Browse</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Claude Code path</label>
+              <div class="field-row">
+                <input class="field-input mono empty" type="text" value="" placeholder="Click Browse to select…">
+                <button class="browse-btn">Browse</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Git author name</label>
+              <input class="field-input" type="text" value="Adam">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Git author email</label>
+              <input class="field-input empty" type="text" value="" placeholder="adam@example.com">
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="save-btn">Save Settings</button>
+          <button class="cancel-link">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

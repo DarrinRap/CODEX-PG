@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC v2 mockup — Handoff Progress Window</title>
+<style>
+:root {
+  --canvas:        #14141f;
+  --chrome:        #161625;
+  --pane:          #1a1a2e;
+  --pane-2:        #22223a;
+  --pane-raised:   #22223a;
+  --user1:         #e8a87c;
+  --user1-soft:    rgba(232, 168, 124, 0.12);
+  --user1-border:  rgba(232, 168, 124, 0.45);
+  --user2:         #4dd9e0;
+  --user2-soft:    rgba(77, 217, 224, 0.12);
+  --user2-border:  rgba(77, 217, 224, 0.45);
+  --ok:            #6da850;
+  --ok-soft:       rgba(109, 168, 80, 0.14);
+  --ok-border:     rgba(109, 168, 80, 0.50);
+  --warn:          #f39c12;
+  --warn-soft:     rgba(243, 156, 18, 0.12);
+  --warn-border:   rgba(243, 156, 18, 0.45);
+  --err:           #e74c3c;
+  --err-soft:      rgba(231, 76, 60, 0.14);
+  --err-border:    rgba(231, 76, 60, 0.50);
+  --text:          #e0ddd5;
+  --text-muted:    #888888;
+  --text-dim:      #555555;
+  --border:        #2a2a3e;
+  --border-soft:   #232336;
+  --border-hover:  #3a3a4e;
+  --accent:        #e8a87c;
+  --font-ui:       "Segoe UI", "SF Pro Display", "Noto Sans", system-ui, sans-serif;
+  --font-mono:     "Cascadia Mono", "Consolas", monospace;
+  --radius-sm:     2px;
+  --radius-md:     4px;
+  --radius-lg:     6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--canvas);
+  color: var(--text);
+  font: 13px/1.4 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column;
+  min-height: 100vh;
+}
+
+.doc-head { padding: 24px 32px 14px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--pane) 0%, var(--canvas) 100%); flex-shrink: 0; }
+.doc-head .eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.6px; color: var(--accent); text-transform: uppercase; font-weight: 600; margin-bottom: 6px; }
+.doc-head h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; margin-bottom: 4px; }
+.doc-head .meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
+.doc-head .meta b { color: var(--text-muted); font-weight: 500; }
+
+.stage { padding: 16px 32px 32px; display: flex; justify-content: center; flex-shrink: 0; }
+
+.pc-viewport {
+  width: 1366px; height: 768px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  display: flex; flex-direction: column;
+  font-family: var(--font-ui);
+}
+
+/* Faint behind-app silhouette */
+.pc-behind {
+  position: absolute; inset: 0;
+  background: var(--canvas);
+  opacity: 0.5;
+  display: flex; flex-direction: column;
+  pointer-events: none;
+}
+.pc-behind .h { height: 42px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+.pc-behind .r { height: 32px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+.pc-behind .b { flex: 1; background: var(--canvas); }
+.pc-behind .f { height: 28px; background: var(--chrome); border-top: 1px solid var(--border); }
+
+/* Modal backdrop */
+.modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(8, 8, 14, 0.78);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  z-index: 30;
+}
+
+/* Progress modal — narrow, focused */
+.progress-modal {
+  width: 720px; max-width: 100%;
+  background: var(--pane);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.pm-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+.pm-eyebrow { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.pm-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.pm-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+/* Overall progress bar */
+.pm-bar-wrap { padding: 14px 20px 10px; background: var(--pane); border-bottom: 1px solid var(--border-soft); }
+.pm-bar-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.pm-bar-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.pm-bar-pct { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.pm-bar-track {
+  height: 8px;
+  background: var(--pane-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.pm-bar-fill {
+  height: 100%;
+  width: 38%;
+  background: var(--user1);
+  transition: width 0.15s ease;
+}
+
+/* Step list */
+.pm-steps {
+  padding: 4px 20px 12px;
+  background: var(--pane);
+  max-height: 440px; overflow-y: auto;
+}
+.pm-step {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: center;
+  border-left: 4px solid transparent;
+  padding-left: 8px;
+  margin-left: -12px;
+}
+.pm-step:last-child { border-bottom: none; }
+.pm-step-num {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); font-weight: 700;
+  text-align: center;
+}
+.pm-step-label { color: var(--text); font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+.pm-step-soft-note { font-size: 11px; color: var(--text-muted); font-style: italic; }
+.pm-step-status {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 700;
+  padding: 3px 9px; border-radius: 3px; min-width: 70px; text-align: center;
+}
+.pm-step-status.pass { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok-border); }
+.pm-step-status.warn-pass { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok-border); }
+.pm-step-status.fail { background: var(--err-soft); color: var(--err); border: 1px solid var(--err-border); }
+.pm-step-status.running { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn-border); }
+.pm-step-status.queued { background: var(--pane-2); color: var(--text-dim); border: 1px solid var(--border); }
+.pm-step.passed { border-left-color: var(--ok); }
+.pm-step.passed .pm-step-num { color: var(--ok); }
+.pm-step.failed { border-left-color: var(--err); }
+.pm-step.failed .pm-step-num { color: var(--err); }
+.pm-step.running { border-left-color: var(--warn); background: var(--warn-soft); }
+.pm-step.running .pm-step-num { color: var(--warn); }
+.pm-step.warn-pass { border-left-color: var(--warn); }
+.pm-step.warn-pass .pm-step-num { color: var(--warn); }
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 11px; height: 11px;
+  border: 2px solid var(--warn-soft); border-top-color: var(--warn);
+  border-radius: 50%;
+  vertical-align: -1px; margin-right: 6px;
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Footer */
+.pm-footer {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+}
+.pm-footer-msg { flex: 1; color: var(--text-muted); font-size: 12px; }
+.btn {
+  height: 32px; padding: 0 14px;
+  background: var(--pane-2);
+  color: var(--text);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn:hover { border-color: var(--user1-border); color: var(--user1); }
+.btn.disabled, .btn:disabled {
+  background: var(--pane); color: var(--text-dim); border-color: var(--border); cursor: not-allowed;
+}
+.btn:disabled:hover { border-color: var(--border); color: var(--text-dim); }
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC redesign · v2 mockup · screen 5 of 12</div>
+  <h1>Handoff Progress Window — Mid-Run</h1>
+  <div class="meta">
+    <span><b>State:</b> running · 4 of 10 steps complete · step 4 in progress</span>
+    <span><b>Spec:</b> PC_HANDOFF_PROGRESS_SPEC v1.1 §6–§7 · steps 1, 2, 2b, 2c, 3, 4, 5, 6, 7a, 7b</span>
+    <span><b>Viewport:</b> 1366×768 · zero page scroll</span>
+  </div>
+</header>
+
+<main class="stage">
+  <div class="pc-viewport">
+    <div class="pc-behind">
+      <div class="h"></div><div class="r"></div><div class="b"></div><div class="f"></div>
+    </div>
+    <div class="modal-backdrop">
+      <div class="progress-modal">
+        <div class="pm-header">
+          <span class="pm-eyebrow">Create Safe Handoff</span>
+          <span class="pm-title">Building handoff package…</span>
+          <span class="pm-sub">started 18:42:11</span>
+        </div>
+        <div class="pm-bar-wrap">
+          <div class="pm-bar-meta">
+            <span class="pm-bar-label">Step 4 of 10 — Generate binary patch</span>
+            <span class="pm-bar-pct">38%</span>
+          </div>
+          <div class="pm-bar-track"><div class="pm-bar-fill"></div></div>
+        </div>
+        <div class="pm-steps">
+          <div class="pm-step passed">
+            <span class="pm-step-num">1</span>
+            <span class="pm-step-label">Verify git root</span>
+            <span class="pm-step-status pass">✓ pass</span>
+          </div>
+          <div class="pm-step passed">
+            <span class="pm-step-num">2</span>
+            <span class="pm-step-label">Commit working tree</span>
+            <span class="pm-step-status pass">✓ pass</span>
+          </div>
+          <div class="pm-step passed">
+            <span class="pm-step-num">2b</span>
+            <span class="pm-step-label">
+              Push to origin
+              <span class="pm-step-soft-note">soft — push failure non-blocking if local backup exists</span>
+            </span>
+            <span class="pm-step-status pass">✓ pass</span>
+          </div>
+          <div class="pm-step warn-pass">
+            <span class="pm-step-num">2c</span>
+            <span class="pm-step-label">
+              Push to backup remote
+              <span class="pm-step-soft-note">soft — backup remote unreachable; continuing</span>
+            </span>
+            <span class="pm-step-status warn-pass">⚠ pass</span>
+          </div>
+          <div class="pm-step passed">
+            <span class="pm-step-num">3</span>
+            <span class="pm-step-label">Create protection branch</span>
+            <span class="pm-step-status pass">✓ pass</span>
+          </div>
+          <div class="pm-step running">
+            <span class="pm-step-num">4</span>
+            <span class="pm-step-label"><span class="spinner"></span>Generate binary patch</span>
+            <span class="pm-step-status running">running</span>
+          </div>
+          <div class="pm-step">
+            <span class="pm-step-num">5</span>
+            <span class="pm-step-label">Copy files to package dir</span>
+            <span class="pm-step-status queued">queued</span>
+          </div>
+          <div class="pm-step">
+            <span class="pm-step-num">6</span>
+            <span class="pm-step-label">Write manifest.json</span>
+            <span class="pm-step-status queued">queued</span>
+          </div>
+          <div class="pm-step">
+            <span class="pm-step-num">7a</span>
+            <span class="pm-step-label">Write handoff summary</span>
+            <span class="pm-step-status queued">queued</span>
+          </div>
+          <div class="pm-step">
+            <span class="pm-step-num">7b</span>
+            <span class="pm-step-label">Finalise package (Done)</span>
+            <span class="pm-step-status queued">queued</span>
+          </div>
+        </div>
+        <div class="pm-footer">
+          <span class="pm-footer-msg">Working — please wait. Don't close PC until all steps complete.</span>
+          <button class="btn disabled" disabled>Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

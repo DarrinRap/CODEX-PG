@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC v2 mockup — Project Manager</title>
+<style>
+:root {
+  --canvas: #14141f; --chrome: #161625; --pane: #1a1a2e; --pane-2: #22223a;
+  --user1: #e8a87c; --user2: #4dd9e0;
+  --ok: #6da850; --ok-soft: rgba(109, 168, 80, 0.14); --ok-border: rgba(109, 168, 80, 0.50);
+  --warn: #f39c12; --warn-soft: rgba(243, 156, 18, 0.14); --warn-border: rgba(243, 156, 18, 0.50);
+  --err: #e74c3c; --err-soft: rgba(231, 76, 60, 0.14); --err-border: rgba(231, 76, 60, 0.50);
+  --text: #e0ddd5; --text-muted: #888888; --text-dim: #555555;
+  --border: #2a2a3e; --border-soft: #232336; --border-hover: #3a3a4e;
+  --accent: #e8a87c;
+  --font-ui: "Segoe UI","SF Pro Display","Noto Sans",system-ui,sans-serif;
+  --font-mono: "Cascadia Mono","Consolas",monospace;
+  --radius-sm: 2px; --radius-md: 4px; --radius-lg: 6px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--canvas);color:var(--text);font:13px/1.4 var(--font-ui);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100vh}
+
+.doc-head{padding:24px 32px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%);flex-shrink:0}
+.doc-head .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:1.6px;color:var(--accent);text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.doc-head h1{font-size:18px;font-weight:600;letter-spacing:.2px;margin-bottom:4px}
+.doc-head .meta{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.doc-head .meta b{color:var(--text-muted);font-weight:500}
+
+.stage{padding:16px 32px 32px;display:flex;justify-content:center;flex-shrink:0}
+
+.pc-viewport{
+  width:1366px; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:var(--radius-lg);
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  font-family:var(--font-ui);
+}
+
+.pc-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px; height: 42px;
+  background: var(--chrome); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pc-header .brand { font-size: 13px; font-weight: 500; }
+.pc-header .sep { color: var(--text-dim); }
+.pc-header .active-user { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; padding: 0 4px; }
+.pc-header .active-user .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--user1); }
+.pc-header .active-user .name { color: var(--user1); }
+.pc-header .breadcrumb { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: 8px; }
+.pc-header .breadcrumb .crumb { cursor: pointer; }
+.pc-header .breadcrumb .sep-arrow { color: var(--text-dim); }
+.pc-header .breadcrumb .current { color: var(--text); font-weight: 600; }
+.pc-header .spacer { flex: 1; }
+.pc-header .btn { height: 28px; padding: 0 12px; background: var(--pane-2); color: var(--text); border: 1px solid var(--border-hover); border-radius: var(--radius-md); font: 600 11.5px/1 var(--font-ui); cursor: pointer; }
+
+/* Manager body — 3-row grid (top: stat strip, middle: 2-col, bottom: warnings) */
+.mgr-body {
+  flex: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stat-cell {
+  background: var(--pane);
+  padding: 12px 16px;
+}
+.stat-cell .label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+.stat-cell .value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-cell .value.user1 { color: var(--user1); }
+.stat-cell .value.user2 { color: var(--user2); }
+.stat-cell .value.ok { color: var(--ok); }
+.stat-cell .sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+.mgr-cols {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.mgr-main {
+  display: flex; flex-direction: column;
+  background: var(--canvas);
+  overflow: hidden;
+  min-height: 0;
+}
+.mgr-side {
+  display: flex; flex-direction: column;
+  background: var(--pane);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 30px;
+  padding: 0 14px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--accent); font-weight: 700;
+  flex-shrink: 0;
+}
+.section-head .filter-pills { display: flex; gap: 4px; }
+.section-head .filter-pill {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.5px;
+  padding: 2px 6px; background: var(--pane-2); border: 1px solid var(--border-hover);
+  border-radius: 10px; color: var(--text-muted); cursor: pointer;
+  text-transform: none; font-weight: 600;
+}
+.section-head .filter-pill.active { background: rgba(232, 168, 124, 0.14); border-color: rgba(232, 168, 124, 0.45); color: var(--user1); }
+
+.handoff-list {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.handoff-row {
+  display: grid;
+  grid-template-columns: 110px 80px 1fr 90px 60px 70px 40px;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: center;
+}
+.handoff-row:hover { background: rgba(232, 168, 124, 0.04); cursor: pointer; }
+.handoff-row .id { color: var(--text); font-weight: 600; }
+.handoff-row .when { color: var(--text-muted); }
+.handoff-row .author { display: inline-flex; align-items: center; gap: 4px; }
+.handoff-row .author .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.handoff-row .author.u1 .dot { background: var(--user1); }
+.handoff-row .author.u2 .dot { background: var(--user2); }
+.handoff-row .author.u1 .name { color: var(--user1); }
+.handoff-row .author.u2 .name { color: var(--user2); }
+.handoff-row .branch { color: var(--text-muted); }
+.handoff-row .branch b { color: var(--text); }
+.handoff-row .files { color: var(--text-muted); text-align: right; }
+.handoff-row .status { font-size: 9.5px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 10px; text-align: center; }
+.handoff-row .status.complete { color: var(--ok); background: var(--ok-soft); border: 1px solid var(--ok-border); }
+.handoff-row .status.partial { color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn-border); }
+.handoff-row .arrow { color: var(--text-dim); text-align: right; }
+
+.collab-card {
+  padding: 14px;
+  border-bottom: 1px solid var(--border-soft);
+  border-left: 3px solid transparent;
+}
+.collab-card.user1 { border-left-color: var(--user1); }
+.collab-card.user2 { border-left-color: var(--user2); }
+.collab-card .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.collab-card .name { font-size: 13px; font-weight: 600; }
+.collab-card.user1 .name { color: var(--user1); }
+.collab-card.user2 .name { color: var(--user2); }
+.collab-card .pill {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1px;
+  text-transform: uppercase; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px;
+}
+.collab-card .pill.active { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+.collab-card .pill.idle { background: var(--pane-2); border: 1px solid var(--border-hover); color: var(--text-muted); }
+.collab-card .meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: grid; grid-template-columns: 90px 1fr; gap: 4px 10px; }
+.collab-card .meta b { color: var(--text); font-weight: 500; }
+
+.session-section { display: flex; flex-direction: column; flex: 1; min-height: 0; border-top: 1px solid var(--border); }
+.session-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 0; }
+.session-row {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  font-family: var(--font-mono); font-size: 11px;
+}
+.session-row .when { color: var(--text-muted); }
+.session-row .body { color: var(--text); margin-top: 2px; font-family: var(--font-ui); font-size: 12px; }
+.session-row .body .actor { font-weight: 700; }
+.session-row .body .actor.u1 { color: var(--user1); }
+.session-row .body .actor.u2 { color: var(--user2); }
+
+.warnings {
+  background: var(--warn-soft);
+  border-top: 1px solid var(--warn-border);
+  padding: 10px 16px;
+  display: flex; gap: 12px; align-items: center;
+}
+.warnings .icon { width: 22px; height: 22px; border-radius: 50%; background: var(--warn); color: var(--canvas); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.warnings .body { flex: 1; font-size: 12px; color: var(--text); }
+.warnings .body b { color: var(--warn); font-weight: 700; }
+.warnings .actions { display: flex; gap: 6px; }
+.warnings .actions .btn { height: 26px; padding: 0 10px; background: var(--pane-2); border: 1px solid var(--warn-border); color: var(--warn); border-radius: var(--radius-md); font: 600 11px/1 var(--font-ui); cursor: pointer; }
+
+.pc-footer {
+  display: flex; align-items: center; gap: 14px;
+  height: 28px;
+  padding: 0 16px;
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted);
+}
+.pc-footer .safety-pill { padding: 2px 8px; background: var(--ok-soft); border: 1px solid var(--ok-border); border-radius: 10px; color: var(--ok); font-weight: 700; letter-spacing: 0.5px; }
+.pc-footer .spacer { flex: 1; }
+.pc-footer .last-backup { padding: 2px 8px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 10px; }
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC redesign · v2 mockup · screen 10 of 12</div>
+  <h1>Project Manager — Session History &amp; Collaborator Status</h1>
+  <div class="meta">
+    <span><b>State:</b> 3 packages · 2 collaborators · 1 warning</span>
+    <span><b>Spec:</b> dense + scannable; no landing-page feel</span>
+    <span><b>Viewport:</b> 1366×768 · zero page scroll</span>
+  </div>
+</header>
+
+<main class="stage">
+  <div class="pc-viewport">
+    <div class="pc-header">
+      <span class="brand">PANDA Collaborator</span>
+      <span class="sep">|</span>
+      <span class="active-user"><span class="dot"></span><span class="name">Darrin</span></span>
+      <div class="breadcrumb">
+        <span class="crumb">Main</span>
+        <span class="sep-arrow">›</span>
+        <span class="current">Project Manager</span>
+      </div>
+      <span class="spacer"></span>
+      <button class="btn">Back to Main</button>
+    </div>
+
+    <div class="mgr-body">
+      <!-- TOP — 5-cell stat strip -->
+      <div class="stat-strip">
+        <div class="stat-cell">
+          <div class="label">Packages</div>
+          <div class="value">3</div>
+          <div class="sub">all complete</div>
+        </div>
+        <div class="stat-cell">
+          <div class="label">Sessions today</div>
+          <div class="value">7</div>
+          <div class="sub">5 user1 · 2 user2</div>
+        </div>
+        <div class="stat-cell">
+          <div class="label">Last handoff</div>
+          <div class="value user1">Darrin</div>
+          <div class="sub">14:22 PDT · 8m ago</div>
+        </div>
+        <div class="stat-cell">
+          <div class="label">Active session</div>
+          <div class="value user1">Darrin</div>
+          <div class="sub">22m elapsed</div>
+        </div>
+        <div class="stat-cell">
+          <div class="label">Backups</div>
+          <div class="value ok">8</div>
+          <div class="sub">last: 14:22:08</div>
+        </div>
+      </div>
+
+      <!-- MIDDLE — 2 columns -->
+      <div class="mgr-cols">
+        <!-- LEFT: Recent handoffs (the big surface) -->
+        <div class="mgr-main">
+          <div class="section-head">
+            <span>Recent Handoffs</span>
+            <div class="filter-pills">
+              <span class="filter-pill active">All</span>
+              <span class="filter-pill">Today</span>
+              <span class="filter-pill">User 1</span>
+              <span class="filter-pill">User 2</span>
+              <span class="filter-pill">Partial</span>
+            </div>
+          </div>
+          <div class="handoff-list">
+            <div class="handoff-row">
+              <span class="id">PG-2026-05-04-1422</span>
+              <span class="when">14:22 today</span>
+              <span class="author u1"><span class="dot"></span><span class="name">Darrin</span> → Pam</span>
+              <span class="branch">main · <b>a3f8c1</b></span>
+              <span class="files">11 / 2</span>
+              <span class="status complete">Complete</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="handoff-row">
+              <span class="id">PG-2026-05-03-2155</span>
+              <span class="when">21:55 yest.</span>
+              <span class="author u2"><span class="dot"></span><span class="name">Pam</span> → Darrin</span>
+              <span class="branch">main · <b>9b4e2d3</b></span>
+              <span class="files">8 / 1</span>
+              <span class="status complete">Complete</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="handoff-row">
+              <span class="id">PG-2026-05-03-1830</span>
+              <span class="when">18:30 yest.</span>
+              <span class="author u1"><span class="dot"></span><span class="name">Darrin</span> → Pam</span>
+              <span class="branch">main · <b>7d2a5c1</b></span>
+              <span class="files">14 / 3</span>
+              <span class="status partial">Partial</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="handoff-row">
+              <span class="id">PG-2026-05-02-0645</span>
+              <span class="when">06:45 2d ago</span>
+              <span class="author u2"><span class="dot"></span><span class="name">Pam</span> → Darrin</span>
+              <span class="branch">feature/v2 · <b>1c8f4a7</b></span>
+              <span class="files">24 / 5</span>
+              <span class="status complete">Complete</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="handoff-row">
+              <span class="id">PG-2026-05-01-1605</span>
+              <span class="when">16:05 3d ago</span>
+              <span class="author u1"><span class="dot"></span><span class="name">Darrin</span> → Pam</span>
+              <span class="branch">main · <b>bd2f8e6</b></span>
+              <span class="files">6 / 1</span>
+              <span class="status complete">Complete</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="handoff-row">
+              <span class="id">PG-2026-04-30-2310</span>
+              <span class="when">23:10 4d ago</span>
+              <span class="author u2"><span class="dot"></span><span class="name">Pam</span> → Darrin</span>
+              <span class="branch">main · <b>4e9d1b0</b></span>
+              <span class="files">19 / 4</span>
+              <span class="status complete">Complete</span>
+              <span class="arrow">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Collaborators + Session events -->
+        <div class="mgr-side">
+          <div class="section-head"><span>Collaborators</span></div>
+          <div class="collab-card user1">
+            <div class="head">
+              <span class="name">Darrin</span>
+              <span class="pill active">Active</span>
+            </div>
+            <div class="meta">
+              <span>Slot</span><b>User 1</b>
+              <span>Repo</span><b>C:\panda-gallery</b>
+              <span>Sessions</span><b>5 today</b>
+              <span>Last seen</span><b>now</b>
+            </div>
+          </div>
+          <div class="collab-card user2">
+            <div class="head">
+              <span class="name">Pam</span>
+              <span class="pill idle">Idle</span>
+            </div>
+            <div class="meta">
+              <span>Slot</span><b>User 2</b>
+              <span>Repo</span><b>C:\CODEX PG</b>
+              <span>Sessions</span><b>2 today</b>
+              <span>Last seen</span><b>1h 22m ago</b>
+            </div>
+          </div>
+
+          <div class="session-section">
+            <div class="section-head"><span>Recent Activity</span></div>
+            <div class="session-list">
+              <div class="session-row">
+                <span class="when">14:22:08</span>
+                <div class="body"><span class="actor u1">Darrin</span> handed off to Pam (PG-2026-05-04-1422)</div>
+              </div>
+              <div class="session-row">
+                <span class="when">14:00:32</span>
+                <div class="body"><span class="actor u1">Darrin</span> started session</div>
+              </div>
+              <div class="session-row">
+                <span class="when">13:48:15</span>
+                <div class="body">Working tree scan: clean (a3f8c1)</div>
+              </div>
+              <div class="session-row">
+                <span class="when">21:55:07 yesterday</span>
+                <div class="body"><span class="actor u2">Pam</span> handed off to Darrin (PG-2026-05-03-2155)</div>
+              </div>
+              <div class="session-row">
+                <span class="when">21:30:44 yesterday</span>
+                <div class="body"><span class="actor u2">Pam</span> started session</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM — Warnings band -->
+      <div class="warnings">
+        <span class="icon">⚠</span>
+        <span class="body">
+          <b>1 partial handoff requires attention:</b> PG-2026-05-03-1830 (Darrin → Pam) ended with INCOMPLETE flag — Step 2c push to backup remote failed and was not retried before session end.
+        </span>
+        <div class="actions">
+          <button class="btn">Open package</button>
+          <button class="btn">Dismiss</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pc-footer">
+      <span class="safety-pill">Safety rules: Always enforced</span>
+      <span>No stash · No force push · No destructive git</span>
+      <span class="spacer"></span>
+      <span class="last-backup">Last backup: 14:22:08</span>
+    </div>
+  </div>
+</main>
+</body>
+</html>

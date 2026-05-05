@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC v2 mockup — Escape Hatch (3 states)</title>
+<style>
+:root {
+  --canvas: #14141f; --chrome: #161625; --pane: #1a1a2e; --pane-2: #22223a;
+  --user1: #e8a87c; --user2: #4dd9e0;
+  --ok: #6da850; --ok-soft: rgba(109, 168, 80, 0.14); --ok-border: rgba(109, 168, 80, 0.50);
+  --warn: #f39c12; --warn-soft: rgba(243, 156, 18, 0.14); --warn-border: rgba(243, 156, 18, 0.50);
+  --err: #e74c3c; --err-soft: rgba(231, 76, 60, 0.14); --err-border: rgba(231, 76, 60, 0.50);
+  --text: #e0ddd5; --text-muted: #888888; --text-dim: #555555;
+  --border: #2a2a3e; --border-soft: #232336; --border-hover: #3a3a4e;
+  --accent: #e8a87c;
+  --font-ui: "Segoe UI","SF Pro Display","Noto Sans",system-ui,sans-serif;
+  --font-mono: "Cascadia Mono","Consolas",monospace;
+  --radius-sm: 2px; --radius-md: 4px; --radius-lg: 6px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--canvas);color:var(--text);font:13px/1.4 var(--font-ui);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100vh}
+
+.doc-head{padding:24px 32px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%);flex-shrink:0}
+.doc-head .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:1.6px;color:var(--accent);text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.doc-head h1{font-size:18px;font-weight:600;letter-spacing:.2px;margin-bottom:4px}
+.doc-head .meta{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.doc-head .meta b{color:var(--text-muted);font-weight:500}
+
+.state-rail{display:flex;gap:6px;padding:14px 32px;border-bottom:1px solid var(--border);background:var(--chrome);position:sticky;top:0;z-index:10;flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--font-mono);font-size:9.5px;color:var(--text-dim);letter-spacing:1.4px;text-transform:uppercase;font-weight:500;align-self:center;margin:0 6px 0 4px}
+.state-rail label{font-family:var(--font-mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);font-weight:500;padding:6px 11px;border:1px solid var(--border-hover);border-radius:var(--radius-sm);background:var(--pane-2);cursor:pointer}
+.state-rail label:hover{border-color:rgba(232,168,124,0.45);color:var(--user1)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:rgba(232,168,124,0.14);border-color:rgba(232,168,124,0.45);color:var(--user1)}
+
+.stage{padding:16px 32px 32px;display:flex;flex-direction:column;align-items:center;flex:1;gap:14px}
+
+.pc-viewport{
+  width:1366px; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:var(--radius-lg);
+  overflow:hidden; position:relative;
+  display:flex; flex-direction:column;
+  font-family:var(--font-ui);
+}
+
+/* Behind-app silhouette */
+.pc-behind {
+  position: absolute; inset: 0;
+  background: var(--canvas);
+  opacity: 0.5;
+  display: flex; flex-direction: column;
+  pointer-events: none;
+}
+.pc-behind .h { height: 42px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+.pc-behind .r { height: 32px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+.pc-behind .b { flex: 1; background: var(--canvas); }
+.pc-behind .f { height: 28px; background: var(--chrome); border-top: 1px solid var(--border); }
+
+/* Modal */
+.dlg-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(8, 8, 14, 0.78);
+  display: flex; align-items: center; justify-content: center;
+  padding: 32px;
+  z-index: 30;
+}
+.dlg-modal {
+  width: 540px; max-width: 100%;
+  background: var(--pane);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.dlg-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+.dlg-eyebrow { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--warn); font-weight: 700; }
+.dlg-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.dlg-body { padding: 18px 22px; color: var(--text); font-size: 13px; line-height: 1.55; }
+.dlg-body p + p { margin-top: 10px; }
+.dlg-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 14px 22px;
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+}
+.dlg-btn {
+  height: 32px; padding: 0 14px;
+  background: var(--pane-2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+}
+.dlg-btn:hover { border-color: rgba(232,168,124,0.45); color: var(--user1); }
+.dlg-btn.warn { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.dlg-btn.warn:hover { background: var(--warn); color: var(--canvas); }
+
+/* State 3: amber persistent banner inside main view */
+.pc-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  height: 42px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pc-header .brand { font-size: 13px; font-weight: 500; color: var(--text); }
+.pc-header .sep { color: var(--text-dim); }
+.pc-header .active-user { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; padding: 0 4px; }
+.pc-header .active-user .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--user1); }
+.pc-header .active-user .name { color: var(--user1); }
+.pc-header .repo-pills { display: flex; gap: 6px; margin-left: 8px; }
+.pc-header .repo-pill { font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); white-space: nowrap; }
+.pc-header .repo-pill.unknown { border-color: var(--err-border); color: var(--err); background: var(--err-soft); }
+.pc-header .spacer { flex: 1; }
+.pc-header .btn { height: 28px; padding: 0 12px; background: var(--pane-2); color: var(--text); border: 1px solid var(--border-hover); border-radius: var(--radius-md); font: 600 11.5px/1 var(--font-ui); cursor: pointer; }
+.pc-header .btn.warn-bordered { border-color: var(--warn); color: var(--warn); }
+
+.pc-statusbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 16px;
+  height: 26px;
+  background: var(--pane);
+  border-bottom: 1px solid var(--border-soft);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+  flex-shrink: 0;
+}
+.pc-statusbar .pill { padding: 1px 8px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); white-space: nowrap; }
+.pc-statusbar .pill b { color: var(--text); font-weight: 600; }
+.pc-statusbar .pill.unknown { border-color: var(--err-border); color: var(--err); background: var(--err-soft); }
+.pc-statusbar .path { flex: 1; color: var(--text); padding: 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Amber persistent banner (state 3) — replaces normal main */
+.escape-banner {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 24px;
+  background: var(--warn-soft);
+  border-top: 1px solid var(--warn-border);
+  border-bottom: 1px solid var(--warn-border);
+  flex-shrink: 0;
+}
+.escape-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--warn);
+  color: var(--canvas);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px;
+  flex-shrink: 0;
+}
+.escape-text { flex: 1; color: var(--text); font-size: 13px; line-height: 1.5; }
+.escape-text .lead { font-weight: 700; color: var(--warn); margin-right: 6px; }
+.escape-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.escape-actions .btn { height: 32px; padding: 0 14px; background: var(--pane-2); border: 1px solid var(--border-hover); border-radius: var(--radius-md); color: var(--text); font: 600 12px/1 var(--font-ui); cursor: pointer; }
+
+.pc-body-stub {
+  flex: 1;
+  background: var(--canvas);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.pc-footer {
+  display: flex; align-items: center; gap: 14px;
+  height: 28px;
+  padding: 0 16px;
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+/* State wiring */
+.state-block { display: none; }
+#st-1:checked ~ .stage > .state-block.s-1,
+#st-2:checked ~ .stage > .state-block.s-2,
+#st-3:checked ~ .stage > .state-block.s-3 { display: flex; flex-direction: column; align-items: center; align-self: stretch; }
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC redesign · v2 mockup · screen 8 of 12</div>
+  <h1>Escape Hatch — 3 States</h1>
+  <div class="meta">
+    <span><b>States:</b> first confirmation → "Are you sure?" gate → amber paused banner</span>
+    <span><b>Spec:</b> Spec v1.1 §8.3 two-step confirmation; banner copy verbatim</span>
+    <span><b>Viewport:</b> 1366×768 · zero page scroll</span>
+  </div>
+</header>
+
+<input type="radio" name="st" id="st-1" checked hidden>
+<input type="radio" name="st" id="st-2" hidden>
+<input type="radio" name="st" id="st-3" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">State</span>
+  <label for="st-1">1 · First confirmation</label>
+  <label for="st-2">2 · "Are you sure?"</label>
+  <label for="st-3">3 · Amber persistent banner</label>
+</div>
+
+<main class="stage">
+
+  <!-- STATE 1: First confirmation -->
+  <div class="state-block s-1">
+    <div class="pc-viewport">
+      <div class="pc-behind">
+        <div class="h"></div><div class="r"></div><div class="b"></div><div class="f"></div>
+      </div>
+      <div class="dlg-backdrop">
+        <div class="dlg-modal">
+          <div class="dlg-header">
+            <span class="dlg-eyebrow">⚠ Handoff load failed</span>
+            <span class="dlg-title">Proceed without a handoff?</span>
+          </div>
+          <div class="dlg-body">
+            <p>The handoff package could not be loaded. This may mean the package file was moved, deleted, or the settings file is corrupted.</p>
+            <p>You can proceed without it, but you will have no handoff summary and may be missing context.</p>
+          </div>
+          <div class="dlg-footer">
+            <button class="dlg-btn">Cancel — try again</button>
+            <button class="dlg-btn warn">Proceed without handoff</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 2: Are you sure -->
+  <div class="state-block s-2">
+    <div class="pc-viewport">
+      <div class="pc-behind">
+        <div class="h"></div><div class="r"></div><div class="b"></div><div class="f"></div>
+      </div>
+      <div class="dlg-backdrop">
+        <div class="dlg-modal">
+          <div class="dlg-header">
+            <span class="dlg-eyebrow">⚠ Confirm — second step</span>
+            <span class="dlg-title">Are you sure?</span>
+          </div>
+          <div class="dlg-body">
+            <p>Work with caution — no handoff summary is available.</p>
+            <p>If you continue, PC will mark this handoff as escape-hatched and you will land on the main view with a persistent amber warning until a fresh handoff is created or recovered.</p>
+          </div>
+          <div class="dlg-footer">
+            <button class="dlg-btn">No — go back</button>
+            <button class="dlg-btn warn">Yes — proceed</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 3: Amber persistent banner -->
+  <div class="state-block s-3">
+    <div class="pc-viewport">
+      <div class="pc-header">
+        <span class="brand">PANDA Collaborator</span>
+        <span class="sep">|</span>
+        <span class="active-user"><span class="dot"></span><span class="name">Darrin</span></span>
+        <div class="repo-pills">
+          <span class="repo-pill">branch <b>main</b></span>
+          <span class="repo-pill">HEAD <b>e27c2cf</b></span>
+          <span class="repo-pill unknown">handoff context unknown</span>
+        </div>
+        <span class="spacer"></span>
+        <button class="btn">Start Test Mode</button>
+        <button class="btn">Setup Users</button>
+        <button class="btn warn-bordered">Emergency Pause</button>
+      </div>
+      <div class="pc-statusbar">
+        <span class="pill">branch <b>main</b></span>
+        <span class="pill">HEAD <b>e27c2cf</b></span>
+        <span class="pill unknown">handoff context unknown</span>
+        <span class="path">C:\CODEX PG</span>
+      </div>
+      <!-- AMBER PERSISTENT BANNER — verbatim §8.3 copy -->
+      <div class="escape-banner">
+        <span class="escape-icon">⚠</span>
+        <span class="escape-text">
+          <span class="lead">Handoff load failed —</span>
+          no handoff summary available. Create or obtain a fresh handoff before serious work begins.
+        </span>
+        <div class="escape-actions">
+          <button class="btn">View raw settings</button>
+        </div>
+      </div>
+      <div class="pc-body-stub">
+        Main 3-column body (Phase 4 layout) — Start Session and Create Safe Handoff stay locked
+        until a valid handoff package is loaded per §8.3 prerequisites.
+      </div>
+      <div class="pc-footer">
+        <span style="padding:2px 8px; background:var(--ok-soft); border:1px solid var(--ok-border); border-radius:10px; color:var(--ok); font-weight:700; letter-spacing:0.5px;">Safety rules: Always enforced</span>
+        <span>No stash · No force push · No destructive git</span>
+        <span class="spacer"></span>
+        <span style="padding:2px 8px; background:var(--pane-2); border:1px solid var(--border); border-radius:10px;">Last backup: —</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

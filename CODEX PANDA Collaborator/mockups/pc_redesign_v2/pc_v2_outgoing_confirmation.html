@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC v2 mockup — Outgoing Confirmation (both variants)</title>
+<style>
+:root {
+  --canvas: #14141f; --chrome: #161625; --pane: #1a1a2e; --pane-2: #22223a;
+  --user1: #e8a87c; --user1-soft: rgba(232, 168, 124, 0.06); --user1-border: rgba(232, 168, 124, 0.45);
+  --user2: #4dd9e0; --user2-soft: rgba(77, 217, 224, 0.06); --user2-border: rgba(77, 217, 224, 0.45);
+  --ok: #6da850; --ok-soft: rgba(109, 168, 80, 0.14); --ok-border: rgba(109, 168, 80, 0.50);
+  --warn: #f39c12; --err: #e74c3c;
+  --text: #e0ddd5; --text-muted: #888888; --text-dim: #555555;
+  --border: #2a2a3e; --border-soft: #232336; --border-hover: #3a3a4e;
+  --accent: #e8a87c;
+  --font-ui: "Segoe UI","SF Pro Display","Noto Sans",system-ui,sans-serif;
+  --font-mono: "Cascadia Mono","Consolas",monospace;
+  --radius-sm: 2px; --radius-md: 4px; --radius-lg: 6px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--canvas);color:var(--text);font:13px/1.4 var(--font-ui);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100vh}
+
+.doc-head{padding:24px 32px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%);flex-shrink:0}
+.doc-head .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:1.6px;color:var(--accent);text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.doc-head h1{font-size:18px;font-weight:600;letter-spacing:.2px;margin-bottom:4px}
+.doc-head .meta{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.doc-head .meta b{color:var(--text-muted);font-weight:500}
+
+.state-rail{display:flex;gap:6px;padding:14px 32px;border-bottom:1px solid var(--border);background:var(--chrome);position:sticky;top:0;z-index:10;flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--font-mono);font-size:9.5px;color:var(--text-dim);letter-spacing:1.4px;text-transform:uppercase;font-weight:500;align-self:center;margin:0 6px 0 4px}
+.state-rail label{font-family:var(--font-mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);font-weight:500;padding:6px 11px;border:1px solid var(--border-hover);border-radius:var(--radius-sm);background:var(--pane-2);cursor:pointer}
+.state-rail label:hover{border-color:var(--user1-border);color:var(--user1)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:rgba(232,168,124,0.14);border-color:var(--user1-border);color:var(--user1)}
+
+.stage{padding:16px 32px 32px;display:flex;flex-direction:column;align-items:center;flex:1}
+
+.pc-viewport{
+  width:1366px; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:var(--radius-lg);
+  overflow:hidden; position:relative;
+  display:flex; flex-direction:column;
+  font-family:var(--font-ui);
+}
+
+/* Identity gradient wash — 6% rgba over canvas (Bible-compliant per spec §4.2 + §9 — confirmed acceptable) */
+.pc-viewport.user1 { background: linear-gradient(180deg, rgba(232, 168, 124, 0.06) 0%, var(--canvas) 100%); }
+.pc-viewport.user2 { background: linear-gradient(180deg, rgba(77, 217, 224, 0.06) 0%, var(--canvas) 100%); }
+
+/* Identity stripe at top */
+.pc-viewport::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 4px;
+  z-index: 5;
+}
+.pc-viewport.user1::before { background: var(--user1); }
+.pc-viewport.user2::before { background: var(--user2); }
+
+.confirmation {
+  flex: 1;
+  display: flex; flex-direction: column;
+  padding: 64px 96px;
+  max-width: 880px;
+  margin: 0 auto;
+  width: 100%;
+}
+.cf-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.pc-viewport.user1 .cf-eyebrow { color: var(--user1); }
+.pc-viewport.user2 .cf-eyebrow { color: var(--user2); }
+.cf-success-row {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 1px;
+  text-transform: uppercase; font-weight: 700;
+  color: var(--ok);
+  background: var(--ok-soft);
+  border: 1px solid var(--ok-border);
+  padding: 4px 10px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  align-self: flex-start;
+}
+.cf-success-row svg { width: 14px; height: 14px; }
+.cf-title {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.cf-title strong { font-weight: 700; }
+.pc-viewport.user1 .cf-title strong { color: var(--user1); }
+.pc-viewport.user2 .cf-title strong { color: var(--user2); }
+.cf-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.cf-steps {
+  background: var(--pane);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 32px;
+}
+.cf-steps-cap {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 12px;
+}
+.cf-steps-cap > span:first-child {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent);
+}
+.cf-steps-cap .hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+}
+.cf-step {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: center;
+}
+.cf-step:last-child { border-bottom: none; }
+.cf-step-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  background: rgba(232, 168, 124, 0.12);
+  color: var(--accent);
+}
+.pc-viewport.user1 .cf-step-num { background: rgba(232, 168, 124, 0.12); color: var(--user1); }
+.pc-viewport.user2 .cf-step-num { background: rgba(77, 217, 224, 0.12); color: var(--user2); }
+.cf-step-text { color: var(--text); font-size: 13px; line-height: 1.5; }
+.cf-step-text strong { color: var(--text); font-weight: 700; }
+
+.cf-action {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 36px;
+  background: var(--ok); color: var(--canvas);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius-md);
+  font: 700 17px/1 var(--font-ui);
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  align-self: flex-start;
+  min-width: 320px;
+}
+.cf-action:hover { background: #82bf61; border-color: #82bf61; }
+.cf-action .ar { font-size: 18px; transform: translateY(-1px); }
+.cf-foot {
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* State-pane wiring */
+.state-block { display: none; }
+#st-user1:checked ~ .stage > .state-block.s-user1,
+#st-user2:checked ~ .stage > .state-block.s-user2 { display: flex; flex-direction: column; align-items: center; align-self: stretch; }
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC redesign · v2 mockup · screen 6 of 12</div>
+  <h1>Outgoing Confirmation — Both Variants</h1>
+  <div class="meta">
+    <span><b>States:</b> User 1 amber (handoff to Pam) · User 2 cyan (handoff to Darrin)</span>
+    <span><b>Spec:</b> CLAUDE-20260504-008301 · "Hand Off to [Name]" capital O</span>
+    <span><b>Viewport:</b> 1366×768 · zero page scroll</span>
+  </div>
+</header>
+
+<input type="radio" name="st" id="st-user1" checked hidden>
+<input type="radio" name="st" id="st-user2" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">Variant</span>
+  <label for="st-user1">User 1 — Amber (handoff to Pam)</label>
+  <label for="st-user2">User 2 — Cyan (handoff to Darrin)</label>
+</div>
+
+<main class="stage">
+
+  <!-- USER 1 — DARRIN HANDS OFF TO PAM -->
+  <div class="state-block s-user1">
+    <div class="pc-viewport user1">
+      <div class="confirmation">
+        <span class="cf-eyebrow">Handoff package created</span>
+        <span class="cf-success-row">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 11.5L3 8l1-1 2.5 2.5L12 4l1 1z"/></svg>
+          all 10 steps passed
+        </span>
+        <h2 class="cf-title">Ready to hand off to <strong>Pam</strong>.</h2>
+        <p class="cf-subtitle">Complete the three steps below before clicking the button.</p>
+
+        <div class="cf-steps">
+          <div class="cf-steps-cap">
+            <span>Before you click the button</span>
+            <span class="hint">required actions</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">1</span>
+            <span class="cf-step-text">Close your <strong>Claude Desktop</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">2</span>
+            <span class="cf-step-text">Close your <strong>Claude Code</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">3</span>
+            <span class="cf-step-text">Log out of your <strong>GitHub account</strong> if you remain at the workstation.</span>
+          </div>
+        </div>
+
+        <button class="cf-action">Hand Off to Pam <span class="ar">→</span></button>
+        <span class="cf-foot">Cannot be dismissed by Esc or clicking outside. Only the button completes the handoff.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER 2 — PAM HANDS OFF TO DARRIN -->
+  <div class="state-block s-user2">
+    <div class="pc-viewport user2">
+      <div class="confirmation">
+        <span class="cf-eyebrow">Handoff package created</span>
+        <span class="cf-success-row">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 11.5L3 8l1-1 2.5 2.5L12 4l1 1z"/></svg>
+          all 10 steps passed
+        </span>
+        <h2 class="cf-title">Ready to hand off to <strong>Darrin</strong>.</h2>
+        <p class="cf-subtitle">Complete the three steps below before clicking the button.</p>
+
+        <div class="cf-steps">
+          <div class="cf-steps-cap">
+            <span>Before you click the button</span>
+            <span class="hint">required actions</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">1</span>
+            <span class="cf-step-text">Close your <strong>Claude Desktop</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">2</span>
+            <span class="cf-step-text">Close your <strong>Claude Code</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">3</span>
+            <span class="cf-step-text">Log out of your <strong>GitHub account</strong> if you remain at the workstation.</span>
+          </div>
+        </div>
+
+        <button class="cf-action">Hand Off to Darrin <span class="ar">→</span></button>
+        <span class="cf-foot">Cannot be dismissed by Esc or clicking outside. Only the button completes the handoff.</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

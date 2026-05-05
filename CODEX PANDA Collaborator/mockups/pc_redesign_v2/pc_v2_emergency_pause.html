@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC v2 mockup — Emergency Pause</title>
+<style>
+:root {
+  --canvas:        #14141f;
+  --chrome:        #161625;
+  --pane:          #1a1a2e;
+  --pane-2:        #22223a;
+  --pane-raised:   #22223a;
+  --pane-selected: #2a2a4e;
+  --user1:         #e8a87c;
+  --user1-soft:    rgba(232, 168, 124, 0.12);
+  --user1-border:  rgba(232, 168, 124, 0.45);
+  --user1-dim:     rgba(232, 168, 124, 0.25);
+  --user2:         #4dd9e0;
+  --user2-soft:    rgba(77, 217, 224, 0.12);
+  --user2-border:  rgba(77, 217, 224, 0.45);
+  --user2-dim:     rgba(77, 217, 224, 0.25);
+  --ok:            #6da850;
+  --ok-soft:       rgba(109, 168, 80, 0.14);
+  --ok-border:     rgba(109, 168, 80, 0.50);
+  --warn:          #f39c12;
+  --warn-soft:     rgba(243, 156, 18, 0.12);
+  --warn-border:   rgba(243, 156, 18, 0.45);
+  --err:           #e74c3c;
+  --err-soft:      rgba(231, 76, 60, 0.14);
+  --err-border:    rgba(231, 76, 60, 0.50);
+  --text:          #e0ddd5;
+  --text-muted:    #888888;
+  --text-dim:      #555555;
+  --border:        #2a2a3e;
+  --border-soft:   #232336;
+  --border-hover:  #3a3a4e;
+  --accent:        #e8a87c;
+  --font-ui:       "Segoe UI", "SF Pro Display", "Noto Sans", system-ui, sans-serif;
+  --font-mono:     "Cascadia Mono", "Consolas", monospace;
+  --radius-sm:     2px;
+  --radius-md:     4px;
+  --radius-lg:     6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--canvas);
+  color: var(--text);
+  font: 13px/1.4 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* === Doc head — describes mockup === */
+.doc-head { padding: 24px 32px 14px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--pane) 0%, var(--canvas) 100%); flex-shrink: 0; }
+.doc-head .eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.6px; color: var(--accent); text-transform: uppercase; font-weight: 600; margin-bottom: 6px; }
+.doc-head h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; margin-bottom: 4px; }
+.doc-head .meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
+.doc-head .meta b { color: var(--text-muted); font-weight: 500; }
+
+.stage { padding: 16px 32px 32px; display: flex; justify-content: center; flex-shrink: 0; }
+
+/* === PC viewport — pixel-honest 1366×768 === */
+.pc-viewport {
+  width: 1366px; height: 768px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  font-family: var(--font-ui);
+}
+
+/* === HEADER (42px) === */
+.pc-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  height: 42px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pc-header .brand { font-size: 13px; font-weight: 500; color: var(--text); flex-shrink: 0; }
+.pc-header .sep { color: var(--text-dim); font-weight: 300; }
+.pc-header .active-user { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; padding: 0 4px; }
+.pc-header .active-user .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.pc-header .active-user.user1 .dot { background: var(--user1); }
+.pc-header .active-user.user1 .name { color: var(--user1); }
+.pc-header .active-user.user2 .dot { background: var(--user2); }
+.pc-header .active-user.user2 .name { color: var(--user2); }
+.pc-header .repo-pills { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+.pc-header .repo-pill { font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); white-space: nowrap; }
+.pc-header .repo-pill b { color: var(--text); font-weight: 600; }
+.pc-header .repo-pill.clean { border-color: var(--ok-border); color: var(--ok); background: var(--ok-soft); }
+.pc-header .repo-pill.dirty { border-color: var(--warn-border); color: var(--warn); background: var(--warn-soft); }
+.pc-header .repo-pill.unknown { border-color: var(--err-border); color: var(--err); background: var(--err-soft); }
+.pc-header .spacer { flex: 1; }
+.pc-header .header-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* === Buttons === */
+.btn {
+  height: 28px; padding: 0 12px;
+  background: var(--pane-2);
+  color: var(--text);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  font: 600 11.5px/1 var(--font-ui);
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.btn:hover { border-color: var(--user1-border); color: var(--user1); }
+.btn:disabled, .btn.disabled {
+  background: var(--pane);
+  color: var(--text-dim);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+.btn.full-width { width: 100%; }
+.btn.h-40 { height: 40px; font-size: 13px; font-weight: 700; }
+.btn.h-48 { height: 48px; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; }
+.btn.green { background: var(--ok); border-color: var(--ok); color: var(--canvas); }
+.btn.green:hover { background: #82bf61; border-color: #82bf61; color: var(--canvas); }
+.btn.green:disabled, .btn.green.disabled { background: var(--pane); color: var(--text-dim); border-color: var(--border); }
+.btn.danger { background: var(--err); border-color: var(--err); color: #fff; font-weight: 700; }
+.btn.warn-bordered { border-color: var(--warn); color: var(--warn); }
+.btn.warn-bordered:hover { background: var(--warn-soft); color: var(--warn); }
+
+/* Switch / Register button — identity-bordered grammar */
+.switch-btn {
+  width: 100%; height: 28px;
+  padding: 0 12px;
+  background: var(--pane-raised);
+  color: var(--text);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  font: 600 11.5px/1 var(--font-ui);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.switch-btn.user1-bordered { border-color: var(--user1); }
+.switch-btn.user2-bordered { border-color: var(--user2); }
+.switch-btn.user1-bordered.disabled,
+.switch-btn.user1-bordered:disabled { border-color: var(--user1-dim); color: var(--text-dim); background: var(--pane); cursor: not-allowed; }
+.switch-btn.user2-bordered.disabled,
+.switch-btn.user2-bordered:disabled { border-color: var(--user2-dim); color: var(--text-dim); background: var(--pane); cursor: not-allowed; }
+
+/* === WORKFLOW RAIL (32px) === */
+.workflow-rail {
+  display: flex; align-items: center;
+  height: 32px;
+  padding: 0 16px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.wr-step { display: flex; align-items: center; gap: 6px; padding: 0 8px; min-width: 0; }
+.wr-step .dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  flex-shrink: 0;
+  background: var(--pane-2); color: var(--text-muted);
+  border: 1px solid var(--border-hover);
+}
+.wr-step .label { font-size: 11px; font-weight: 500; color: var(--text); white-space: nowrap; }
+.wr-step.complete .dot { background: var(--ok-soft); border-color: var(--ok-border); color: var(--ok); }
+.wr-step.complete .label { color: var(--ok); }
+.wr-step.pending .dot { background: var(--warn-soft); border-color: var(--warn-border); color: var(--warn); }
+.wr-step.pending .label { color: var(--warn); }
+.wr-step.user1-active .dot { background: var(--user1); border-color: var(--user1); color: var(--canvas); }
+.wr-step.user1-active .label { color: var(--user1); font-weight: 600; }
+.wr-step.user2-active .dot { background: var(--user2); border-color: var(--user2); color: var(--canvas); }
+.wr-step.user2-active .label { color: var(--user2); font-weight: 600; }
+.wr-step.idle .dot { background: var(--pane-2); border-color: var(--border); color: var(--text-dim); }
+.wr-step.idle .label { color: var(--text-muted); }
+.wr-chevron { width: 8px; height: 8px; border-top: 1px solid var(--border-hover); border-right: 1px solid var(--border-hover); transform: rotate(45deg); margin: 0 4px; opacity: 0.6; flex-shrink: 0; }
+
+/* === BODY (3-column grid, fills viewport between rail and footer) === */
+.pc-body {
+  display: grid;
+  grid-template-columns: 280px 1fr 360px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Section blocks */
+.sec { display: flex; flex-direction: column; border-bottom: 1px solid var(--border-soft); flex-shrink: 0; }
+.sec-head {
+  display: flex; align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent);
+  gap: 8px;
+}
+.sec-head .right-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+.sec-head .right-tag.ok { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+.sec-head .right-tag.warn { background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); }
+.sec-head .right-tag.err { background: var(--err-soft); border: 1px solid var(--err-border); color: var(--err); }
+.sec-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+/* === LEFT COLUMN === */
+.left-col { display: flex; flex-direction: column; background: var(--pane); border-right: 1px solid var(--border); min-height: 0; overflow: hidden; }
+
+/* Working Tree */
+.repo-row { display: flex; align-items: center; gap: 6px; }
+.repo-path-input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  background: var(--pane-2);
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 26px;
+}
+.pill-row { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
+.lc-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  background: var(--pane-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.lc-pill b { color: var(--text); font-weight: 600; }
+.lc-pill.clean { border-color: var(--ok-border); color: var(--ok); background: var(--ok-soft); }
+.lc-pill.dirty { border-color: var(--warn-border); color: var(--warn); background: var(--warn-soft); }
+.lc-pill.unknown { border-color: var(--err-border); color: var(--err); background: var(--err-soft); }
+.last-scan { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+/* User identity sections */
+.user-sec {
+  padding: 8px 12px 10px;
+  display: flex; flex-direction: column; gap: 5px;
+  border-left: 3px solid transparent;
+}
+.user-sec.user1 { border-left-color: var(--user1); }
+.user-sec.user2 { border-left-color: var(--user2); }
+.user-sec .user-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.user-sec .display-name { font-size: 13px; font-weight: 600; }
+.user-sec.user1 .display-name { color: var(--user1); }
+.user-sec.user2 .display-name { color: var(--user2); }
+.user-sec .reg-pill {
+  font-family: var(--font-mono);
+  font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px;
+}
+.user-sec .reg-pill.ok { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+.user-sec .reg-pill.warn { background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); }
+.user-sec .git-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Collapsible user section */
+.sec.collapsible .sec-head { cursor: pointer; }
+.sec-head .toggle-tri {
+  width: 0; height: 0;
+  border-left: 5px solid var(--accent);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  margin-right: 4px;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.sec.expanded .sec-head .toggle-tri { transform: rotate(90deg); }
+.sec.collapsed .user-sec { display: none; }
+.sec .collapsed-summary { display: none; align-items: center; gap: 8px; margin-left: auto; }
+.sec.collapsed .collapsed-summary { display: flex; }
+.sec.collapsed .collapsed-summary .name { font-size: 11px; font-weight: 600; }
+.sec.collapsed.user1-sec .collapsed-summary .name { color: var(--user1); }
+.sec.collapsed.user2-sec .collapsed-summary .name { color: var(--user2); }
+.sec.collapsed .collapsed-summary .reg-pill {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px;
+}
+.sec.collapsed .collapsed-summary .reg-pill.ok { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+
+/* === CENTER COLUMN === */
+.center-col { display: flex; flex-direction: column; background: var(--canvas); min-height: 0; overflow: hidden; }
+.status-sec { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; border-bottom: 1px solid var(--border-soft); }
+.status-list {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0;
+  background: var(--pane);
+}
+.status-list:empty::before {
+  content: "No messages yet. Start a session to see activity.";
+  display: block;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 32px 16px;
+  font-size: 12px;
+}
+.status-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 110px;
+  align-items: start;
+  gap: 12px;
+  padding: 7px 14px 7px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  border-left: 4px solid var(--text-dim);
+}
+.status-row:last-child { border-bottom: none; }
+.status-row.info { border-left-color: #555577; }
+.status-row.success { border-left-color: var(--ok); }
+.status-row.warn { border-left-color: var(--warn); }
+.status-row.err { border-left-color: var(--err); }
+.status-row .ts { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.status-row .body-text { font-size: 13px; color: var(--text); line-height: 1.45; }
+.status-row .author {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 7px;
+  background: var(--pane-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  text-align: center; justify-self: end;
+  white-space: nowrap;
+}
+
+.qm-sec { display: flex; flex-direction: column; flex: 0 0 auto; min-height: 0; }
+.qm-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+.qm-textarea {
+  width: 100%;
+  height: 36px;
+  resize: none;
+  background: var(--pane);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font: 12px/1.4 var(--font-ui);
+  padding: 4px 8px;
+}
+.start-session-btn {
+  width: 100%; height: 40px;
+  background: var(--ok); color: var(--canvas);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius-md);
+  font: 700 13px/1 var(--font-ui);
+  cursor: pointer;
+}
+.start-session-btn:hover { background: #82bf61; border-color: #82bf61; }
+
+/* === RIGHT COLUMN === */
+.right-col { display: flex; flex-direction: column; background: var(--pane); border-left: 1px solid var(--border); min-height: 0; overflow: hidden; }
+.handoff-sec { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; border-bottom: 1px solid var(--border-soft); }
+.handoff-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+.meta-pills.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.meta-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 2px 7px;
+  background: var(--pane-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.meta-pill b { color: var(--text); font-weight: 600; }
+.meta-pill.ok { color: var(--ok); border-color: var(--ok-border); background: var(--ok-soft); }
+.handoff-input {
+  width: 100%; height: 28px;
+  background: var(--pane-2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  padding: 0 8px;
+  color: var(--text);
+  font: 12px/1 var(--font-ui);
+}
+.handoff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.handoff-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  font-weight: 700;
+  display: block;
+}
+.notes-textarea {
+  width: 100%;
+  height: 56px;
+  resize: none;
+  background: var(--pane-2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font: 12px/1.4 var(--font-ui);
+  padding: 6px 8px;
+}
+.handoff-primary-action {
+  width: 100%; height: 48px;
+  background: var(--ok);
+  color: var(--canvas);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius-md);
+  font: 700 14px/1 var(--font-ui);
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+.handoff-primary-action:hover { background: #82bf61; border-color: #82bf61; }
+.handoff-primary-action:disabled,
+.handoff-primary-action.disabled { background: var(--pane); color: var(--text-dim); border-color: var(--border); cursor: not-allowed; height: 52px; font-weight: 700; }
+.start-session-btn:disabled,
+.start-session-btn.disabled { background: var(--pane); color: var(--text-dim); border-color: var(--border); cursor: not-allowed; height: 44px; }
+.btn-stack { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.1; width: 100%; }
+.btn-stack .btn-label { font-size: 13px; font-weight: 700; }
+.btn-stack .btn-label.h-48 { font-size: 14px; }
+.btn-stack .btn-reason { font-size: 9.5px; font-weight: 500; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-stack.warn .btn-reason { color: var(--warn); }
+.btn-stack.err .btn-reason { color: var(--err); }
+.end-session-btn.disabled,
+.end-session-btn:disabled { color: var(--text-dim); border-color: var(--border); background: var(--pane); cursor: not-allowed; }
+/* Emergency pause footer band — replaces 28px footer with 40px red band */
+.pc-footer.emergency {
+  height: 40px;
+  background: var(--err-soft);
+  border-top: 2px solid var(--err);
+  color: var(--err);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  gap: 16px;
+}
+.pc-footer.emergency .em-label { color: var(--err); font-size: 12px; font-weight: 800; letter-spacing: 1px; }
+.pc-footer.emergency .em-detail { color: var(--text); font-size: 11px; font-family: var(--font-mono); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.pc-footer.emergency .em-clear-btn { height: 28px; padding: 0 12px; background: var(--pane-2); color: var(--err); border: 1px solid var(--err); border-radius: var(--radius-md); font: 700 11.5px/1 var(--font-ui); cursor: pointer; }
+.pc-footer.emergency .em-clear-btn:hover { background: var(--err); color: #fff; }
+.btn.danger { background: var(--err); border-color: var(--err); color: #fff; font-weight: 700; }
+.btn.danger:hover { filter: brightness(1.1); }
+.btn .pause-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; display: inline-block; margin-right: 4px; }
+.end-session-btn {
+  width: 100%; height: 28px;
+  background: var(--pane-2);
+  color: var(--warn);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-md);
+  font: 600 11.5px/1 var(--font-ui);
+  cursor: pointer;
+}
+.end-session-btn:hover { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+
+.last-pkg-sec { display: flex; flex-direction: column; flex: 0 0 auto; }
+.last-pkg-head {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 28px;
+  padding: 0 12px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent);
+}
+.last-pkg-head .triangle {
+  width: 0; height: 0;
+  border-left: 5px solid var(--accent);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  flex-shrink: 0;
+}
+
+/* === FOOTER (28px) === */
+.pc-footer {
+  display: flex; align-items: center; gap: 14px;
+  height: 28px;
+  padding: 0 16px;
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.pc-footer .safety-pill {
+  padding: 2px 8px;
+  background: var(--ok-soft);
+  border: 1px solid var(--ok-border);
+  border-radius: 10px;
+  color: var(--ok);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.pc-footer .spacer { flex: 1; }
+.pc-footer .last-backup {
+  padding: 2px 8px;
+  background: var(--pane-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+}
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC redesign · v2 mockup · screen 3 of 12</div>
+  <h1>Emergency Pause</h1>
+  <div class="meta">
+    <span><b>State:</b> Operational + pause active · all primary actions blocked</span>
+    <span><b>Viewport:</b> 1366×768 · zero page scroll · footer expands to 40px red band</span>
+    <span><b>Spec:</b> CLAUDE-20260504-008301 addendum (Bible only, CC creative)</span>
+  </div>
+</header>
+
+<main class="stage">
+  <div class="pc-viewport">
+    <!-- HEADER -->
+    <div class="pc-header">
+      <span class="brand">PANDA Collaborator</span>
+      <span class="sep">|</span>
+      <span class="active-user user1"><span class="dot"></span><span class="name">Darrin</span></span>
+      <div class="repo-pills">
+        <span class="repo-pill">branch <b>main</b></span>
+        <span class="repo-pill">HEAD <b>a3f8c1</b></span>
+        <span class="repo-pill clean">clean</span>
+      </div>
+      <span class="spacer"></span>
+      <div class="header-controls">
+        <button class="btn">Start Test Mode</button>
+        <button class="btn">Setup Users</button>
+        <button class="btn danger"><span class="pause-dot"></span>Paused</button>
+      </div>
+    </div>
+
+    <!-- WORKFLOW RAIL -->
+    <div class="workflow-rail">
+      <div class="wr-step complete"><span class="dot">✓</span><span class="label">Register</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step complete"><span class="dot">✓</span><span class="label">Confirm repo</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step complete"><span class="dot">✓</span><span class="label">Hand over</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step user1-active"><span class="dot">4</span><span class="label">Working</span></div>
+      <span class="wr-chevron"></span>
+      <div class="wr-step idle"><span class="dot">5</span><span class="label">Hand off</span></div>
+    </div>
+
+    <!-- BODY -->
+    <div class="pc-body">
+      <!-- LEFT COLUMN -->
+      <div class="left-col">
+        <!-- Working Tree -->
+        <div class="sec">
+          <div class="sec-head"><span>Working Tree</span><span class="right-tag ok">Clean</span></div>
+          <div class="sec-body">
+            <div class="repo-row">
+              <span class="repo-path-input" title="C:\panda-gallery">C:\panda-gallery</span>
+              <button class="btn" style="height:26px; padding:0 10px;">Browse</button>
+            </div>
+            <button class="switch-btn" style="background:var(--ok); border-color:var(--ok); color:var(--canvas); font-weight:700;">Scan Working Tree</button>
+            <div class="pill-row">
+              <span class="lc-pill">branch <b>main</b></span>
+              <span class="lc-pill">HEAD <b>a3f8c1</b></span>
+              <span class="lc-pill clean">clean</span>
+              <span class="lc-pill">untracked <b>0</b></span>
+            </div>
+            <span class="last-scan">last scan: 14:22:08</span>
+          </div>
+        </div>
+        <!-- User 1 (expanded) -->
+        <div class="sec collapsible expanded user1-sec">
+          <div class="sec-head"><span class="toggle-tri"></span><span>User 1</span><span class="collapsed-summary"><span class="name">Darrin</span><span class="reg-pill ok">Registered</span></span></div>
+          <div class="user-sec user1">
+            <div class="user-head">
+              <span class="display-name">Darrin</span>
+              <span class="reg-pill ok">Registered</span>
+            </div>
+            <span class="git-id" title="darrin@example.com">darrin &lt;darrin@example.com&gt;</span>
+            <button class="switch-btn user1-bordered disabled" disabled>Switch to Darrin</button>
+          </div>
+        </div>
+        <!-- User 2 (collapsed) -->
+        <div class="sec collapsible collapsed user2-sec" style="border-bottom:none;">
+          <div class="sec-head"><span class="toggle-tri"></span><span>User 2</span><span class="collapsed-summary"><span class="name">Adam</span><span class="reg-pill ok">Registered</span></span></div>
+          <div class="user-sec user2">
+            <div class="user-head">
+              <span class="display-name">Adam</span>
+              <span class="reg-pill ok">Registered</span>
+            </div>
+            <span class="git-id" title="adam@example.com">adam &lt;adam@example.com&gt;</span>
+            <button class="switch-btn user2-bordered">Switch to Adam</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER COLUMN -->
+      <div class="center-col">
+        <div class="status-sec">
+          <div class="sec-head"><span>Status Messages</span><span class="right-tag err">Paused</span></div>
+          <div class="status-list">
+            <div class="status-row err">
+              <span class="ts">14:22:00</span>
+              <span class="body-text">⚠ Emergency Pause triggered by Darrin. All session and handoff actions halted until Clear Pause.</span>
+              <span class="author">PC</span>
+            </div>
+            <div class="status-row success">
+              <span class="ts">14:21:30</span>
+              <span class="body-text">Session started. Ready to capture activity.</span>
+              <span class="author">Darrin</span>
+            </div>
+            <div class="status-row success">
+              <span class="ts">14:19:14</span>
+              <span class="body-text">Working tree scan complete: clean. Branch <code>main</code> at <code>a3f8c1</code>.</span>
+              <span class="author">PC</span>
+            </div>
+            <div class="status-row info">
+              <span class="ts">14:18:02</span>
+              <span class="body-text">PANDA Collaborator started. Working as Darrin (User 1).</span>
+              <span class="author">PC</span>
+            </div>
+          </div>
+        </div>
+        <div class="qm-sec">
+          <div class="sec-head"><span>Quick Message</span></div>
+          <div class="qm-body">
+            <textarea class="qm-textarea" placeholder="Short note, concern, achievement, or next step (saves on blur)"></textarea>
+            <button class="start-session-btn disabled" disabled>
+              <span class="btn-stack err">
+                <span class="btn-label">Start Session</span>
+                <span class="btn-reason">Emergency Pause active — clear pause from footer to resume</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="right-col">
+        <div class="handoff-sec">
+          <div class="sec-head"><span>Create Safe Handoff</span><span class="right-tag ok">Safe</span></div>
+          <div class="handoff-body">
+            <div class="meta-pills grid-2">
+              <span class="meta-pill" title="C:\panda-gallery">Root: <b>C:\panda-gallery</b></span>
+              <span class="meta-pill">Branch: <b>main</b></span>
+              <span class="meta-pill">HEAD: <b>a3f8c1</b></span>
+              <span class="meta-pill ok">Protection: <b>ready</b></span>
+              <span class="meta-pill ok">Patches: <b>2 staged</b></span>
+              <span class="meta-pill ok">Files: <b>11</b></span>
+              <span class="meta-pill ok">Manifest: <b>ready</b></span>
+            </div>
+            <div class="handoff-row">
+              <div>
+                <span class="handoff-label">Title</span>
+                <input class="handoff-input" type="text" value="AI workstation handoff">
+              </div>
+              <div>
+                <span class="handoff-label">Agent</span>
+                <input class="handoff-input" type="text" value="Codex">
+              </div>
+            </div>
+            <div>
+              <span class="handoff-label">Notes</span>
+              <textarea class="notes-textarea" placeholder="Current intent, risks, next action"></textarea>
+            </div>
+            <button class="handoff-primary-action disabled" disabled>
+              <span class="btn-stack err">
+                <span class="btn-label h-48">Create Safe Handoff</span>
+                <span class="btn-reason">Emergency Pause active — clear pause from footer to resume</span>
+              </span>
+            </button>
+            <button class="end-session-btn disabled" disabled>End Session / Handoff</button>
+          </div>
+        </div>
+        <div class="last-pkg-sec">
+          <div class="last-pkg-head"><span>Last Package <span style="color:var(--text-muted); font-weight:500; margin-left:6px;">(1)</span></span><span class="triangle"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER (40px emergency band — replaces standard 28px footer when paused) -->
+    <div class="pc-footer emergency">
+      <span class="em-label">⚠ Emergency Pause Active</span>
+      <span class="em-detail">Darrin triggered pause at 14:22 — manual</span>
+      <span class="spacer"></span>
+      <button class="em-clear-btn">Clear Pause</button>
+    </div>
+  </div>
+</main>
+</body>
+</html>
