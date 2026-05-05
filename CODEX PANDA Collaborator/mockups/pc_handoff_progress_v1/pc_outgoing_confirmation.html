@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC Outgoing User Confirmation — 2 variants (PC_HANDOFF_PROGRESS_SPEC v1 §4.2)</title>
+<style>
+:root {
+  --canvas:        #14141f;
+  --chrome:        #161625;
+  --pane:          #1a1a2e;
+  --pane-2:        #22223a;
+  --pane-sel:      #2a2a4e;
+  --border-soft:   #232336;
+  --border:        #2a2a3e;
+  --border-hover:  #3a3a4e;
+  --text:          #e0ddd5;
+  --muted:         #888888;
+  --dim:           #555555;
+  --accent:        #e8a87c;
+  --accent-soft:   rgba(232, 168, 124, 0.12);
+  --accent-border: rgba(232, 168, 124, 0.45);
+  --accent-ink:    #14141f;
+  --ok:            #7fb069;
+  --ok-soft:       rgba(127, 176, 105, 0.12);
+  --ok-border:     rgba(127, 176, 105, 0.45);
+  --warn:          #f39c12;
+  --err:           #e74c3c;
+  --user1:         #e8a87c;     /* User 1 amber — same as accent */
+  --user1-soft:    rgba(232, 168, 124, 0.12);
+  --user1-border:  rgba(232, 168, 124, 0.45);
+  --user2:         #5fa0a8;     /* User 2 cyan */
+  --user2-soft:    rgba(95, 160, 168, 0.14);
+  --user2-border:  rgba(95, 160, 168, 0.45);
+  --ui:            "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;
+  --mono:          "Cascadia Mono", "Consolas", monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+/* Doc head */
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+
+/* State rail */
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+/* PC viewport — 1366×768 */
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column;
+  font-family:var(--ui); position:relative;
+}
+
+/* Identity-coloured top stripe — 4px, identity color, full width */
+.pc-viewport.user1::before, .pc-viewport.user2::before{
+  content:""; position:absolute; left:0; right:0; top:0; height:4px;
+}
+.pc-viewport.user1::before{background:var(--user1)}
+.pc-viewport.user2::before{background:var(--user2)}
+
+/* Full-screen confirmation overlay — UNBYPASSABLE per §9 */
+.confirmation{
+  position:absolute; inset:0; padding-top:4px;  /* respect identity stripe */
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--canvas);
+  text-align:center;
+  gap:0;
+}
+
+.user1 .confirmation{background:linear-gradient(180deg, rgba(232,168,124,0.06) 0%, var(--canvas) 70%)}
+.user2 .confirmation{background:linear-gradient(180deg, rgba(95,160,168,0.06) 0%, var(--canvas) 70%)}
+
+.cf-eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.6px;
+  text-transform:uppercase; font-weight:700;
+  color:var(--accent); margin-bottom:14px;
+}
+.user1 .cf-eyebrow{color:var(--user1)}
+.user2 .cf-eyebrow{color:var(--user2)}
+
+.cf-title{
+  font-size:32px; font-weight:600; letter-spacing:0.3px;
+  color:var(--text); margin-bottom:14px;
+  max-width:760px; line-height:1.25;
+}
+.cf-success-row{
+  display:inline-flex; align-items:center; gap:10px;
+  margin-bottom:34px;
+  padding:8px 16px;
+  background:var(--ok-soft); border:1px solid var(--ok-border); border-radius:4px;
+  color:var(--ok); font-family:var(--mono); font-size:11px; letter-spacing:1.2px; text-transform:uppercase; font-weight:700;
+}
+.cf-success-row svg{width:14px; height:14px; flex-shrink:0}
+
+/* Numbered instruction steps (match Bible peach-caps section heading rhythm) */
+.cf-steps{
+  background:var(--pane);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:24px 32px;
+  width:760px; max-width:90%;
+  text-align:left;
+  margin-bottom:32px;
+}
+.cf-steps-cap{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--accent); font-weight:700;
+  margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;
+}
+.user1 .cf-steps-cap{color:var(--user1)}
+.user2 .cf-steps-cap{color:var(--user2)}
+.cf-steps-cap .hint{
+  font-family:var(--mono); font-size:10px; color:var(--dim);
+  letter-spacing:0; text-transform:none; font-weight:400;
+}
+.cf-step{
+  display:grid; grid-template-columns:32px 1fr; gap:14px;
+  padding:10px 0;
+  border-bottom:1px solid var(--border-soft);
+  align-items:start;
+}
+.cf-step:last-child{border-bottom:none}
+.cf-step-num{
+  width:24px; height:24px; border-radius:12px;
+  background:var(--pane-2); border:1px solid var(--border-hover);
+  color:var(--muted); font-family:var(--mono); font-size:11px; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.user1 .cf-step-num{background:var(--user1-soft); border-color:var(--user1-border); color:var(--user1)}
+.user2 .cf-step-num{background:var(--user2-soft); border-color:var(--user2-border); color:var(--user2)}
+.cf-step-text{
+  color:var(--text); font-size:14px; line-height:1.5;
+  padding-top:2px;
+}
+
+/* Primary button — large rectangular, identity color BORDER + accent ink only when ready */
+.cf-action{
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  height:48px; padding:0 32px;
+  background:var(--ok); border:1px solid var(--ok); border-radius:4px;
+  color:var(--accent-ink); font:600 14px/1 var(--ui); letter-spacing:0.2px;
+  cursor:pointer; transition:background 0.15s ease;
+  min-width:280px;
+}
+.cf-action:hover{background:#8fbe78; border-color:#8fbe78}
+.cf-action .ar{font-size:14px; opacity:0.85}
+
+.cf-foot{
+  font-family:var(--mono); font-size:10.5px; color:var(--dim);
+  margin-top:18px; letter-spacing:0.2px;
+}
+
+/* State containers — only one rendered via :checked */
+.state-pane{display:none}
+#st-user1:checked ~ .stage .state-pane[data-st="user1"],
+#st-user2:checked ~ .stage .state-pane[data-st="user2"]{
+  display:flex; flex-direction:column; align-items:center; gap:14px; align-self:stretch;
+}
+
+.legend{
+  margin:32px 32px 64px; padding:18px 22px;
+  background:var(--pane);
+  border-left:3px solid var(--accent);
+  font-size:12px; line-height:1.6; color:var(--muted);
+  border-radius:0 4px 4px 0;
+}
+.legend strong{color:var(--text)}
+.legend code{
+  font-family:var(--mono); background:var(--pane-2);
+  border:1px solid var(--border); color:var(--accent);
+  padding:1px 5px; font-size:11px; border-radius:3px;
+}
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC handoff progress · v1 mockup</div>
+  <h1>Outgoing User Confirmation Screen — 2 variants (Spec §4.2)</h1>
+  <div class="meta">
+    <span><b>Trigger:</b> fires after handoff package created (all 8 steps PASS)</span>
+    <span><b>Unbypassable:</b> no Esc, no click-outside, no passive dismiss</span>
+    <span><b>Identity colors:</b> User 1 = amber (peach), User 2 = cyan</span>
+    <span><b>Spec:</b> PC_HANDOFF_PROGRESS_SPEC_v1 §4.2 + §9</span>
+  </div>
+</header>
+
+<input type="radio" name="state" id="st-user1" checked hidden>
+<input type="radio" name="state" id="st-user2" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">Active user</span>
+  <label for="st-user1">User 1 · Darrin · amber</label>
+  <label for="st-user2">User 2 · Pam · cyan</label>
+</div>
+
+<main class="stage">
+
+  <!-- =================== USER 1 (DARRIN, AMBER) =================== -->
+  <div class="state-pane" data-st="user1">
+    <div class="stage-cap">
+      <span class="num">1 of 2</span>
+      <span class="title-text">Outgoing user is User 1 (Darrin). Identity stripe + step-number tints in amber. Identity color is for IDENTITY ONLY — primary action is semantic green (ready), not identity-colored.</span>
+    </div>
+    <div class="pc-viewport user1">
+      <div class="confirmation">
+        <span class="cf-eyebrow">Handoff package created</span>
+        <h2 class="cf-title">Ready to hand off to <strong>Pam</strong>.</h2>
+        <span class="cf-success-row">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 11.5L3 8l1-1 2.5 2.5L12 4l1 1z"/></svg>
+          all 8 steps passed
+        </span>
+
+        <div class="cf-steps">
+          <div class="cf-steps-cap">
+            <span>Before you click the button</span>
+            <span class="hint">required actions</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">1</span>
+            <span class="cf-step-text">Close your <strong>Claude Desktop</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">2</span>
+            <span class="cf-step-text">Close your <strong>Claude Code</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">3</span>
+            <span class="cf-step-text">Log out of your <strong>GitHub account</strong> if you remain at the workstation.</span>
+          </div>
+        </div>
+
+        <button class="cf-action">Hand Off to Pam <span class="ar">→</span></button>
+        <span class="cf-foot">Cannot be dismissed by Esc or clicking outside. Only the button completes the handoff.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== USER 2 (PAM, CYAN) =================== -->
+  <div class="state-pane" data-st="user2">
+    <div class="stage-cap">
+      <span class="num">2 of 2</span>
+      <span class="title-text">Outgoing user is User 2 (Pam). Identity stripe + step-number tints in cyan. Same content, same primary-action grammar — only identity accents change.</span>
+    </div>
+    <div class="pc-viewport user2">
+      <div class="confirmation">
+        <span class="cf-eyebrow">Handoff package created</span>
+        <h2 class="cf-title">Ready to hand off to <strong>Darrin</strong>.</h2>
+        <span class="cf-success-row">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 11.5L3 8l1-1 2.5 2.5L12 4l1 1z"/></svg>
+          all 8 steps passed
+        </span>
+
+        <div class="cf-steps">
+          <div class="cf-steps-cap">
+            <span>Before you click the button</span>
+            <span class="hint">required actions</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">1</span>
+            <span class="cf-step-text">Close your <strong>Claude Desktop</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">2</span>
+            <span class="cf-step-text">Close your <strong>Claude Code</strong> session.</span>
+          </div>
+          <div class="cf-step">
+            <span class="cf-step-num">3</span>
+            <span class="cf-step-text">Log out of your <strong>GitHub account</strong> if you remain at the workstation.</span>
+          </div>
+        </div>
+
+        <button class="cf-action">Hand Off to Darrin <span class="ar">→</span></button>
+        <span class="cf-foot">Cannot be dismissed by Esc or clicking outside. Only the button completes the handoff.</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<aside class="legend">
+  <strong>Bible compliance + spec adherence</strong>
+  <ul style="margin:8px 0 0 0; padding-left:20px;">
+    <li><strong>Surfaces:</strong> dark Bible navy only — gradient is a 6%-alpha tint of the identity color over <code>--canvas</code> (not a colored panel; reads as atmospheric warmth without violating "no light/cream backgrounds" — Inviolable Rule #9).</li>
+    <li><strong>Identity color is IDENTITY ONLY</strong> per Bible §2.6 + PC redesign spec §5.3. Used here as: 4px top stripe, eyebrow text color, step-number tints, bold-name accent inside the title. NEVER as the primary action button fill.</li>
+    <li><strong>Primary action is semantic green</strong> (<code>--ok</code>) because it represents a "ready safe action" per Bible §6 + PC redesign spec §5.3. The button color does not change between User 1 and User 2 — only identity markers change.</li>
+    <li><strong>Required copy</strong> is verbatim from spec §4.2 + §9 locked button names (intro line, three numbered actions, button text "Hand Off to [User Name]" with capital O → resolved to actual incoming user name).</li>
+    <li><strong>Unbypassable.</strong> No close button (X) in corner. Footer text states explicitly: "Cannot be dismissed by Esc or clicking outside." This matches spec §9 non-negotiable: "All confirmation screens must be dismissible only by the intended action button."</li>
+    <li><strong>Mono</strong> only on eyebrow + footer per Bible §3.4. Headings, button text, instruction body all use UI font.</li>
+    <li><strong>Peach-caps section header</strong> (Bible §3.3) used on the "Before you click the button" group — peach-caps title left, optional dim mono hint right.</li>
+    <li><strong>Numbered list</strong> uses identity-tinted circle counters (24×24, radius 12 = 50%, fits Bible <code>radius-pill</code> for circular). Body text in <code>--text</code> cream.</li>
+  </ul>
+</aside>
+
+</body>
+</html>

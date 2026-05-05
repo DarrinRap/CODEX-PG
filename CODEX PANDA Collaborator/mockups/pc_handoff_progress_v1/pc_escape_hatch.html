@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC Start Session Escape Hatch — 3 states (PC_HANDOFF_PROGRESS_SPEC v1.1 §8.3)</title>
+<style>
+:root {
+  --canvas:        #14141f;
+  --chrome:        #161625;
+  --pane:          #1a1a2e;
+  --pane-2:        #22223a;
+  --pane-sel:      #2a2a4e;
+  --border-soft:   #232336;
+  --border:        #2a2a3e;
+  --border-hover:  #3a3a4e;
+  --text:          #e0ddd5;
+  --muted:         #888888;
+  --dim:           #555555;
+  --accent:        #e8a87c;
+  --accent-soft:   rgba(232, 168, 124, 0.12);
+  --accent-border: rgba(232, 168, 124, 0.45);
+  --accent-ink:    #14141f;
+  --ok:            #7fb069;
+  --ok-soft:       rgba(127, 176, 105, 0.12);
+  --ok-border:     rgba(127, 176, 105, 0.45);
+  --warn:          #f39c12;
+  --warn-soft:     rgba(243, 156, 18, 0.12);
+  --warn-border:   rgba(243, 156, 18, 0.45);
+  --err:           #e74c3c;
+  --user1:         #e8a87c;
+  --user2:         #5fa0a8;
+  --ui:            "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;
+  --mono:          "Cascadia Mono", "Consolas", monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+/* Doc head */
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+
+.stage{padding:24px 32px 64px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+/* PC viewport */
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column;
+  font-family:var(--ui);
+}
+
+/* Header */
+.pc-header{
+  display:flex; align-items:center; gap:18px;
+  padding:10px 18px; background:var(--chrome);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.pc-header .brand{font-size:13px; font-weight:600; color:var(--text)}
+.pc-header .brand .sub{color:var(--muted); font-size:11px; font-weight:400; margin-left:6px}
+.pc-header .active-user{
+  font-family:var(--ui); font-size:18px; font-weight:700; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--text);
+  padding:0 10px; border-left:3px solid var(--user1); margin-left:6px;
+}
+.pc-header .role-tag{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--muted);
+  padding:3px 8px; background:var(--pane-2); border:1px solid var(--border);
+  border-radius:12px;
+}
+.pc-header .spacer{flex:1}
+
+/* Statusbar — precision data row, 26px */
+.pc-statusbar{
+  display:flex; align-items:center; gap:14px;
+  padding:0 18px; height:26px;
+  background:var(--pane); border-bottom:1px solid var(--border-soft);
+  font-family:var(--mono); font-size:11px; color:var(--muted);
+  flex-shrink:0; overflow:hidden;
+}
+.pc-statusbar .pill{
+  padding:1px 8px; background:var(--pane-2);
+  border:1px solid var(--border); border-radius:10px;
+  color:var(--muted); white-space:nowrap;
+}
+.pc-statusbar .pill b{color:var(--text); font-weight:600}
+.pc-statusbar .pill.unknown{border-color:var(--err-border); color:var(--err); background:rgba(231,76,60,0.12)}
+.pc-statusbar .path{
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--text); padding:0 6px;
+}
+
+/* AMBER WARNING BANNER — the escape hatch's persistent surface */
+.escape-banner{
+  display:flex; align-items:center; gap:14px;
+  padding:14px 22px;
+  background:var(--warn-soft); border-top:1px solid var(--warn-border); border-bottom:1px solid var(--warn-border);
+  flex-shrink:0;
+}
+.escape-icon{
+  width:24px; height:24px; flex-shrink:0;
+  border-radius:50%;
+  background:var(--warn); color:var(--accent-ink);
+  display:inline-flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:14px;
+}
+.escape-text{flex:1; color:var(--text); font-size:13px; line-height:1.4}
+.escape-text .lead{font-weight:600; color:var(--warn); margin-right:6px}
+.escape-actions{display:flex; gap:10px; flex-shrink:0}
+.escape-action-btn{
+  height:32px; padding:0 14px;
+  background:var(--pane-2); border:1px solid var(--border-hover); border-radius:4px;
+  color:var(--text); font:600 12px/1 var(--ui);
+  cursor:pointer; transition:border-color 0.15s ease, color 0.15s ease;
+}
+.escape-action-btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.escape-action-btn.primary{
+  background:var(--warn-soft); border-color:var(--warn); color:var(--warn);
+}
+.escape-action-btn.primary:hover{background:var(--warn); color:var(--accent-ink)}
+
+/* Workflow guide stub — 5 steps, all "needs attention" because handover summary is missing */
+.workflow-guide{
+  display:grid; grid-template-columns:repeat(5, 1fr); gap:0;
+  padding:14px 18px; background:var(--canvas);
+  border-bottom:1px solid var(--border-soft);
+  flex-shrink:0;
+}
+.wg-step{
+  display:flex; flex-direction:column; gap:4px;
+  padding:10px 14px; background:var(--pane);
+  border:1px solid var(--border); border-right:none;
+  position:relative;
+}
+.wg-step:first-child{border-radius:4px 0 0 4px}
+.wg-step:last-child{border-right:1px solid var(--border); border-radius:0 4px 4px 0}
+.wg-step .step-head{display:flex; align-items:center; gap:6px}
+.wg-step .step-num{
+  width:18px; height:18px; border-radius:9px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  background:var(--pane-2); color:var(--muted); border:1px solid var(--border-hover);
+}
+.wg-step .step-label{font-size:11.5px; font-weight:600; color:var(--text)}
+.wg-step .step-state{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--dim); margin-top:2px}
+.wg-step.attention .step-num{background:var(--warn-soft); color:var(--warn); border-color:var(--warn-border)}
+.wg-step.attention .step-state{color:var(--warn)}
+.wg-step .arrow{
+  position:absolute; right:-8px; top:50%; transform:translateY(-50%) rotate(45deg);
+  width:14px; height:14px; background:var(--pane); border-top:1px solid var(--border);
+  border-right:1px solid var(--border); z-index:1;
+}
+.wg-step:last-child .arrow{display:none}
+
+/* Body — main view drops in here, but with summary panel showing the missing-handoff state */
+.pc-body{
+  display:grid; grid-template-columns:340px 1fr 320px;
+  flex:1; min-height:0;
+}
+.left-rail, .center-col, .right-rail{
+  background:var(--pane); border-right:1px solid var(--border);
+  padding:14px; display:flex; flex-direction:column; gap:12px;
+}
+.right-rail{border-right:none; border-left:1px solid var(--border)}
+.center-col{background:var(--canvas); border-right:none; border-left:none}
+
+.section-head{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--accent); font-weight:700;
+  padding:0 0 8px; border-bottom:1px solid var(--border-soft); margin-bottom:6px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.section-head .hint{font-family:var(--mono); font-size:10px; color:var(--dim); letter-spacing:0; text-transform:none; font-weight:400}
+
+/* User card stub */
+.user-card{
+  background:var(--pane-2); border:1px solid var(--border);
+  border-left:3px solid var(--user1);
+  border-radius:4px; padding:10px 12px;
+}
+.user-card.user2{border-left-color:var(--user2)}
+.user-card .uc-row{display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:11.5px}
+.user-card .uc-row .lbl{color:var(--muted); font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; min-width:64px}
+.user-card .uc-row .val{color:var(--text)}
+.user-card .uc-row .val.mono{font-family:var(--mono); color:var(--accent); font-size:11px}
+
+.btn{
+  height:32px; padding:0 14px;
+  background:var(--pane-2); border:1px solid var(--border-hover); border-radius:4px;
+  color:var(--text); font:600 12px/1 var(--ui);
+  cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  transition:border-color 0.15s ease, color 0.15s ease;
+}
+.btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.btn.primary{background:var(--ok); border-color:var(--ok); color:var(--accent-ink)}
+.btn.primary.disabled, .btn.primary:disabled{
+  background:var(--pane-2); border-color:var(--border); color:var(--dim); cursor:not-allowed;
+}
+.btn.danger{background:var(--err-soft); border-color:var(--err); color:var(--err)}
+
+/* Missing-handoff summary card in center column */
+.missing-handoff{
+  background:var(--pane); border:1px solid var(--warn-border); border-radius:6px;
+  padding:18px 20px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.missing-handoff h3{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--warn); font-weight:700;
+}
+.missing-handoff p{color:var(--text); font-size:13px; line-height:1.55}
+.missing-handoff .err-detail{
+  font-family:var(--mono); font-size:11.5px; color:var(--err);
+  background:rgba(231,76,60,0.08); border:1px solid rgba(231,76,60,0.4);
+  border-radius:4px; padding:8px 12px;
+  white-space:pre-wrap; word-break:break-all;
+}
+
+.legend{
+  margin:32px 32px 64px; padding:18px 22px;
+  background:var(--pane);
+  border-left:3px solid var(--accent);
+  font-size:12px; line-height:1.6; color:var(--muted);
+  border-radius:0 4px 4px 0;
+}
+.legend strong{color:var(--text)}
+.legend code{
+  font-family:var(--mono); background:var(--pane-2);
+  border:1px solid var(--border); color:var(--accent);
+  padding:1px 5px; font-size:11px; border-radius:3px;
+}
+
+/* === v1.1: state rail + modal dialogs (states 1 & 2) === */
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.state-pane{display:none}
+#st-dlg1:checked ~ .stage .state-pane[data-st="dlg1"],
+#st-dlg2:checked ~ .stage .state-pane[data-st="dlg2"],
+#st-banner:checked ~ .stage .state-pane[data-st="banner"]{
+  display:flex; flex-direction:column; align-items:center; gap:14px; align-self:stretch;
+}
+
+/* Backdrop layer (dims app behind dialogs) */
+.dlg-backdrop{
+  position:absolute; inset:0;
+  background:rgba(10,10,20,0.66);
+  display:flex; align-items:center; justify-content:center;
+  padding:32px;
+}
+.behind{
+  position:absolute; inset:0;
+  background:var(--canvas);
+  opacity:0.55;
+  display:flex; flex-direction:column;
+}
+.behind .h{height:46px; background:var(--chrome); border-bottom:1px solid var(--border)}
+.behind .s{height:26px; background:var(--pane); border-bottom:1px solid var(--border-soft)}
+.behind .w{height:60px; background:var(--canvas); border-bottom:1px solid var(--border-soft)}
+.behind .b{flex:1; background:var(--canvas)}
+
+.dlg-modal{
+  width:520px; max-width:100%;
+  background:var(--pane);
+  border:1px solid var(--border-hover);
+  border-radius:6px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.6);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.dlg-header{
+  display:flex; align-items:center; gap:14px;
+  padding:14px 22px;
+  background:var(--chrome);
+  border-bottom:1px solid var(--border);
+}
+.dlg-eyebrow{font-family:var(--mono); font-size:9.5px; letter-spacing:1.4px; text-transform:uppercase; color:var(--warn); font-weight:700}
+.dlg-title{font-size:14px; font-weight:600; color:var(--text)}
+.dlg-body{padding:18px 22px; color:var(--text); font-size:13px; line-height:1.55}
+.dlg-body p + p{margin-top:10px}
+.dlg-footer{
+  display:flex; align-items:center; justify-content:flex-end; gap:10px;
+  padding:14px 22px;
+  background:var(--chrome);
+  border-top:1px solid var(--border);
+}
+.dlg-btn{
+  height:32px; padding:0 14px;
+  background:var(--pane-2); border:1px solid var(--border-hover); border-radius:4px;
+  color:var(--text); font:600 12px/1 var(--ui);
+  cursor:pointer; transition:border-color 0.15s ease, color 0.15s ease;
+}
+.dlg-btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.dlg-btn.warn{background:var(--warn-soft); border-color:var(--warn); color:var(--warn)}
+.dlg-btn.warn:hover{background:var(--warn); color:var(--accent-ink)}
+
+/* On the dlg2 backdrop, simulate the dlg1 modal sitting under it (faded) */
+.dlg-under-modal{
+  position:absolute;
+  width:520px; max-width:100%;
+  background:var(--pane);
+  border:1px solid var(--border-hover);
+  border-radius:6px;
+  opacity:0.35;
+  pointer-events:none;
+  /* same vertical centering, slightly behind */
+}
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC handoff progress · v1 mockup</div>
+  <h1>Start Session Escape Hatch — 3 states (Spec v1.1 §8.3)</h1>
+  <div class="meta">
+    <span><b>Trigger:</b> handoff package file is missing or unreadable on disk</span>
+    <span><b>Flow:</b> first confirmation dialog → "Are you sure?" dialog → main view with persistent amber banner</span>
+    <span><b>Result:</b> handover_pending cleared; main view loads; amber banner persists until a fresh handoff lands</span>
+    <span><b>Spec:</b> PC_HANDOFF_PROGRESS_SPEC_v1.1 §8.3 (two-step confirmation)</span>
+  </div>
+</header>
+
+<input type="radio" name="state" id="st-dlg1" checked hidden>
+<input type="radio" name="state" id="st-dlg2" hidden>
+<input type="radio" name="state" id="st-banner" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">State</span>
+  <label for="st-dlg1">1 · First confirmation</label>
+  <label for="st-dlg2">2 · "Are you sure?"</label>
+  <label for="st-banner">3 · Main view + persistent banner</label>
+</div>
+
+<main class="stage">
+
+  <!-- =================== STATE 1: FIRST CONFIRMATION DIALOG =================== -->
+  <div class="state-pane" data-st="dlg1">
+    <div class="stage-cap">
+      <span class="num">1 of 3</span>
+      <span class="title-text">Darrin clicked "Something went wrong loading the handoff?" on the incoming confirmation. PC shows the first confirmation dialog over the dimmed incoming screen. Two buttons: proceed without handoff (warn-styled) or cancel back to incoming.</span>
+    </div>
+    <div class="pc-viewport" style="position:relative;">
+      <div class="behind"><div class="h"></div><div class="s"></div><div class="w"></div><div class="b"></div></div>
+      <div class="dlg-backdrop">
+        <div class="dlg-modal">
+          <div class="dlg-header">
+            <span class="dlg-eyebrow">⚠ Handoff load failed</span>
+            <span class="dlg-title">Proceed without a handoff?</span>
+          </div>
+          <div class="dlg-body">
+            <p>The handoff package could not be loaded. This may mean the package file was moved, deleted, or the settings file is corrupted.</p>
+            <p>You can proceed without it, but you will have no handoff summary and may be missing context.</p>
+          </div>
+          <div class="dlg-footer">
+            <button class="dlg-btn">Cancel — try again</button>
+            <button class="dlg-btn warn">Proceed without handoff</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== STATE 2: ARE YOU SURE? DIALOG =================== -->
+  <div class="state-pane" data-st="dlg2">
+    <div class="stage-cap">
+      <span class="num">2 of 3</span>
+      <span class="title-text">Darrin clicked "Proceed without handoff" on dialog 1. PC shows the second "Are you sure?" dialog, modal over the (faded) first dialog. This is the deliberate two-step gate — confirms intent before clearing handover_pending.</span>
+    </div>
+    <div class="pc-viewport" style="position:relative;">
+      <div class="behind"><div class="h"></div><div class="s"></div><div class="w"></div><div class="b"></div></div>
+      <div class="dlg-backdrop">
+        <div class="dlg-modal">
+          <div class="dlg-header">
+            <span class="dlg-eyebrow">⚠ Confirm — second step</span>
+            <span class="dlg-title">Are you sure?</span>
+          </div>
+          <div class="dlg-body">
+            <p>Work with caution — no handoff summary is available.</p>
+            <p>If you continue, PC will mark this handoff as escape-hatched and you will land on the main view with a persistent amber warning until a fresh handoff is created or recovered.</p>
+          </div>
+          <div class="dlg-footer">
+            <button class="dlg-btn">No — go back</button>
+            <button class="dlg-btn warn">Yes — proceed</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== STATE 3: MAIN VIEW + PERSISTENT BANNER =================== -->
+  <div class="state-pane" data-st="banner">
+  <div class="stage-cap">
+    <span class="num">3 of 3</span>
+    <span class="title-text">Darrin completed the two-step confirmation. PC drops here with the persistent amber banner. Banner is now passive — informational only — because the user already acknowledged via the upstream dialogs. Start Session and Create Safe Handoff are locked until a fresh handoff lands.</span>
+  </div>
+
+  <div class="pc-viewport">
+    <!-- Header -->
+    <div class="pc-header">
+      <span class="brand">PANDA Collaborator <span class="sub">Shared workstation handoff manager</span></span>
+      <span class="active-user">DARRIN</span>
+      <span class="role-tag">user 1 · amber</span>
+      <span class="spacer"></span>
+      <button class="btn">Setup users</button>
+    </div>
+
+    <!-- Statusbar -->
+    <div class="pc-statusbar">
+      <span class="pill">branch <b>main</b></span>
+      <span class="pill">HEAD <b>e27c2cf</b></span>
+      <span class="pill unknown">handoff context unknown</span>
+      <span class="path" title="C:\CODEX PG"><b>C:\CODEX PG</b></span>
+      <span class="pill"><b>18:48 PDT</b></span>
+    </div>
+
+    <!-- AMBER WARNING BANNER — escape hatch's persistent surface (v1.1 §8.3 exact copy; passive after two-step upstream) -->
+    <div class="escape-banner">
+      <span class="escape-icon">⚠</span>
+      <span class="escape-text">
+        <span class="lead">Handoff load failed —</span>
+        no handoff summary available. Create or obtain a fresh handoff before serious work begins.
+      </span>
+      <div class="escape-actions">
+        <button class="escape-action-btn">View raw settings</button>
+      </div>
+    </div>
+
+    <!-- Workflow guide — all amber attention because session-context is missing -->
+    <div class="workflow-guide">
+      <div class="wg-step attention">
+        <div class="step-head"><span class="step-num">1</span><span class="step-label">Setup</span></div>
+        <span class="step-state">complete</span>
+        <span class="arrow"></span>
+      </div>
+      <div class="wg-step attention">
+        <div class="step-head"><span class="step-num">2</span><span class="step-label">Working tree</span></div>
+        <span class="step-state">unknown</span>
+        <span class="arrow"></span>
+      </div>
+      <div class="wg-step attention">
+        <div class="step-head"><span class="step-num">3</span><span class="step-label">Start session</span></div>
+        <span class="step-state">no context</span>
+        <span class="arrow"></span>
+      </div>
+      <div class="wg-step attention">
+        <div class="step-head"><span class="step-num">4</span><span class="step-label">Activity</span></div>
+        <span class="step-state">no context</span>
+        <span class="arrow"></span>
+      </div>
+      <div class="wg-step attention">
+        <div class="step-head"><span class="step-num">5</span><span class="step-label">Handoff</span></div>
+        <span class="step-state">awaiting work</span>
+        <span class="arrow"></span>
+      </div>
+    </div>
+
+    <!-- Main 3-col body -->
+    <div class="pc-body">
+      <!-- Left rail — user setup -->
+      <div class="left-rail">
+        <div class="section-head"><span>Setup users</span><span class="hint">amber + cyan</span></div>
+        <div class="user-card">
+          <div class="uc-row"><span class="lbl">Active</span><span class="val">Darrin</span></div>
+          <div class="uc-row"><span class="lbl">Role</span><span class="val">User 1 · amber</span></div>
+          <div class="uc-row"><span class="lbl">Repo</span><span class="val mono">C:\CODEX PG</span></div>
+          <div class="uc-row"><span class="lbl">Git</span><span class="val">Codex Backup</span></div>
+        </div>
+        <div class="user-card user2">
+          <div class="uc-row"><span class="lbl">Standby</span><span class="val">Pam</span></div>
+          <div class="uc-row"><span class="lbl">Role</span><span class="val">User 2 · cyan</span></div>
+          <div class="uc-row"><span class="lbl">Last on</span><span class="val">Yesterday 6:42 PM</span></div>
+        </div>
+
+        <div class="section-head" style="margin-top:6px"><span>Repository</span><span class="hint">scan + browse</span></div>
+        <button class="btn">Browse</button>
+        <button class="btn">Scan Working Tree</button>
+      </div>
+
+      <!-- Center column — missing-handoff state -->
+      <div class="center-col">
+        <div class="missing-handoff">
+          <h3>No handoff context loaded</h3>
+          <p>You can continue using PC, but the previous handoff summary is unavailable. Recommended next steps:</p>
+          <ol style="margin-left:18px; color:var(--text); font-size:13px; line-height:1.6;">
+            <li>Ask <strong>Pam</strong> if she completed her last handoff — the package file may have been moved or deleted from <code>workflows/handoffs/</code>.</li>
+            <li>Open the <strong>Packages</strong> view (left rail) to see the full local archive of past handoffs.</li>
+            <li>If no handoff is recoverable, ask the outgoing user to re-run <strong>Create Safe Handoff</strong> on their workstation, or restore the package from a recent backup. Start Session unlocks only when a valid handoff is loaded.</li>
+          </ol>
+          <div class="err-detail">FileNotFoundError: workflows/handoffs/PG-2026-05-03-2155/handoff_package.json
+recorded path: C:\CODEX PG\workflows\handoffs\PG-2026-05-03-2155\
+last seen: 2026-05-03 21:55:07 PDT (24h 53m ago)</div>
+        </div>
+
+        <div class="section-head" style="margin-top:6px"><span>Status messages</span><span class="hint">most recent</span></div>
+        <div style="background:var(--pane); border:1px solid var(--border); border-radius:4px; padding:12px 14px; color:var(--text); font-size:12.5px; line-height:1.5;">
+          <div style="display:grid; grid-template-columns:90px 1fr; gap:10px; padding:4px 0; border-bottom:1px solid var(--border-soft);">
+            <span style="font-family:var(--mono); font-size:10px; color:var(--warn); letter-spacing:1px; text-transform:uppercase">18:48 warn</span>
+            <span>Handoff load failed. Dropped to main view per escape hatch.</span>
+          </div>
+          <div style="display:grid; grid-template-columns:90px 1fr; gap:10px; padding:4px 0;">
+            <span style="font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase">18:47 info</span>
+            <span>handover_pending cleared. User acknowledged escape.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right rail — Start Session locked -->
+      <div class="right-rail">
+        <div class="section-head"><span>Start session</span><span class="hint">locked</span></div>
+        <button class="btn primary disabled" disabled>Start Session</button>
+        <p style="font-size:11.5px; color:var(--muted); line-height:1.5; margin-top:-2px">
+          Locked until a fresh handoff package is created or recovered. The two-step confirmation upstream cleared <code>handover_pending</code> but did not unlock work; that requires real handoff context.
+        </p>
+
+        <div class="section-head" style="margin-top:6px"><span>Create handoff</span><span class="hint">when you finish</span></div>
+        <button class="btn primary disabled" disabled>Create Safe Handoff</button>
+        <p style="font-size:11.5px; color:var(--muted); line-height:1.5; margin-top:-2px">
+          Available after Start Session.
+        </p>
+
+        <div class="section-head" style="margin-top:6px"><span>Emergency</span><span class="hint">always available</span></div>
+        <button class="btn danger">Emergency Pause</button>
+      </div>
+    </div>
+  </div>
+  </div>
+</main>
+
+<aside class="legend">
+  <strong>Bible compliance + spec v1.1 §8.3 adherence (two-step confirmation)</strong>
+  <ul style="margin:8px 0 0 0; padding-left:20px;">
+    <li><strong>Two-step confirmation gate (states 1 + 2)</strong> per spec v1.1 §8.3: first dialog ("Proceed without handoff?") + second dialog ("Are you sure?"). Both modal, both require deliberate confirmation — escape is never a single-click event. Only after the second confirmation does PC clear <code>handover_pending</code> and drop to state 3.</li>
+    <li><strong>Verbatim dialog copy</strong> from spec §8.3: dialog 1 body and button labels match spec quote exactly; dialog 2 body matches "Are you sure? Work with caution — no handoff summary is available." exactly.</li>
+    <li><strong>Persistent amber banner (state 3)</strong> per spec §8.3: "⚠️ Handoff load failed — no handoff summary available. Create or obtain a fresh handoff before serious work begins." Surface = <code>--warn-soft</code> over dark. The banner persists until a fresh handoff lands — it has no dismiss button because the two-step upstream already captured the user's acknowledgment.</li>
+    <li><strong>Statusbar pill "handoff context unknown"</strong> uses err-tinted pill (passive chip per Bible §6, not clickable) so the missing-context state is signalled in two places — banner + statusbar — for redundancy without duplication of action.</li>
+    <li><strong>Start Session + Create Safe Handoff</strong> stay visibly disabled (grey on dark pane-2 background) per spec §8.3 prerequisites: Start Session activates only when a valid handoff package is loaded; the escape clears <code>handover_pending</code> but does not satisfy that prerequisite.</li>
+    <li><strong>Workflow guide</strong> shows all 5 stages in <code>attention</code> state with concise reasons ("complete" / "unknown" / "no context" / "no context" / "awaiting work") — single short label + state per Bible §6.2.</li>
+    <li><strong>Emergency Pause stays enabled</strong> — explicit per PC redesign spec §6.12. The escape banner doesn't lock destructive-prevention controls.</li>
+    <li><strong>Locked button names</strong> per spec §9: "Scan Working Tree" (was "Scan repository" in v1.0 — fixed), "Start Session", "Create Safe Handoff", "Emergency Pause" all use canonical labels.</li>
+    <li><strong>Mono</strong> for precision data only: branch, HEAD SHA, repo path, timestamps, the FileNotFoundError detail (Bible §3.4).</li>
+    <li><strong>Identity colors</strong> as identity markers only (3px left border on user cards, role-tag pill); Start Session button uses semantic green grammar (disabled-grey when blocked, would be safe-green when ready) — never identity color.</li>
+    <li><strong>Surfaces:</strong> all dark Bible navy (<code>--canvas</code>, <code>--chrome</code>, <code>--pane</code>, <code>--pane-2</code>). Banner uses <code>--warn-soft</code> rgba over dark — no light/cream panel violation.</li>
+    <li><strong>Banner action:</strong> single neutral "View raw settings" (escape-hatch diagnostic helper). The previous v1.0 "Acknowledge &amp; continue" button is removed — its function is fulfilled by the two-step gate upstream.</li>
+  </ul>
+</aside>
+
+</body>
+</html>

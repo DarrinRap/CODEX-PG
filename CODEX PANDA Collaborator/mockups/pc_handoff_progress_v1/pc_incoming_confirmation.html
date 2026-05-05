@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC Incoming User Confirmation — 2 variants (PC_HANDOFF_PROGRESS_SPEC v1 §4.3)</title>
+<style>
+:root {
+  --canvas:        #14141f;
+  --chrome:        #161625;
+  --pane:          #1a1a2e;
+  --pane-2:        #22223a;
+  --pane-sel:      #2a2a4e;
+  --border-soft:   #232336;
+  --border:        #2a2a3e;
+  --border-hover:  #3a3a4e;
+  --text:          #e0ddd5;
+  --muted:         #888888;
+  --dim:           #555555;
+  --accent:        #e8a87c;
+  --accent-soft:   rgba(232, 168, 124, 0.12);
+  --accent-border: rgba(232, 168, 124, 0.45);
+  --accent-ink:    #14141f;
+  --ok:            #7fb069;
+  --ok-soft:       rgba(127, 176, 105, 0.12);
+  --ok-border:     rgba(127, 176, 105, 0.45);
+  --warn:          #f39c12;
+  --err:           #e74c3c;
+  --user1:         #e8a87c;
+  --user1-soft:    rgba(232, 168, 124, 0.12);
+  --user1-border:  rgba(232, 168, 124, 0.45);
+  --user2:         #5fa0a8;
+  --user2-soft:    rgba(95, 160, 168, 0.14);
+  --user2-border:  rgba(95, 160, 168, 0.45);
+  --ui:            "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;
+  --mono:          "Cascadia Mono", "Consolas", monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+/* Doc head */
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+
+/* State rail */
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+/* PC viewport */
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column;
+  font-family:var(--ui); position:relative;
+}
+.pc-viewport.user1::before, .pc-viewport.user2::before{
+  content:""; position:absolute; left:0; right:0; top:0; height:4px;
+}
+.pc-viewport.user1::before{background:var(--user1)}
+.pc-viewport.user2::before{background:var(--user2)}
+
+/* Auto-shown screen — fills viewport, NOT a modal-on-top */
+.handoff-screen{
+  position:absolute; inset:0; padding:4px 0 0; /* respect identity stripe */
+  display:grid; grid-template-rows:auto 1fr auto;
+  background:var(--canvas);
+}
+.user1 .handoff-screen{background:linear-gradient(180deg, rgba(232,168,124,0.06) 0%, var(--canvas) 60%)}
+.user2 .handoff-screen{background:linear-gradient(180deg, rgba(95,160,168,0.06) 0%, var(--canvas) 60%)}
+
+/* Top band — incoming user identity */
+.hs-band{
+  display:flex; align-items:center; justify-content:center;
+  padding:24px 32px 18px;
+  text-align:center;
+  flex-direction:column; gap:8px;
+}
+.hs-eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.6px;
+  text-transform:uppercase; color:var(--accent); font-weight:700;
+}
+.user1 .hs-eyebrow{color:var(--user1)}
+.user2 .hs-eyebrow{color:var(--user2)}
+.hs-name{
+  font-family:var(--ui); font-size:48px; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; color:var(--text);
+  line-height:1;
+}
+.user1 .hs-name{color:var(--user1)}
+.user2 .hs-name{color:var(--user2)}
+.hs-subtitle{
+  font-size:14px; color:var(--muted);
+  margin-top:4px;
+}
+
+/* Body — instructions on the left, summary on the right */
+.hs-body{
+  display:grid; grid-template-columns:340px 1fr;
+  gap:20px; padding:0 32px;
+  align-items:start; min-height:0;
+}
+
+/* Left — checklist instructions */
+.hs-checklist{
+  background:var(--pane); border:1px solid var(--border);
+  border-radius:6px;
+  padding:18px 20px;
+}
+.hs-checklist .cap{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--accent); font-weight:700;
+  margin-bottom:14px; padding-bottom:10px;
+  border-bottom:1px solid var(--border-soft);
+}
+.user1 .hs-checklist .cap{color:var(--user1)}
+.user2 .hs-checklist .cap{color:var(--user2)}
+.hs-step{
+  display:grid; grid-template-columns:28px 1fr; gap:12px;
+  padding:10px 0; align-items:start;
+  border-bottom:1px solid var(--border-soft);
+}
+.hs-step:last-child{border-bottom:none}
+.hs-step-num{
+  width:22px; height:22px; border-radius:11px;
+  background:var(--pane-2); border:1px solid var(--border-hover);
+  color:var(--muted); font-family:var(--mono); font-size:10.5px; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.user1 .hs-step-num{background:var(--user1-soft); border-color:var(--user1-border); color:var(--user1)}
+.user2 .hs-step-num{background:var(--user2-soft); border-color:var(--user2-border); color:var(--user2)}
+.hs-step-text{
+  color:var(--text); font-size:13px; line-height:1.5;
+}
+
+/* Right — handoff summary */
+.hs-summary{
+  background:var(--pane); border:1px solid var(--border);
+  border-radius:6px;
+  padding:18px 22px;
+  display:flex; flex-direction:column; gap:14px;
+  min-height:0;
+}
+.hs-summary-cap{
+  display:flex; align-items:center; justify-content:space-between;
+  padding-bottom:10px; border-bottom:1px solid var(--border-soft);
+}
+.hs-summary-title{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--accent); font-weight:700;
+}
+.user1 .hs-summary-title{color:var(--user1)}
+.user2 .hs-summary-title{color:var(--user2)}
+
+/* View toggle (Plain-English / Technical) — passive pills indicating which mode is active */
+.view-toggle{display:inline-flex; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:4px; padding:2px; gap:2px}
+.view-toggle button{
+  background:transparent; border:none; color:var(--muted);
+  font:600 10.5px/1 var(--mono); letter-spacing:1px; text-transform:uppercase;
+  padding:5px 10px; border-radius:3px; cursor:pointer;
+}
+.view-toggle button.on{background:var(--accent-soft); color:var(--accent)}
+.user1 .view-toggle button.on{background:var(--user1-soft); color:var(--user1)}
+.user2 .view-toggle button.on{background:var(--user2-soft); color:var(--user2)}
+
+/* Summary fact rows */
+.fact-row{
+  display:grid; grid-template-columns:130px 1fr;
+  gap:12px; padding:6px 0; align-items:baseline;
+  border-bottom:1px solid var(--border-soft);
+}
+.fact-row:last-of-type{border-bottom:none}
+.fact-key{font-family:var(--mono); font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); font-weight:600}
+.fact-val{font-family:var(--ui); font-size:13px; color:var(--text)}
+.fact-val.mono{font-family:var(--mono); font-size:12px; color:var(--accent)}
+
+.summary-text{
+  color:var(--text); font-size:13.5px; line-height:1.6;
+  padding:6px 0;
+}
+.summary-text strong{color:var(--text); font-weight:600}
+
+/* Footer — Start Session button + escape hatch link */
+.hs-footer{
+  display:flex; align-items:center; justify-content:center; gap:18px;
+  padding:18px 32px 24px;
+  border-top:1px solid var(--border-soft);
+  background:transparent;
+}
+.btn-start{
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  height:48px; padding:0 36px;
+  background:var(--ok); border:1px solid var(--ok); border-radius:4px;
+  color:var(--accent-ink); font:600 14px/1 var(--ui); letter-spacing:0.2px;
+  cursor:pointer; transition:background 0.15s ease;
+  min-width:240px;
+}
+.btn-start:hover{background:#8fbe78; border-color:#8fbe78}
+.btn-start .ar{font-size:14px; opacity:0.85}
+.btn-start.disabled, .btn-start:disabled{
+  background:var(--pane-2); border-color:var(--border); color:var(--dim);
+  cursor:not-allowed;
+}
+.escape-link{
+  background:transparent; border:none;
+  color:var(--muted); font-family:var(--mono); font-size:11px;
+  letter-spacing:0.4px; text-decoration:underline;
+  cursor:pointer;
+}
+.escape-link:hover{color:var(--warn)}
+
+/* State containers */
+.state-pane{display:none}
+#st-user1:checked ~ .stage .state-pane[data-st="user1"],
+#st-user2:checked ~ .stage .state-pane[data-st="user2"]{
+  display:flex; flex-direction:column; align-items:center; gap:14px; align-self:stretch;
+}
+
+.legend{
+  margin:32px 32px 64px; padding:18px 22px;
+  background:var(--pane);
+  border-left:3px solid var(--accent);
+  font-size:12px; line-height:1.6; color:var(--muted);
+  border-radius:0 4px 4px 0;
+}
+.legend strong{color:var(--text)}
+.legend code{
+  font-family:var(--mono); background:var(--pane-2);
+  border:1px solid var(--border); color:var(--accent);
+  padding:1px 5px; font-size:11px; border-radius:3px;
+}
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC handoff progress · v1 mockup</div>
+  <h1>Incoming User Confirmation Screen — 2 variants (Spec §4.3)</h1>
+  <div class="meta">
+    <span><b>Trigger:</b> auto-shows on PC launch when handover_pending=true</span>
+    <span><b>No bypass:</b> handoff summary is the entry point; only Start Session reaches the rest of PC</span>
+    <span><b>Auto-load:</b> latest handoff package summary loaded into the right pane</span>
+    <span><b>Spec:</b> PC_HANDOFF_PROGRESS_SPEC_v1 §4.3 + §8</span>
+  </div>
+</header>
+
+<input type="radio" name="state" id="st-user1" checked hidden>
+<input type="radio" name="state" id="st-user2" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">Incoming user</span>
+  <label for="st-user1">User 1 · Darrin · amber</label>
+  <label for="st-user2">User 2 · Pam · cyan</label>
+</div>
+
+<main class="stage">
+
+  <!-- =================== USER 1 INCOMING (DARRIN, AMBER) =================== -->
+  <div class="state-pane" data-st="user1">
+    <div class="stage-cap">
+      <span class="num">1 of 2</span>
+      <span class="title-text">Pam handed off to Darrin. Darrin opens PC; this screen auto-shows immediately. Identity = amber. Start Session is the only path forward.</span>
+    </div>
+    <div class="pc-viewport user1">
+      <div class="handoff-screen">
+        <div class="hs-band">
+          <span class="hs-eyebrow">Ready for</span>
+          <span class="hs-name">Darrin</span>
+          <span class="hs-subtitle">Pam handed off 12 minutes ago. Pick up where she left off.</span>
+        </div>
+        <div class="hs-body">
+          <div class="hs-checklist">
+            <div class="cap">Before you click Start Session</div>
+            <div class="hs-step">
+              <span class="hs-step-num">1</span>
+              <span class="hs-step-text">Open <strong>Claude Desktop</strong> and log in with <strong>YOUR</strong> account.</span>
+            </div>
+            <div class="hs-step">
+              <span class="hs-step-num">2</span>
+              <span class="hs-step-text">Open <strong>Claude Code</strong> and log in with <strong>YOUR</strong> account.</span>
+            </div>
+            <div class="hs-step">
+              <span class="hs-step-num">3</span>
+              <span class="hs-step-text">Review the handoff summary on the right.</span>
+            </div>
+          </div>
+
+          <div class="hs-summary">
+            <div class="hs-summary-cap">
+              <span class="hs-summary-title">Handoff summary — Pam → Darrin</span>
+              <div class="view-toggle">
+                <button class="on">Plain English</button>
+                <button>Technical</button>
+              </div>
+            </div>
+
+            <div class="summary-text">
+              Pam finished <strong>v4.88.4 combo-arrow render fix</strong> (Tracker filter bar). Worked on <code>audit_module/v1/styles.py</code> and <code>screen_a.py</code>; added two PNG arrow assets. <strong>1264 tests pass.</strong> Push landed at <code>6453db0</code>. No open concerns. Recommended next: take the BA Workstream A finding on PAH disposition handling — see PC handoff package <code>PG-2026-05-04-1842</code>.
+            </div>
+
+            <div style="border-top:1px solid var(--border-soft); padding-top:12px; display:grid; gap:0;">
+              <div class="fact-row"><span class="fact-key">Branch</span><span class="fact-val mono">main</span></div>
+              <div class="fact-row"><span class="fact-key">HEAD</span><span class="fact-val mono">6453db0</span></div>
+              <div class="fact-row"><span class="fact-key">Working tree</span><span class="fact-val">Clean</span></div>
+              <div class="fact-row"><span class="fact-key">Package ID</span><span class="fact-val mono">PG-2026-05-04-1842</span></div>
+              <div class="fact-row"><span class="fact-key">Created</span><span class="fact-val mono">2026-05-04 18:42:24 PDT</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="hs-footer">
+          <button class="btn-start">Start Session <span class="ar">→</span></button>
+          <button class="escape-link">Something went wrong loading the handoff?</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== USER 2 INCOMING (PAM, CYAN) =================== -->
+  <div class="state-pane" data-st="user2">
+    <div class="stage-cap">
+      <span class="num">2 of 2</span>
+      <span class="title-text">Darrin handed off to Pam. Pam opens PC the next morning; this screen auto-shows. Identity = cyan. Same content layout, only identity accents differ.</span>
+    </div>
+    <div class="pc-viewport user2">
+      <div class="handoff-screen">
+        <div class="hs-band">
+          <span class="hs-eyebrow">Ready for</span>
+          <span class="hs-name">Pam</span>
+          <span class="hs-subtitle">Darrin handed off yesterday at 6:42 PM. Pick up where he left off.</span>
+        </div>
+        <div class="hs-body">
+          <div class="hs-checklist">
+            <div class="cap">Before you click Start Session</div>
+            <div class="hs-step">
+              <span class="hs-step-num">1</span>
+              <span class="hs-step-text">Open <strong>Claude Desktop</strong> and log in with <strong>YOUR</strong> account.</span>
+            </div>
+            <div class="hs-step">
+              <span class="hs-step-num">2</span>
+              <span class="hs-step-text">Open <strong>Claude Code</strong> and log in with <strong>YOUR</strong> account.</span>
+            </div>
+            <div class="hs-step">
+              <span class="hs-step-num">3</span>
+              <span class="hs-step-text">Review the handoff summary on the right.</span>
+            </div>
+          </div>
+
+          <div class="hs-summary">
+            <div class="hs-summary-cap">
+              <span class="hs-summary-title">Handoff summary — Darrin → Pam</span>
+              <div class="view-toggle">
+                <button class="on">Plain English</button>
+                <button>Technical</button>
+              </div>
+            </div>
+
+            <div class="summary-text">
+              Darrin finished the <strong>BA Workstream A diagnostic-wording fix</strong> (PAH "server unavailable" message). Touched <code>scripts/ba_audit_runner.py</code>; 64 BA tests pass. Push landed at <code>e27c2cf</code>. <strong>One open concern:</strong> RelayWindow ESC bug (#195) is logged but not yet fixed. Recommended next: continue the PC redesign workstream — Step 0 reads complete; Phase 1 mockups awaiting your review.
+            </div>
+
+            <div style="border-top:1px solid var(--border-soft); padding-top:12px; display:grid; gap:0;">
+              <div class="fact-row"><span class="fact-key">Branch</span><span class="fact-val mono">main</span></div>
+              <div class="fact-row"><span class="fact-key">HEAD</span><span class="fact-val mono">e27c2cf</span></div>
+              <div class="fact-row"><span class="fact-key">Working tree</span><span class="fact-val">Clean</span></div>
+              <div class="fact-row"><span class="fact-key">Package ID</span><span class="fact-val mono">PG-2026-05-03-2155</span></div>
+              <div class="fact-row"><span class="fact-key">Created</span><span class="fact-val mono">2026-05-03 21:55:07 PDT</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="hs-footer">
+          <button class="btn-start">Start Session <span class="ar">→</span></button>
+          <button class="escape-link">Something went wrong loading the handoff?</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<aside class="legend">
+  <strong>Bible compliance + spec adherence</strong>
+  <ul style="margin:8px 0 0 0; padding-left:20px;">
+    <li><strong>Auto-show on launch</strong> per spec §8 — handoff summary is the entry point. No header, no menubar, no tabs reachable until Start Session is clicked.</li>
+    <li><strong>Identity color scope</strong> per Bible §2.6 + PC redesign spec §5.3: identity stripe (4px top), eyebrow, big-name color, step-number tints, view-toggle "on" pill. NOT used as primary action fill.</li>
+    <li><strong>Big-name treatment:</strong> 48px UI font, 700 weight, 2px letter-spacing, uppercase, identity color. Implements spec §4.3 "displays the incoming user's display name in large uppercase text."</li>
+    <li><strong>Plain-English / Technical toggle</strong> implemented as a passive pill toggle per Bible §6 + PC redesign spec §6.10.1. Default = Plain English.</li>
+    <li><strong>Required copy</strong> from spec §4.3 (numbered actions: open Claude Desktop, open Claude Code, review summary).</li>
+    <li><strong>Escape hatch link</strong> "Something went wrong loading the handoff?" is the §8.3 explicit escape — small, neutral, not styled like a primary action. Hover turns it warn-amber.</li>
+    <li><strong>Start Session</strong> uses semantic green (<code>--ok</code>) safe-action grammar per Bible §6 + PC redesign spec §6.6.</li>
+    <li><strong>Mono</strong> for precision data only: HEAD SHA, branch, package ID, timestamps (Bible §3.4).</li>
+    <li><strong>Surfaces:</strong> dark Bible navy + 6%-alpha identity-color tint over canvas (atmospheric, not a colored panel — Inviolable Rule #9 honored).</li>
+  </ul>
+</aside>
+
+</body>
+</html>

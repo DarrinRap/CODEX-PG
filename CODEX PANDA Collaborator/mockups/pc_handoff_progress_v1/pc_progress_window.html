@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC Progress Window — 4 states (PC_HANDOFF_PROGRESS_SPEC v1 §6)</title>
+<style>
+:root {
+  --canvas:        #14141f;
+  --chrome:        #161625;
+  --pane:          #1a1a2e;
+  --pane-2:        #22223a;
+  --pane-sel:      #2a2a4e;
+  --border-soft:   #232336;
+  --border:        #2a2a3e;
+  --border-hover:  #3a3a4e;
+  --text:          #e0ddd5;
+  --muted:         #888888;
+  --dim:           #555555;
+  --accent:        #e8a87c;
+  --accent-soft:   rgba(232, 168, 124, 0.12);
+  --accent-border: rgba(232, 168, 124, 0.45);
+  --accent-ink:    #14141f;
+  --ok:            #7fb069;
+  --ok-soft:       rgba(127, 176, 105, 0.12);
+  --ok-border:     rgba(127, 176, 105, 0.45);
+  --warn:          #f39c12;
+  --warn-soft:     rgba(243, 156, 18, 0.12);
+  --warn-border:   rgba(243, 156, 18, 0.45);
+  --err:           #e74c3c;
+  --err-soft:      rgba(231, 76, 60, 0.12);
+  --err-border:    rgba(231, 76, 60, 0.45);
+  --user1:         #e8a87c;
+  --user2:         #5fa0a8;
+  --ui:            "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;
+  --mono:          "Cascadia Mono", "Consolas", monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{background:var(--canvas); color:var(--text); font:13px/1.4 var(--ui); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column}
+
+/* Doc head */
+.doc-head{padding:28px 32px 18px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--pane) 0%,var(--canvas) 100%)}
+.doc-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px}
+.doc-head h1{font-size:18px; font-weight:600; letter-spacing:.2px; margin-bottom:4px}
+.doc-head .meta{font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:18px; flex-wrap:wrap; margin-top:8px}
+.doc-head .meta b{color:var(--muted); font-weight:500}
+
+/* State rail */
+.state-rail{display:flex; gap:6px; padding:14px 32px; border-bottom:1px solid var(--border); background:var(--chrome); position:sticky; top:0; z-index:10; flex-wrap:wrap}
+.state-rail .group-cap{font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-weight:500; align-self:center; margin:0 6px 0 4px}
+.state-rail label{font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:6px 11px; border:1px solid var(--border-hover); border-radius:3px; background:var(--pane-2); cursor:pointer}
+.state-rail label:hover{border-color:var(--accent-border); color:var(--accent)}
+.state-rail input{display:none}
+.state-rail input:checked + label{background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent)}
+
+.stage{padding:24px 32px; flex:1; display:flex; flex-direction:column; gap:14px; align-items:center}
+.stage-cap{font-family:var(--mono); font-size:10px; letter-spacing:1.4px; color:var(--accent); text-transform:uppercase; font-weight:600; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; align-self:stretch}
+.stage-cap .num{color:var(--dim)}
+.stage-cap .title-text{color:var(--text); font-weight:500; font-family:var(--ui); font-size:12px; letter-spacing:.2px; text-transform:none}
+
+/* PC viewport — 1366×768, dimmed when modal is up */
+.pc-viewport{
+  width:1366px; max-width:100%; height:768px;
+  background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; display:flex; flex-direction:column;
+  font-family:var(--ui); position:relative;
+}
+
+/* Backdrop layer — under the modal, dims the app behind */
+.pc-backdrop{
+  position:absolute; inset:0;
+  background:rgba(10,10,20,0.66);
+  display:flex; align-items:center; justify-content:center;
+  padding:32px;
+}
+
+/* Faint behind-app silhouette so the dim has context */
+.behind{
+  position:absolute; inset:0;
+  background:var(--canvas);
+  opacity:0.55;
+  display:flex; flex-direction:column;
+}
+.behind .h{height:46px; background:var(--chrome); border-bottom:1px solid var(--border)}
+.behind .s{height:26px; background:var(--pane); border-bottom:1px solid var(--border-soft)}
+.behind .w{height:60px; background:var(--canvas); border-bottom:1px solid var(--border-soft)}
+.behind .b{flex:1; background:var(--canvas)}
+
+/* === Progress window === */
+.progress-modal{
+  width:760px; max-width:100%;
+  background:var(--pane);
+  border:1px solid var(--border-hover);
+  border-radius:6px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.6);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.pm-header{
+  display:flex; align-items:center; gap:14px;
+  padding:16px 22px;
+  background:var(--chrome);
+  border-bottom:1px solid var(--border);
+}
+.pm-eyebrow{font-family:var(--mono); font-size:9.5px; letter-spacing:1.4px; text-transform:uppercase; color:var(--accent); font-weight:700}
+.pm-title{font-size:14px; font-weight:600; color:var(--text)}
+.pm-sub{font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:auto}
+
+/* Overall progress bar */
+.pm-bar-wrap{padding:18px 22px 12px; background:var(--pane); border-bottom:1px solid var(--border-soft)}
+.pm-bar-meta{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px}
+.pm-bar-label{font-size:12.5px; font-weight:600; color:var(--text)}
+.pm-bar-pct{font-family:var(--mono); font-size:11px; color:var(--muted)}
+.pm-bar-track{
+  height:8px; background:var(--pane-2);
+  border:1px solid var(--border); border-radius:4px;
+  overflow:hidden;
+}
+.pm-bar-fill{
+  height:100%;
+  transition: width 0.15s ease, background 0.15s ease;
+}
+.pm-bar-fill.in-progress{background:var(--accent)}
+.pm-bar-fill.pass{background:var(--ok)}
+.pm-bar-fill.amber{background:var(--warn)}
+.pm-bar-fill.fail{background:var(--err)}
+
+/* Step list */
+.pm-steps{
+  padding:6px 22px 18px;
+  background:var(--pane);
+  max-height:430px; overflow-y:auto;
+}
+.pm-step{
+  display:grid;
+  grid-template-columns:34px 1fr auto;
+  gap:14px;
+  padding:9px 0;
+  border-bottom:1px solid var(--border-soft);
+  align-items:start;
+}
+.pm-step:last-child{border-bottom:none}
+.pm-step-num{
+  font-family:var(--mono); font-size:11px; color:var(--dim); font-weight:700;
+  align-self:center;
+}
+.pm-step-label{
+  color:var(--text); font-size:13px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.pm-step-remediation{
+  font-size:11.5px; color:var(--muted);
+  font-style:italic;
+}
+.pm-step-status{
+  align-self:center;
+  font-family:var(--mono); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; font-weight:700;
+  padding:3px 10px; border-radius:3px; min-width:74px; text-align:center;
+}
+.pm-step-status.queued{background:var(--pane-2); color:var(--dim); border:1px solid var(--border)}
+.pm-step-status.running{background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-border)}
+.pm-step-status.pass{background:var(--ok-soft); color:var(--ok); border:1px solid var(--ok-border)}
+.pm-step-status.fail{background:var(--err-soft); color:var(--err); border:1px solid var(--err-border)}
+.pm-step.failed .pm-step-num{color:var(--err)}
+.pm-step.passed .pm-step-num{color:var(--ok)}
+
+/* Spinner inline-glyph (CSS-only, not motion-heavy) */
+.spinner{
+  display:inline-block; width:11px; height:11px;
+  border:2px solid var(--accent-soft); border-top-color:var(--accent);
+  border-radius:50%; vertical-align:-1px; margin-right:6px;
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Footer */
+.pm-footer{
+  display:flex; align-items:center; gap:12px;
+  padding:14px 22px;
+  background:var(--chrome);
+  border-top:1px solid var(--border);
+}
+.pm-footer-msg{flex:1; color:var(--muted); font-size:12px}
+.pm-footer-msg.warn{color:var(--warn)}
+.pm-footer-msg.err{color:var(--err)}
+
+/* Buttons — Bible §6 grammar — squared/lightly-rectangular */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:36px; padding:0 18px;
+  background:var(--pane-2); color:var(--text);
+  border:1px solid var(--border-hover); border-radius:4px;
+  font:600 12.5px/1 var(--ui); letter-spacing:0.2px;
+  cursor:pointer; transition:background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn:hover{border-color:var(--accent-border); color:var(--accent)}
+.btn.primary{
+  background:var(--ok); border-color:var(--ok); color:var(--accent-ink);
+}
+.btn.primary:hover{background:#8fbe78; border-color:#8fbe78}
+.btn.danger{
+  background:var(--err-soft); border-color:var(--err); color:var(--err);
+}
+.btn.danger:hover{background:var(--err); color:var(--accent-ink)}
+.btn.disabled, .btn:disabled{
+  background:var(--pane); color:var(--dim);
+  border-color:var(--border); cursor:not-allowed;
+}
+.btn.disabled:hover, .btn:disabled:hover{border-color:var(--border); color:var(--dim)}
+
+/* Hard-block banner shown beneath progress bar when component-fail */
+.hard-block{
+  margin:14px 22px 0;
+  padding:11px 14px;
+  background:var(--err-soft); border:1px solid var(--err-border); border-radius:4px;
+  display:flex; align-items:center; gap:10px;
+}
+.hard-block-icon{
+  width:18px; height:18px; flex-shrink:0;
+  border-radius:50%;
+  background:var(--err); color:var(--accent-ink);
+  display:inline-flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:11px;
+}
+.hard-block-msg{color:var(--err); font-size:12px; font-weight:600}
+
+/* State containers — only one rendered via :checked + */
+.state-pane{display:none}
+
+/* Wire radios to panes */
+#st-running:checked ~ .stage .state-pane[data-st="running"],
+#st-allpass:checked ~ .stage .state-pane[data-st="allpass"],
+#st-foundfail:checked ~ .stage .state-pane[data-st="foundfail"],
+#st-compfail:checked ~ .stage .state-pane[data-st="compfail"]{
+  display:flex; flex-direction:column; align-items:center; gap:14px; align-self:stretch;
+}
+
+.legend{
+  margin:32px 32px 64px; padding:18px 22px;
+  background:var(--pane);
+  border-left:3px solid var(--accent);
+  font-size:12px; line-height:1.6; color:var(--muted);
+  border-radius:0 4px 4px 0;
+}
+.legend strong{color:var(--text)}
+.legend code{
+  font-family:var(--mono); background:var(--pane-2);
+  border:1px solid var(--border); color:var(--accent);
+  padding:1px 5px; font-size:11px; border-radius:3px;
+}
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="eyebrow">PC handoff progress · v1 mockup</div>
+  <h1>Progress Window — 4 states (Spec §6)</h1>
+  <div class="meta">
+    <span><b>Operations:</b> Create Safe Handoff (Steps 1–8)</span>
+    <span><b>Surfaces:</b> in-progress · all-pass · foundational fail · component fail</span>
+    <span><b>Bible:</b> dark surfaces · rectangular buttons · pills passive</span>
+    <span><b>Spec:</b> PC_HANDOFF_PROGRESS_SPEC_v1 §6 + §7</span>
+  </div>
+</header>
+
+<input type="radio" name="state" id="st-running" checked hidden>
+<input type="radio" name="state" id="st-allpass" hidden>
+<input type="radio" name="state" id="st-foundfail" hidden>
+<input type="radio" name="state" id="st-compfail" hidden>
+
+<div class="state-rail">
+  <span class="group-cap">State</span>
+  <label for="st-running">In progress · step 4/8</label>
+  <label for="st-allpass">All PASS · ready</label>
+  <label for="st-foundfail">Foundational FAIL · step 2</label>
+  <label for="st-compfail">Component FAIL · steps 4–5</label>
+</div>
+
+<main class="stage">
+
+  <!-- =================== STATE 1: IN-PROGRESS =================== -->
+  <div class="state-pane" data-st="running">
+    <div class="stage-cap">
+      <span class="num">1 of 4</span>
+      <span class="title-text">Step 4 of 8 running. Spinner on Step 4. Bar at 38% accent. Done is greyed because steps 4–8 haven't completed yet.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="behind">
+        <div class="h"></div><div class="s"></div><div class="w"></div><div class="b"></div>
+      </div>
+      <div class="pc-backdrop">
+        <div class="progress-modal">
+          <div class="pm-header">
+            <span class="pm-eyebrow">Create Safe Handoff</span>
+            <span class="pm-title">Building handoff package…</span>
+            <span class="pm-sub">started 18:42:11</span>
+          </div>
+          <div class="pm-bar-wrap">
+            <div class="pm-bar-meta">
+              <span class="pm-bar-label">Step 4 of 8 — Write unstaged-working-tree.patch</span>
+              <span class="pm-bar-pct">38%</span>
+            </div>
+            <div class="pm-bar-track"><div class="pm-bar-fill in-progress" style="width:38%"></div></div>
+          </div>
+          <div class="pm-steps">
+            <div class="pm-step passed">
+              <span class="pm-step-num">1</span>
+              <span class="pm-step-label">Resolve git root</span>
+              <span class="pm-step-status pass">✓ pass</span>
+            </div>
+            <div class="pm-step passed">
+              <span class="pm-step-num">2</span>
+              <span class="pm-step-label">Read branch / HEAD / status</span>
+              <span class="pm-step-status pass">✓ pass</span>
+            </div>
+            <div class="pm-step passed">
+              <span class="pm-step-num">3</span>
+              <span class="pm-step-label">Create protection branch</span>
+              <span class="pm-step-status pass">✓ pass</span>
+            </div>
+            <div class="pm-step">
+              <span class="pm-step-num">4</span>
+              <span class="pm-step-label"><span class="spinner"></span>Write unstaged patch</span>
+              <span class="pm-step-status running">running</span>
+            </div>
+            <div class="pm-step">
+              <span class="pm-step-num">5</span>
+              <span class="pm-step-label">Write staged patch</span>
+              <span class="pm-step-status queued">queued</span>
+            </div>
+            <div class="pm-step">
+              <span class="pm-step-num">6</span>
+              <span class="pm-step-label">Copy changed files</span>
+              <span class="pm-step-status queued">queued</span>
+            </div>
+            <div class="pm-step">
+              <span class="pm-step-num">7a</span>
+              <span class="pm-step-label">Write manifest.json</span>
+              <span class="pm-step-status queued">queued</span>
+            </div>
+            <div class="pm-step">
+              <span class="pm-step-num">7b</span>
+              <span class="pm-step-label">Write HANDOFF.md</span>
+              <span class="pm-step-status queued">queued</span>
+            </div>
+          </div>
+          <div class="pm-footer">
+            <span class="pm-footer-msg">Working — please wait. Don't close PC until all steps complete.</span>
+            <button class="btn primary disabled" disabled>Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== STATE 2: ALL PASS =================== -->
+  <div class="state-pane" data-st="allpass">
+    <div class="stage-cap">
+      <span class="num">2 of 4</span>
+      <span class="title-text">All 8 steps passed. Bar 100% green. Done activates and dismisses to the Outgoing Confirmation screen (§4.2).</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="behind">
+        <div class="h"></div><div class="s"></div><div class="w"></div><div class="b"></div>
+      </div>
+      <div class="pc-backdrop">
+        <div class="progress-modal">
+          <div class="pm-header">
+            <span class="pm-eyebrow">Create Safe Handoff</span>
+            <span class="pm-title">Handoff package created.</span>
+            <span class="pm-sub">completed 18:42:24</span>
+          </div>
+          <div class="pm-bar-wrap">
+            <div class="pm-bar-meta">
+              <span class="pm-bar-label">All 8 steps passed</span>
+              <span class="pm-bar-pct">100%</span>
+            </div>
+            <div class="pm-bar-track"><div class="pm-bar-fill pass" style="width:100%"></div></div>
+          </div>
+          <div class="pm-steps">
+            <div class="pm-step passed"><span class="pm-step-num">1</span><span class="pm-step-label">Resolve git root</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">2</span><span class="pm-step-label">Read branch / HEAD / status</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">3</span><span class="pm-step-label">Create protection branch</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">4</span><span class="pm-step-label">Write unstaged patch</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">5</span><span class="pm-step-label">Write staged patch</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">6</span><span class="pm-step-label">Copy changed files</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">7a</span><span class="pm-step-label">Write manifest.json</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">7b</span><span class="pm-step-label">Write HANDOFF.md</span><span class="pm-step-status pass">✓ pass</span></div>
+          </div>
+          <div class="pm-footer">
+            <span class="pm-footer-msg">Click Done to close this window. The handoff confirmation will appear next.</span>
+            <button class="btn">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== STATE 3: FOUNDATIONAL FAIL =================== -->
+  <div class="state-pane" data-st="foundfail">
+    <div class="stage-cap">
+      <span class="num">3 of 4</span>
+      <span class="title-text">Step 2 fails (HEAD unreadable). Bar halts at 12% red. Steps 3–8 don't run. Hand off to [User] stays locked. Retry from Step 1.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="behind">
+        <div class="h"></div><div class="s"></div><div class="w"></div><div class="b"></div>
+      </div>
+      <div class="pc-backdrop">
+        <div class="progress-modal">
+          <div class="pm-header">
+            <span class="pm-eyebrow">Create Safe Handoff</span>
+            <span class="pm-title">Foundational step failed.</span>
+            <span class="pm-sub">stopped 18:42:14</span>
+          </div>
+          <div class="pm-bar-wrap">
+            <div class="pm-bar-meta">
+              <span class="pm-bar-label">Stopped at Step 2 — protection cannot proceed</span>
+              <span class="pm-bar-pct">12%</span>
+            </div>
+            <div class="pm-bar-track"><div class="pm-bar-fill fail" style="width:12%"></div></div>
+          </div>
+          <div class="hard-block">
+            <span class="hard-block-icon">!</span>
+            <span class="hard-block-msg">FOUNDATIONAL FAILURE — handoff cannot start until Steps 1–2 succeed.</span>
+          </div>
+          <div class="pm-steps">
+            <div class="pm-step passed">
+              <span class="pm-step-num">1</span>
+              <span class="pm-step-label">Resolve git root</span>
+              <span class="pm-step-status pass">✓ pass</span>
+            </div>
+            <div class="pm-step failed">
+              <span class="pm-step-num">2</span>
+              <span class="pm-step-label">Read branch / HEAD / status
+                <span class="pm-step-remediation">→ HEAD reference is corrupt or missing. Run <code>git fsck</code> in your repo, then retry.</span>
+              </span>
+              <span class="pm-step-status fail">✗ fail</span>
+            </div>
+            <div class="pm-step"><span class="pm-step-num">3</span><span class="pm-step-label">Create protection branch</span><span class="pm-step-status queued">skipped</span></div>
+            <div class="pm-step"><span class="pm-step-num">4</span><span class="pm-step-label">Write unstaged patch</span><span class="pm-step-status queued">skipped</span></div>
+            <div class="pm-step"><span class="pm-step-num">5</span><span class="pm-step-label">Write staged patch</span><span class="pm-step-status queued">skipped</span></div>
+            <div class="pm-step"><span class="pm-step-num">6</span><span class="pm-step-label">Copy changed files</span><span class="pm-step-status queued">skipped</span></div>
+            <div class="pm-step"><span class="pm-step-num">7a</span><span class="pm-step-label">Write manifest.json</span><span class="pm-step-status queued">skipped</span></div>
+            <div class="pm-step"><span class="pm-step-num">7b</span><span class="pm-step-label">Write HANDOFF.md</span><span class="pm-step-status queued">skipped</span></div>
+          </div>
+          <div class="pm-footer">
+            <span class="pm-footer-msg err">No partial package was created. Hand off button is locked.</span>
+            <button class="btn">View Full Log</button>
+            <button class="btn danger">Retry from Step 1</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== STATE 4: COMPONENT FAIL =================== -->
+  <div class="state-pane" data-st="compfail">
+    <div class="stage-cap">
+      <span class="num">4 of 4</span>
+      <span class="title-text">Steps 4–5 fail (disk space) but Steps 6–8 still run. Bar 100% amber (INCOMPLETE, not full green). Hand off button locked. Retry scoped to failed steps only.</span>
+    </div>
+    <div class="pc-viewport">
+      <div class="behind">
+        <div class="h"></div><div class="s"></div><div class="w"></div><div class="b"></div>
+      </div>
+      <div class="pc-backdrop">
+        <div class="progress-modal">
+          <div class="pm-header">
+            <span class="pm-eyebrow">Create Safe Handoff</span>
+            <span class="pm-title">Component failures — handoff INCOMPLETE.</span>
+            <span class="pm-sub">completed 18:42:31</span>
+          </div>
+          <div class="pm-bar-wrap">
+            <div class="pm-bar-meta">
+              <span class="pm-bar-label">All 8 steps ran. 6 PASS / 2 FAIL.</span>
+              <span class="pm-bar-pct">100%</span>
+            </div>
+            <div class="pm-bar-track"><div class="pm-bar-fill amber" style="width:100%"></div></div>
+          </div>
+          <div class="hard-block">
+            <span class="hard-block-icon">!</span>
+            <span class="hard-block-msg">HANDOFF INCOMPLETE — Hand off to [User] is locked until all steps pass.</span>
+          </div>
+          <div class="pm-steps">
+            <div class="pm-step passed"><span class="pm-step-num">1</span><span class="pm-step-label">Resolve git root</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">2</span><span class="pm-step-label">Read branch / HEAD / status</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">3</span><span class="pm-step-label">Create protection branch</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step failed">
+              <span class="pm-step-num">4</span>
+              <span class="pm-step-label">Write unstaged patch
+                <span class="pm-step-remediation">→ C:\ has less than 200 MB free. Free disk space, then retry.</span>
+              </span>
+              <span class="pm-step-status fail">✗ fail</span>
+            </div>
+            <div class="pm-step failed">
+              <span class="pm-step-num">5</span>
+              <span class="pm-step-label">Write staged patch
+                <span class="pm-step-remediation">→ C:\ has less than 200 MB free. Free disk space, then retry.</span>
+              </span>
+              <span class="pm-step-status fail">✗ fail</span>
+            </div>
+            <div class="pm-step passed"><span class="pm-step-num">6</span><span class="pm-step-label">Copy changed files</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">7a</span><span class="pm-step-label">Write manifest.json</span><span class="pm-step-status pass">✓ pass</span></div>
+            <div class="pm-step passed"><span class="pm-step-num">7b</span><span class="pm-step-label">Write HANDOFF.md</span><span class="pm-step-status pass">✓ pass</span></div>
+          </div>
+          <div class="pm-footer">
+            <span class="pm-footer-msg warn">Protection branch + file copies + manifest exist. Patch files are missing.</span>
+            <button class="btn">View Full Log</button>
+            <button class="btn danger">Retry Steps 4–5</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<aside class="legend">
+  <strong>Bible compliance notes</strong>
+  <ul style="margin:8px 0 0 0; padding-left:20px;">
+    <li><strong>Surfaces:</strong> all dark Bible navy — <code>--canvas</code>, <code>--chrome</code>, <code>--pane</code>, <code>--pane-2</code> (no white/cream — Inviolable Rule #9).</li>
+    <li><strong>Buttons:</strong> rectangular, 36px height, <code>radius-md</code> (4px), Bible <code>.gbtn</code> grammar. Done is dismiss-and-reveal only (per §6.2) — neutral secondary, NOT green primary. The safe-action green primary lives on the Outgoing Confirmation screen's "Hand Off to [Name]" button. Retry is danger; View Full Log is neutral.</li>
+    <li><strong>Pills:</strong> only on the per-step status column (queued / running / pass / fail). Pills never perform work — they're passive state indicators per Bible §6.</li>
+    <li><strong>Color semantics:</strong> green = pass / ready, accent = in-progress, amber = INCOMPLETE warning, red = fail / hard-block. User identity colors NOT used here (this is a procedural surface, not a user-identity surface) — matches PC redesign spec §5.3.</li>
+    <li><strong>Mono fonts</strong> used only for precision data — <code>--mono</code> on step numbers, percentages, timestamps, status pills (per Bible §3.4).</li>
+    <li><strong>Hard-block banner</strong> uses <code>--err-soft</code> background + <code>--err-border</code> + bold <code>--err</code> text — explicit per spec §7.4.</li>
+    <li><strong>Spinner</strong> uses 1.5s linear motion (Bible §4.3 motion lock — no bounce/spring/elastic).</li>
+    <li><strong>Done button disabled</strong> in In-Progress and Foundational-Fail states (only available when all steps 1–7b PASS — spec §6.2).</li>
+    <li><strong>Retry scope</strong> shown in button text per spec §6.3 / §7.5: "Retry from Step 1" (foundational) vs "Retry Steps 4–5" (component, named subset).</li>
+  </ul>
+</aside>
+
+</body>
+</html>
