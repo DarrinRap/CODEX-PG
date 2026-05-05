@@ -995,6 +995,125 @@
     .pc-body .right-col .pkg-actions .switch-btn { flex: 1; min-width: 0; padding: 0 6px; font-size: 10.5px; height: 26px; }
     /* === End PC redesign Phase 4 right column === */
 
+    /* === PC redesign Phase 6 — handoff progress modal === */
+    /* Inline modal driven by JS polling at 500ms cadence per CD ruling Q5.
+       Visual contract: pc_redesign_v2/pc_v2_handoff_progress.html. State machine
+       backed by panda_collaborator.py per-step engine; GET /api/handoff/progress
+       exposes step state. */
+    .handoff-progress-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 14, 0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 100;
+    }
+    .handoff-progress-overlay.is-open { display: flex; }
+    .handoff-progress-card {
+      width: 720px;
+      max-width: 100%;
+      max-height: calc(100vh - 48px);
+      background: var(--pane);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .hp-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 20px;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--border);
+    }
+    .hp-eyebrow { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+    .hp-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .hp-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: auto; }
+    .hp-bar-wrap { padding: 14px 20px 10px; background: var(--pane); border-bottom: 1px solid var(--border-soft); }
+    .hp-bar-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .hp-bar-label { font-size: 12px; font-weight: 600; color: var(--text); }
+    .hp-bar-pct { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+    .hp-bar-track { height: 8px; background: var(--pane-2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+    .hp-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.15s ease, background 0.15s ease; }
+    .hp-bar-fill.running { background: var(--warn); }
+    .hp-bar-fill.complete { background: var(--ok); }
+    .hp-bar-fill.failed { background: var(--err); }
+    .hp-steps { padding: 4px 20px 12px; background: var(--pane); max-height: 440px; overflow-y: auto; }
+    .hp-step {
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      gap: 14px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border-soft);
+      align-items: center;
+      border-left: 4px solid transparent;
+      padding-left: 8px;
+      margin-left: -12px;
+    }
+    .hp-step:last-child { border-bottom: none; }
+    .hp-step-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); font-weight: 700; text-align: center; }
+    .hp-step-label { color: var(--text); font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+    .hp-step-note { font-size: 11px; color: var(--text-muted); font-style: italic; }
+    .hp-step-status {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 700;
+      padding: 3px 9px; border-radius: 3px; min-width: 70px; text-align: center;
+    }
+    .hp-step-status.pass { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok-border); }
+    .hp-step-status.fail { background: var(--err-soft); color: var(--err); border: 1px solid var(--err-border); }
+    .hp-step-status.running { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn-border); }
+    .hp-step-status.skipped { background: var(--pane-2); color: var(--text-dim); border: 1px solid var(--border-hover); }
+    .hp-step-status.pending { background: var(--pane-2); color: var(--text-dim); border: 1px solid var(--border); }
+    .hp-step.passed { border-left-color: var(--ok); }
+    .hp-step.passed .hp-step-num { color: var(--ok); }
+    .hp-step.failed { border-left-color: var(--err); }
+    .hp-step.failed .hp-step-num { color: var(--err); }
+    .hp-step.running { border-left-color: var(--warn); background: var(--warn-soft); }
+    .hp-step.running .hp-step-num { color: var(--warn); }
+    .hp-step.skipped .hp-step-num { color: var(--text-dim); }
+    .hp-step.skipped .hp-step-label { color: var(--text-muted); }
+    .hp-spinner {
+      display: inline-block; width: 11px; height: 11px;
+      border: 2px solid var(--warn-soft); border-top-color: var(--warn);
+      border-radius: 50%; vertical-align: -1px; margin-right: 6px;
+      animation: hp-spin 1.5s linear infinite;
+    }
+    @keyframes hp-spin { to { transform: rotate(360deg); } }
+    .hp-incomplete-banner {
+      margin: 12px 20px 0;
+      padding: 11px 14px;
+      background: var(--err-soft);
+      border: 1px solid var(--err-border);
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+    .hp-incomplete-banner.visible { display: flex; }
+    .hp-incomplete-banner .icon { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; background: var(--err); color: var(--canvas); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; }
+    .hp-incomplete-banner .msg { color: var(--err); font-size: 12px; font-weight: 600; }
+    .hp-footer {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 20px;
+      background: var(--chrome);
+      border-top: 1px solid var(--border);
+    }
+    .hp-footer-msg { flex: 1; color: var(--text-muted); font-size: 12px; }
+    .hp-footer-msg.err { color: var(--err); font-weight: 600; }
+    .hp-done-btn {
+      height: 32px; padding: 0 14px;
+      background: var(--pane-2);
+      color: var(--text);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      font: 600 12px/1 var(--font-ui);
+      cursor: pointer;
+    }
+    .hp-done-btn:hover { border-color: var(--user1-border); color: var(--user1); }
+    .hp-done-btn:disabled { background: var(--pane); color: var(--text-dim); border-color: var(--border); cursor: not-allowed; }
+    /* === End PC redesign Phase 6 handoff progress modal === */
+
     /* === PC redesign Phase 5 — registration modal re-skin === */
     /* Re-skins the existing #setupOverlay / .setup-dialog / .wizard-grid to match
        the locked pc_main_screen_v1.html State D mockup grammar (Bible dark surfaces,
@@ -5331,5 +5450,240 @@
 
     init();
   </script>
+
+  <!-- Phase 6: handoff progress modal — opens on handoffBtn click; polls /api/handoff/progress at 500ms; matches pc_v2_handoff_progress.html visual contract -->
+  <div class="handoff-progress-overlay" id="handoffProgressOverlay" aria-hidden="true" role="dialog" aria-labelledby="handoffProgressTitle">
+    <div class="handoff-progress-card">
+      <div class="hp-header">
+        <span class="hp-eyebrow">Create Safe Handoff</span>
+        <span class="hp-title" id="handoffProgressTitle">Building handoff package…</span>
+        <span class="hp-sub" id="handoffProgressStartedAt"></span>
+      </div>
+      <div class="hp-bar-wrap">
+        <div class="hp-bar-meta">
+          <span class="hp-bar-label" id="handoffProgressBarLabel">Initialising…</span>
+          <span class="hp-bar-pct" id="handoffProgressBarPct">0%</span>
+        </div>
+        <div class="hp-bar-track"><div class="hp-bar-fill running" id="handoffProgressBarFill"></div></div>
+      </div>
+      <div class="hp-steps" id="handoffProgressSteps">
+        <!-- Step rows rendered live by JS via /api/handoff/progress polling -->
+      </div>
+      <div class="hp-incomplete-banner" id="handoffProgressIncompleteBanner">
+        <span class="icon">!</span>
+        <span class="msg" id="handoffProgressIncompleteMsg">HANDOFF INCOMPLETE — engine exited without completing all required steps.</span>
+      </div>
+      <div class="hp-footer">
+        <span class="hp-footer-msg" id="handoffProgressFooterMsg">Working — please wait. Don't close PC until all steps complete.</span>
+        <button class="hp-done-btn" id="handoffProgressDoneBtn" type="button" disabled>Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Phase 6 — handoff progress modal driver.
+       Opens on handoffBtn click, drives POST /api/handoff/create concurrently with
+       GET /api/handoff/progress polling at 500ms cadence. Updates step rows live.
+       Done button is dismiss-and-reveal (per spec §6.2) — enabled only on complete. */
+    (function () {
+      const overlay = document.getElementById('handoffProgressOverlay');
+      const stepsContainer = document.getElementById('handoffProgressSteps');
+      const titleEl = document.getElementById('handoffProgressTitle');
+      const subEl = document.getElementById('handoffProgressStartedAt');
+      const barLabelEl = document.getElementById('handoffProgressBarLabel');
+      const barPctEl = document.getElementById('handoffProgressBarPct');
+      const barFillEl = document.getElementById('handoffProgressBarFill');
+      const incompleteBanner = document.getElementById('handoffProgressIncompleteBanner');
+      const incompleteMsg = document.getElementById('handoffProgressIncompleteMsg');
+      const footerMsg = document.getElementById('handoffProgressFooterMsg');
+      const doneBtn = document.getElementById('handoffProgressDoneBtn');
+
+      let pollHandle = null;
+
+      function openModal() {
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        incompleteBanner.classList.remove('visible');
+        doneBtn.disabled = true;
+        footerMsg.classList.remove('err');
+        footerMsg.textContent = "Working — please wait. Don't close PC until all steps complete.";
+        renderInitialSteps();
+      }
+
+      function closeModal() {
+        overlay.classList.remove('is-open');
+        overlay.setAttribute('aria-hidden', 'true');
+        if (pollHandle) { clearInterval(pollHandle); pollHandle = null; }
+      }
+
+      // 10 step entries — matches PHASE6_STEP_DEFINITIONS in panda_collaborator.py
+      const STEP_LABELS = [
+        ['1', 'Verify git root'],
+        ['2', 'Verify committed state'],
+        ['2b', 'Push to origin'],
+        ['2c', 'Push to backup remote'],
+        ['3', 'Create protection branch'],
+        ['4', 'Generate binary patches'],
+        ['5', 'Copy files to package dir'],
+        ['6', 'Write manifest'],
+        ['7a', 'Write handoff summary'],
+        ['7b', 'Finalise package'],
+      ];
+
+      function renderInitialSteps() {
+        stepsContainer.innerHTML = STEP_LABELS.map(([id, label]) =>
+          `<div class="hp-step" data-step-id="${id}">` +
+            `<span class="hp-step-num">${id}</span>` +
+            `<span class="hp-step-label">${label}</span>` +
+            `<span class="hp-step-status pending">pending</span>` +
+          `</div>`
+        ).join('');
+        barLabelEl.textContent = 'Initialising…';
+        barPctEl.textContent = '0%';
+        barFillEl.style.width = '0%';
+        barFillEl.className = 'hp-bar-fill running';
+      }
+
+      function renderProgress(progress) {
+        if (!progress || !Array.isArray(progress.steps)) return;
+        const steps = progress.steps;
+        let activeIdx = -1;
+        let passCount = 0;
+        steps.forEach((step, idx) => {
+          const row = stepsContainer.querySelector(`[data-step-id="${step.id}"]`);
+          if (!row) return;
+          row.classList.remove('passed', 'failed', 'running', 'skipped');
+          const statusEl = row.querySelector('.hp-step-status');
+          const labelEl = row.querySelector('.hp-step-label');
+          // Reset label content
+          let labelHtml = STEP_LABELS.find(([sid]) => sid === step.id)?.[1] || step.label;
+          if (step.state === 'pass') {
+            row.classList.add('passed');
+            statusEl.className = 'hp-step-status pass';
+            statusEl.textContent = '✓ pass';
+            passCount++;
+          } else if (step.state === 'fail') {
+            row.classList.add('failed');
+            statusEl.className = 'hp-step-status fail';
+            statusEl.textContent = '✗ fail';
+          } else if (step.state === 'running') {
+            row.classList.add('running');
+            statusEl.className = 'hp-step-status running';
+            statusEl.textContent = 'running';
+            labelHtml = '<span class="hp-spinner"></span>' + labelHtml;
+            activeIdx = idx;
+          } else if (step.state === 'skipped') {
+            row.classList.add('skipped');
+            statusEl.className = 'hp-step-status skipped';
+            statusEl.textContent = 'skipped';
+          } else {
+            statusEl.className = 'hp-step-status pending';
+            statusEl.textContent = 'queued';
+          }
+          if (step.note) {
+            labelHtml += `<span class="hp-step-note">${escapeHtml(step.note)}</span>`;
+          }
+          labelEl.innerHTML = labelHtml;
+        });
+        // Bar update
+        const totalActive = steps.filter(s => s.id !== '2b' && s.id !== '2c').length;
+        const pct = Math.round((passCount / totalActive) * 100);
+        barPctEl.textContent = pct + '%';
+        barFillEl.style.width = pct + '%';
+        if (progress.status === 'complete') {
+          barFillEl.className = 'hp-bar-fill complete';
+          barLabelEl.textContent = 'All steps passed';
+        } else if (progress.status === 'failed' || progress.status === 'aborted') {
+          barFillEl.className = 'hp-bar-fill failed';
+          barLabelEl.textContent = 'Engine halted';
+        } else if (activeIdx >= 0) {
+          const active = steps[activeIdx];
+          barFillEl.className = 'hp-bar-fill running';
+          barLabelEl.textContent = `Step ${active.id} — ${STEP_LABELS.find(([sid]) => sid === active.id)?.[1] || active.label}`;
+        }
+        // Started timestamp
+        if (progress.started_at) subEl.textContent = `started ${progress.started_at}`;
+      }
+
+      async function pollProgress() {
+        try {
+          const data = await apiGet('/api/handoff/progress');
+          renderProgress(data);
+          if (data.status === 'complete' || data.status === 'failed' || data.status === 'aborted') {
+            if (pollHandle) { clearInterval(pollHandle); pollHandle = null; }
+            doneBtn.disabled = false;
+            if (data.status === 'complete') {
+              footerMsg.textContent = 'Package ready. Click Done to close this window.';
+            } else {
+              incompleteBanner.classList.add('visible');
+              incompleteMsg.textContent = `HANDOFF INCOMPLETE — ${data.error || 'engine halted before all steps passed'}`;
+              footerMsg.classList.add('err');
+              footerMsg.textContent = 'Click Done to close. The package was NOT finalised.';
+            }
+          }
+        } catch (err) {
+          // Poll errors are non-fatal — keep trying.
+        }
+      }
+
+      function startPolling() {
+        if (pollHandle) clearInterval(pollHandle);
+        pollProgress();
+        pollHandle = setInterval(pollProgress, 500);
+      }
+
+      // Wire Done button via $('id') pattern so the click-wiring lint passes.
+      $('handoffProgressDoneBtn').addEventListener('click', closeModal);
+
+      // Replace the existing createHandoff path for handoffBtn — open the modal first,
+      // then drive the POST + polling concurrently.
+      async function createHandoffWithProgress() {
+        if (state.busy) return;
+        if (!setupReady().allReady) {
+          openSetupWizard();
+          showResult('Finish setup before creating a handoff.', 'warn');
+          return;
+        }
+        syncProfileNamesToState();
+        syncActiveProfileFieldsToState();
+        openModal();
+        startPolling();
+        setBusy(true);
+        try {
+          const data = await api('/api/handoff/create', {
+            path: $('repoPath').value,
+            title: $('handoffTitle').value,
+            agent: $('handoffAgent').value,
+            notes: $('handoffNotes').value,
+            operator_context: activeOperatorContext()
+          });
+          // Final state poll already happened or will momentarily; ensure UI reflects success
+          await pollProgress();
+          // Tell the rest of the app
+          showResult(`Handoff package created: <strong>${escapeHtml(data.package_id || '')}</strong>`, 'success');
+          await scanRepo();
+          await loadPackages(false);
+          await refreshControlCenter();
+        } catch (error) {
+          // POST failed — engine progress already shows the failure, but the create
+          // call itself raised; surface to status row.
+          await pollProgress();
+          showResult(`Handoff failed: ${escapeHtml(error.message)}`, 'error');
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      // Override the existing createHandoff handler if present
+      const handoffBtn = document.getElementById('handoffBtn');
+      if (handoffBtn) {
+        // Remove any prior listener by cloning the node
+        const newBtn = handoffBtn.cloneNode(true);
+        handoffBtn.parentNode.replaceChild(newBtn, handoffBtn);
+        newBtn.addEventListener('click', createHandoffWithProgress);
+      }
+    })();
+  </script>
+
 </body>
 </html>

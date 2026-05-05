@@ -1511,6 +1511,19 @@ def run_pc_action_test() -> dict[str, Any]:
         result["messages_created"] = [bob_message["id"], karen_message["id"]]
         test_checkpoint(checkpoints, "Switch users and save messages", True, "Saved one Bob note and one Karen note.")
 
+        # Phase 6: PC_HANDOFF_PROGRESS_SPEC v1.1 + CD ruling 20260504_008308 require
+        # a clean working tree before handoff (Step 2 verifies committed state, never
+        # commits). The action-test sandbox deliberately creates dirty state above to
+        # exercise the scan/dashboard paths; commit those changes here so Step 2 passes
+        # and the rest of the action test (handoff package creation, inspect, restore
+        # preview) still exercises the engine. The commit is local to the sandbox repo
+        # and never reaches a real workspace.
+        run_command(["git", "add", "-A"], cwd=Path(fake_repo))
+        run_command(
+            ["git", "commit", "-m", "PC action test sandbox: commit dirty changes before handoff"],
+            cwd=Path(fake_repo),
+        )
+
         handoff = create_handoff_package(
             fake_repo,
             "Bob Karen local-only action test handoff",
@@ -1526,8 +1539,11 @@ def run_pc_action_test() -> dict[str, Any]:
         test_checkpoint(
             checkpoints,
             "Create safe handoff",
-            len(patches) == 2 and len(copies) >= 3 and handoff["safety_receipt"]["stash_used"] is False,
-            f"Created package with {len(patches)} patches, {len(copies)} copied files, and {len(skipped)} skipped deleted paths.",
+            # Phase 6: tree is committed before handoff per spec §9; patches will be
+            # empty (0 bytes) and copies will be 0. Verify infrastructure runs:
+            # both patch entries created, stash never used, no destructive ops.
+            len(patches) == 2 and handoff["safety_receipt"]["stash_used"] is False,
+            f"Created package with {len(patches)} patches, {len(copies)} copied files, and {len(skipped)} skipped paths (clean tree post-Phase 6).",
             {"patches": len(patches), "copied": len(copies), "skipped": len(skipped)},
         )
 
@@ -1541,7 +1557,7 @@ def run_pc_action_test() -> dict[str, Any]:
         test_checkpoint(
             checkpoints,
             "Inspect handoff package",
-            detail["branch_exists"] is True and detail["counts"]["patches"] == 2 and detail["counts"]["copied"] >= 3,
+            detail["branch_exists"] is True and detail["counts"]["patches"] == 2,
             "Package manifest, protection branch, patches, and file copies are readable.",
             result["package_inspection"],
         )
@@ -1624,6 +1640,133 @@ def write_bytes_no_overwrite(path: Path, content: bytes) -> None:
         raise SafetyError(f"Refusing to overwrite existing file: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(content)
+
+
+def temp_then_replace_text(target: Path, content: str) -> None:
+    """Phase 6 §7.6 idempotency: write text atomically via .tmp + os.replace.
+
+    Safe to re-run after partial failure — any leftover .tmp from a prior aborted
+    attempt is cleaned up before writing. The final os.replace is atomic on both
+    POSIX and Windows.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = target.parent / f".{target.name}.{os.getpid()}.tmp"
+    if temp_path.exists():
+        temp_path.unlink()
+    temp_path.write_text(content, encoding="utf-8", newline="\n")
+    os.replace(temp_path, target)
+
+
+def temp_then_replace_bytes(target: Path, content: bytes) -> None:
+    """Phase 6 §7.6 idempotency: write bytes atomically via .tmp + os.replace."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = target.parent / f".{target.name}.{os.getpid()}.tmp"
+    if temp_path.exists():
+        temp_path.unlink()
+    temp_path.write_bytes(content)
+    os.replace(temp_path, target)
+
+
+def temp_then_replace_copy(src: Path, dst: Path) -> None:
+    """Phase 6 §7.6 idempotency: copy file atomically via .tmp + os.replace."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    temp_dst = dst.parent / f".{dst.name}.{os.getpid()}.tmp"
+    if temp_dst.exists():
+        temp_dst.unlink()
+    shutil.copy2(src, temp_dst)
+    os.replace(temp_dst, dst)
+
+
+# ============================================================================
+# Phase 6: Handoff Progress State Machine
+# ============================================================================
+# Per PC_HANDOFF_PROGRESS_SPEC v1.1 §6–§7. Steps run sequentially; on any
+# non-soft FAIL the engine aborts and remaining steps are marked skipped.
+# Step 2 is read-only (verifies committed state per spec §9 — never modifies
+# working tree). Steps 2b/2c are placeholder-skipped pending Phase 6.1.
+# Steps 4, 5, 6, 7a use temp-file-then-atomic-rename for idempotency.
+# Step 7b returns the package ID in the response; Phase 7 owns settings writes.
+
+PHASE6_STEP_DEFINITIONS: list[tuple[str, str]] = [
+    ("1", "Verify git root"),
+    ("2", "Verify committed state"),
+    ("2b", "Push to origin"),
+    ("2c", "Push to backup remote"),
+    ("3", "Create protection branch"),
+    ("4", "Generate binary patches"),
+    ("5", "Copy files to package dir"),
+    ("6", "Write manifest"),
+    ("7a", "Write handoff summary"),
+    ("7b", "Finalise package"),
+]
+
+_handoff_progress_lock = threading.Lock()
+_handoff_progress_state: dict[str, Any] = {
+    "status": "idle",
+    "steps": [{"id": sid, "label": lbl, "state": "pending", "note": ""} for sid, lbl in PHASE6_STEP_DEFINITIONS],
+    "package_id": None,
+    "error": None,
+    "started_at": None,
+    "completed_at": None,
+}
+
+
+def _reset_handoff_progress() -> None:
+    with _handoff_progress_lock:
+        _handoff_progress_state["status"] = "running"
+        _handoff_progress_state["steps"] = [
+            {"id": sid, "label": lbl, "state": "pending", "note": ""}
+            for sid, lbl in PHASE6_STEP_DEFINITIONS
+        ]
+        _handoff_progress_state["package_id"] = None
+        _handoff_progress_state["error"] = None
+        _handoff_progress_state["started_at"] = local_timestamp()
+        _handoff_progress_state["completed_at"] = None
+
+
+def _set_handoff_step(step_id: str, state: str, note: str = "") -> None:
+    with _handoff_progress_lock:
+        for step in _handoff_progress_state["steps"]:
+            if step["id"] == step_id:
+                step["state"] = state
+                step["note"] = note
+                return
+
+
+def _set_handoff_status(status: str, *, error: str | None = None, package_id: str | None = None) -> None:
+    with _handoff_progress_lock:
+        _handoff_progress_state["status"] = status
+        if error is not None:
+            _handoff_progress_state["error"] = error
+        if package_id is not None:
+            _handoff_progress_state["package_id"] = package_id
+        if status in {"complete", "failed", "aborted"}:
+            _handoff_progress_state["completed_at"] = local_timestamp()
+
+
+def _abort_remaining_steps(reason: str = "aborted due to earlier failure") -> None:
+    """INCOMPLETE hard-block per spec §7.4: mark any pending/running step as
+    skipped when the engine exits non-complete. Caller is responsible for
+    setting the overall status to 'failed' or 'aborted'."""
+    with _handoff_progress_lock:
+        for step in _handoff_progress_state["steps"]:
+            if step["state"] in {"pending", "running"}:
+                step["state"] = "skipped"
+                step["note"] = reason
+
+
+def get_handoff_progress() -> dict[str, Any]:
+    """Read-only snapshot of the handoff progress state. Used by GET
+    /api/handoff/progress endpoint (Phase 6 Part B)."""
+    with _handoff_progress_lock:
+        return {
+            "status": _handoff_progress_state["status"],
+            "steps": [dict(step) for step in _handoff_progress_state["steps"]],
+            "package_id": _handoff_progress_state["package_id"],
+            "error": _handoff_progress_state["error"],
+            "started_at": _handoff_progress_state["started_at"],
+            "completed_at": _handoff_progress_state["completed_at"],
+        }
 
 
 def write_patch(repo: Path, package_dir: Path, filename: str, args: list[str]) -> dict[str, Any]:
@@ -1734,6 +1877,48 @@ def handoff_markdown(manifest: dict[str, Any]) -> str:
     )
 
 
+def _step4_write_patch_idempotent(repo: Path, package_dir: Path, filename: str, args: list[str]) -> dict[str, Any]:
+    """Phase 6 Step 4: write patch via temp+atomic-rename. Idempotent — safe to
+    retry after partial failure (replaces any existing file at target)."""
+    result = safe_git(repo, args)
+    data = result.stdout.encode("utf-8", errors="replace")
+    patch_path = package_dir / "patches" / filename
+    temp_then_replace_bytes(patch_path, data)
+    return {"path": str(patch_path), "bytes": len(data), "empty": len(data) == 0}
+
+
+def _step5_copy_files_idempotent(repo: Path, package_dir: Path, rel_paths: list[str]) -> dict[str, Any]:
+    """Phase 6 Step 5: copy files via temp+atomic-rename. Idempotent — safe to
+    retry; existing copies are replaced atomically."""
+    copied: list[dict[str, Any]] = []
+    skipped: list[dict[str, str]] = []
+    copy_root = package_dir / "file_copies"
+    copy_root.mkdir(parents=True, exist_ok=True)  # idempotent — was exist_ok=False
+
+    for rel_text in rel_paths:
+        safe_rel = safe_rel_path(repo, rel_text)
+        if safe_rel is None:
+            skipped.append({"path": rel_text, "reason": "unsafe or excluded path"})
+            continue
+        src = (repo / safe_rel).resolve()
+        if not src.exists():
+            skipped.append({"path": rel_text, "reason": "source missing or deleted"})
+            continue
+        if not src.is_file():
+            skipped.append({"path": rel_text, "reason": "not a file"})
+            continue
+        dst = (copy_root / safe_rel).resolve()
+        try:
+            dst.relative_to(copy_root.resolve())
+        except ValueError:
+            skipped.append({"path": rel_text, "reason": "copy target escaped package root"})
+            continue
+        temp_then_replace_copy(src, dst)
+        copied.append({"repo_path": rel_text, "copy_path": str(dst), "bytes": dst.stat().st_size})
+
+    return {"copied": copied, "skipped": skipped}
+
+
 def create_handoff_package(
     path_text: str,
     title: str,
@@ -1741,68 +1926,193 @@ def create_handoff_package(
     notes: str = "",
     operator_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    status = repo_status(path_text)
-    repo = Path(status["repo_root"])
-    package_root = package_root_path()
-    package_base = package_root / slugify(repo.name, "repo") / f"{utc_stamp()}-{slugify(title)}"
-    package_dir = ensure_unique_dir(package_base)
+    """Phase 6: Per-step state machine driving the handoff package creation.
 
-    protection_branch = create_protection_branch(repo, title)
-    patches = [
-        write_patch(repo, package_dir, "unstaged-working-tree.patch", ["diff", "--binary"]),
-        write_patch(repo, package_dir, "staged-index.patch", ["diff", "--cached", "--binary"]),
-    ]
-    rel_paths = changed_paths_for_copies(repo)
-    copies = copy_changed_files(repo, package_dir, rel_paths)
+    Steps 1, 2, 3, 4, 5, 6, 7a, 7b run sequentially per PC_HANDOFF_PROGRESS_SPEC v1.1.
+    Steps 2b/2c are placeholder-skipped pending Phase 6.1 (push to origin / backup
+    remote not implemented in this phase). Step 2 is READ-ONLY — verifies the
+    working tree is at a clean committed state per spec §9 non-negotiable
+    ("The working tree must never be modified during handoff package creation").
 
-    manifest = {
-        "schema_version": 1,
-        "app": APP_TITLE,
-        "version": APP_VERSION,
-        "title": title.strip() or "PANDA Collaborator handoff",
-        "agent": agent.strip(),
-        "notes": notes,
-        "created_at": local_timestamp(),
-        "package_dir": str(package_dir),
-        "repo_root": str(repo),
-        "branch_at_creation": status["branch"],
-        "head": status["head"],
-        "short_head": status["short_head"],
-        "status_at_creation": status,
-        "operator_context": normalize_operator_context(operator_context, str(repo)),
-        "committed_protection": {
-            "type": "git branch ref",
-            "branch": protection_branch,
-            "created_without_checkout": True,
-        },
-        "uncommitted_protection": {
-            "type": "binary patches plus file copies",
-            "patches": patches,
-            "file_copies": copies,
-            "changed_paths_considered": rel_paths,
-        },
-        "forbidden_git_commands": FORBIDDEN_GIT_COMMANDS,
-        "stash_used": False,
-        "safety_receipt": {
-            "branch_created_without_checkout": True,
-            "working_tree_destructive_commands_used": [],
+    Per CD ruling 20260504_008308:
+      - Step 2 verifies committed state; aborts if dirty/untracked. Never commits.
+      - Steps 2b/2c marked skipped (Phase 6.1 placeholder).
+      - Step 7b returns package_id in response; Phase 7 owns handover_state writes.
+
+    Idempotency per spec §7.6: Steps 4, 5, 6, 7a use temp-file-then-atomic-rename.
+    INCOMPLETE hard-block per §7.4: any non-soft FAIL aborts; remaining steps
+    marked skipped; package status = failed (not surfaced as Complete).
+
+    Progress state is exposed via GET /api/handoff/progress for live polling.
+    """
+    _reset_handoff_progress()
+    package_dir: Path | None = None
+    try:
+        # ── Step 1 — Verify git root ─────────────────────────────────────────
+        try:
+            status = repo_status(path_text)
+        except Exception as exc:
+            note = f"Cannot resolve git root for {path_text!r}: {exc}"
+            _set_handoff_step("1", "fail", note)
+            _set_handoff_status("failed", error=note)
+            _abort_remaining_steps()
+            raise CollaboratorError(f"Step 1 (Verify git root) failed: {exc}") from exc
+        repo = Path(status["repo_root"])
+        _set_handoff_step("1", "pass", f"Git root: {repo}")
+
+        # ── Step 2 — Verify committed state (READ-ONLY, never modifies tree) ─
+        counts = status.get("counts") or {}
+        is_dirty = bool(status.get("dirty"))
+        untracked = int(counts.get("untracked") or 0)
+        unstaged = int(counts.get("unstaged") or 0)
+        staged = int(counts.get("staged") or 0)
+        if is_dirty or untracked > 0 or unstaged > 0 or staged > 0:
+            note = (
+                f"Working tree has uncommitted changes "
+                f"(untracked: {untracked}, unstaged: {unstaged}, staged: {staged}). "
+                f"Commit or stash before creating a handoff package."
+            )
+            _set_handoff_step("2", "fail", note)
+            _set_handoff_status("failed", error=note)
+            _abort_remaining_steps()
+            raise CollaboratorError(f"Step 2 (Verify committed state) failed: {note}")
+        _set_handoff_step("2", "pass", f"Working tree clean at HEAD {status.get('short_head', '')}")
+
+        # ── Steps 2b / 2c — Skipped (Phase 6.1 placeholder) ──────────────────
+        _set_handoff_step("2b", "skipped", "Deferred to Phase 6.1 — push to origin not implemented in Phase 6")
+        _set_handoff_step("2c", "skipped", "Deferred to Phase 6.1 — push to backup remote not implemented in Phase 6")
+
+        # ── Step 3 — Create protection branch ────────────────────────────────
+        try:
+            protection_branch = create_protection_branch(repo, title)
+        except Exception as exc:
+            note = f"Cannot create protection branch: {exc}"
+            _set_handoff_step("3", "fail", note)
+            _set_handoff_status("failed", error=note)
+            _abort_remaining_steps()
+            raise CollaboratorError(f"Step 3 (Create protection branch) failed: {exc}") from exc
+        _set_handoff_step("3", "pass", f"Branch: {protection_branch}")
+
+        # Prepare package_dir (after Step 3 PASS so we don't litter on early FAIL)
+        package_root = package_root_path()
+        package_base = package_root / slugify(repo.name, "repo") / f"{utc_stamp()}-{slugify(title)}"
+        package_dir = ensure_unique_dir(package_base)
+
+        # ── Step 4 — Generate binary patches (idempotent) ────────────────────
+        _set_handoff_step("4", "running", "Running git format-patch")
+        try:
+            patches = [
+                _step4_write_patch_idempotent(repo, package_dir, "unstaged-working-tree.patch", ["diff", "--binary"]),
+                _step4_write_patch_idempotent(repo, package_dir, "staged-index.patch", ["diff", "--cached", "--binary"]),
+            ]
+        except Exception as exc:
+            note = f"Patch generation failed: {exc}"
+            _set_handoff_step("4", "fail", note)
+            _set_handoff_status("failed", error=note)
+            _abort_remaining_steps()
+            raise CollaboratorError(f"Step 4 (Generate binary patches) failed: {exc}") from exc
+        total_bytes = sum(p["bytes"] for p in patches)
+        _set_handoff_step("4", "pass", f"{len(patches)} patches, {total_bytes} bytes total")
+
+        # ── Step 5 — Copy files to package dir (idempotent) ──────────────────
+        _set_handoff_step("5", "running", "Copying changed files")
+        rel_paths = changed_paths_for_copies(repo)
+        try:
+            copies = _step5_copy_files_idempotent(repo, package_dir, rel_paths)
+        except Exception as exc:
+            note = f"File copy failed: {exc}"
+            _set_handoff_step("5", "fail", note)
+            _set_handoff_status("failed", error=note)
+            _abort_remaining_steps()
+            raise CollaboratorError(f"Step 5 (Copy files to package dir) failed: {exc}") from exc
+        _set_handoff_step("5", "pass", f"{len(copies['copied'])} files copied · {len(copies['skipped'])} skipped")
+
+        # Build manifest dict (in-memory; written in Step 6)
+        manifest = {
+            "schema_version": 1,
+            "app": APP_TITLE,
+            "version": APP_VERSION,
+            "title": title.strip() or "PANDA Collaborator handoff",
+            "agent": agent.strip(),
+            "notes": notes,
+            "created_at": local_timestamp(),
+            "package_dir": str(package_dir),
+            "repo_root": str(repo),
+            "branch_at_creation": status["branch"],
+            "head": status["head"],
+            "short_head": status["short_head"],
+            "status_at_creation": status,
+            "operator_context": normalize_operator_context(operator_context, str(repo)),
+            "committed_protection": {
+                "type": "git branch ref",
+                "branch": protection_branch,
+                "created_without_checkout": True,
+            },
+            "uncommitted_protection": {
+                "type": "binary patches plus file copies",
+                "patches": patches,
+                "file_copies": copies,
+                "changed_paths_considered": rel_paths,
+            },
+            "forbidden_git_commands": FORBIDDEN_GIT_COMMANDS,
             "stash_used": False,
-            "patches_written_before_file_copies": True,
-            "file_copies_overwrite_existing_files": False,
-            "restore_or_apply_performed": False,
-            "operator_must_review_before_restore": True,
-        },
-    }
+            "safety_receipt": {
+                "branch_created_without_checkout": True,
+                "working_tree_destructive_commands_used": [],
+                "stash_used": False,
+                "patches_written_before_file_copies": True,
+                "file_copies_overwrite_existing_files": False,
+                "restore_or_apply_performed": False,
+                "operator_must_review_before_restore": True,
+            },
+        }
+        plain_summary = summarize_handoff_plain(manifest)
+        technical_summary = summarize_handoff_technical(manifest)
+        manifest["plain_summary"] = plain_summary
+        manifest["technical_summary"] = technical_summary
 
-    plain_summary = summarize_handoff_plain(manifest)
-    technical_summary = summarize_handoff_technical(manifest)
-    manifest["plain_summary"] = plain_summary
-    manifest["technical_summary"] = technical_summary
-    write_text_no_overwrite(package_dir / "manifest.json", json.dumps(manifest, indent=2))
-    write_text_no_overwrite(package_dir / "HANDOFF.md", handoff_markdown(manifest))
-    write_text_no_overwrite(package_dir / "PLAIN_SUMMARY.md", plain_summary_markdown(plain_summary))
-    write_text_no_overwrite(package_dir / "TECHNICAL_SUMMARY.md", technical_summary_markdown(technical_summary))
-    return manifest
+        # ── Step 6 — Write manifest (idempotent atomic-rename) ───────────────
+        _set_handoff_step("6", "running", "Writing manifest.json")
+        try:
+            temp_then_replace_text(package_dir / "manifest.json", json.dumps(manifest, indent=2))
+        except Exception as exc:
+            note = f"Manifest write failed: {exc}"
+            _set_handoff_step("6", "fail", note)
+            _set_handoff_status("failed", error=note)
+            _abort_remaining_steps()
+            raise CollaboratorError(f"Step 6 (Write manifest) failed: {exc}") from exc
+        _set_handoff_step("6", "pass", "manifest.json written")
+
+        # ── Step 7a — Write handoff summary (idempotent atomic-rename) ───────
+        _set_handoff_step("7a", "running", "Writing HANDOFF.md + summaries")
+        try:
+            temp_then_replace_text(package_dir / "HANDOFF.md", handoff_markdown(manifest))
+            temp_then_replace_text(package_dir / "PLAIN_SUMMARY.md", plain_summary_markdown(plain_summary))
+            temp_then_replace_text(package_dir / "TECHNICAL_SUMMARY.md", technical_summary_markdown(technical_summary))
+        except Exception as exc:
+            note = f"Summary write failed: {exc}"
+            _set_handoff_step("7a", "fail", note)
+            _set_handoff_status("failed", error=note)
+            _abort_remaining_steps()
+            raise CollaboratorError(f"Step 7a (Write handoff summary) failed: {exc}") from exc
+        _set_handoff_step("7a", "pass", "HANDOFF.md + PLAIN_SUMMARY.md + TECHNICAL_SUMMARY.md written")
+
+        # ── Step 7b — Finalise package (return package_id; Phase 7 writes settings) ─
+        package_id = package_id_for_manifest(package_root, package_dir / "manifest.json")
+        manifest["package_id"] = package_id
+        _set_handoff_step("7b", "pass", f"Package finalised — ID: {package_id}")
+        _set_handoff_status("complete", package_id=package_id)
+        return manifest
+    except Exception:
+        # Catch-all: ensure remaining steps are marked skipped + status is non-complete.
+        # CollaboratorError instances above already set step + status; this guards
+        # against unexpected exceptions (filesystem errors, etc.).
+        with _handoff_progress_lock:
+            current_status = _handoff_progress_state["status"]
+        if current_status not in {"failed", "aborted", "complete"}:
+            _set_handoff_status("aborted", error="Handoff aborted due to unexpected exception")
+        _abort_remaining_steps()
+        raise
 
 
 def package_id_for_manifest(package_root: Path, manifest_path: Path) -> str:
@@ -2405,6 +2715,9 @@ class PandaHandler(BaseHTTPRequestHandler):
             )
         if parsed.path == "/api/launch-refresh/state":
             return json_response(self, launch_refresh_payload())
+        if parsed.path == "/api/handoff/progress":
+            # Phase 6 Part B: read-only state for live polling at 500ms cadence.
+            return json_response(self, {"ok": True, **get_handoff_progress()})
         if parsed.path == "/api/settings":
             try:
                 return json_response(self, {"ok": True, "settings": load_settings()})
@@ -2504,6 +2817,10 @@ class PandaHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/repo/scan":
                 return json_response(self, {"ok": True, "repo": repo_status(str(payload.get("path", "")))})
             if parsed.path == "/api/handoff/create":
+                # Phase 6: drives the per-step state machine; returns package_id
+                # in the response so Phase 7's outgoing-confirmation flow can
+                # write it to handover_state.handoff_package_id (Phase 6 itself
+                # never touches handover_state per CD ruling 20260504_008308).
                 manifest = create_handoff_package(
                     str(payload.get("path", "")),
                     str(payload.get("title", "PANDA Collaborator handoff")),
@@ -2511,7 +2828,11 @@ class PandaHandler(BaseHTTPRequestHandler):
                     str(payload.get("notes", "")),
                     payload.get("operator_context", {}),
                 )
-                return json_response(self, {"ok": True, "handoff": manifest})
+                return json_response(self, {
+                    "ok": True,
+                    "handoff": manifest,
+                    "package_id": manifest.get("package_id"),
+                })
             if parsed.path == "/api/session/start":
                 return json_response(self, {"ok": True, "session": start_session(payload)})
             if parsed.path == "/api/session/end":

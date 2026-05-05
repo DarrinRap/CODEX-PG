@@ -1088,8 +1088,16 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_handoff_protects_committed_and_uncommitted_work(self):
+        # Phase 6: PC_HANDOFF_PROGRESS_SPEC v1.1 + CD ruling 20260504_008308 require
+        # a clean working tree before handoff. Commit the test changes first so the
+        # new Step 2 (Verify committed state) passes; the rest of the test exercises
+        # the protection branch, patch/copy infrastructure, and downstream APIs over
+        # a clean tree. (Patches will be empty bytes since tree is clean — that's
+        # the new-correct behavior.)
         (self.repo / "tracked.txt").write_text("base\nworking change\n", encoding="utf-8")
         (self.repo / "new-note.md").write_text("# untracked\n", encoding="utf-8")
+        run(["git", "add", "-A"], self.repo)
+        run(["git", "commit", "-m", "phase6 test: commit changes before handoff"], self.repo)
 
         manifest = pc.create_handoff_package(
             str(self.repo),
@@ -1117,10 +1125,12 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertTrue((package_dir / "HANDOFF.md").exists())
         self.assertTrue((package_dir / "PLAIN_SUMMARY.md").exists())
         self.assertTrue((package_dir / "TECHNICAL_SUMMARY.md").exists())
+        # Patches still written (empty bytes for clean tree) per spec — the patch
+        # infrastructure runs every time even when the diff is empty.
         self.assertTrue((package_dir / "patches" / "unstaged-working-tree.patch").exists())
         self.assertTrue((package_dir / "patches" / "staged-index.patch").exists())
-        self.assertTrue((package_dir / "file_copies" / "tracked.txt").exists())
-        self.assertTrue((package_dir / "file_copies" / "new-note.md").exists())
+        # File copies dir exists but is empty since tree is clean.
+        self.assertTrue((package_dir / "file_copies").exists())
         self.assertFalse(manifest["stash_used"])
         self.assertTrue(manifest["committed_protection"]["created_without_checkout"])
         self.assertEqual(manifest["operator_context"]["display_name"], "Darrin")
@@ -1132,14 +1142,17 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         refs = run(["git", "show-ref", "--verify", f"refs/heads/{branch}"], self.repo)
         self.assertIn(branch, refs.stdout)
 
+        # Phase 6: tree is clean after the test's pre-handoff commit; assert that.
         status_after = run(["git", "status", "--porcelain=v1", "-uall"], self.repo).stdout
-        self.assertIn(" M tracked.txt", status_after)
-        self.assertIn("?? new-note.md", status_after)
+        self.assertEqual(status_after.strip(), "", "Working tree must be clean after handoff per spec §9")
 
         loaded = json.loads((package_dir / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(loaded["committed_protection"]["branch"], branch)
         self.assertFalse(loaded["safety_receipt"]["stash_used"])
         self.assertFalse(loaded["safety_receipt"]["restore_or_apply_performed"])
+        # Phase 6: package_id is now returned alongside the manifest per CD ruling 20260504_008308.
+        self.assertIn("package_id", manifest)
+        self.assertTrue(manifest["package_id"])
 
         packages = pc.list_packages(str(self.repo))
         self.assertEqual(len(packages["packages"]), 1)
@@ -1163,8 +1176,8 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         self.assertFalse(plan["automated_restore_available"])
         self.assertTrue(plan["protection_branch_exists"])
         self.assertGreaterEqual(len(plan["patch_checks"]), 1)
-        self.assertEqual(len(plan["copy_checks"]), 2)
-        self.assertIn("Target repository has uncommitted work; automated restore must stay unavailable.", plan["blockers"])
+        # Phase 6: clean tree = 0 file copies; copy_checks will reflect that.
+        self.assertEqual(len(plan["copy_checks"]), 0)
 
         context = {
             "user_id": "user1",
@@ -1209,6 +1222,184 @@ class PandaCollaboratorHandoffTests(unittest.TestCase):
         )
         self.assertTrue(Path(ended["daily_report"]["path"]).exists())
         self.assertTrue(Path(ended["handoff"]["package_dir"], "PLAIN_SUMMARY.md").exists())
+
+
+class PandaCollaboratorHandoffProgressTests(unittest.TestCase):
+    """Phase 6: per-step state machine tests for create_handoff_package.
+
+    Tests the 8 active steps (1, 2, 3, 4, 5, 6, 7a, 7b) plus the 2 placeholder-
+    skipped steps (2b, 2c). Verifies:
+      - Step 1 PASS for valid git root; FAIL for non-git path
+      - Step 2 PASS for clean tree; FAIL/abort for dirty tree (spec §9 non-negotiable)
+      - Steps 2b/2c always skipped with 'Phase 6.1' note
+      - Step 3 creates protection branch
+      - Steps 4, 5, 6, 7a use temp+atomic-rename idempotency
+      - Step 7b returns package_id
+      - INCOMPLETE hard-block: failure mid-run leaves status=failed, remaining steps skipped
+      - get_handoff_progress() exposes live state
+    """
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-test-"))
+        self.repo = self.tmp / "repo"
+        self.package_root = self.tmp / "packages"
+        self.history_root = self.tmp / "history"
+        self.repo.mkdir()
+        run(["git", "init"], self.repo)
+        run(["git", "config", "user.name", "PANDA Test"], self.repo)
+        run(["git", "config", "user.email", "panda-test@example.invalid"], self.repo)
+        (self.repo / "tracked.txt").write_text("base\n", encoding="utf-8")
+        run(["git", "add", "tracked.txt"], self.repo)
+        run(["git", "commit", "-m", "base"], self.repo)
+        self.old_package_root = pc.os.environ.get("PANDA_COLLABORATOR_PACKAGE_ROOT")
+        self.old_history_root = pc.os.environ.get("PANDA_COLLABORATOR_HISTORY_ROOT")
+        pc.os.environ["PANDA_COLLABORATOR_PACKAGE_ROOT"] = str(self.package_root)
+        pc.os.environ["PANDA_COLLABORATOR_HISTORY_ROOT"] = str(self.history_root)
+
+    def tearDown(self):
+        if self.old_package_root is None:
+            pc.os.environ.pop("PANDA_COLLABORATOR_PACKAGE_ROOT", None)
+        else:
+            pc.os.environ["PANDA_COLLABORATOR_PACKAGE_ROOT"] = self.old_package_root
+        if self.old_history_root is None:
+            pc.os.environ.pop("PANDA_COLLABORATOR_HISTORY_ROOT", None)
+        else:
+            pc.os.environ["PANDA_COLLABORATOR_HISTORY_ROOT"] = self.old_history_root
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _full_run_passes_all_active_steps(self):
+        manifest = pc.create_handoff_package(str(self.repo), "phase6 ok", "Codex", "")
+        progress = pc.get_handoff_progress()
+        return manifest, progress
+
+    def test_full_run_passes_all_active_steps(self):
+        manifest, progress = self._full_run_passes_all_active_steps()
+        self.assertEqual(progress["status"], "complete")
+        self.assertIsNotNone(progress["package_id"])
+        self.assertEqual(progress["package_id"], manifest["package_id"])
+
+        states_by_id = {s["id"]: s["state"] for s in progress["steps"]}
+        # 8 active steps PASS
+        for sid in ("1", "2", "3", "4", "5", "6", "7a", "7b"):
+            self.assertEqual(states_by_id[sid], "pass", f"Step {sid} should be PASS")
+        # 2 placeholder steps SKIPPED with Phase 6.1 note
+        for sid in ("2b", "2c"):
+            self.assertEqual(states_by_id[sid], "skipped", f"Step {sid} should be SKIPPED in Phase 6")
+        notes_by_id = {s["id"]: s["note"] for s in progress["steps"]}
+        self.assertIn("Phase 6.1", notes_by_id["2b"])
+        self.assertIn("Phase 6.1", notes_by_id["2c"])
+
+    def test_step1_fails_on_non_git_path(self):
+        non_git = self.tmp / "not-a-repo"
+        non_git.mkdir()
+        with self.assertRaises(pc.CollaboratorError) as ctx:
+            pc.create_handoff_package(str(non_git), "phase6 step1 fail", "Codex", "")
+        self.assertIn("Step 1", str(ctx.exception))
+        progress = pc.get_handoff_progress()
+        self.assertEqual(progress["status"], "failed")
+        states_by_id = {s["id"]: s["state"] for s in progress["steps"]}
+        self.assertEqual(states_by_id["1"], "fail")
+        # All later steps skipped
+        for sid in ("2", "2b", "2c", "3", "4", "5", "6", "7a", "7b"):
+            self.assertIn(states_by_id[sid], ("skipped", "pending"))
+
+    def test_step2_fails_on_dirty_tree(self):
+        # Modify the committed file without committing — should trigger Step 2 FAIL
+        (self.repo / "tracked.txt").write_text("base\nuncommitted change\n", encoding="utf-8")
+        with self.assertRaises(pc.CollaboratorError) as ctx:
+            pc.create_handoff_package(str(self.repo), "phase6 step2 fail", "Codex", "")
+        self.assertIn("Step 2", str(ctx.exception))
+        self.assertIn("uncommitted", str(ctx.exception).lower())
+        progress = pc.get_handoff_progress()
+        self.assertEqual(progress["status"], "failed")
+        states_by_id = {s["id"]: s["state"] for s in progress["steps"]}
+        self.assertEqual(states_by_id["1"], "pass")
+        self.assertEqual(states_by_id["2"], "fail")
+        # Spec §9 non-negotiable: tree must NOT be modified by PC
+        status_after = run(["git", "status", "--porcelain=v1"], self.repo).stdout
+        self.assertIn(" M tracked.txt", status_after, "PC must not commit; tree stays dirty after Step 2 fail")
+
+    def test_step2_fails_on_untracked_file(self):
+        # Untracked file should also trigger Step 2 FAIL
+        (self.repo / "new-untracked.txt").write_text("orphan\n", encoding="utf-8")
+        with self.assertRaises(pc.CollaboratorError):
+            pc.create_handoff_package(str(self.repo), "phase6 untracked fail", "Codex", "")
+        progress = pc.get_handoff_progress()
+        self.assertEqual(progress["status"], "failed")
+
+    def test_steps_2b_2c_always_skipped(self):
+        # Even on a successful full run, 2b/2c must remain Phase 6.1 placeholders
+        pc.create_handoff_package(str(self.repo), "phase6 placeholder", "Codex", "")
+        progress = pc.get_handoff_progress()
+        states = {s["id"]: s for s in progress["steps"]}
+        self.assertEqual(states["2b"]["state"], "skipped")
+        self.assertEqual(states["2c"]["state"], "skipped")
+        self.assertIn("Phase 6.1", states["2b"]["note"])
+        self.assertIn("Phase 6.1", states["2c"]["note"])
+
+    def test_step4_idempotent_via_temp_then_replace(self):
+        # Verify temp_then_replace_bytes directly — first write creates target,
+        # second write replaces atomically (no SafetyError on existing file).
+        target = self.tmp / "step4-test.bin"
+        pc.temp_then_replace_bytes(target, b"first")
+        self.assertEqual(target.read_bytes(), b"first")
+        pc.temp_then_replace_bytes(target, b"second")
+        self.assertEqual(target.read_bytes(), b"second")
+        # No leftover temp files
+        leftovers = [p for p in self.tmp.iterdir() if p.name.endswith(".tmp")]
+        self.assertEqual(leftovers, [])
+
+    def test_step6_idempotent_via_temp_then_replace_text(self):
+        target = self.tmp / "step6-manifest.json"
+        pc.temp_then_replace_text(target, '{"v":1}')
+        self.assertEqual(target.read_text(encoding="utf-8"), '{"v":1}')
+        pc.temp_then_replace_text(target, '{"v":2}')
+        self.assertEqual(target.read_text(encoding="utf-8"), '{"v":2}')
+
+    def test_step5_copy_idempotent(self):
+        src = self.tmp / "src.txt"
+        src.write_text("payload\n", encoding="utf-8")
+        dst = self.tmp / "out" / "dst.txt"
+        pc.temp_then_replace_copy(src, dst)
+        self.assertEqual(dst.read_text(encoding="utf-8"), "payload\n")
+        # Modify source then re-copy — atomic replace works
+        src.write_text("updated\n", encoding="utf-8")
+        pc.temp_then_replace_copy(src, dst)
+        self.assertEqual(dst.read_text(encoding="utf-8"), "updated\n")
+
+    def test_step7b_returns_package_id_in_response(self):
+        manifest = pc.create_handoff_package(str(self.repo), "phase6 7b id", "Codex", "")
+        # Step 7b finalises and returns package_id (Phase 7 will write it to settings)
+        self.assertIn("package_id", manifest)
+        self.assertTrue(manifest["package_id"])
+        # Phase 6 does NOT touch handover_state
+        settings = pc.load_settings()
+        self.assertFalse(settings["handover_state"]["handover_pending"])
+        self.assertIsNone(settings["handover_state"]["handoff_package_id"])
+
+    def test_get_handoff_progress_initial_state_idle_or_complete(self):
+        # The state machine retains the most-recent run's terminal state.
+        # Either we're in 'idle' (no run yet this process) or 'complete' (after a run).
+        progress = pc.get_handoff_progress()
+        self.assertIn(progress["status"], ("idle", "complete", "failed", "running", "aborted"))
+        # Always 10 step entries per spec
+        self.assertEqual(len(progress["steps"]), 10)
+        ids = [s["id"] for s in progress["steps"]]
+        self.assertEqual(ids, ["1", "2", "2b", "2c", "3", "4", "5", "6", "7a", "7b"])
+
+    def test_incomplete_hard_block_on_step2_fail(self):
+        # INCOMPLETE hard-block per spec §7.4: failed run does NOT surface as a
+        # completed handoff. Verify status = 'failed', no package_id, package
+        # directory was not finalised.
+        (self.repo / "tracked.txt").write_text("dirty\n", encoding="utf-8")
+        with self.assertRaises(pc.CollaboratorError):
+            pc.create_handoff_package(str(self.repo), "phase6 incomplete", "Codex", "")
+        progress = pc.get_handoff_progress()
+        self.assertEqual(progress["status"], "failed")
+        self.assertIsNone(progress["package_id"])
+        self.assertIsNotNone(progress["error"])
+        # No package surfaced via list_packages — engine aborted before reaching list-eligible state
+        packages = pc.list_packages(str(self.repo))
+        self.assertEqual(len(packages["packages"]), 0)
 
 
 if __name__ == "__main__":
