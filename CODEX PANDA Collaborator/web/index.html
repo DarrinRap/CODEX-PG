@@ -576,6 +576,10 @@
     .pc-body {
       display: grid;
       grid-template-columns: 280px 1fr 360px;
+      grid-template-rows: minmax(0, 1fr);
+      gap: 0;
+      padding: 0;
+      height: 100%;
       min-height: 0;
       overflow: hidden;
     }
@@ -853,6 +857,143 @@
       height: 44px;       /* +4px when has-reason for 2-line stacked label */
     }
     /* === End PC redesign Phase 3 center column === */
+
+    /* === PC redesign Phase 4 — right column content === */
+    /* Create Safe Handoff dominant per spec §4.5: 48px green button below
+       2-col metadata pill grid + Title/Agent/Notes inputs. Last Package
+       collapsible inspector (▶/▼ toggle, 28px header strip when collapsed).
+       Right column 360px fixed width per spec §3.2. */
+    .pc-body .right-col .handoff-sec { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; border-bottom: 1px solid var(--border-soft); }
+    .pc-body .right-col .handoff-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+    .pc-body .right-col .meta-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+    .pc-body .right-col .meta-pills.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; flex-wrap: nowrap; }
+    .pc-body .right-col .meta-pill {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      padding: 2px 7px;
+      background: var(--pane-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pc-body .right-col .meta-pill b { color: var(--text); font-weight: 600; }
+    .pc-body .right-col .meta-pill.ok { color: var(--ok); border-color: var(--ok-border); background: var(--ok-soft); }
+    .pc-body .right-col .meta-pill.warn { color: var(--warn); border-color: var(--warn-border); background: var(--warn-soft); }
+    .pc-body .right-col .handoff-input {
+      width: 100%;
+      height: 28px;
+      background: var(--pane-2);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      padding: 0 8px;
+      color: var(--text);
+      font: 12px/1 var(--font-ui);
+    }
+    .pc-body .right-col .handoff-input:focus { outline: 2px solid var(--user1-border); outline-offset: 0; }
+    .pc-body .right-col .handoff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .pc-body .right-col .handoff-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      font-weight: 700;
+      display: block;
+    }
+    .pc-body .right-col .notes-textarea {
+      width: 100%;
+      min-height: 56px;
+      resize: none;
+      background: var(--pane-2);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      font: 12px/1.4 var(--font-ui);
+      padding: 6px 8px;
+    }
+    .pc-body .right-col .notes-textarea:focus { outline: 2px solid var(--user1-border); outline-offset: 0; }
+
+    /* Phase 4: Create Safe Handoff dominant button — 48px primary, can extend to 52px when has-reason for stacked subtitle */
+    .pc-body .right-col .handoff-primary-action {
+      width: 100%;
+      min-height: 48px;
+      height: 48px;
+      background: var(--ok);
+      color: var(--canvas);
+      border: 1px solid var(--ok);
+      border-radius: var(--radius-md);
+      font: 700 14px/1 var(--font-ui);
+      letter-spacing: 0.3px;
+      cursor: pointer;
+    }
+    .pc-body .right-col .handoff-primary-action:hover { background: #82bf61; border-color: #82bf61; }
+    .pc-body .right-col .handoff-primary-action.disabled,
+    .pc-body .right-col .handoff-primary-action:disabled {
+      background: var(--pane);
+      color: var(--text-dim);
+      border-color: var(--border);
+      cursor: not-allowed;
+      height: 52px;       /* +4px for 2-line stacked label when disabled */
+      font-weight: 700;
+    }
+
+    /* End Session secondary — amber-bordered 28px below the dominant primary */
+    .pc-body .right-col .end-session-btn {
+      width: 100%; height: 28px;
+      background: var(--pane-2);
+      color: var(--warn);
+      border: 1px solid var(--warn-border);
+      border-radius: var(--radius-md);
+      font: 600 11.5px/1 var(--font-ui);
+      letter-spacing: 0.1px;
+      cursor: pointer;
+    }
+    .pc-body .right-col .end-session-btn:hover { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+    .pc-body .right-col .end-session-btn.disabled,
+    .pc-body .right-col .end-session-btn:disabled { color: var(--text-dim); border-color: var(--border); background: var(--pane); cursor: not-allowed; }
+
+    /* Last Package collapsible inspector */
+    .pc-body .right-col .last-pkg-sec { display: flex; flex-direction: column; flex: 0 0 auto; }
+    .pc-body .right-col .last-pkg-head {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 28px;
+      padding: 0 12px;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .pc-body .right-col .last-pkg-head .triangle {
+      width: 0; height: 0;
+      border-left: 5px solid var(--accent);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      transition: transform 0.15s ease;
+      flex-shrink: 0;
+    }
+    .pc-body .right-col .last-pkg-sec.expanded .last-pkg-head .triangle { transform: rotate(90deg); }
+    .pc-body .right-col .last-pkg-body { padding: 10px 12px; display: none; flex-direction: column; gap: 6px; }
+    .pc-body .right-col .last-pkg-sec.expanded .last-pkg-body { display: flex; }
+    .pc-body .right-col .pkg-meta-row {
+      display: flex; justify-content: space-between; gap: 8px;
+      font-size: 11px; padding: 3px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .pc-body .right-col .pkg-meta-row:last-child { border-bottom: none; }
+    .pc-body .right-col .pkg-meta-row .lbl { color: var(--text-muted); font-family: var(--font-ui); }
+    .pc-body .right-col .pkg-meta-row .val { color: var(--text); font-family: var(--font-mono); }
+    .pc-body .right-col .pkg-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+    .pc-body .right-col .pkg-actions .switch-btn { flex: 1; min-width: 0; padding: 0 6px; font-size: 10.5px; height: 26px; }
+    /* === End PC redesign Phase 4 right column === */
 
     .test-controls {
       display: flex;
@@ -2796,7 +2937,7 @@
         </div>
 
         <!-- User 2 section (collapsible) -->
-        <div class="sec collapsible user2-sec" data-flow-panel="user2" data-user-tone="user2">
+        <div class="sec collapsible collapsed user2-sec" data-flow-panel="user2" data-user-tone="user2">
           <div class="sec-head"><span class="toggle-tri"></span><span>User 2</span><span class="collapsed-summary"><span class="name" data-hub-name="user2">User 2</span><span class="reg-pill warn">Setup needed</span></span></div>
           <div class="user-sec user2">
             <div class="user-head">
@@ -2857,24 +2998,53 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN — scaffold (Phase 4 will refine: Create Safe Handoff dominant + metadata + Last Package) -->
+      <!-- RIGHT COLUMN — Create Safe Handoff dominant + metadata + Last Package (Phase 4) -->
       <div class="right-col">
-        <div class="sec" data-flow-panel="handoff">
-          <div class="sec-head"><span>Create Safe Handoff</span><span class="right-tag ok">Safe</span></div>
-          <div class="sec-body">
+        <div class="handoff-sec" data-flow-panel="handoff">
+          <div class="sec-head"><span>Create Safe Handoff</span><span class="right-tag" id="handoffStateChip">Safe</span></div>
+          <div class="handoff-body">
+            <div class="meta-pills grid-2" id="handoffMetaPills">
+              <span class="meta-pill">Root: <b id="handoffMetaRoot">—</b></span>
+              <span class="meta-pill">Branch: <b id="handoffMetaBranch">—</b></span>
+              <span class="meta-pill">HEAD: <b id="handoffMetaHead">—</b></span>
+              <span class="meta-pill" id="handoffMetaProtection">Protection: <b>—</b></span>
+              <span class="meta-pill" id="handoffMetaPatches">Patches: <b>—</b></span>
+              <span class="meta-pill" id="handoffMetaFiles">Files: <b>—</b></span>
+              <span class="meta-pill" id="handoffMetaManifest">Manifest: <b>—</b></span>
+            </div>
             <div class="handoff-fields">
-              <label style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:block; margin-bottom:4px;">Title
-                <input id="handoffTitle" value="AI workstation handoff" maxlength="90" style="width:100%; height:26px; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:var(--radius-md); padding:0 8px; color:var(--text); font: 11.5px/1 var(--font-ui);">
-              </label>
-              <label style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:block; margin-top:6px; margin-bottom:4px;">Agent
-                <input id="handoffAgent" value="Codex" maxlength="60" style="width:100%; height:26px; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:var(--radius-md); padding:0 8px; color:var(--text); font: 11.5px/1 var(--font-ui);">
-              </label>
-              <label style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:block; margin-top:6px; margin-bottom:4px;">Notes
-                <textarea id="handoffNotes" placeholder="Current intent, risks, next action" style="width:100%; min-height:50px; resize:none; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:var(--radius-md); padding:6px 8px; color:var(--text); font:12px/1.4 var(--font-ui);"></textarea>
-              </label>
+              <div class="handoff-row">
+                <div>
+                  <span class="handoff-label">Title</span>
+                  <input class="handoff-input" id="handoffTitle" type="text" value="AI workstation handoff" maxlength="90">
+                </div>
+                <div>
+                  <span class="handoff-label">Agent</span>
+                  <input class="handoff-input" id="handoffAgent" type="text" value="Codex" maxlength="60">
+                </div>
+              </div>
+              <div>
+                <span class="handoff-label">Notes</span>
+                <textarea class="notes-textarea" id="handoffNotes" placeholder="Current intent, risks, next action"></textarea>
+              </div>
             </div>
             <button class="handoff-primary-action" id="handoffBtn" disabled>Create safe handoff</button>
-            <button class="switch-btn" id="endSessionBtn" type="button" style="margin-top:6px;">End Session / Handoff</button>
+            <button class="end-session-btn" id="endSessionBtn" type="button">End Session / Handoff</button>
+          </div>
+        </div>
+        <div class="last-pkg-sec" id="lastPkgSec">
+          <div class="last-pkg-head" id="lastPkgHead"><span>Last Package <span style="color:var(--text-muted); font-weight:500; margin-left:6px;" id="lastPkgCount">(0)</span></span><span class="triangle"></span></div>
+          <div class="last-pkg-body" id="lastPkgBody">
+            <div class="pkg-meta-row"><span class="lbl">ID</span><span class="val" id="lastPkgId">—</span></div>
+            <div class="pkg-meta-row"><span class="lbl">Created</span><span class="val" id="lastPkgCreated">—</span></div>
+            <div class="pkg-meta-row"><span class="lbl">Branch</span><span class="val" id="lastPkgBranch">—</span></div>
+            <div class="pkg-meta-row"><span class="lbl">Files</span><span class="val" id="lastPkgFiles">—</span></div>
+            <div class="pkg-meta-row"><span class="lbl">Patches</span><span class="val" id="lastPkgPatches">—</span></div>
+            <div class="pkg-actions">
+              <button class="switch-btn" id="lastPkgOpenBtn" type="button">Open Folder</button>
+              <button class="switch-btn" id="lastPkgCopyBtn" type="button">Copy ID</button>
+              <button class="switch-btn" id="lastPkgManifestBtn" type="button">View Manifest</button>
+            </div>
           </div>
         </div>
         <!-- Files / search / safety panels — preserved as legacy-pending until Phase 8 cleanup decides relocation -->
@@ -4865,6 +5035,34 @@
        Quick Message saves automatically when textarea loses focus and has non-empty text. */
     $('messageText').addEventListener('blur', () => {
       if ($('messageText').value.trim()) saveMessageWorkflow('note');
+    });
+
+    /* Phase 4: Last Package collapsible inspector — header toggles .expanded class on .last-pkg-sec */
+    $('lastPkgHead').addEventListener('click', () => {
+      $('lastPkgSec').classList.toggle('expanded');
+    });
+    /* Phase 4: Last Package action buttons. Wire to existing /api/packages query
+       (Open Folder), navigator.clipboard (Copy ID), and /api/package manifest fetch
+       (View Manifest). All three rely on a populated state.lastPackage; show
+       guidance message if no package exists yet. */
+    $('lastPkgOpenBtn').addEventListener('click', () => {
+      if (!state.lastPackage) { showResult('No handoff package available yet. Create one first.', 'warn'); return; }
+      // Reuse existing packages-list flow
+      $('packagesBtn').click();
+    });
+    $('lastPkgCopyBtn').addEventListener('click', async () => {
+      if (!state.lastPackage) { showResult('No handoff package available yet. Create one first.', 'warn'); return; }
+      try {
+        await navigator.clipboard.writeText(state.lastPackage.id || '');
+        showResult(`Copied package ID: <strong>${escapeHtml(state.lastPackage.id || '')}</strong>`, 'success');
+      } catch (err) {
+        showResult('Could not copy to clipboard. Select the ID manually.', 'warn');
+      }
+    });
+    $('lastPkgManifestBtn').addEventListener('click', () => {
+      if (!state.lastPackage) { showResult('No handoff package available yet. Create one first.', 'warn'); return; }
+      // Reuse existing packages-list flow which exposes manifest viewer
+      $('packagesBtn').click();
     });
     $('pauseBtn').addEventListener('click', () => pauseWorkflow(true));
     $('clearPauseBtn').addEventListener('click', () => pauseWorkflow(false));

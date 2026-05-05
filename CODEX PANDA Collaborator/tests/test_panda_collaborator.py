@@ -876,6 +876,14 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
             html,
             r"(?s)\.pc-body\s*\{.*?grid-template-columns:\s*280px 1fr 360px;",
         )
+        # Phase 4: layout inheritance fix — pin row template + height + zero gap/padding
+        # to override the legacy generic `main { grid-template-rows / gap / padding / height }`
+        # rule so the 3 columns fill the full body height instead of just the first
+        # legacy row (Codex audit finding).
+        self.assertRegex(html, r"(?s)\.pc-body\s*\{.*?grid-template-rows:\s*minmax\(0, 1fr\);")
+        self.assertRegex(html, r"(?s)\.pc-body\s*\{.*?height:\s*100%;")
+        self.assertRegex(html, r"(?s)\.pc-body\s*\{.*?gap:\s*0;")
+        self.assertRegex(html, r"(?s)\.pc-body\s*\{.*?padding:\s*0;")
         # Left/center/right column markers
         self.assertIn('class="left-col"', main)
         self.assertIn('class="center-col"', main)
