@@ -35,7 +35,7 @@
       --user-surface: #2a2030;
       --user-ink: #1a1a2e;
       --user-ring: rgba(232, 168, 124, .46);
-      --ok: #7fb069;
+      --ok: #6da850;
       --warn: #f39c12;
       --bad: #e74c3c;
       --shadow: rgba(0, 0, 0, .22);
@@ -66,23 +66,27 @@
       --text-muted: #888888;         /* same hex as --muted */
       --text-dim: #555555;           /* same hex as --quiet */
 
-      /* Bible §2.5 — Semantic scale + soft/border variants (NEW) */
+      /* Bible §2.5 — Semantic scale + soft/border variants (Phase 2: --ok aligned to spec §5.1 #6da850) */
       --err: #e74c3c;                /* alias of --bad with Bible name */
-      --ok-soft: rgba(127, 176, 105, 0.12);
-      --ok-border: rgba(127, 176, 105, 0.45);
+      --ok-soft: rgba(109, 168, 80, 0.14);
+      --ok-border: rgba(109, 168, 80, 0.50);
       --warn-soft: rgba(243, 156, 18, 0.12);
       --warn-border: rgba(243, 156, 18, 0.45);
       --err-soft: rgba(231, 76, 60, 0.12);
       --err-border: rgba(231, 76, 60, 0.45);
 
       /* User identity scale (Bible §2.6 — identity color in identity-marker
-         positions only: stripes, headers, badges. NOT primary action fills.) */
+         positions only: stripes, headers, badges. NOT primary action fills.)
+         Phase 2: --user2 aligned to spec §5.1 #4dd9e0 (vivid cyan); 2 new dim
+         variants for disabled-state Switch button borders. */
       --user1: #e8a87c;
       --user1-soft: rgba(232, 168, 124, 0.12);
       --user1-border: rgba(232, 168, 124, 0.45);
-      --user2: #5fa0a8;
-      --user2-soft: rgba(95, 160, 168, 0.14);
-      --user2-border: rgba(95, 160, 168, 0.45);
+      --user1-dim: rgba(232, 168, 124, 0.25);
+      --user2: #4dd9e0;
+      --user2-soft: rgba(77, 217, 224, 0.12);
+      --user2-border: rgba(77, 217, 224, 0.45);
+      --user2-dim: rgba(77, 217, 224, 0.25);
 
       /* Bible §4.1 — Spacing scale (off-scale values are a smell) */
       --space-xs: 4px;
@@ -563,6 +567,194 @@
     }
     .wg-step:last-child .arrow { display: none; }
     /* === End PC redesign Phase 1 chrome === */
+
+    /* === PC redesign Phase 2 — body 3-column scaffold + left column === */
+    /* Replaces the legacy `<main class="workflow-layout">` 5-panel grid with
+       the locked pc_main_screen_v1.html 3-column body: 280px LEFT (Working Tree
+       + identity sections) | flex CENTER (Status Messages dominant — Phase 3)
+       | 360px RIGHT (Create Safe Handoff — Phase 4). Center and right columns
+       are scaffolded in Phase 2 with hidden legacy markup that holds JS-reachable
+       IDs intact; Phases 3 and 4 will refine them per the mockup. */
+    .pc-body {
+      display: grid;
+      grid-template-columns: 280px 1fr 360px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .pc-body .left-col {
+      display: flex; flex-direction: column;
+      background: var(--pane);
+      border-right: 1px solid var(--border);
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .pc-body .center-col {
+      display: flex; flex-direction: column;
+      background: var(--canvas);
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .pc-body .right-col {
+      display: flex; flex-direction: column;
+      background: var(--pane);
+      border-left: 1px solid var(--border);
+      min-height: 0;
+      overflow-y: auto;
+    }
+    /* Hidden scaffold for legacy panels that will be relocated in Phases 3/4.
+       Keeps JS-reachable IDs in the DOM without rendering them. */
+    .legacy-pending { display: none !important; }
+    /* Honor [hidden] attribute on elements inside .pc-body — overrides class-based
+       display rules like `.register-card { display: grid }` so we can hide legacy
+       register-cards that exist only for JS-reachable data-hub-user/data-hub-name. */
+    .pc-body [hidden] { display: none !important; }
+
+    /* Section blocks (.sec) — header + body, with collapsible variant */
+    .pc-body .sec {
+      display: flex; flex-direction: column;
+      border-bottom: 1px solid var(--border-soft);
+      flex-shrink: 0;
+    }
+    .pc-body .sec-head {
+      display: flex; align-items: center;
+      height: 28px;
+      padding: 0 12px;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent);
+      gap: 8px;
+    }
+    .pc-body .sec-head .right-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-left: auto;
+    }
+    .pc-body .sec-head .right-tag.ok { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+    .pc-body .sec-head .right-tag.warn { background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); }
+    .pc-body .sec-head .right-tag.err { background: var(--err-soft); border: 1px solid var(--err-border); color: var(--err); }
+    .pc-body .sec-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    /* Working Tree section — left column top */
+    .pc-body .left-col .repo-row { display: flex; align-items: center; gap: 6px; }
+    .pc-body .left-col .repo-path-input {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+      background: var(--pane-2);
+      border: 1px solid var(--border);
+      padding: 5px 8px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+      height: 26px;
+    }
+    .pc-body .left-col .repo-path-input.empty { color: var(--text-dim); font-family: var(--font-ui); font-style: italic; }
+    .pc-body .left-col .pill-row { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
+    .pc-body .left-col .lc-pill {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 7px;
+      background: var(--pane-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex: 0 0 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pc-body .left-col .lc-pill b { color: var(--text); font-weight: 600; }
+    .pc-body .left-col .lc-pill.clean { border-color: var(--ok-border); color: var(--ok); background: var(--ok-soft); }
+    .pc-body .left-col .lc-pill.dirty { border-color: var(--warn-border); color: var(--warn); background: var(--warn-soft); }
+    .pc-body .left-col .lc-pill.unknown { border-color: var(--err-border); color: var(--err); background: var(--err-soft); }
+    .pc-body .left-col .last-scan { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+    /* User identity sections (collapsible) */
+    .pc-body .user-sec {
+      padding: 8px 12px 10px;
+      display: flex; flex-direction: column;
+      gap: 5px;
+      border-left: 3px solid transparent;
+    }
+    .pc-body .user-sec.user1 { border-left-color: var(--user1); }
+    .pc-body .user-sec.user2 { border-left-color: var(--user2); }
+    .pc-body .user-sec .user-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pc-body .user-sec .display-name { font-size: 13px; font-weight: 600; }
+    .pc-body .user-sec.user1 .display-name { color: var(--user1); }
+    .pc-body .user-sec.user2 .display-name { color: var(--user2); }
+    .pc-body .user-sec .reg-pill {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .pc-body .user-sec .reg-pill.ok { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+    .pc-body .user-sec .reg-pill.warn { background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); }
+    .pc-body .user-sec .git-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Collapsible user section pattern — sec-head is toggle target. */
+    .pc-body .sec.collapsible .sec-head { cursor: pointer; }
+    .pc-body .sec-head .toggle-tri {
+      width: 0; height: 0;
+      border-left: 5px solid var(--accent);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      margin-right: 4px;
+      transition: transform 0.15s ease;
+      flex-shrink: 0;
+    }
+    .pc-body .sec.expanded .sec-head .toggle-tri { transform: rotate(90deg); }
+    .pc-body .sec.collapsed .user-sec { display: none; }
+    .pc-body .sec .collapsed-summary { display: none; align-items: center; gap: 8px; margin-left: auto; }
+    .pc-body .sec.collapsed .collapsed-summary { display: flex; }
+    .pc-body .sec.collapsed .collapsed-summary .name { font-size: 11px; font-weight: 600; }
+    .pc-body .sec.collapsed.user1-sec .collapsed-summary .name { color: var(--user1); }
+    .pc-body .sec.collapsed.user2-sec .collapsed-summary .name { color: var(--user2); }
+    .pc-body .sec.collapsed .collapsed-summary .reg-pill {
+      font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px;
+      text-transform: uppercase; font-weight: 700;
+      padding: 1px 6px; border-radius: 10px;
+    }
+    .pc-body .sec.collapsed .collapsed-summary .reg-pill.ok { background: var(--ok-soft); border: 1px solid var(--ok-border); color: var(--ok); }
+    .pc-body .sec.collapsed .collapsed-summary .reg-pill.warn { background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); }
+
+    /* Switch / Register button identity-bordered grammar (Bible §6 + spec §5.2) */
+    .pc-body .switch-btn {
+      width: 100%;
+      height: 28px;
+      padding: 0 12px;
+      background: var(--pane-raised);
+      color: var(--text);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      font: 600 11.5px/1 var(--font-ui);
+      letter-spacing: 0.1px;
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .pc-body .switch-btn.user1-bordered { border-color: var(--user1); }
+    .pc-body .switch-btn.user2-bordered { border-color: var(--user2); }
+    .pc-body .switch-btn.user1-bordered.disabled,
+    .pc-body .switch-btn.user1-bordered:disabled { border-color: var(--user1-dim); color: var(--text-dim); background: var(--pane); cursor: not-allowed; }
+    .pc-body .switch-btn.user2-bordered.disabled,
+    .pc-body .switch-btn.user2-bordered:disabled { border-color: var(--user2-dim); color: var(--text-dim); background: var(--pane); cursor: not-allowed; }
+    /* === End PC redesign Phase 2 body chrome === */
 
     .test-controls {
       display: flex;
@@ -2467,191 +2659,157 @@
       </div>
     </aside>
 
-    <main class="workflow-layout">
-      <section class="workflow-row" aria-label="Primary PANDA workflow">
-        <section class="panel sequence-panel setup-panel" data-flow-panel="user1" data-user-tone="user1">
-          <div class="panel-head">
-            <h2><span class="sequence-step">1</span><span>Register User 1</span></h2>
-            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
-            <span class="chip warn" id="setupChip">Needed</span>
+    <main class="pc-body">
+      <!-- LEFT COLUMN — Working Tree + identity sections (Phase 2 fully built) -->
+      <div class="left-col">
+
+        <!-- Working Tree section -->
+        <div class="sec">
+          <div class="sec-head"><span>Working Tree</span><span class="right-tag" id="branchChip">No repo</span></div>
+          <div class="sec-body">
+            <div class="repo-row">
+              <input class="repo-path-input" id="repoPath" value="C:\CODEX PG" spellcheck="false">
+              <button class="switch-btn" type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder" style="width:auto; padding:0 10px;">Browse</button>
+            </div>
+            <button class="switch-btn" id="scanBtn" type="button">Scan Working Tree</button>
+            <div class="pill-row">
+              <span class="lc-pill">branch <b>—</b></span>
+              <span class="lc-pill">HEAD <b>—</b></span>
+              <span class="lc-pill unknown">unknown</span>
+            </div>
+            <span class="last-scan" id="scanTime">last scan: never</span>
+            <button class="switch-btn" id="packagesBtn" type="button">Packages</button>
+            <div id="repoSummary" class="empty" style="font-size:11px; color:var(--text-muted); margin-top:2px;">Scan a repository.</div>
           </div>
-          <div class="panel-body">
-            <div class="form-stack">
-              <div class="register-card" data-hub-user="user1">
-                <span>User 1 identity</span>
+        </div>
+
+        <!-- User 1 section (collapsible, expanded by default — active user) -->
+        <div class="sec collapsible expanded user1-sec" data-flow-panel="user1" data-user-tone="user1">
+          <div class="sec-head"><span class="toggle-tri"></span><span>User 1</span><span class="collapsed-summary"><span class="name" data-hub-name="user1">User 1</span><span class="reg-pill warn" id="setupChip">Setup needed</span></span></div>
+          <div class="user-sec user1">
+            <div class="user-head">
+              <span class="display-name" data-hub-name="user1">User 1</span>
+              <span class="reg-pill warn">Setup needed</span>
+            </div>
+            <span class="git-id" data-hub-user="user1" style="color:var(--text-dim); font-style:italic;">Not registered</span>
+            <div class="register-card" data-hub-user="user1" hidden>
+              <span>User 1 identity</span>
+              <strong data-hub-name="user1">User 1</strong>
+            </div>
+            <button class="switch-btn user1-bordered" id="openSetupBtn" type="button">Register User 1</button>
+            <button class="switch-btn user1-bordered" type="button" data-switch-go="user1" aria-label="Switch to User 1" hidden>Switch to User 1</button>
+            <ul class="setup-checklist" id="setupChecklist" hidden></ul>
+          </div>
+        </div>
+
+        <!-- User 2 section (collapsible) -->
+        <div class="sec collapsible user2-sec" data-flow-panel="user2" data-user-tone="user2">
+          <div class="sec-head"><span class="toggle-tri"></span><span>User 2</span><span class="collapsed-summary"><span class="name" data-hub-name="user2">User 2</span><span class="reg-pill warn">Setup needed</span></span></div>
+          <div class="user-sec user2">
+            <div class="user-head">
+              <span class="display-name" data-hub-name="user2">User 2</span>
+              <span class="reg-pill warn">Setup needed</span>
+            </div>
+            <span class="git-id" data-hub-user="user2" style="color:var(--text-dim); font-style:italic;">Not registered</span>
+            <div class="register-card" data-hub-user="user2" hidden>
+              <span>User 2 identity</span>
+              <strong data-hub-name="user2">User 2</strong>
+            </div>
+            <button class="switch-btn user2-bordered" id="applyProfileBtn" type="button">Register User 2</button>
+            <button class="switch-btn user2-bordered" type="button" data-switch-go="user2" aria-label="Switch to User 2" hidden>Switch to User 2</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CENTER COLUMN — scaffold (Phase 3 will refine: Status Messages dominant + Quick Message + Start Session) -->
+      <div class="center-col">
+        <div class="sec">
+          <div class="sec-head"><span>Status Messages</span><span class="right-tag" id="resultChip">Idle</span></div>
+          <div class="sec-body" style="padding: 0;">
+            <div id="resultBox" class="empty status-window" style="margin: 0; padding: 12px; min-height: 100px;">Ready. No handoff package created yet.</div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>Quick Message</span></div>
+          <div class="sec-body">
+            <input id="messageText" maxlength="500" placeholder="Short note, concern, achievement, or next step" style="width:100%; height:28px; background:var(--pane); border:1px solid var(--border-hover); border-radius:var(--radius-md); padding:0 8px; color:var(--text); font: 12px/1 var(--font-ui);">
+            <button class="switch-btn" id="startSessionBtn" type="button">Start Session / Start Work</button>
+            <button class="switch-btn" id="messageBtn" type="button">Save Message</button>
+          </div>
+        </div>
+        <!-- Hub markup preserved as legacy-pending — Phase 7 confirmation screens replace this surface -->
+        <div class="legacy-pending" data-flow-panel="hub">
+          <div class="setup-control">
+            <div class="active-mini">
+              <span>Now working as</span>
+              <strong id="sideActiveName">SETUP NEEDED</strong>
+            </div>
+            <div class="hub-grid" id="sideHubGrid">
+              <div class="hub-card" data-hub-user="user1">
+                <span>User 1</span>
                 <strong data-hub-name="user1">User 1</strong>
+                <button type="button" data-switch-go="user1" aria-label="Handover to User 1">Handover</button>
               </div>
-              <button class="primary" id="openSetupBtn" type="button">Register User 1</button>
-              <ul class="setup-checklist" id="setupChecklist"></ul>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel sequence-panel" data-flow-panel="user2" data-user-tone="user2">
-          <div class="panel-head">
-            <h2><span class="sequence-step">2</span><span>Register User 2</span></h2>
-            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
-            <span class="chip">Next</span>
-          </div>
-          <div class="panel-body">
-            <div class="form-stack">
-              <div class="register-card" data-hub-user="user2">
-                <span>User 2 identity</span>
+              <div class="hub-card" data-hub-user="user2">
+                <span>User 2</span>
                 <strong data-hub-name="user2">User 2</strong>
-              </div>
-              <button id="applyProfileBtn" type="button">Apply defaults</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel sequence-panel" data-flow-panel="hub">
-          <div class="panel-head">
-            <h2><span class="sequence-step">3</span><span>Collaborator Hub / Handover</span></h2>
-            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
-            <span class="chip">Handover</span>
-          </div>
-          <div class="panel-body">
-            <div class="setup-control">
-              <div class="active-mini">
-                <span>Now working as</span>
-                <strong id="sideActiveName">SETUP NEEDED</strong>
-              </div>
-              <div class="hub-grid" id="sideHubGrid">
-                <div class="hub-card" data-hub-user="user1">
-                  <span>User 1</span>
-                  <strong data-hub-name="user1">User 1</strong>
-                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">Handover</button>
-                </div>
-                <div class="hub-card" data-hub-user="user2">
-                  <span>User 2</span>
-                  <strong data-hub-name="user2">User 2</strong>
-                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">Handover</button>
-                </div>
+                <button type="button" data-switch-go="user2" aria-label="Handover to User 2">Handover</button>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+        <div class="legacy-pending" data-flow-panel="start">
+          <input id="projectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
+          <button type="button" data-path-picker="projectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
+          <button class="danger" id="pauseBtn" type="button">Emergency Pause</button>
+          <button id="clearPauseBtn" type="button">Clear Pause</button>
+        </div>
+      </div>
 
-        <section class="panel sequence-panel" data-flow-panel="start">
-          <div class="panel-head">
-            <h2><span class="sequence-step">4</span><span>Start Session</span></h2>
-            <span class="sequence-arrow" aria-hidden="true">&gt;</span>
-            <span class="chip" id="scanTime">Not scanned</span>
-          </div>
-          <div class="panel-body">
-            <div class="form-stack">
-              <label>Project files
-                <div class="inline-picker">
-                  <input id="projectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
-                  <button type="button" data-path-picker="projectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
-                </div>
+      <!-- RIGHT COLUMN — scaffold (Phase 4 will refine: Create Safe Handoff dominant + metadata + Last Package) -->
+      <div class="right-col">
+        <div class="sec" data-flow-panel="handoff">
+          <div class="sec-head"><span>Create Safe Handoff</span><span class="right-tag ok">Safe</span></div>
+          <div class="sec-body">
+            <div class="handoff-fields">
+              <label style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:block; margin-bottom:4px;">Title
+                <input id="handoffTitle" value="AI workstation handoff" maxlength="90" style="width:100%; height:26px; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:var(--radius-md); padding:0 8px; color:var(--text); font: 11.5px/1 var(--font-ui);">
               </label>
-              <div class="workflow-actions">
-                <button class="primary" id="startSessionBtn" type="button">Start Session / Start Work</button>
-                <button class="danger" id="pauseBtn" type="button">Emergency Pause</button>
-                <button id="clearPauseBtn" type="button">Clear Pause</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel sequence-panel handoff-panel" data-flow-panel="handoff">
-          <div class="panel-head">
-            <h2><span class="sequence-step">5</span><span>Create Handoff</span></h2>
-            <span class="chip ok">Safe</span>
-          </div>
-          <div class="panel-body">
-            <div class="form-stack">
-              <button class="handoff-primary-action" id="handoffBtn" disabled>Create safe handoff</button>
-              <div class="handoff-fields">
-                <label>Title
-                  <input id="handoffTitle" value="AI workstation handoff" maxlength="90">
-                </label>
-                <label>Agent
-                  <input id="handoffAgent" value="Codex" maxlength="60">
-                </label>
-                <label>Notes
-                  <textarea id="handoffNotes" placeholder="Current intent, risks, next action"></textarea>
-                </label>
-                <label>Quick message
-                  <input id="messageText" maxlength="500" placeholder="Short note, concern, achievement, or next step">
-                </label>
-              </div>
-              <div class="workflow-actions">
-                <button id="endSessionBtn" type="button">End Session / Handoff</button>
-                <button id="messageBtn" type="button">Save Message</button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </section>
-
-      <section class="support-grid" aria-label="Repository, status, and review support">
-        <section class="panel repo-panel">
-          <div class="panel-head">
-            <h2>Working Tree</h2>
-            <span class="chip" id="branchChip">No repo</span>
-          </div>
-          <div class="panel-body">
-            <div class="repo-scan-controls">
-              <label>Repository
-                <div class="inline-picker">
-                  <input id="repoPath" value="C:\CODEX PG" spellcheck="false">
-                  <button type="button" data-path-picker="repoPath" data-path-mode="folder" data-path-title="Select local Git repository folder">Browse</button>
-                </div>
+              <label style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:block; margin-top:6px; margin-bottom:4px;">Agent
+                <input id="handoffAgent" value="Codex" maxlength="60" style="width:100%; height:26px; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:var(--radius-md); padding:0 8px; color:var(--text); font: 11.5px/1 var(--font-ui);">
               </label>
-              <button class="primary" id="scanBtn" type="button">Scan repository</button>
-              <button id="packagesBtn" type="button">Packages</button>
-            </div>
-            <div id="repoSummary" class="empty">Scan a repository.</div>
-          </div>
-        </section>
-
-        <section class="panel status-panel">
-          <div class="panel-head">
-            <h2>Status Messages</h2>
-            <span class="chip" id="resultChip">Idle</span>
-          </div>
-          <div class="panel-body">
-            <div id="resultBox" class="empty status-window">Ready. No handoff package created yet.</div>
-          </div>
-        </section>
-
-        <section class="panel files-panel">
-          <div class="panel-head">
-            <h2 id="rightPanelTitle">Changed Files</h2>
-            <span class="chip" id="fileChip">0</span>
-          </div>
-          <div class="panel-body">
-            <div class="view-toggle">
-              <button type="button" class="active" data-side-view="files">Files</button>
-              <button type="button" data-side-view="manager">Manager</button>
-              <button type="button" data-side-view="timeline">Timeline</button>
-              <button type="button" data-side-view="search">Search</button>
-            </div>
-            <ul class="file-list" id="fileList"></ul>
-            <div class="manager-box hidden" id="managerBox"></div>
-            <div class="manager-box hidden" id="timelineBox"></div>
-            <div class="manager-box hidden" id="searchBox">
-              <label>Search history
-                <input id="searchText" maxlength="120" placeholder="Search handoffs, messages, reports">
+              <label style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:block; margin-top:6px; margin-bottom:4px;">Notes
+                <textarea id="handoffNotes" placeholder="Current intent, risks, next action" style="width:100%; min-height:50px; resize:none; background:var(--pane-2); border:1px solid var(--border-hover); border-radius:var(--radius-md); padding:6px 8px; color:var(--text); font:12px/1.4 var(--font-ui);"></textarea>
               </label>
-              <button type="button" id="searchBtn">Search</button>
-              <div id="searchResults" class="manager-box"></div>
             </div>
+            <button class="handoff-primary-action" id="handoffBtn" disabled>Create safe handoff</button>
+            <button class="switch-btn" id="endSessionBtn" type="button" style="margin-top:6px;">End Session / Handoff</button>
           </div>
-        </section>
-
-        <section class="panel safety-panel">
-          <div class="panel-head">
-            <h2>Safety Rules</h2>
-            <span class="chip ok">Always enforced</span>
+        </div>
+        <!-- Files / search / safety panels — preserved as legacy-pending until Phase 8 cleanup decides relocation -->
+        <div class="legacy-pending">
+          <h2 id="rightPanelTitle">Changed Files</h2>
+          <span class="chip" id="fileChip">0</span>
+          <div class="view-toggle">
+            <button type="button" class="active" data-side-view="files">Files</button>
+            <button type="button" data-side-view="manager">Manager</button>
+            <button type="button" data-side-view="timeline">Timeline</button>
+            <button type="button" data-side-view="search">Search</button>
           </div>
-          <div class="panel-body">
-            <ul class="rule-list" id="ruleList"></ul>
+          <ul class="file-list" id="fileList"></ul>
+          <div class="manager-box hidden" id="managerBox"></div>
+          <div class="manager-box hidden" id="timelineBox"></div>
+          <div class="manager-box hidden" id="searchBox">
+            <label>Search history
+              <input id="searchText" maxlength="120" placeholder="Search handoffs, messages, reports">
+            </label>
+            <button type="button" id="searchBtn">Search</button>
+            <div id="searchResults" class="manager-box"></div>
           </div>
-        </section>
-      </section>
+          <ul class="rule-list" id="ruleList"></ul>
+        </div>
+      </div>
     </main>
 
     <div class="setup-overlay hidden" id="setupOverlay" aria-modal="true" role="dialog">

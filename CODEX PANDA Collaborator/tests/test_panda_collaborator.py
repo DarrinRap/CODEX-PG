@@ -413,16 +413,21 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
     def test_workflow_panels_are_single_state_colored_step_guide(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
+        # Phase 2: workflow guide is now the 32px Phase 1 horizontal rail (.workflow-guide)
+        # with .wg-step blocks; legacy 5-panel sequence-panel grid was atomically replaced.
+        # JS workflow lock infrastructure (sequence-panel CSS rules + updateWorkflowLocks) is
+        # preserved as dead CSS until Phase 8 cleanup.
         self.assertNotIn('class="panda-step-guide"', html)
         self.assertNotIn('id="pandaStepGuide"', html)
         self.assertIn("function pandaStepGuideState()", html)
         self.assertIn("function renderPandaStepGuide()", html)
+        # Sequence labels still appear in left-col Register buttons and right-col Create Handoff section
         self.assertIn("Register User 1", html)
         self.assertIn("Register User 2", html)
-        self.assertIn("Collaborator Hub", html)
         self.assertIn("Start Session", html)
-        self.assertIn("Create Handoff", html)
-        self.assertIn('class="sequence-arrow" aria-hidden="true">&gt;</span>', html)
+        # Phase 1 workflow rail shows the 5 step labels including Hand off and Working
+        self.assertIn('data-wg-step="create-handoff"', html)
+        # JS workflow lock CSS rules preserved as dead CSS until Phase 8 cleanup
         self.assertIn(".sequence-panel.is-current .panel-head", html)
         self.assertIn(".sequence-panel.is-ready .panel-head", html)
         self.assertIn(".sequence-panel.is-pending .panel-head", html)
@@ -496,17 +501,18 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
 
     def test_repository_paths_have_folder_browse_buttons(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
-        repo_panel = html.split('class="panel repo-panel"', 1)[1].split('</section>', 1)[0]
-
+        # Phase 2: Working Tree lives in left column .sec block; legacy .repo-panel container
+        # was atomically replaced. JS-reachable IDs (repoPath, scanBtn, packagesBtn) preserved
+        # in the new Working Tree .sec inside the left-col.
+        # The User 1 / User 2 profileRepoPath inputs still live inside the setup-overlay modal.
         for element_id in ("repoPath", "profileRepoPath", "profileRepoPathUser2"):
             self.assertIn(f'id="{element_id}"', html)
             self.assertIn(f'data-path-picker="{element_id}"', html)
         self.assertEqual(html.count('id="repoPath"'), 1)
         self.assertEqual(html.count('id="scanBtn"'), 1)
-        self.assertIn('class="repo-scan-controls"', repo_panel)
-        self.assertIn('id="repoPath"', repo_panel)
-        self.assertIn('data-path-picker="repoPath"', repo_panel)
-        self.assertIn('class="primary" id="scanBtn" type="button">Scan repository</button>', repo_panel)
+        # Working Tree section uses spec §9 canonical button name "Scan Working Tree"
+        self.assertIn('id="scanBtn"', html)
+        self.assertRegex(html, r'<button[^>]*id="scanBtn"[^>]*>Scan Working Tree</button>')
         self.assertIn('data-path-title="Select local Git repository folder"', html)
         self.assertIn('data-path-title="Select User 1 local Git repository folder"', html)
         self.assertIn('data-path-title="Select User 2 local Git repository folder"', html)
@@ -569,7 +575,14 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
         self.assertIn('id="switchUserBtn"', html)
-        self.assertIn("Collaborator Hub / Handover", html)
+        # Phase 2: legacy "Collaborator Hub / Handover" panel header gone with atomic replace.
+        # The hub functionality (Switch buttons + identity sections) now lives in the left
+        # column User 1 / User 2 sections. Switch buttons exist with data-switch-go attributes.
+        # data-switch-go appears in: (1) left-col Switch button, (2) legacy-pending hub markup,
+        # (3) setup-overlay registration. Phase 8 will dedupe; Phase 2 keeps all to preserve
+        # JS-reachable handlers.
+        self.assertGreaterEqual(html.count('data-switch-go="user1"'), 1)
+        self.assertGreaterEqual(html.count('data-switch-go="user2"'), 1)
         self.assertIn("$('switchUserBtn').addEventListener('click', openSetupWizard)", html)
         self.assertIn("button.disabled = state.busy;", html)
         self.assertIn("function handoverButtonLabel(userId, user)", html)
@@ -643,11 +656,13 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
         # The legacy panda-step-guide must stay gone — it caused redundant numbering on registration headers.
-        # Phase 1 introduces the new pc-redesign workflow-guide which uses .wg-step .step-num for its 5-stage
-        # arrow grid; that's the only legitimate occurrence of step-num going forward.
+        # Phase 2 atomically replaced the legacy 5-panel `.workflow-row` (which carried
+        # `.sequence-step` numeric badges) with the 3-column `.pc-body` body. The only
+        # remaining numbered badges live in the Phase 1 horizontal `.workflow-guide` rail
+        # (5 `.wg-step .step-num` dots).
         self.assertNotIn('class="panda-step-guide"', html)
-        # Sequence-step numbering on the workflow-row registration headers is preserved.
-        self.assertIn('class="sequence-step">1</span>', html)
+        self.assertNotIn('class="sequence-step">1</span>', html)
+        self.assertNotIn('class="sequence-step">2</span>', html)
         # New workflow-guide step nums live inside .wg-step blocks and are the only step-num usage.
         for badge_num in ("1", "2", "3", "4", "5"):
             self.assertEqual(html.count(f'<span class="step-num">{badge_num}</span>'), 1,
@@ -696,7 +711,9 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"(?s)\.quit-test-btn\s*\{.*?border-radius:\s*var\(--radius-md\);")
         self.assertIn("$('testModeBtn').classList.toggle('hidden', state.testMode.active);", html)
         self.assertIn("$('openTestEvidenceBtn').classList.toggle('hidden'", html)
-        self.assertIn('class="chip" id="scanTime"', html)
+        # Phase 2: scanTime moved out of legacy `<span class="chip">` into the new Working Tree
+        # left-col section as `<span class="last-scan" id="scanTime">last scan: …</span>`.
+        self.assertIn('id="scanTime"', html)
 
     def test_action_buttons_and_info_pills_get_lay_tooltips(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -743,14 +760,18 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
 
     def test_create_safe_handoff_button_is_prominent_and_state_colored(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
-        handoff_panel = html.split('data-flow-panel="handoff"', 1)[1].split('</section>', 1)[0]
+        # Phase 2: handoff section in right column .sec (was legacy .handoff-panel <section>).
+        # Per spec §4.5, the dominant Create Safe Handoff button now sits AFTER the metadata
+        # fields (Title/Agent/Notes) — not before — so the source order is fields → button.
+        handoff_panel = html.split('data-flow-panel="handoff"', 1)[1].split('class="legacy-pending"', 1)[0]
 
         self.assertEqual(html.count('id="handoffBtn"'), 1)
-        self.assertLess(handoff_panel.index('id="handoffBtn"'), handoff_panel.index('class="handoff-fields"'))
+        # Spec §4.5: dominant action sits below metadata fields
+        self.assertLess(handoff_panel.index('class="handoff-fields"'), handoff_panel.index('id="handoffBtn"'))
         self.assertIn('class="handoff-primary-action" id="handoffBtn" disabled>Create safe handoff</button>', html)
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?width:\s*100%;")
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?min-height:\s*48px;")
-        # Phase 1: flat Bible surface backgrounds — no linear-gradient fills
+        # Bible §6 grammar: flat surface backgrounds — no linear-gradient fills
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?border-radius:\s*var\(--radius-md\);")
         self.assertRegex(html, r"(?s)\.handoff-primary-action\s*\{.*?background:\s*var\(--ok\);")
         self.assertRegex(html, r"(?s)\.handoff-primary-action:disabled\s*\{.*?background:\s*var\(--pane\);")
@@ -836,32 +857,39 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
 
     def test_main_screen_orders_controls_left_to_right_by_workflow(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
-        main = html.split('<main class="workflow-layout">', 1)[1].split('<div class="setup-overlay', 1)[0]
+        # Phase 2: legacy `<main class="workflow-layout">` 5-panel grid atomically replaced
+        # with `<main class="pc-body">` 3-column scaffold (280 LEFT / flex CENTER / 360 RIGHT).
+        # Left column fully built (Working Tree + collapsible User 1/User 2). Center and right
+        # columns scaffolded with JS-reachable IDs preserved; Phases 3 and 4 will refine.
+        main = html.split('<main class="pc-body">', 1)[1].split('</main>', 1)[0]
 
-        self.assertIn('class="workflow-row"', main)
+        # 3-column grid template per spec §3.1
         self.assertRegex(
             html,
-            r"(?s)\.workflow-row\s*\{.*?grid-template-columns:\s*minmax\(145px, \.55fr\).*?minmax\(540px, 2\.45fr\);",
+            r"(?s)\.pc-body\s*\{.*?grid-template-columns:\s*280px 1fr 360px;",
         )
-        self.assertRegex(html, r"(?s)main\s*\{.*?grid-template-rows:\s*minmax\(340px, 1\.22fr\) minmax\(0, \.58fr\);")
+        # Left/center/right column markers
+        self.assertIn('class="left-col"', main)
+        self.assertIn('class="center-col"', main)
+        self.assertIn('class="right-col"', main)
+        # Identity sections (left col) carry data-flow-panel attributes for legacy compat
+        self.assertIn('data-flow-panel="user1"', main)
+        self.assertIn('data-flow-panel="user2"', main)
         self.assertIn('data-flow-panel="handoff"', main)
+        # JS workflow lock infrastructure preserved
         self.assertIn(".sequence-panel.is-locked", html)
         self.assertIn("function updateWorkflowLocks()", html)
         self.assertIn("handoff: handoffStepReady()", html)
         self.assertIn("forbidden.slice(0, 2)", html)
         self.assertIn("more destructive commands blocked", html)
 
-        sequence = [
-            "Register User 1",
-            "Register User 2",
-            "Collaborator Hub / Handover",
-            "Start Session",
-            "Create Handoff",
-        ]
-        positions = [main.index(label) for label in sequence]
-        self.assertEqual(positions, sorted(positions))
+        # Workflow ordering inside the left column: User 1 section appears before User 2
+        self.assertLess(main.index('data-flow-panel="user1"'), main.index('data-flow-panel="user2"'))
+        # Handoff button (right col Phase 4 scaffold) lives after Start Session button
+        # (center col Phase 3 scaffold). Both IDs preserved.
         self.assertLess(main.index('id="startSessionBtn"'), main.index('id="handoffBtn"'))
-        self.assertLess(main.index('class="workflow-row"'), main.index('class="support-grid"'))
+        # Left col precedes right col in source order
+        self.assertLess(main.index('class="left-col"'), main.index('class="right-col"'))
 
 
 class PandaCollaboratorHandoffTests(unittest.TestCase):
