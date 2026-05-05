@@ -328,7 +328,11 @@ def normalize_handover_state(value: Any) -> dict[str, Any]:
     """
     if not isinstance(value, dict):
         return dict(DEFAULT_HANDOVER_STATE)
-    pending = bool(value.get("handover_pending", False))
+    # Strict bool coercion — accept only Python True or integer 1.
+    # Avoids `bool("false")` → True quirk that would mis-fire Phase 7 auto-show
+    # if a settings file had the string "false" instead of an actual boolean.
+    raw_pending = value.get("handover_pending", False)
+    pending = raw_pending is True or raw_pending == 1
     slot_raw = value.get("incoming_user_slot")
     incoming_user_slot = slot_raw if slot_raw in {"user1", "user2"} else None
     ts_raw = value.get("handover_timestamp")

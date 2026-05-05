@@ -459,20 +459,34 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
 
     def test_normalize_handover_state_clamps_invalid_slot_and_string_lengths(self):
         # Phase 5: invalid slot strings → None; oversize string fields trimmed to caps.
+        # Phase 5 micro-fix (CLAUDE-20260504-008302): handover_pending uses strict
+        # bool coercion — only Python True or integer 1 produce True. Any string
+        # (including "false", "true", "yes") collapses to False to avoid the
+        # bool("false") == True quirk mis-firing Phase 7 auto-show on a manually
+        # edited settings file.
         result = pc.normalize_handover_state(
             {
-                "handover_pending": "yes",  # truthy non-bool → True
+                "handover_pending": "yes",  # string — strict coercion → False
                 "incoming_user_slot": "user_1",  # underscore variant — invalid → None
                 "handover_timestamp": "  2026-05-04T22:30:00-07:00  " + "x" * 200,
                 "handoff_package_id": "P" * 500,
                 "failed_package_id": "  ",  # whitespace-only → None
             }
         )
-        self.assertEqual(result["handover_pending"], True)
+        self.assertEqual(result["handover_pending"], False)
         self.assertIsNone(result["incoming_user_slot"])
         self.assertEqual(len(result["handover_timestamp"]), 64)
         self.assertEqual(len(result["handoff_package_id"]), 120)
         self.assertIsNone(result["failed_package_id"])
+
+        # Per CD micro-fix directive: explicit assertions for bool coercion edge cases.
+        self.assertFalse(pc.normalize_handover_state({"handover_pending": "false"})["handover_pending"])
+        self.assertFalse(pc.normalize_handover_state({"handover_pending": "true"})["handover_pending"])
+        self.assertFalse(pc.normalize_handover_state({"handover_pending": "yes"})["handover_pending"])
+        self.assertTrue(pc.normalize_handover_state({"handover_pending": True})["handover_pending"])
+        self.assertTrue(pc.normalize_handover_state({"handover_pending": 1})["handover_pending"])
+        self.assertFalse(pc.normalize_handover_state({"handover_pending": 0})["handover_pending"])
+        self.assertFalse(pc.normalize_handover_state({"handover_pending": None})["handover_pending"])
 
     def test_setup_autofill_finds_paths_and_drafts_claude_help(self):
         repo = self.tmp / "repo"
