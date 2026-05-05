@@ -779,9 +779,17 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
     def test_status_messages_use_one_scroll_container(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
-        self.assertRegex(html, r"(?s)\.status-panel \.panel-body\s*\{.*?overflow:\s*hidden;")
-        self.assertRegex(html, r"(?s)\.status-window\s*\{.*?height:\s*100%;.*?overflow:\s*auto;.*?scrollbar-gutter:\s*stable;")
-        self.assertIn('id="resultBox" class="empty status-window"', html)
+        # Phase 3: legacy `.status-panel .panel-body` and `.status-window` containers replaced
+        # by the new `.status-list` accumulating list inside `.center-col .status-sec`. The
+        # scroll container is `.status-list { overflow-y: auto }`. Status messages prepend
+        # color-coded `.status-row` entries.
+        self.assertRegex(html, r"(?s)\.pc-body \.center-col \.status-list\s*\{.*?overflow-y:\s*auto;")
+        self.assertRegex(html, r"(?s)\.pc-body \.center-col \.status-sec\s*\{.*?flex:\s*1 1 auto;")
+        # resultBox is now the .status-list container itself
+        self.assertIn('class="status-list" id="resultBox"', html)
+        # The new showResult prepends .status-row entries — single scroll container per spec §4.4
+        self.assertIn("function showResult(message, kind = 'ok')", html)
+        self.assertIn("row.className = 'status-row ' + cls;", html)
 
     def test_setup_dialog_is_centered_and_shows_side_by_side_registration(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
