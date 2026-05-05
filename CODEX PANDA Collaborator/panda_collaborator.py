@@ -450,6 +450,54 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
     return settings
 
 
+def utc_iso_timestamp() -> str:
+    """Phase 7: ISO 8601 UTC timestamp with seconds precision and Z suffix.
+
+    Used as `handover_timestamp` per PC_HANDOFF_PROGRESS_SPEC v1.1 §5.2.
+    """
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def save_handover_state(slot: str, package_id: str) -> dict[str, Any]:
+    """Phase 7: write a queued handover to settings.
+
+    Called by POST /api/handoff/confirm when the outgoing user clicks
+    "Hand Off to [Name]" on the outgoing confirmation modal. Per spec
+    v1.1 §5.1-§5.2 the resulting state survives app close, browser close,
+    and workstation restart. The save_settings() call writes a timestamped
+    backup per §5.3.
+    """
+    if slot not in {"user1", "user2"}:
+        raise CollaboratorError("incoming_user_slot must be 'user1' or 'user2'.")
+    package_id_clean = clean_setting_text(package_id, "", 120)
+    if not package_id_clean:
+        raise CollaboratorError("handoff_package_id is required.")
+    settings = load_settings()
+    settings["handover_state"] = {
+        "handover_pending": True,
+        "incoming_user_slot": slot,
+        "handover_timestamp": utc_iso_timestamp(),
+        "handoff_package_id": package_id_clean,
+        "failed_package_id": None,
+    }
+    saved = save_settings(settings)
+    return saved["handover_state"]
+
+
+def clear_handover_state() -> dict[str, Any]:
+    """Phase 7: clear a pending handover from settings.
+
+    Called from start_session() when handover_pending is true (the incoming
+    user has clicked "Start Session" on the incoming confirmation modal).
+    Idempotent — when no handover is pending the caller skips this to avoid
+    noisy backup files.
+    """
+    settings = load_settings()
+    settings["handover_state"] = dict(DEFAULT_HANDOVER_STATE)
+    saved = save_settings(settings)
+    return saved["handover_state"]
+
+
 def dedupe_paths(paths: list[Path]) -> list[Path]:
     seen: set[str] = set()
     unique: list[Path] = []
@@ -2560,6 +2608,14 @@ def dashboard_for(path_text: str, operator_context: dict[str, Any] | None = None
 
 
 def start_session(payload: dict[str, Any]) -> dict[str, Any]:
+    # Phase 7: clear pending handover before computing dashboard. Reaching this
+    # endpoint while pending=true means the incoming user clicked "Start Session"
+    # on the auto-shown incoming confirmation modal (spec v1.1 §8). Skipping
+    # when pending=false avoids generating a backup file on every regular
+    # main-hub Start Session click.
+    pending_settings = load_settings()
+    if pending_settings.get("handover_state", {}).get("handover_pending"):
+        clear_handover_state()
     path_text = str(payload.get("path", ""))
     context = normalize_operator_context(payload.get("operator_context", {}), path_text)
     dashboard = dashboard_for(path_text, context)
@@ -2833,6 +2889,14 @@ class PandaHandler(BaseHTTPRequestHandler):
                     "handoff": manifest,
                     "package_id": manifest.get("package_id"),
                 })
+            if parsed.path == "/api/handoff/confirm":
+                # Phase 7: outgoing user clicked "Hand Off to [Name]" on the
+                # outgoing confirmation modal. Writes handover_state with the
+                # incoming slot + package_id from the just-completed handoff.
+                slot = str(payload.get("incoming_user_slot", "")).strip()
+                package_id = str(payload.get("handoff_package_id", "")).strip()
+                state = save_handover_state(slot, package_id)
+                return json_response(self, {"ok": True, "handover_state": state})
             if parsed.path == "/api/session/start":
                 return json_response(self, {"ok": True, "session": start_session(payload)})
             if parsed.path == "/api/session/end":

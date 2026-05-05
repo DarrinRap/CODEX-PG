@@ -1114,6 +1114,236 @@
     .hp-done-btn:disabled { background: var(--pane); color: var(--text-dim); border-color: var(--border); cursor: not-allowed; }
     /* === End PC redesign Phase 6 handoff progress modal === */
 
+    /* === PC redesign Phase 7 — outgoing/incoming confirmation modals === */
+    /* Visual contract: pc_redesign_v2/pc_v2_outgoing_confirmation.html and
+       pc_v2_incoming_confirmation.html. Per spec v1.1 §4.2 + §4.3, both modals
+       are full-bleed overlays that cannot be dismissed by Esc, click-outside,
+       or any passive gesture — only the primary action button completes the
+       flow. Identity stripe + 6% gradient wash from outgoing/incoming user. */
+    .outgoing-confirmation-overlay,
+    .incoming-confirmation-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--canvas);
+      display: none;
+      flex-direction: column;
+      z-index: 200;
+      overflow: hidden;
+    }
+    .outgoing-confirmation-overlay.is-open,
+    .incoming-confirmation-overlay.is-open { display: flex; }
+    .outgoing-confirmation-overlay::before,
+    .incoming-confirmation-overlay::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px;
+      z-index: 5;
+    }
+    .outgoing-confirmation-overlay[data-tone="user1"]::before,
+    .incoming-confirmation-overlay[data-tone="user1"]::before { background: var(--user1); }
+    .outgoing-confirmation-overlay[data-tone="user2"]::before,
+    .incoming-confirmation-overlay[data-tone="user2"]::before { background: var(--user2); }
+    .outgoing-confirmation-overlay[data-tone="user1"],
+    .incoming-confirmation-overlay[data-tone="user1"] {
+      background: linear-gradient(180deg, rgba(232, 168, 124, 0.06) 0%, var(--canvas) 100%);
+    }
+    .outgoing-confirmation-overlay[data-tone="user2"],
+    .incoming-confirmation-overlay[data-tone="user2"] {
+      background: linear-gradient(180deg, rgba(77, 217, 224, 0.06) 0%, var(--canvas) 100%);
+    }
+    .confirmation-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 64px 96px;
+      max-width: 920px;
+      margin: 0 auto;
+      width: 100%;
+      overflow-y: auto;
+    }
+    .cf-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .outgoing-confirmation-overlay[data-tone="user1"] .cf-eyebrow,
+    .incoming-confirmation-overlay[data-tone="user1"] .cf-eyebrow { color: var(--user1); }
+    .outgoing-confirmation-overlay[data-tone="user2"] .cf-eyebrow,
+    .incoming-confirmation-overlay[data-tone="user2"] .cf-eyebrow { color: var(--user2); }
+    .cf-success-row {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 1px;
+      text-transform: uppercase; font-weight: 700;
+      color: var(--ok);
+      background: var(--ok-soft);
+      border: 1px solid var(--ok-border);
+      padding: 4px 10px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      align-self: flex-start;
+    }
+    .cf-success-row svg { width: 14px; height: 14px; }
+    .cf-title {
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .cf-title strong { font-weight: 700; }
+    .outgoing-confirmation-overlay[data-tone="user1"] .cf-title strong,
+    .incoming-confirmation-overlay[data-tone="user1"] .cf-title strong { color: var(--user1); }
+    .outgoing-confirmation-overlay[data-tone="user2"] .cf-title strong,
+    .incoming-confirmation-overlay[data-tone="user2"] .cf-title strong { color: var(--user2); }
+    .cf-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+    .cf-steps {
+      background: var(--pane);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      margin-bottom: 32px;
+    }
+    .cf-steps-cap {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 12px;
+    }
+    .cf-steps-cap > span:first-child {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .cf-steps-cap .hint {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 400;
+    }
+    .cf-step {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-soft);
+      align-items: center;
+    }
+    .cf-step:last-child { border-bottom: none; }
+    .cf-step-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+      background: rgba(232, 168, 124, 0.12);
+      color: var(--accent);
+    }
+    .outgoing-confirmation-overlay[data-tone="user1"] .cf-step-num,
+    .incoming-confirmation-overlay[data-tone="user1"] .cf-step-num { background: rgba(232, 168, 124, 0.12); color: var(--user1); }
+    .outgoing-confirmation-overlay[data-tone="user2"] .cf-step-num,
+    .incoming-confirmation-overlay[data-tone="user2"] .cf-step-num { background: rgba(77, 217, 224, 0.12); color: var(--user2); }
+    .cf-step-text { color: var(--text); font-size: 13px; line-height: 1.5; }
+    .cf-step-text strong { color: var(--text); font-weight: 700; }
+    .handoff-summary {
+      background: var(--pane);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      margin-bottom: 24px;
+    }
+    .summary-cap {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 12px;
+    }
+    .summary-cap .left {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .summary-cap .right {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+    .summary-meta {
+      display: flex; gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .summary-meta b { color: var(--text); font-weight: 600; }
+    .summary-meta-pill {
+      padding: 2px 8px;
+      background: var(--pane-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .summary-body {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .summary-body p + p { margin-top: 8px; }
+    .cf-action {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 10px;
+      height: 56px;
+      padding: 0 36px;
+      background: var(--ok); color: var(--canvas);
+      border: 1px solid var(--ok);
+      border-radius: var(--radius-md);
+      font: 700 17px/1 var(--font-ui);
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      align-self: flex-start;
+      min-width: 320px;
+    }
+    .cf-action:hover { background: #82bf61; border-color: #82bf61; }
+    .cf-action:disabled,
+    .cf-action[disabled] {
+      background: var(--pane-2);
+      color: var(--text-dim);
+      border-color: var(--border);
+      cursor: not-allowed;
+    }
+    .cf-action .ar { font-size: 18px; transform: translateY(-1px); }
+    .cf-foot {
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .cf-foot a {
+      color: var(--text-muted);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .cf-foot a:hover { color: var(--user1); }
+    /* Launch gate covers main view from page load until init() resolves settings —
+       prevents flash of main view when an incoming handover is pending (CD ruling 5a). */
+    #pcLaunchGate {
+      position: fixed;
+      inset: 0;
+      background: var(--canvas);
+      z-index: 150;
+    }
+    /* === End PC redesign Phase 7 outgoing/incoming confirmation modals === */
+
     /* === PC redesign Phase 5 — registration modal re-skin === */
     /* Re-skins the existing #setupOverlay / .setup-dialog / .wizard-grid to match
        the locked pc_main_screen_v1.html State D mockup grammar (Bible dark surfaces,
@@ -5380,6 +5610,12 @@
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       }
+      // Phase 7: signal settings load attempt complete so the incoming-confirmation
+      // modal can decide whether to auto-show (CD ruling 5a). Always fires — even
+      // on the error path — so the launch gate is removed promptly.
+      document.dispatchEvent(new CustomEvent('pc:settings-loaded', {
+        detail: { settings: state.settings || null }
+      }));
     }
 
     function launcherClientId() {
@@ -5499,6 +5735,9 @@
       const doneBtn = document.getElementById('handoffProgressDoneBtn');
 
       let pollHandle = null;
+      // Phase 7: track the package_id of the just-completed handoff so the
+      // Done click can chain to the outgoing confirmation modal.
+      let lastCompletedPackageId = null;
 
       function openModal() {
         overlay.classList.add('is-open');
@@ -5613,8 +5852,12 @@
             if (pollHandle) { clearInterval(pollHandle); pollHandle = null; }
             doneBtn.disabled = false;
             if (data.status === 'complete') {
+              // Phase 7: capture package_id so Done can chain to the outgoing
+              // confirmation modal. Cleared to null on failed/aborted.
+              lastCompletedPackageId = data.package_id || null;
               footerMsg.textContent = 'Package ready. Click Done to close this window.';
             } else {
+              lastCompletedPackageId = null;
               incompleteBanner.classList.add('visible');
               incompleteMsg.textContent = `HANDOFF INCOMPLETE — ${data.error || 'engine halted before all steps passed'}`;
               footerMsg.classList.add('err');
@@ -5633,7 +5876,17 @@
       }
 
       // Wire Done button via $('id') pattern so the click-wiring lint passes.
-      $('handoffProgressDoneBtn').addEventListener('click', closeModal);
+      // Phase 7: on a successful handoff, chain to the outgoing confirmation modal
+      // by dispatching 'pc:handoff-complete' before closing this one.
+      $('handoffProgressDoneBtn').addEventListener('click', function () {
+        const pkgId = lastCompletedPackageId;
+        closeModal();
+        if (pkgId) {
+          document.dispatchEvent(new CustomEvent('pc:handoff-complete', {
+            detail: { package_id: pkgId }
+          }));
+        }
+      });
 
       // Replace the existing createHandoff path for handoffBtn — open the modal first,
       // then drive the POST + polling concurrently.
@@ -5682,6 +5935,234 @@
         handoffBtn.parentNode.replaceChild(newBtn, handoffBtn);
         newBtn.addEventListener('click', createHandoffWithProgress);
       }
+    })();
+  </script>
+
+  <!-- Phase 7: outgoing confirmation modal — opens after Phase 6 progress Done click on complete; per pc_v2_outgoing_confirmation.html -->
+  <div class="outgoing-confirmation-overlay" id="outgoingConfirmationOverlay" data-tone="user1" aria-hidden="true" role="dialog" aria-labelledby="outgoingConfirmationTitle">
+    <div class="confirmation-body">
+      <span class="cf-eyebrow">Handoff package created</span>
+      <span class="cf-success-row">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 11.5L3 8l1-1 2.5 2.5L12 4l1 1z"/></svg>
+        handoff package finalized
+      </span>
+      <h2 class="cf-title" id="outgoingConfirmationTitle">Ready to hand off to <strong id="outgoingIncomingName">User</strong>.</h2>
+      <p class="cf-subtitle">Complete the three steps below before clicking the button.</p>
+      <div class="cf-steps">
+        <div class="cf-steps-cap">
+          <span>Before you click the button</span>
+          <span class="hint">required actions</span>
+        </div>
+        <div class="cf-step">
+          <span class="cf-step-num">1</span>
+          <span class="cf-step-text">Close your <strong>Claude Desktop</strong> session.</span>
+        </div>
+        <div class="cf-step">
+          <span class="cf-step-num">2</span>
+          <span class="cf-step-text">Close your <strong>Claude Code</strong> session.</span>
+        </div>
+        <div class="cf-step">
+          <span class="cf-step-num">3</span>
+          <span class="cf-step-text">Log out of your <strong>GitHub account</strong> if you remain at the workstation.</span>
+        </div>
+      </div>
+      <button class="cf-action" id="outgoingHandoffBtn" type="button">Hand Off to <span id="outgoingHandoffBtnName">User</span> <span class="ar">→</span></button>
+      <span class="cf-foot">Cannot be dismissed by Esc or clicking outside. Only the button completes the handoff.</span>
+    </div>
+  </div>
+
+  <!-- Phase 7: incoming confirmation modal — auto-shown on launch when handover_pending=true; per pc_v2_incoming_confirmation.html -->
+  <div class="incoming-confirmation-overlay" id="incomingConfirmationOverlay" data-tone="user1" aria-hidden="true" role="dialog" aria-labelledby="incomingConfirmationTitle">
+    <div class="confirmation-body">
+      <span class="cf-eyebrow">Handover received · session start required</span>
+      <h2 class="cf-title" id="incomingConfirmationTitle">Welcome back, <strong id="incomingUserName">User</strong>.</h2>
+      <p class="cf-subtitle" id="incomingHandoverSubtitle">A handoff is queued for you. Read the summary below, then click Start Session.</p>
+      <div class="handoff-summary" id="incomingHandoffSummary">
+        <div class="summary-cap">
+          <span class="left">Handoff Summary</span>
+          <span class="right" id="incomingPackageMeta">queued package</span>
+        </div>
+        <div class="summary-meta" id="incomingSummaryMeta">
+          <span class="summary-meta-pill">Package: <b id="incomingPackageId">—</b></span>
+          <span class="summary-meta-pill">Created: <b id="incomingHandoverTimestamp">—</b></span>
+        </div>
+        <div class="summary-body" id="incomingSummaryBody">
+          <p>Loading handoff summary…</p>
+        </div>
+      </div>
+      <button class="cf-action" id="incomingStartSessionBtn" type="button">Start Session <span class="ar">→</span></button>
+      <span class="cf-foot">
+        Auto-shown on PC launch because a handover is pending. Cannot be dismissed.
+        <br>
+        Something went wrong loading the handoff? <a id="incomingEscapeHatchLink" href="javascript:void(0)">Open escape hatch</a>
+      </span>
+    </div>
+  </div>
+
+  <script>
+    /* Phase 7 — outgoing/incoming confirmation modal driver.
+       Outgoing: opens after Phase 6 'Done' click when status === 'complete'.
+       'Hand Off to [Name]' click writes handover_state via POST /api/handoff/confirm.
+       Incoming: auto-shown on launch when handover_state.handover_pending === true.
+       'Start Session' click clears handover_state via POST /api/session/start.
+       Per CD ruling 5a: full-bleed overlay opened pre-paint via launch gate.
+       Per CD ruling 5b: escape hatch link is a no-op stub — Phase 8 owns. */
+    (function () {
+      // Launch gate: covers main view from page load until init() resolves
+      // settings, preventing a flash of main view before the incoming modal
+      // can decide whether to show.
+      const launchGate = document.createElement('div');
+      launchGate.id = 'pcLaunchGate';
+      document.body.appendChild(launchGate);
+
+      const outgoingOverlay = document.getElementById('outgoingConfirmationOverlay');
+      const outgoingNameEl = document.getElementById('outgoingIncomingName');
+      const outgoingBtnNameEl = document.getElementById('outgoingHandoffBtnName');
+      const outgoingHandoffBtn = document.getElementById('outgoingHandoffBtn');
+
+      const incomingOverlay = document.getElementById('incomingConfirmationOverlay');
+      const incomingUserNameEl = document.getElementById('incomingUserName');
+      const incomingSubtitleEl = document.getElementById('incomingHandoverSubtitle');
+      const incomingPackageIdEl = document.getElementById('incomingPackageId');
+      const incomingTimestampEl = document.getElementById('incomingHandoverTimestamp');
+      const incomingSummaryBodyEl = document.getElementById('incomingSummaryBody');
+      const incomingStartSessionBtn = document.getElementById('incomingStartSessionBtn');
+      const incomingEscapeHatchLink = document.getElementById('incomingEscapeHatchLink');
+
+      let outgoingPackageId = null;
+      let outgoingIncomingSlot = null;
+
+      function userBySlot(settings, slot) {
+        if (!settings || !Array.isArray(settings.users)) return null;
+        return settings.users.find(u => u && u.id === slot) || null;
+      }
+      function activeSlotFromSettings(settings) {
+        if (!settings) return 'user1';
+        return settings.active_user_id === 'user2' ? 'user2' : 'user1';
+      }
+      function otherSlot(slot) {
+        return slot === 'user1' ? 'user2' : 'user1';
+      }
+
+      function openOutgoingModal(packageId) {
+        const settings = (typeof state !== 'undefined' && state && state.settings) || null;
+        const activeSlot = activeSlotFromSettings(settings);
+        const incomingSlot = otherSlot(activeSlot);
+        const incomingUser = userBySlot(settings, incomingSlot);
+        const incomingName = (incomingUser && incomingUser.display_name) || 'the next user';
+        outgoingPackageId = packageId || null;
+        outgoingIncomingSlot = incomingSlot;
+        outgoingOverlay.setAttribute('data-tone', activeSlot);
+        outgoingNameEl.textContent = incomingName;
+        outgoingBtnNameEl.textContent = incomingName;
+        outgoingOverlay.classList.add('is-open');
+        outgoingOverlay.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeOutgoingModal() {
+        outgoingOverlay.classList.remove('is-open');
+        outgoingOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      function openIncomingModal(settings) {
+        const handover = (settings && settings.handover_state) || {};
+        const incomingSlot = (handover.incoming_user_slot === 'user2') ? 'user2' : 'user1';
+        const incomingUser = userBySlot(settings, incomingSlot);
+        const outgoingUser = userBySlot(settings, otherSlot(incomingSlot));
+        const incomingName = (incomingUser && incomingUser.display_name) || 'User';
+        const outgoingName = (outgoingUser && outgoingUser.display_name) || 'previous user';
+        incomingOverlay.setAttribute('data-tone', incomingSlot);
+        incomingUserNameEl.textContent = incomingName;
+        incomingSubtitleEl.textContent = outgoingName + ' handed off to you. Read the summary below, then click Start Session.';
+        incomingPackageIdEl.textContent = handover.handoff_package_id || '—';
+        incomingTimestampEl.textContent = handover.handover_timestamp || '—';
+        // Summary content loading is deferred to Phase 8; render placeholder so
+        // the layout matches the locked v2 mockup without a hard backend dep.
+        incomingSummaryBodyEl.innerHTML = '<p>Read the latest handoff package details before starting your session. The full package summary will load in a future phase; for now the package ID and timestamp above identify the queued handoff.</p>';
+        incomingOverlay.classList.add('is-open');
+        incomingOverlay.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeIncomingModal() {
+        incomingOverlay.classList.remove('is-open');
+        incomingOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      // Outgoing 'Hand Off to [Name]' click → POST /api/handoff/confirm.
+      $('outgoingHandoffBtn').addEventListener('click', async function () {
+        if (!outgoingPackageId || !outgoingIncomingSlot) {
+          closeOutgoingModal();
+          return;
+        }
+        outgoingHandoffBtn.disabled = true;
+        try {
+          await api('/api/handoff/confirm', {
+            incoming_user_slot: outgoingIncomingSlot,
+            handoff_package_id: outgoingPackageId
+          });
+          closeOutgoingModal();
+        } catch (err) {
+          console.error('Phase 7: handoff/confirm failed', err);
+        } finally {
+          outgoingHandoffBtn.disabled = false;
+        }
+      });
+
+      // Incoming 'Start Session' click → POST /api/session/start.
+      // start_session() server-side clears handover_state if pending.
+      $('incomingStartSessionBtn').addEventListener('click', async function () {
+        incomingStartSessionBtn.disabled = true;
+        try {
+          const repoPath = ($('repoPath') && $('repoPath').value) || '';
+          const ctx = (typeof activeOperatorContext === 'function') ? activeOperatorContext() : {};
+          await api('/api/session/start', { path: repoPath, operator_context: ctx });
+          closeIncomingModal();
+          if (typeof loadSettings === 'function') { try { await loadSettings(); } catch (_) {} }
+          if (typeof refreshControlCenter === 'function') { try { await refreshControlCenter(); } catch (_) {} }
+        } catch (err) {
+          console.error('Phase 7: session/start failed', err);
+        } finally {
+          incomingStartSessionBtn.disabled = false;
+        }
+      });
+
+      // Escape hatch link — no-op stub (Phase 8 wires).
+      $('incomingEscapeHatchLink').addEventListener('click', function (ev) {
+        ev.preventDefault();
+        console.log('Phase 8: escape hatch not yet implemented');
+      });
+
+      // Phase 6 emits 'pc:handoff-complete' on Done click after a successful run.
+      document.addEventListener('pc:handoff-complete', function (ev) {
+        const pkgId = ev.detail && ev.detail.package_id;
+        if (pkgId) openOutgoingModal(pkgId);
+      });
+
+      // init() emits 'pc:settings-loaded' once settings are loaded (success or
+      // error). Auto-show the incoming modal if a handover is pending; always
+      // remove the launch gate so the main view becomes interactive.
+      document.addEventListener('pc:settings-loaded', function (ev) {
+        try {
+          const settings = ev.detail && ev.detail.settings;
+          if (settings && settings.handover_state && settings.handover_state.handover_pending === true) {
+            openIncomingModal(settings);
+          }
+        } catch (err) {
+          console.log('Phase 7: incoming auto-show skipped:', err);
+        }
+        const gate = document.getElementById('pcLaunchGate');
+        if (gate) gate.remove();
+      });
+
+      // Fallback: if 'pc:settings-loaded' never fires (init() crash), drop the
+      // launch gate after 4 seconds so the user is not stuck on a blank canvas.
+      setTimeout(function () {
+        const gate = document.getElementById('pcLaunchGate');
+        if (gate) {
+          console.log('Phase 7: launch gate fallback timeout');
+          gate.remove();
+        }
+      }, 4000);
     })();
   </script>
 

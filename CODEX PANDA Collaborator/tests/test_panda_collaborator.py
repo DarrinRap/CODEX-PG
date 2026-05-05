@@ -1402,5 +1402,223 @@ class PandaCollaboratorHandoffProgressTests(unittest.TestCase):
         self.assertEqual(len(packages["packages"]), 0)
 
 
+class PandaCollaboratorHandoverStateTests(unittest.TestCase):
+    """Phase 7: handover_state mutator + auto-show + start-session-clears tests.
+
+    Per PC_HANDOFF_PROGRESS_SPEC v1.1 §5.1-§5.2 and Phase 7 token §1, this class
+    covers the five test categories required by the token:
+      - save_handover_state writes a full 5-field record with ISO-8601 UTC timestamp
+      - load round-trips through disk (handover state survives app restart)
+      - clear_handover_state resets the sub-object to default-all-null
+      - start_session clears a pending handover atomically (incoming-modal path)
+      - malformed handover_state on disk recovers to pending=false (no crash)
+      - chain: Phase 6 create_handoff_package package_id flows into save_handover_state
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-handover-"))
+        self.settings_path = self.tmp / "settings.local.json"
+        self.history_root = self.tmp / "history"
+        self.package_root = self.tmp / "packages"
+        self.repo = self.tmp / "repo"
+        self.repo.mkdir()
+        run(["git", "init"], self.repo)
+        run(["git", "config", "user.name", "PANDA Test"], self.repo)
+        run(["git", "config", "user.email", "panda-test@example.invalid"], self.repo)
+        (self.repo / "tracked.txt").write_text("base\n", encoding="utf-8")
+        run(["git", "add", "tracked.txt"], self.repo)
+        run(["git", "commit", "-m", "base"], self.repo)
+        self.old_settings = pc.os.environ.get("PANDA_COLLABORATOR_SETTINGS_PATH")
+        self.old_history = pc.os.environ.get("PANDA_COLLABORATOR_HISTORY_ROOT")
+        self.old_packages = pc.os.environ.get("PANDA_COLLABORATOR_PACKAGE_ROOT")
+        pc.os.environ["PANDA_COLLABORATOR_SETTINGS_PATH"] = str(self.settings_path)
+        pc.os.environ["PANDA_COLLABORATOR_HISTORY_ROOT"] = str(self.history_root)
+        pc.os.environ["PANDA_COLLABORATOR_PACKAGE_ROOT"] = str(self.package_root)
+        # Seed two-user settings — required for save_handover_state to round-trip
+        # through normalize_settings (strict=True requires exactly 2 user profiles).
+        pc.save_settings(
+            {
+                "active_user_id": "user1",
+                "project_files_directory": str(self.tmp / "panda-gallery"),
+                "users": [
+                    {
+                        "display_name": "Darrin",
+                        "default_repo_path": str(self.repo),
+                        "handoff_agent": "Codex",
+                        "handoff_title": "Darrin handoff",
+                        "codex_account": "darrin-codex@example.invalid",
+                        "claude_account": "darrin-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "cd-a.exe"),
+                        "claude_code_path": str(self.tmp / "cc-a"),
+                        "git_author_name": "Darrin",
+                        "git_author_email": "darrin@example.invalid",
+                    },
+                    {
+                        "display_name": "Pam",
+                        "default_repo_path": str(self.repo),
+                        "handoff_agent": "Claude",
+                        "handoff_title": "Pam handoff",
+                        "codex_account": "pam-codex@example.invalid",
+                        "claude_account": "pam-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "cd-b.exe"),
+                        "claude_code_path": str(self.tmp / "cc-b"),
+                        "git_author_name": "Pam",
+                        "git_author_email": "pam@example.invalid",
+                    },
+                ],
+            }
+        )
+
+    def tearDown(self):
+        for key, prior in (
+            ("PANDA_COLLABORATOR_SETTINGS_PATH", self.old_settings),
+            ("PANDA_COLLABORATOR_HISTORY_ROOT", self.old_history),
+            ("PANDA_COLLABORATOR_PACKAGE_ROOT", self.old_packages),
+        ):
+            if prior is None:
+                pc.os.environ.pop(key, None)
+            else:
+                pc.os.environ[key] = prior
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_save_handover_state_writes_full_record_with_iso_timestamp(self):
+        result = pc.save_handover_state("user2", "PG-2026-05-04-2230")
+        self.assertEqual(result["handover_pending"], True)
+        self.assertEqual(result["incoming_user_slot"], "user2")
+        self.assertEqual(result["handoff_package_id"], "PG-2026-05-04-2230")
+        self.assertIsNone(result["failed_package_id"])
+        # ISO 8601 UTC timestamp with Z suffix per spec v1.1 §5.2
+        self.assertRegex(result["handover_timestamp"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+    def test_save_handover_state_rejects_invalid_slot(self):
+        # Slot must be exactly 'user1' or 'user2' (live-code format per CD ruling 3)
+        with self.assertRaises(pc.CollaboratorError):
+            pc.save_handover_state("user_1", "PG-X")
+        with self.assertRaises(pc.CollaboratorError):
+            pc.save_handover_state("admin", "PG-X")
+        with self.assertRaises(pc.CollaboratorError):
+            pc.save_handover_state("", "PG-X")
+
+    def test_save_handover_state_rejects_empty_package_id(self):
+        with self.assertRaises(pc.CollaboratorError):
+            pc.save_handover_state("user1", "")
+        with self.assertRaises(pc.CollaboratorError):
+            pc.save_handover_state("user1", "   ")
+
+    def test_save_handover_state_survives_disk_round_trip(self):
+        # Phase 7 token §1: "write survives restart" — the saved record must be
+        # readable from disk after a fresh load_settings() call.
+        pc.save_handover_state("user1", "PG-survives-restart")
+        loaded = pc.load_settings()
+        self.assertEqual(loaded["handover_state"]["handover_pending"], True)
+        self.assertEqual(loaded["handover_state"]["incoming_user_slot"], "user1")
+        self.assertEqual(loaded["handover_state"]["handoff_package_id"], "PG-survives-restart")
+        self.assertRegex(
+            loaded["handover_state"]["handover_timestamp"],
+            r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$",
+        )
+
+    def test_clear_handover_state_resets_to_default_all_null(self):
+        # Phase 7 token §1: "Start Work clears state" — at the helper level.
+        pc.save_handover_state("user2", "PG-clear-test")
+        self.assertTrue(pc.load_settings()["handover_state"]["handover_pending"])
+        result = pc.clear_handover_state()
+        self.assertEqual(result["handover_pending"], False)
+        self.assertIsNone(result["incoming_user_slot"])
+        self.assertIsNone(result["handover_timestamp"])
+        self.assertIsNone(result["handoff_package_id"])
+        self.assertIsNone(result["failed_package_id"])
+        loaded = pc.load_settings()
+        self.assertEqual(loaded["handover_state"]["handover_pending"], False)
+
+    def test_start_session_clears_pending_handover_state(self):
+        # Phase 7: Start Session click on the incoming-confirmation modal goes
+        # through /api/session/start → start_session(), which clears any pending
+        # handover_state before computing the dashboard.
+        pc.save_handover_state("user1", "PG-start-session-clear")
+        self.assertTrue(pc.load_settings()["handover_state"]["handover_pending"])
+        pc.start_session({"path": str(self.repo), "operator_context": {}})
+        loaded = pc.load_settings()
+        self.assertFalse(loaded["handover_state"]["handover_pending"])
+        self.assertIsNone(loaded["handover_state"]["incoming_user_slot"])
+        self.assertIsNone(loaded["handover_state"]["handoff_package_id"])
+
+    def test_start_session_skips_clear_when_no_handover_pending(self):
+        # When no handover is pending, start_session must not call save_settings
+        # for handover_state — verified by counting backup files (save_settings
+        # writes a backup on every call). This avoids noisy backup files on
+        # every regular main-hub Start Session click.
+        backups_before = len(list(self.tmp.glob("settings.local.*.bak.json")))
+        pc.start_session({"path": str(self.repo), "operator_context": {}})
+        backups_after = len(list(self.tmp.glob("settings.local.*.bak.json")))
+        self.assertEqual(backups_after, backups_before)
+
+    def test_load_settings_with_malformed_handover_state_recovers_to_pending_false(self):
+        # Phase 7 token "Launch-flow risk note" + CD ruling: malformed JSON or
+        # missing required fields → treat as pending=false (no auto-show, no crash).
+        # normalize_handover_state coerces non-dict values to default-all-null.
+        legacy_payload = {
+            "schema_version": 1,
+            "setup_completed": True,
+            "active_user_id": "user1",
+            "project_files_directory": str(self.tmp / "panda-gallery"),
+            "users": [
+                {
+                    "id": "user1",
+                    "display_name": "Darrin",
+                    "default_repo_path": str(self.repo),
+                    "handoff_agent": "Codex",
+                    "handoff_title": "Darrin handoff",
+                    "codex_account": "darrin-codex@example.invalid",
+                    "claude_account": "darrin-claude@example.invalid",
+                    "claude_desktop_path": str(self.tmp / "cd-a.exe"),
+                    "claude_code_path": str(self.tmp / "cc-a"),
+                    "git_author_name": "Darrin",
+                    "git_author_email": "darrin@example.invalid",
+                },
+                {
+                    "id": "user2",
+                    "display_name": "Pam",
+                    "default_repo_path": str(self.repo),
+                    "handoff_agent": "Claude",
+                    "handoff_title": "Pam handoff",
+                    "codex_account": "pam-codex@example.invalid",
+                    "claude_account": "pam-claude@example.invalid",
+                    "claude_desktop_path": str(self.tmp / "cd-b.exe"),
+                    "claude_code_path": str(self.tmp / "cc-b"),
+                    "git_author_name": "Pam",
+                    "git_author_email": "pam@example.invalid",
+                },
+            ],
+            "handover_state": "this is not a dict",  # malformed sub-object
+        }
+        path = pc.settings_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(legacy_payload), encoding="utf-8")
+        loaded = pc.load_settings()
+        self.assertEqual(loaded["handover_state"]["handover_pending"], False)
+        self.assertIsNone(loaded["handover_state"]["incoming_user_slot"])
+        self.assertIsNone(loaded["handover_state"]["handoff_package_id"])
+
+    def test_handoff_package_id_chains_phase6_create_to_handover_state(self):
+        # Phase 7 token §1: "handoff_package_id populated from Phase 6 package_id".
+        # End-to-end: create a handoff package via Phase 6, then save the returned
+        # package_id into handover_state (the live outgoing-confirmation flow).
+        manifest = pc.create_handoff_package(str(self.repo), "phase 7 chain", "Codex", "")
+        package_id = manifest.get("package_id")
+        self.assertTrue(package_id)
+        result = pc.save_handover_state("user2", package_id)
+        self.assertEqual(result["handoff_package_id"], package_id)
+        loaded = pc.load_settings()
+        self.assertEqual(loaded["handover_state"]["handoff_package_id"], package_id)
+        self.assertEqual(loaded["handover_state"]["incoming_user_slot"], "user2")
+        # Phase 6 itself must NOT have touched handover_state — package_id only
+        # flows into handover_state via the explicit save_handover_state call above.
+        # If Phase 6 wrote handover_pending, the assertion below would already be
+        # true after create_handoff_package, before save_handover_state — but the
+        # verification chain documents the expected flow boundary.
+        self.assertTrue(loaded["handover_state"]["handover_pending"])
+
+
 if __name__ == "__main__":
     unittest.main()
