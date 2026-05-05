@@ -287,12 +287,72 @@ def default_settings() -> dict[str, Any]:
                 "git_author_email": "",
             },
         ],
+        # Phase 5: handover_state per PC_HANDOFF_PROGRESS_SPEC v1.1 §5.2 (slot IDs
+        # adapted to live code "user1"/"user2"). Default-all-null means no handover
+        # is pending — clean install / no prior handoff.
+        "handover_state": {
+            "handover_pending": False,
+            "incoming_user_slot": None,
+            "handover_timestamp": None,
+            "handoff_package_id": None,
+            "failed_package_id": None,
+        },
     }
 
 
 def clean_setting_text(value: Any, fallback: str, max_length: int) -> str:
     cleaned = str(value if value is not None else "").replace("\0", "").strip()
     return (cleaned or fallback)[:max_length]
+
+
+DEFAULT_HANDOVER_STATE: dict[str, Any] = {
+    "handover_pending": False,
+    "incoming_user_slot": None,
+    "handover_timestamp": None,
+    "handoff_package_id": None,
+    "failed_package_id": None,
+}
+
+
+def normalize_handover_state(value: Any) -> dict[str, Any]:
+    """Phase 5: validate and normalize the handover_state sub-object.
+
+    Schema (PC_HANDOFF_PROGRESS_SPEC v1.1 §5.2, slot IDs adapted to live code):
+        handover_pending:    bool
+        incoming_user_slot:  "user1" | "user2" | None
+        handover_timestamp:  ISO 8601 string (max 64 chars) or None
+        handoff_package_id:  string (max 120 chars) or None
+        failed_package_id:   string (max 120 chars) or None
+
+    Missing or non-dict input returns a default-all-null state with handover_pending=False.
+    """
+    if not isinstance(value, dict):
+        return dict(DEFAULT_HANDOVER_STATE)
+    pending = bool(value.get("handover_pending", False))
+    slot_raw = value.get("incoming_user_slot")
+    incoming_user_slot = slot_raw if slot_raw in {"user1", "user2"} else None
+    ts_raw = value.get("handover_timestamp")
+    if isinstance(ts_raw, str) and ts_raw.strip():
+        handover_timestamp: str | None = ts_raw.strip()[:64]
+    else:
+        handover_timestamp = None
+    handoff_package_id_raw = value.get("handoff_package_id")
+    if isinstance(handoff_package_id_raw, str) and handoff_package_id_raw.strip():
+        handoff_package_id: str | None = handoff_package_id_raw.strip()[:120]
+    else:
+        handoff_package_id = None
+    failed_package_id_raw = value.get("failed_package_id")
+    if isinstance(failed_package_id_raw, str) and failed_package_id_raw.strip():
+        failed_package_id: str | None = failed_package_id_raw.strip()[:120]
+    else:
+        failed_package_id = None
+    return {
+        "handover_pending": pending,
+        "incoming_user_slot": incoming_user_slot,
+        "handover_timestamp": handover_timestamp,
+        "handoff_package_id": handoff_package_id,
+        "failed_package_id": failed_package_id,
+    }
 
 
 def normalize_settings(payload: dict[str, Any], *, strict: bool = True, mark_completed: bool = False) -> dict[str, Any]:
@@ -349,6 +409,7 @@ def normalize_settings(payload: dict[str, Any], *, strict: bool = True, mark_com
         "active_user_id": active_user_id,
         "project_files_directory": project_files_directory,
         "users": normalized_users,
+        "handover_state": normalize_handover_state(payload.get("handover_state")),
     }
     updated_at = payload.get("updated_at")
     if isinstance(updated_at, str) and updated_at.strip():

@@ -995,6 +995,87 @@
     .pc-body .right-col .pkg-actions .switch-btn { flex: 1; min-width: 0; padding: 0 6px; font-size: 10.5px; height: 26px; }
     /* === End PC redesign Phase 4 right column === */
 
+    /* === PC redesign Phase 5 — registration modal re-skin === */
+    /* Re-skins the existing #setupOverlay / .setup-dialog / .wizard-grid to match
+       the locked pc_main_screen_v1.html State D mockup grammar (Bible dark surfaces,
+       identity-stripe borders, Save Settings 40px green primary). All existing field
+       IDs preserved; CSS-only overrides additive at end of stylesheet so existing
+       pinned-literal WebTheme tests continue to match. */
+    .setup-overlay { background: rgba(8, 8, 14, 0.78); }
+    .setup-dialog {
+      background: var(--pane);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    }
+    .setup-dialog .setup-dialog-head {
+      background: var(--chrome);
+      border-bottom: 1px solid var(--border);
+    }
+    .setup-dialog .setup-dialog-head h2 {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .setup-dialog .setup-dialog-head span {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+    }
+    /* Identity stripes on registration panels — left border 3px in identity color */
+    .setup-dialog .registration-panel[data-user-tone="user1"] {
+      background: var(--pane-2);
+      border-left: 3px solid var(--user1);
+    }
+    .setup-dialog .registration-panel[data-user-tone="user2"] {
+      background: var(--pane-2);
+      border-left: 3px solid var(--user2);
+    }
+    /* Identity-color name in panel header */
+    .setup-dialog .registration-panel[data-user-tone="user1"] .registration-title strong { color: var(--user1); }
+    .setup-dialog .registration-panel[data-user-tone="user2"] .registration-title strong { color: var(--user2); }
+    /* Save Settings primary button — 40px full-width green per State D mockup */
+    .setup-dialog-foot .primary[type="button"] {
+      min-height: 40px;
+      background: var(--ok);
+      border: 1px solid var(--ok);
+      color: var(--canvas);
+      border-radius: var(--radius-md);
+      font: 700 13px/1 var(--font-ui);
+      letter-spacing: 0.4px;
+      flex: 1;
+    }
+    .setup-dialog-foot .primary[type="button"]:hover { background: #82bf61; border-color: #82bf61; }
+    /* Cancel as muted text link */
+    .setup-dialog-foot button[type="button"]:not(.primary) {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      text-decoration: underline;
+      font-size: 11px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .setup-dialog-foot button[type="button"]:not(.primary):hover { color: var(--user1); }
+    /* Inputs inside the modal align to Bible grammar */
+    .setup-dialog input,
+    .setup-dialog textarea {
+      background: var(--pane);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      color: var(--text);
+    }
+    .setup-dialog input:focus,
+    .setup-dialog textarea:focus {
+      outline: 2px solid var(--user1-border);
+      outline-offset: 0;
+    }
+    /* === End PC redesign Phase 5 modal re-skin === */
+
     .test-controls {
       display: flex;
       align-items: center;
@@ -3077,7 +3158,7 @@
         <div class="setup-dialog-head">
           <div>
             <span>Registration</span>
-            <h2 id="setupWizardTitle">REGISTER USERS</h2>
+            <h2 id="setupWizardTitle">SETUP USERS</h2>
           </div>
           <button id="closeSetupBtn" type="button">Close</button>
         </div>

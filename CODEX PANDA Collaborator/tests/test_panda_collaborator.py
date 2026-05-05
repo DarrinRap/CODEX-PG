@@ -338,6 +338,142 @@ class PandaCollaboratorSettingsTests(unittest.TestCase):
         with self.assertRaises(pc.CollaboratorError):
             pc.save_settings({"users": [{"display_name": "Only one"}]})
 
+    def test_default_settings_include_clean_handover_state(self):
+        # Phase 5 (PC_HANDOFF_PROGRESS_SPEC v1.1 §5.2): default settings include a
+        # handover_state sub-object with all-null fields and handover_pending=False.
+        settings = pc.load_settings()
+        self.assertIn("handover_state", settings)
+        hs = settings["handover_state"]
+        self.assertEqual(hs["handover_pending"], False)
+        self.assertIsNone(hs["incoming_user_slot"])
+        self.assertIsNone(hs["handover_timestamp"])
+        self.assertIsNone(hs["handoff_package_id"])
+        self.assertIsNone(hs["failed_package_id"])
+
+    def test_save_settings_round_trips_populated_handover_state(self):
+        # Phase 5: write a populated handover_state through save_settings, then load
+        # and verify all 5 fields survive normalization round-trip.
+        ts_iso = "2026-05-04T22:30:00-07:00"
+        saved = pc.save_settings(
+            {
+                "active_user_id": "user1",
+                "project_files_directory": str(self.tmp / "panda-gallery"),
+                "users": [
+                    {
+                        "display_name": "Darrin",
+                        "default_repo_path": str(self.tmp / "repo-a"),
+                        "handoff_agent": "Codex",
+                        "handoff_title": "Darrin handoff",
+                        "codex_account": "darrin-codex@example.invalid",
+                        "claude_account": "darrin-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "cd-a.exe"),
+                        "claude_code_path": str(self.tmp / "cc-a"),
+                        "git_author_name": "Darrin",
+                        "git_author_email": "darrin@example.invalid",
+                    },
+                    {
+                        "display_name": "Adam",
+                        "default_repo_path": str(self.tmp / "repo-b"),
+                        "handoff_agent": "Claude",
+                        "handoff_title": "Adam handoff",
+                        "codex_account": "adam-codex@example.invalid",
+                        "claude_account": "adam-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "cd-b.exe"),
+                        "claude_code_path": str(self.tmp / "cc-b"),
+                        "git_author_name": "Adam",
+                        "git_author_email": "adam@example.invalid",
+                    },
+                ],
+                "handover_state": {
+                    "handover_pending": True,
+                    "incoming_user_slot": "user2",
+                    "handover_timestamp": ts_iso,
+                    "handoff_package_id": "PG-2026-05-04-2230",
+                    "failed_package_id": None,
+                },
+            }
+        )
+        self.assertEqual(saved["handover_state"]["handover_pending"], True)
+        self.assertEqual(saved["handover_state"]["incoming_user_slot"], "user2")
+        self.assertEqual(saved["handover_state"]["handover_timestamp"], ts_iso)
+        self.assertEqual(saved["handover_state"]["handoff_package_id"], "PG-2026-05-04-2230")
+        self.assertIsNone(saved["handover_state"]["failed_package_id"])
+        loaded = pc.load_settings()
+        self.assertEqual(loaded["handover_state"]["handover_pending"], True)
+        self.assertEqual(loaded["handover_state"]["incoming_user_slot"], "user2")
+        self.assertEqual(loaded["handover_state"]["handoff_package_id"], "PG-2026-05-04-2230")
+        self.assertIsNone(loaded["handover_state"]["failed_package_id"])
+
+    def test_load_settings_with_missing_handover_state_falls_back_to_default(self):
+        # Phase 5 (per CD ruling): missing handover_state sub-object in settings.json
+        # is treated as `{handover_pending: False}` — no migration step required.
+        # Write a settings file missing handover_state and verify load_settings
+        # returns the default normalized shape.
+        legacy_payload = {
+            "schema_version": 1,
+            "setup_completed": True,
+            "active_user_id": "user1",
+            "project_files_directory": str(self.tmp / "panda-gallery"),
+            "users": [
+                {
+                    "id": "user1",
+                    "display_name": "Darrin",
+                    "default_repo_path": str(self.tmp / "repo-a"),
+                    "handoff_agent": "Codex",
+                    "handoff_title": "Darrin handoff",
+                    "codex_account": "darrin-codex@example.invalid",
+                    "claude_account": "darrin-claude@example.invalid",
+                    "claude_desktop_path": str(self.tmp / "cd-a.exe"),
+                    "claude_code_path": str(self.tmp / "cc-a"),
+                    "git_author_name": "Darrin",
+                    "git_author_email": "darrin@example.invalid",
+                },
+                {
+                    "id": "user2",
+                    "display_name": "Adam",
+                    "default_repo_path": str(self.tmp / "repo-b"),
+                    "handoff_agent": "Claude",
+                    "handoff_title": "Adam handoff",
+                    "codex_account": "adam-codex@example.invalid",
+                    "claude_account": "adam-claude@example.invalid",
+                    "claude_desktop_path": str(self.tmp / "cd-b.exe"),
+                    "claude_code_path": str(self.tmp / "cc-b"),
+                    "git_author_name": "Adam",
+                    "git_author_email": "adam@example.invalid",
+                },
+            ],
+            # NOTE: no `handover_state` key — simulates a pre-Phase-5 settings file
+        }
+        path = pc.settings_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(legacy_payload), encoding="utf-8")
+
+        loaded = pc.load_settings()
+        self.assertIn("handover_state", loaded)
+        hs = loaded["handover_state"]
+        self.assertFalse(hs["handover_pending"])
+        self.assertIsNone(hs["incoming_user_slot"])
+        self.assertIsNone(hs["handover_timestamp"])
+        self.assertIsNone(hs["handoff_package_id"])
+        self.assertIsNone(hs["failed_package_id"])
+
+    def test_normalize_handover_state_clamps_invalid_slot_and_string_lengths(self):
+        # Phase 5: invalid slot strings → None; oversize string fields trimmed to caps.
+        result = pc.normalize_handover_state(
+            {
+                "handover_pending": "yes",  # truthy non-bool → True
+                "incoming_user_slot": "user_1",  # underscore variant — invalid → None
+                "handover_timestamp": "  2026-05-04T22:30:00-07:00  " + "x" * 200,
+                "handoff_package_id": "P" * 500,
+                "failed_package_id": "  ",  # whitespace-only → None
+            }
+        )
+        self.assertEqual(result["handover_pending"], True)
+        self.assertIsNone(result["incoming_user_slot"])
+        self.assertEqual(len(result["handover_timestamp"]), 64)
+        self.assertEqual(len(result["handoff_package_id"]), 120)
+        self.assertIsNone(result["failed_package_id"])
+
     def test_setup_autofill_finds_paths_and_drafts_claude_help(self):
         repo = self.tmp / "repo"
         repo.mkdir()
