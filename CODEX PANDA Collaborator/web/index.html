@@ -3812,7 +3812,7 @@
               <span>User 2 identity</span>
               <strong data-hub-name="user2">User 2</strong>
             </div>
-            <button class="switch-btn user2-bordered" id="applyProfileBtn" type="button">Register User 2</button>
+            <button class="switch-btn user2-bordered" id="openSetupBtn2" type="button">Register User 2</button>
             <button class="switch-btn user2-bordered" type="button" data-switch-go="user2" aria-label="Switch to User 2" hidden>Switch to User 2</button>
           </div>
         </div>
@@ -4193,7 +4193,7 @@
       const byId = {
         switchUserBtn: 'Open the user setup and handover screen.',
         openSetupBtn: 'Open registration so you can set up User 1 and User 2.',
-        applyProfileBtn: 'Apply the saved defaults for the active user.',
+        openSetupBtn2: 'Open registration so you can set up User 1 and User 2.',
         testModeBtn: 'Start TEST MODE with fake Bob and Karen identities.',
         createTestSandboxBtn: 'Optional: reset the fake local test folders without running the full test.',
         runTestAgainBtn: 'Run the full local-only PC action test.',
@@ -4303,7 +4303,10 @@
       $('pauseBtn').disabled = isBusy || !setupReady().allReady;
       $('clearPauseBtn').disabled = isBusy;
       $('searchBtn').disabled = isBusy;
-      $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
+      // Phase 8 fix CLAUDE-20260506-010600 Issue A (Q1 Option A): applyProfileBtn
+      // ID renamed to openSetupBtn2 and the disabled-gate dropped — the button
+      // now opens the setup wizard so User 2 registration is reachable when
+      // setupReady().allReady is false (the prior gate was circular).
       $('saveSettingsBtn').disabled = isBusy || !state.settings;
       $('switchUserBtn').disabled = isBusy;
       $('testModeBtn').disabled = isBusy;
@@ -6033,10 +6036,11 @@
     // Back button, Open Hub button, and the in-modal auto-fill action.
     $('saveSettingsBtn').addEventListener('click', () => saveSettings({closeAfter: true}));
     $('cancelSetupBtn').addEventListener('click', closeSetupWizard);
-    $('applyProfileBtn').addEventListener('click', () => {
-      applyActiveProfileDefaults({forceRepo: true});
-      showResult(`Defaults applied for <strong>${escapeHtml(activeProfile()?.display_name || 'active user')}</strong>.`);
-    });
+    // Phase 8 fix CLAUDE-20260506-010600 Issue A (Q1 Option A): User 2 register
+    // button now opens the shared setup users modal (same wiring as User 1's
+    // openSetupBtn). The applyActiveProfileDefaults helper stays callable from
+    // its 6 other call sites (lines 4564, 4585, 4619, 5226, 5248, 5353).
+    $('openSetupBtn2').addEventListener('click', openSetupWizard);
     document.querySelectorAll('[data-switch-go]').forEach(button => {
       button.addEventListener('click', () => {
         performGoSwitch(button.dataset.switchGo);
