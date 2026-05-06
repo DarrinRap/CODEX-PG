@@ -1425,6 +1425,116 @@
     }
     /* === End PC redesign Phase 5 modal re-skin === */
 
+    /* === Setup-modal-fix (Phase 7-fix) — match locked v2 mockup measurements ===
+       Per pc_v2_setup_users_modal.html (commit 6fbd049): 800px modal-card,
+       36px head, two-column form grid 1fr 1fr with 12px gap and 14px padding,
+       36px Save Settings green button + Cancel muted text link.
+       Q5 Option B — keep existing class names, override Phase 5 measurements. */
+    .setup-dialog {
+      width: min(800px, calc(100vw - 88px));
+      height: auto;
+      max-height: min(900px, calc(100vh - 44px));
+    }
+    .setup-dialog .setup-dialog-head {
+      height: 36px;
+      padding: 0 16px;
+    }
+    .setup-dialog .setup-dialog-head h2 {
+      font-size: 12px;
+    }
+    .setup-dialog .wizard-grid {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: minmax(0, 1fr);
+      grid-template-areas: "user1 user2";
+      gap: 12px;
+      padding: 14px;
+    }
+    .setup-dialog .registration-panel {
+      padding: 10px 12px 12px;
+      border-radius: var(--radius-md);
+    }
+    .setup-dialog .registration-panel .registration-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .setup-dialog .registration-panel[data-user-tone="user1"] .registration-title > span:first-child { color: var(--user1); }
+    .setup-dialog .registration-panel[data-user-tone="user2"] .registration-title > span:first-child { color: var(--user2); }
+    .setup-dialog .registration-panel .registration-title strong {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      text-transform: none;
+    }
+    .setup-dialog .registration-subhead {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin: 6px 0 2px;
+    }
+    .setup-dialog .registration-panel input,
+    .setup-dialog .registration-panel input[type="text"] {
+      height: 26px;
+      font-size: 11.5px;
+    }
+    .setup-dialog .registration-panel label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-family: var(--font-ui);
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+    .setup-dialog-foot {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+    }
+    .setup-dialog-foot .primary[type="button"] {
+      min-height: 36px;
+      flex: 1;
+    }
+    .setup-dialog-foot button.setup-cancel-link {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      text-decoration: underline;
+      font-size: 11px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .setup-dialog-foot button.setup-cancel-link:hover { color: var(--user1); }
+    .setup-dialog .setup-close-x {
+      background: transparent;
+      border: 1px solid var(--border-hover);
+      color: var(--text-muted);
+      font: 600 14px/1 var(--font-ui);
+      height: 24px;
+      width: 24px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .setup-dialog .setup-close-x:hover { color: var(--err); border-color: var(--err); }
+    /* === End Setup-modal-fix === */
+
     .test-controls {
       display: flex;
       align-items: center;
@@ -3509,46 +3619,17 @@
             <span>Registration</span>
             <h2 id="setupWizardTitle">SETUP USERS</h2>
           </div>
-          <button id="closeSetupBtn" type="button">Close</button>
+          <button id="closeSetupBtn" class="setup-close-x" type="button" aria-label="Close">×</button>
         </div>
         <div class="wizard-grid">
-          <section class="wizard-step wide setup-project-step">
-            <div class="wizard-step-head">
-              <div>
-                <h3>Project Files Tracker</h3>
-                <p>Use the existing pgsync manifest and bundle workflow.</p>
-              </div>
-            </div>
-            <div class="wizard-step-body">
-              <label>Project files directory
-                <div class="inline-picker">
-                  <input id="setupProjectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
-                  <button type="button" data-path-picker="setupProjectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
-                </div>
-              </label>
-              <div class="actions">
-                <button class="primary" id="autoFillSetupBtn" type="button">Auto-fill setup</button>
-              </div>
-              <div class="identity-note">PANDA should point here for the existing project-file tracker. Current default: C:\panda-gallery. Manifest: skills\pg-project-sync\MANIFEST.md. Sync bundles: workflows\project_knowledge_sync_YYYY-MM-DD.</div>
-            </div>
-          </section>
-
           <section class="wizard-step registration-panel" data-registration-stage="user1" data-user-tone="user1">
-            <div class="wizard-step-head">
-              <div>
-                <h3>User 1 Profile</h3>
-                <p>Edit User 1 details and save when ready.</p>
-              </div>
-              <button class="primary collapse-toggle" type="button" data-collapse-panel="user1" aria-expanded="false">Edit</button>
-            </div>
             <div class="wizard-step-body">
               <div class="registration-title">
-                <span>User 1 registration</span>
-                <strong>Warm amber identity</strong>
+                <span>User 1</span>
+                <strong id="user1DisplayTag">User 1</strong>
               </div>
               <div class="profile-defaults">
-                <div class="registration-subhead">Profile</div>
-                <label>User 1 name
+                <label>Display name
                   <input id="user1Name" maxlength="40" autocomplete="off">
                 </label>
                 <label>Repository path
@@ -3557,20 +3638,18 @@
                     <button type="button" data-path-picker="profileRepoPath" data-path-mode="folder" data-path-title="Select User 1 local Git repository folder">Browse</button>
                   </div>
                 </label>
-                <label>Handoff agent name
+                <label>Handoff agent
                   <input id="profileAgent" maxlength="60" autocomplete="off">
                 </label>
-                <label>Default handoff title
-                  <input id="profileTitle" maxlength="90" autocomplete="off">
-                </label>
+                <!-- Phase 7-fix Q1: handoff_title preserved as hidden input — backend round-trip unchanged, user editing deferred to a future phase per CD ruling. -->
+                <input id="profileTitle" type="hidden" maxlength="90" autocomplete="off" value="AI workstation handoff">
               </div>
-              <div class="identity-note">Store login names, emails, or account labels only. Do not enter passwords, API keys, tokens, or recovery codes.</div>
               <div class="account-defaults">
-                <div class="registration-subhead">Accounts, tools, and Git identity</div>
-                <label>Codex account label
+                <div class="registration-subhead">Accounts, tools &amp; git identity</div>
+                <label>Codex account
                   <input id="codexAccount" maxlength="120" autocomplete="off">
                 </label>
-                <label>Claude account label
+                <label>Claude account
                   <input id="claudeAccount" maxlength="120" autocomplete="off">
                 </label>
                 <label>Claude Desktop path
@@ -3596,21 +3675,13 @@
           </section>
 
           <section class="wizard-step registration-panel" data-registration-stage="user2" data-user-tone="user2">
-            <div class="wizard-step-head">
-              <div>
-                <h3>User 2 Profile</h3>
-                <p>Edit User 2 details at the same time.</p>
-              </div>
-              <button class="primary collapse-toggle" type="button" data-collapse-panel="user2" aria-expanded="false">Edit</button>
-            </div>
             <div class="wizard-step-body">
               <div class="registration-title">
-                <span>User 2 registration</span>
-                <strong>Cool cyan identity</strong>
+                <span>User 2</span>
+                <strong id="user2DisplayTag">User 2</strong>
               </div>
               <div class="profile-defaults">
-                <div class="registration-subhead">Profile</div>
-                <label>User 2 name
+                <label>Display name
                   <input id="user2Name" maxlength="40" autocomplete="off">
                 </label>
                 <label>Repository path
@@ -3619,20 +3690,18 @@
                     <button type="button" data-path-picker="profileRepoPathUser2" data-path-mode="folder" data-path-title="Select User 2 local Git repository folder">Browse</button>
                   </div>
                 </label>
-                <label>Handoff agent name
+                <label>Handoff agent
                   <input id="profileAgentUser2" maxlength="60" autocomplete="off">
                 </label>
-                <label>Default handoff title
-                  <input id="profileTitleUser2" maxlength="90" autocomplete="off">
-                </label>
+                <!-- Phase 7-fix Q1: handoff_title preserved as hidden input. -->
+                <input id="profileTitleUser2" type="hidden" maxlength="90" autocomplete="off" value="AI workstation handoff">
               </div>
-              <div class="identity-note">Store login names, emails, or account labels only. Do not enter passwords, API keys, tokens, or recovery codes.</div>
               <div class="account-defaults">
-                <div class="registration-subhead">Accounts, tools, and Git identity</div>
-                <label>Codex account label
+                <div class="registration-subhead">Accounts, tools &amp; git identity</div>
+                <label>Codex account
                   <input id="codexAccountUser2" maxlength="120" autocomplete="off">
                 </label>
-                <label>Claude account label
+                <label>Claude account
                   <input id="claudeAccountUser2" maxlength="120" autocomplete="off">
                 </label>
                 <label>Claude Desktop path
@@ -3656,44 +3725,10 @@
               </div>
             </div>
           </section>
-
-          <section class="wizard-step registration-panel" data-registration-stage="hub">
-            <div class="wizard-step-head">
-              <div>
-                <h3>Collaborator Hub</h3>
-                <p>Use the Handover buttons to automate the whole handover process.</p>
-              </div>
-            </div>
-            <div class="wizard-step-body">
-              <div class="registration-hub-grid" id="registrationHubGrid">
-                <div class="hub-card" data-hub-user="user1">
-                  <span>User 1</span>
-                  <strong data-hub-name="user1">User 1</strong>
-                  <small data-hub-account="user1">Account details needed</small>
-                  <button type="button" data-switch-go="user1" aria-label="Handover to User 1">Handover</button>
-                </div>
-                <div class="hub-card" data-hub-user="user2">
-                  <span>User 2</span>
-                  <strong data-hub-name="user2">User 2</strong>
-                  <small data-hub-account="user2">Account details needed</small>
-                  <button type="button" data-switch-go="user2" aria-label="Handover to User 2">Handover</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
         </div>
         <div class="setup-dialog-foot">
-          <div class="setup-dialog-status">
-            <ul class="setup-checklist" id="wizardChecklist"></ul>
-            <div class="setup-warning" id="setupWarning"></div>
-          </div>
-          <div class="setup-dialog-actions">
-            <button id="registerBackBtn" type="button">Back</button>
-            <button id="registerUser1NextBtn" class="primary" type="button">Save User 1</button>
-            <button id="registerUser2FinishBtn" class="primary" type="button">Save User 2</button>
-            <button id="openHubBtn" class="primary" type="button">Open Collaborator Hub</button>
-          </div>
+          <button id="saveSettingsBtn" class="primary" type="button">Save Settings</button>
+          <button id="cancelSetupBtn" class="setup-cancel-link" type="button">Cancel</button>
         </div>
       </section>
     </div>
@@ -3720,7 +3755,10 @@
       settings: null,
       busy: false,
       registrationStage: 'user1',
-      registrationCollapsed: {user1: true, user2: true},
+      // Phase 7-fix: setup modal is now a single-screen two-column form per
+      // locked v2 mockup; both panels are always expanded. Field is retained
+      // for legacy callers but defaults to fully expanded.
+      registrationCollapsed: {user1: false, user2: false},
       control: null,
       sideView: 'files',
       testMode: {
@@ -3776,11 +3814,8 @@
         handoffBtn: 'Create the safe handoff package with branch, patch, and file-copy protection.',
         searchBtn: 'Search saved project history and handoff messages.',
         closeSetupBtn: 'Close this setup window.',
-        autoFillSetupBtn: 'Try to fill paths and setup fields automatically.',
-        registerBackBtn: 'Return to the side-by-side user setup screen.',
-        registerUser1NextBtn: 'Save User 1 registration without leaving the side-by-side setup screen.',
-        registerUser2FinishBtn: 'Save User 2 registration without leaving the side-by-side setup screen.',
-        openHubBtn: 'Open the Collaborator Hub after both users are registered.'
+        saveSettingsBtn: 'Save User 1 and User 2 settings.',
+        cancelSetupBtn: 'Close the setup window without saving changes.'
       };
       if (byId[button.id]) return byId[button.id];
       if (button.dataset.pathPicker) {
@@ -3873,14 +3908,14 @@
       $('clearPauseBtn').disabled = isBusy;
       $('searchBtn').disabled = isBusy;
       $('applyProfileBtn').disabled = isBusy || !state.settings || !setupReady().allReady;
-      $('autoFillSetupBtn').disabled = isBusy || !state.settings;
+      $('saveSettingsBtn').disabled = isBusy || !state.settings;
       $('switchUserBtn').disabled = isBusy;
       $('testModeBtn').disabled = isBusy;
       $('createTestSandboxBtn').disabled = isBusy || !state.testMode.active;
       $('runTestAgainBtn').disabled = isBusy || !state.testMode.active;
       $('quitTestModeBtn').disabled = false;
       $('quitTestModeBannerBtn').disabled = false;
-      document.querySelectorAll('[data-switch-go], #registerUser1NextBtn, #registerUser2FinishBtn, #openHubBtn, #registerBackBtn').forEach(button => {
+      document.querySelectorAll('[data-switch-go]').forEach(button => {
         button.disabled = isBusy;
       });
       document.querySelectorAll('[data-path-picker]').forEach(button => {
@@ -4329,7 +4364,7 @@
     }
 
     function projectFilesReady() {
-      return Boolean(state.settings?.project_files_directory || $('projectFilesDirectory')?.value.trim() || $('setupProjectFilesDirectory')?.value.trim());
+      return Boolean(state.settings?.project_files_directory || $('projectFilesDirectory')?.value.trim());
     }
 
     function registrationRequiredFields(userId) {
@@ -4528,13 +4563,9 @@
           collapseButton.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
         }
       });
-      const title = {
-        user1: 'REGISTER USER 1',
-        user2: 'REGISTER USER 2',
-        users: 'REGISTER USERS',
-        hub: 'COLLABORATOR HUB'
-      }[stage] || 'REGISTER USERS';
-      $('setupWizardTitle').textContent = title;
+      // Phase 7-fix: setup modal is a single-screen two-column form. Title is
+      // always SETUP USERS; per-stage titles are no longer surfaced.
+      $('setupWizardTitle').textContent = 'SETUP USERS';
       const setupDialog = document.querySelector('.setup-dialog');
       const userTone = ['user1', 'user2'].includes(stage) ? stage : '';
       if (setupDialog) {
@@ -4545,10 +4576,6 @@
           delete setupDialog.dataset.userTone;
         }
       }
-      $('registerBackBtn').style.display = 'none';
-      $('registerUser1NextBtn').style.display = '';
-      $('registerUser2FinishBtn').style.display = '';
-      $('openHubBtn').style.display = setupReady().allReady ? '' : 'none';
       applyUserTheme();
       updateSetupGuide();
     }
@@ -4587,31 +4614,23 @@
     }
 
     function updateSetupGuide() {
-      if (!$('setupChecklist') || !$('wizardChecklist')) return;
+      // Phase 7-fix: in-modal checklist + warning + per-user save buttons removed.
+      // Main-view setupChecklist still renders. Save Settings is a single button
+      // gated by full setupReady().allReady (both users complete).
+      if (!$('setupChecklist')) return;
       const readiness = setupReady();
       const markup = checklistMarkup(readiness);
-      const missingUser1 = registrationMissingFields('user1');
-      const missingUser2 = registrationMissingFields('user2');
       $('setupChecklist').innerHTML = markup;
-      $('wizardChecklist').innerHTML = markup;
       updateRegistrationProgress();
-      $('setupWarning').textContent = readiness.allReady
-        ? 'Ready. Use a Handover button to choose who is working now.'
-        : missingUser1.length || missingUser2.length
-          ? `Missing: ${[
-              missingUser1.length ? `User 1 needs ${missingUser1.join(', ')}` : '',
-              missingUser2.length ? `User 2 needs ${missingUser2.join(', ')}` : ''
-            ].filter(Boolean).join('; ')}.`
-          : 'Confirm the Project Files Tracker directory, then register User 1 and User 2. Include Codex and Claude account labels, Claude Desktop and Claude Code paths, and Git identity for each user.';
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
       $('switchUserBtn').textContent = readiness.allReady ? 'Handover Users' : 'Setup Users';
       if (state.testMode.active) $('switchUserBtn').textContent = 'Test users';
-      $('registerUser1NextBtn').disabled = state.busy || !registrationFieldReady('user1');
-      $('registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2');
-      $('registerUser1NextBtn').dataset.missingFields = registrationMissingFields('user1').join(', ');
-      $('registerUser2FinishBtn').dataset.missingFields = registrationMissingFields('user2').join(', ');
-      $('openHubBtn').disabled = state.busy || !readiness.allReady;
+      $('saveSettingsBtn').disabled = state.busy || !readiness.allReady;
+      $('saveSettingsBtn').dataset.missingFields = [
+        ...registrationMissingFields('user1').map(f => `User 1: ${f}`),
+        ...registrationMissingFields('user2').map(f => `User 2: ${f}`)
+      ].join(', ');
       $('handoffBtn').disabled = state.busy || !handoffStepReady();
       $('endSessionBtn').disabled = state.busy || !handoffStepReady();
       // Phase 3: messageBtn removed; saves-on-blur handler on messageText
@@ -4624,7 +4643,8 @@
       $('setupOverlay').classList.remove('hidden');
       setRegistrationStage('users');
       setTimeout(() => {
-        const target = setupReady().allReady ? 'openHubBtn' : storedUserReady('user1') && !storedUserReady('user2') ? 'user2Name' : 'user1Name';
+        // Phase 7-fix: openHubBtn removed; focus first incomplete user, else Save Settings.
+        const target = setupReady().allReady ? 'saveSettingsBtn' : storedUserReady('user1') && !storedUserReady('user2') ? 'user2Name' : 'user1Name';
         $(target)?.focus();
       }, 0);
     }
@@ -4653,17 +4673,12 @@
       }
     }
 
-    function syncProjectFilesDirectoryToState(sourceId = '') {
+    function syncProjectFilesDirectoryToState() {
       if (!state.settings) return;
       const main = $('projectFilesDirectory');
-      const setup = $('setupProjectFilesDirectory');
-      const value = (sourceId === 'setupProjectFilesDirectory' ? setup?.value : main?.value)?.trim()
-        || setup?.value.trim()
-        || main?.value.trim()
-        || 'C:\\panda-gallery';
+      const value = main?.value.trim() || 'C:\\panda-gallery';
       state.settings.project_files_directory = value;
       if (main && main.value !== value) main.value = value;
-      if (setup && setup.value !== value) setup.value = value;
     }
 
     function syncActiveProfileFieldsToState() {
@@ -4793,9 +4808,11 @@
       if (!settings) return;
       const [user1, user2] = settings.users;
       $('projectFilesDirectory').value = settings.project_files_directory || 'C:\\panda-gallery';
-      $('setupProjectFilesDirectory').value = settings.project_files_directory || 'C:\\panda-gallery';
       $('user1Name').value = user1?.display_name || 'User 1';
       $('user2Name').value = user2?.display_name || 'User 2';
+      // Phase 7-fix: identity tag in modal head reflects display name live
+      const u1Tag = $('user1DisplayTag'); if (u1Tag) u1Tag.textContent = user1?.display_name || 'User 1';
+      const u2Tag = $('user2DisplayTag'); if (u2Tag) u2Tag.textContent = user2?.display_name || 'User 2';
       const profile = activeProfile();
       $('profileRepoPath').value = profile?.default_repo_path || '';
       $('profileAgent').value = profile?.handoff_agent || profile?.display_name || '';
@@ -5521,11 +5538,10 @@
     $('openSetupBtn').addEventListener('click', openSetupWizard);
     $('switchUserBtn').addEventListener('click', openSetupWizard);
     $('closeSetupBtn').addEventListener('click', closeSetupWizard);
-    $('autoFillSetupBtn').addEventListener('click', autoFillSetup);
-    $('registerBackBtn').addEventListener('click', () => setRegistrationStage('users'));
-    $('registerUser1NextBtn').addEventListener('click', registerUser1AndContinue);
-    $('registerUser2FinishBtn').addEventListener('click', registerUser2AndStay);
-    $('openHubBtn').addEventListener('click', closeSetupWizard);
+    // Phase 7-fix: single Save Settings + Cancel replace per-user save buttons,
+    // Back button, Open Hub button, and the in-modal auto-fill action.
+    $('saveSettingsBtn').addEventListener('click', () => saveSettings({closeAfter: true}));
+    $('cancelSetupBtn').addEventListener('click', closeSetupWizard);
     $('applyProfileBtn').addEventListener('click', () => {
       applyActiveProfileDefaults({forceRepo: true});
       showResult(`Defaults applied for <strong>${escapeHtml(activeProfile()?.display_name || 'active user')}</strong>.`);
@@ -5551,7 +5567,7 @@
         renderSideView();
       });
     });
-    ['projectFilesDirectory', 'setupProjectFilesDirectory', 'user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'claudeDesktopPath', 'claudeCodePath', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'claudeDesktopPathUser2', 'claudeCodePathUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
+    ['projectFilesDirectory', 'user1Name', 'user2Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'codexAccount', 'claudeAccount', 'claudeDesktopPath', 'claudeCodePath', 'gitAuthorName', 'gitAuthorEmail', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2', 'codexAccountUser2', 'claudeAccountUser2', 'claudeDesktopPathUser2', 'claudeCodePathUser2', 'gitAuthorNameUser2', 'gitAuthorEmailUser2'].forEach(id => {
       $(id).addEventListener('input', () => {
         syncAllRegistrationFieldsToState(id);
         updateActiveButtons();
