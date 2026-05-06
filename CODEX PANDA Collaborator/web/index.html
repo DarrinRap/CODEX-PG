@@ -154,7 +154,10 @@
 
     body.test-mode {
       --user-accent: #ffdf4d;
-      --user-accent-2: #ff4fd8;
+      /* Phase 8 fix CLAUDE-20260506-010600 (Issue B): Karen magenta corrected
+         from #ff4fd8 to #ff7adb to match locked pc_v2_test_mode.html spec
+         (--test-karen). The older #ff4fd8 hex predates Phase 8 token alignment. */
+      --user-accent-2: #ff7adb;
       --user-bg: #151000;
       --user-surface: #332600;
       --user-ink: #080600;
@@ -164,6 +167,27 @@
       --accent-light: #fff08a;
       --accent-border: rgba(255, 79, 216, .68);
       --accent-soft: rgba(255, 223, 77, .18);
+      /* Phase 8 fix CLAUDE-20260506-010600 (Issue B Gap 3 supplemental):
+         override --user1 / --user2 token family inside test mode so identity
+         colors (active-user dot/border, user-sec headers, switch-btn borders)
+         show Bob yellow / Karen magenta instead of production amber/cyan.
+         Step 0 RTC didn't anticipate that --user1/--user2 are referenced
+         directly in many rules; verified via screenshot the prior fix alone
+         left identity colors as production cyan. CD ruling §"Bob identity
+         color = #ffdf4d / Karen identity color = #ff7adb in test mode"
+         requires this. */
+      --user1: #ffdf4d;
+      --user1-soft: rgba(255, 223, 77, 0.12);
+      --user1-border: rgba(255, 223, 77, 0.45);
+      --user1-dim: rgba(255, 223, 77, 0.25);
+      --user2: #ff7adb;
+      --user2-soft: rgba(255, 122, 219, 0.12);
+      --user2-border: rgba(255, 122, 219, 0.45);
+      --user2-dim: rgba(255, 122, 219, 0.25);
+      /* Phase 8 fix CLAUDE-20260506-010600 (Issue B Gap 1): viewport border via
+         box-shadow inset to avoid layout reflow. Replaces dormant
+         body.test-mode .pc-viewport / .pc-shell border rule (no such wrappers). */
+      box-shadow: inset 0 0 0 2px var(--test-bob);
     }
 
     [data-user-tone="user1"],
@@ -385,9 +409,10 @@
     body.user-two .pc-header .active-user {
       border-left-color: var(--user2);
     }
-    body.test-mode .pc-header .active-user {
-      border-left-color: var(--warn);
-    }
+    /* Phase 8 fix CLAUDE-20260506-010600 (Issue B Gap 3): the prior rule
+       `body.test-mode .pc-header .active-user { border-left-color: var(--warn); }`
+       was masking the per-user identity color (Bob yellow / Karen magenta). Removed
+       so that body.user-one / body.user-two rules above govern in test mode too. */
     .pc-header .active-user.empty {
       color: var(--text-dim);
       font-style: italic;
@@ -1747,11 +1772,11 @@
     .escape-banner .escape-actions button:hover { border-color: var(--user1-border); color: var(--user1); }
 
     /* === Test Mode v2 visual alignment (CD ruling Q4 — additive only) === */
-    /* Yellow viewport border in test mode (token §3 item 1) */
-    body.test-mode .pc-viewport,
-    body.test-mode .pc-shell {
-      border: 2px solid var(--test-bob);
-    }
+    /* Yellow viewport border in test mode (token §3 item 1).
+       Phase 8 fix CLAUDE-20260506-010600 (Issue B Gap 1): live PC has no
+       .pc-viewport / .pc-shell wrapper class — the prior selector was dormant.
+       Replaced with box-shadow on body.test-mode (declared in the test-mode
+       token block above) so the yellow ring renders without layout reflow. */
 
     /* Diagonal "TEST MODE" ribbon corner watermark (token §3 item 2) */
     body.test-mode::before {
