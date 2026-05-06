@@ -381,6 +381,12 @@ button[disabled] { opacity: .48; cursor: default; }
 
 .participants-panel { display: grid; }
 .queue-panel { grid-template-rows: auto auto auto auto auto auto 1fr; }
+/* PAH-ACTIVITY-PANEL-CLIP-20260506 (Option A per CLAUDE-20260506-012000):
+   `.panel { overflow: hidden }` was clipping the >12 children that follow
+   summary-strip when their stacked height exceeds the .app shell row.
+   Override the overflow on the queue-panel scope so the column scrolls
+   instead of clipping. Sticky head = follow-up if requested. */
+.queue-panel { overflow-y: auto; overflow-x: hidden; }
 .queue-panel > .panel-head .count { display: none; }
 .guide-card {
   margin: 6px 8px 0;
