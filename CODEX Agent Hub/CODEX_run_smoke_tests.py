@@ -1096,21 +1096,51 @@ def test_pah_ba_applet_launcher_contract() -> None:
 
 
 def test_pah_topbar_responsive_overflow_guard() -> None:
+    """Per CLAUDE-20260506-010100 ruling Q1: topbar collapses to a single 42px
+    flex row with `overflow: hidden`, no wrap, and compact pill measurements.
+    Test name + intent (header overflow regression guard) preserved; assertions
+    rewritten against the new contract."""
     ui_text = Path(__file__).with_name("CODEX_agent_hub_ui.html").read_text(encoding="utf-8")
+    # New 42px single-row contract on .topbar
     assert_true(
-        "grid-template-rows: auto minmax(0, 1fr) 26px;" in ui_text,
-        "PAH shell lets the header grow instead of clipping at a fixed 48px row",
+        "height: 42px;" in ui_text and ".topbar {" in ui_text,
+        "PAH topbar collapses to a fixed 42px row instead of growing to two rows",
     )
     assert_true(
-        "grid-template-columns: minmax(160px, 220px) minmax(180px, 1fr) minmax(0, 820px);" in ui_text,
-        "PAH topbar action column is bounded so added buttons cannot force horizontal overflow",
+        "overflow: hidden;" in ui_text and ".topbar {" in ui_text,
+        "PAH topbar clips overflow to keep the row visually bounded",
     )
-    assert_true("flex-wrap: wrap;" in ui_text, "PAH topbar actions wrap when browser zoom or width constrains them")
-    assert_true("justify-content: flex-end;" in ui_text, "PAH topbar actions stay aligned after wrapping")
     assert_true(
-        ".top-actions > * { flex: 0 1 auto; }" in ui_text,
-        "PAH topbar controls may shrink/wrap within the bounded action column",
+        "flex-wrap: nowrap;" in ui_text,
+        "PAH topbar actions stay on a single row — no wrap allowed",
     )
+    # Compact health-chip pill measurements per dispatch §"Visual spec"
+    assert_true(
+        "padding: 2px 8px;" in ui_text,
+        "PAH health pills use compact 2px 8px padding",
+    )
+    assert_true(
+        "font: 10px/1 var(--font-ui);" in ui_text,
+        "PAH health pills use 10px font",
+    )
+    assert_true(
+        "border-radius: 10px;" in ui_text,
+        "PAH health pills use 10px border-radius (compact rounded-pill grammar)",
+    )
+    # Old 3-column wrap-and-grow strategy explicitly REMOVED
+    assert_true(
+        "grid-template-columns: minmax(160px, 220px) minmax(180px, 1fr) minmax(0, 820px);" not in ui_text,
+        "old 3-column topbar grid removed (replaced by single flex row)",
+    )
+    assert_true(
+        "flex: 1 1 260px;" not in ui_text,
+        "old server-health flex-grow rule removed (single-row layout uses fixed compact pills)",
+    )
+    # Keep all 9 action elements in the single row (Q2 ruling)
+    for ident in ("autoRefresh", "refresh", "cleanupMailbox", "openBibleAudit",
+                   "openInspector", "cleanupInboxes", "archiveRead", "shortcutHelp",
+                   "openSimpleMail"):
+        assert_true(f'id="{ident}"' in ui_text, f"PAH topbar keeps action element id={ident}")
 
 
 def test_ba_swiss_army_upgrade_contract() -> None:
