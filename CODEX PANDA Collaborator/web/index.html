@@ -4054,6 +4054,57 @@
     </div>
   </div>
 
+  <!-- Phase 8 Feature 2: escape hatch State 1 modal — first confirmation. Opens from incomingEscapeHatchLink. Per locked pc_v2_escape_hatch.html. -->
+  <!-- Placement note (regression fix CLAUDE-20260506-009900-phase8-regression-fix): these 3 escape modal blocks
+       must be parsed BEFORE the main <script> below so the addEventListener wiring inside that script can
+       resolve the IDs. Original Phase 8 placement was after the main script which crashed init(). -->
+  <div class="escape-modal-overlay" id="escapeStep1Overlay" aria-hidden="true" role="dialog" aria-labelledby="escapeStep1Title">
+    <div class="escape-modal">
+      <div class="em-header">
+        <span class="em-eyebrow">⚠ Handoff load failed</span>
+        <span class="em-title" id="escapeStep1Title">Proceed without a handoff?</span>
+      </div>
+      <div class="em-body">
+        <p>The handoff package could not be loaded. This may mean the package file was moved, deleted, or the settings file is corrupted.</p>
+        <p>You can proceed without it, but you will have no handoff summary and may be missing context.</p>
+      </div>
+      <div class="em-footer">
+        <button id="escapeStep1CancelBtn" class="em-btn" type="button">Cancel — try again</button>
+        <button id="escapeStep1ProceedBtn" class="em-btn warn" type="button">Proceed without handoff</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 8 Feature 2: escape hatch State 2 modal — "Are you sure?" second confirmation. Per spec v1.1 §8.3. -->
+  <div class="escape-modal-overlay" id="escapeStep2Overlay" aria-hidden="true" role="dialog" aria-labelledby="escapeStep2Title">
+    <div class="escape-modal">
+      <div class="em-header">
+        <span class="em-eyebrow">⚠ Confirm — second step</span>
+        <span class="em-title" id="escapeStep2Title">Are you sure?</span>
+      </div>
+      <div class="em-body">
+        <p>Work with caution — no handoff summary is available.</p>
+        <p>If you continue, PC will mark this handoff as escape-hatched and you will land on the main view with a persistent amber warning until a fresh handoff is created or recovered.</p>
+      </div>
+      <div class="em-footer">
+        <button id="escapeStep2BackBtn" class="em-btn" type="button">No — go back</button>
+        <button id="escapeStep2ConfirmBtn" class="em-btn warn" type="button">Yes — proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 8 Feature 2: escape hatch State 3 — amber persistent banner inside main view. Visible when body.escape-hatched. -->
+  <div class="escape-banner" id="escapeBanner" role="alert">
+    <span class="escape-icon" aria-hidden="true">⚠</span>
+    <span class="escape-text">
+      <span class="lead">Handoff load failed —</span>
+      no handoff summary available. Create or obtain a fresh handoff before serious work begins.
+    </span>
+    <div class="escape-actions">
+      <button id="escapeBannerSettingsBtn" type="button">View raw settings</button>
+    </div>
+  </div>
+
   <script>
     const forbidden = [
       'git reset --hard',
@@ -6380,54 +6431,6 @@
       }
     })();
   </script>
-
-  <!-- Phase 8 Feature 2: escape hatch State 1 modal — first confirmation. Opens from incomingEscapeHatchLink. Per locked pc_v2_escape_hatch.html. -->
-  <div class="escape-modal-overlay" id="escapeStep1Overlay" aria-hidden="true" role="dialog" aria-labelledby="escapeStep1Title">
-    <div class="escape-modal">
-      <div class="em-header">
-        <span class="em-eyebrow">⚠ Handoff load failed</span>
-        <span class="em-title" id="escapeStep1Title">Proceed without a handoff?</span>
-      </div>
-      <div class="em-body">
-        <p>The handoff package could not be loaded. This may mean the package file was moved, deleted, or the settings file is corrupted.</p>
-        <p>You can proceed without it, but you will have no handoff summary and may be missing context.</p>
-      </div>
-      <div class="em-footer">
-        <button id="escapeStep1CancelBtn" class="em-btn" type="button">Cancel — try again</button>
-        <button id="escapeStep1ProceedBtn" class="em-btn warn" type="button">Proceed without handoff</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Phase 8 Feature 2: escape hatch State 2 modal — "Are you sure?" second confirmation. Per spec v1.1 §8.3. -->
-  <div class="escape-modal-overlay" id="escapeStep2Overlay" aria-hidden="true" role="dialog" aria-labelledby="escapeStep2Title">
-    <div class="escape-modal">
-      <div class="em-header">
-        <span class="em-eyebrow">⚠ Confirm — second step</span>
-        <span class="em-title" id="escapeStep2Title">Are you sure?</span>
-      </div>
-      <div class="em-body">
-        <p>Work with caution — no handoff summary is available.</p>
-        <p>If you continue, PC will mark this handoff as escape-hatched and you will land on the main view with a persistent amber warning until a fresh handoff is created or recovered.</p>
-      </div>
-      <div class="em-footer">
-        <button id="escapeStep2BackBtn" class="em-btn" type="button">No — go back</button>
-        <button id="escapeStep2ConfirmBtn" class="em-btn warn" type="button">Yes — proceed</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Phase 8 Feature 2: escape hatch State 3 — amber persistent banner inside main view. Visible when body.escape-hatched. -->
-  <div class="escape-banner" id="escapeBanner" role="alert">
-    <span class="escape-icon" aria-hidden="true">⚠</span>
-    <span class="escape-text">
-      <span class="lead">Handoff load failed —</span>
-      no handoff summary available. Create or obtain a fresh handoff before serious work begins.
-    </span>
-    <div class="escape-actions">
-      <button id="escapeBannerSettingsBtn" type="button">View raw settings</button>
-    </div>
-  </div>
 
   <!-- Phase 7: outgoing confirmation modal — opens after Phase 6 progress Done click on complete; per pc_v2_outgoing_confirmation.html -->
   <div class="outgoing-confirmation-overlay" id="outgoingConfirmationOverlay" data-tone="user1" aria-hidden="true" role="dialog" aria-labelledby="outgoingConfirmationTitle">
