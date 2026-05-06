@@ -2706,6 +2706,72 @@ def set_pause(payload: dict[str, Any], paused: bool) -> dict[str, Any]:
     return {"ok": True, "control_state": state}
 
 
+# Phase 8 — Emergency Pause (token-strict, in-memory only).
+# Per CD ruling Q1 (CLAUDE-20260506-009700): module-level dict,
+# no settings file write, does not survive restart by design.
+# Coexists with legacy set_pause() / control_state.paused; future cleanup
+# may consolidate the two surfaces into one — flagged in the Phase 8 RTC.
+_emergency_pause_state: dict[str, Any] = {
+    "active": False,
+    "triggered_by": None,
+    "triggered_at": None,
+}
+_emergency_pause_lock = threading.Lock()
+
+
+def toggle_emergency_pause(active: bool, triggered_by: str) -> dict[str, Any]:
+    """Phase 8: flip the emergency pause flag in volatile module state.
+
+    Activate: set active=True, capture triggered_by + ISO 8601 UTC timestamp.
+    Deactivate: clear active, triggered_by, triggered_at.
+    Returns the new emergency_pause_active value.
+    """
+    name = clean_setting_text(triggered_by, "", 80)
+    with _emergency_pause_lock:
+        if active:
+            _emergency_pause_state["active"] = True
+            _emergency_pause_state["triggered_by"] = name or None
+            _emergency_pause_state["triggered_at"] = utc_iso_timestamp()
+        else:
+            _emergency_pause_state["active"] = False
+            _emergency_pause_state["triggered_by"] = None
+            _emergency_pause_state["triggered_at"] = None
+        return {"emergency_pause_active": _emergency_pause_state["active"]}
+
+
+def get_emergency_pause_status() -> dict[str, Any]:
+    """Phase 8: read the volatile emergency pause state."""
+    with _emergency_pause_lock:
+        return {
+            "emergency_pause_active": _emergency_pause_state["active"],
+            "triggered_by": _emergency_pause_state["triggered_by"],
+            "triggered_at": _emergency_pause_state["triggered_at"],
+        }
+
+
+def confirm_escape_hatch(failed_package_id: str | None) -> dict[str, Any]:
+    """Phase 8: handle the incoming-modal escape hatch.
+
+    Called by POST /api/escape-hatch/confirm when the incoming user takes
+    the explicit two-step escape per spec v1.1 §8.3 (the handoff package
+    cannot be loaded on their side). Sets handover_state.handover_pending=False,
+    populates handover_state.failed_package_id with the supplied id (for
+    timeline history), clears all other handover_state fields, persists via
+    save_settings() — which writes the §5.3 backup.
+    """
+    cleaned_id = clean_setting_text(failed_package_id or "", "", 120) or None
+    settings = load_settings()
+    settings["handover_state"] = {
+        "handover_pending": False,
+        "incoming_user_slot": None,
+        "handover_timestamp": None,
+        "handoff_package_id": None,
+        "failed_package_id": cleaned_id,
+    }
+    saved = save_settings(settings)
+    return {"failed_package_id": saved["handover_state"]["failed_package_id"]}
+
+
 def search_history(query: str) -> dict[str, Any]:
     needle = query.strip().lower()
     results: list[dict[str, Any]] = []
@@ -2774,6 +2840,9 @@ class PandaHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/handoff/progress":
             # Phase 6 Part B: read-only state for live polling at 500ms cadence.
             return json_response(self, {"ok": True, **get_handoff_progress()})
+        if parsed.path == "/api/emergency-pause/status":
+            # Phase 8: read-only volatile pause state.
+            return json_response(self, {"ok": True, **get_emergency_pause_status()})
         if parsed.path == "/api/settings":
             try:
                 return json_response(self, {"ok": True, "settings": load_settings()})
@@ -2907,6 +2976,23 @@ class PandaHandler(BaseHTTPRequestHandler):
                 return json_response(self, set_pause(payload, True))
             if parsed.path == "/api/pause/clear":
                 return json_response(self, set_pause(payload, False))
+            if parsed.path == "/api/emergency-pause/toggle":
+                # Phase 8: token-strict in-memory pause toggle. Independent
+                # from legacy set_pause(); does not survive restart.
+                active_raw = payload.get("active", False)
+                active = active_raw is True or active_raw == 1
+                triggered_by = str(payload.get("triggered_by", "")).strip()
+                return json_response(self, {"ok": True, **toggle_emergency_pause(active, triggered_by)})
+            if parsed.path == "/api/escape-hatch/confirm":
+                # Phase 8 (per spec v1.1 §8.3): incoming user confirmed two-step
+                # escape from a missing/corrupt handoff package. Sets
+                # handover_state.failed_package_id, clears handover_pending.
+                failed_id = payload.get("failed_package_id")
+                if isinstance(failed_id, str) and failed_id.strip():
+                    failed_id_arg: str | None = failed_id.strip()
+                else:
+                    failed_id_arg = None
+                return json_response(self, {"ok": True, **confirm_escape_hatch(failed_id_arg)})
             if parsed.path == "/api/path/pick":
                 return json_response(self, pick_local_path(payload))
             if parsed.path == "/api/restore/preview":

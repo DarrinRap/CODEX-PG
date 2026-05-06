@@ -1535,6 +1535,299 @@
     .setup-dialog .setup-close-x:hover { color: var(--err); border-color: var(--err); }
     /* === End Setup-modal-fix === */
 
+    /* === PC redesign Phase 8 — Emergency Pause + Escape Hatch + Test Mode v2 alignment === */
+    /* Per CD ruling Q1 (CLAUDE-20260506-009700) — token-strict, in-memory pause via
+       /api/emergency-pause/toggle. Coexists with legacy /api/pause for back-compat
+       (UI uses only the new endpoints). */
+
+    /* === Emergency Pause: header button danger state (CD ruling Q3 — chip removed; button carries state) === */
+    .pc-header #pauseBtn {
+      height: 26px; padding: 0 10px;
+      font-size: 11px; font-weight: 600;
+      border-color: var(--warn);
+      color: var(--warn);
+    }
+    .pc-header #pauseBtn:hover { background: var(--warn-soft); }
+    .pc-header #pauseBtn.danger {
+      background: var(--err);
+      border-color: var(--err);
+      color: #fff;
+      font-weight: 700;
+    }
+    .pc-header #pauseBtn.danger:hover { filter: brightness(1.1); background: var(--err); }
+    .pc-header #pauseBtn .pause-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      display: none;
+      margin-right: 4px;
+    }
+    .pc-header #pauseBtn.danger .pause-dot { display: inline-block; }
+
+    /* === Emergency Pause: 40px red footer band (CD ruling Q2 — replaces 28px footer when paused) === */
+    .pc-footer.emergency-band {
+      display: none;
+      align-items: center;
+      gap: 16px;
+      height: 40px;
+      padding: 0 16px;
+      background: var(--err-soft);
+      border-top: 2px solid var(--err);
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+    }
+    body.is-paused .pc-footer.emergency-band { display: flex; }
+    body.is-paused .pc-footer:not(.emergency-band) { display: none; }
+    .pc-footer.emergency-band .em-label {
+      color: var(--err);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .pc-footer.emergency-band .em-detail {
+      color: var(--text);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+    .pc-footer.emergency-band .em-spacer { flex: 1; }
+    .pc-footer.emergency-band .em-clear-btn {
+      height: 28px; padding: 0 12px;
+      background: var(--pane-2);
+      color: var(--err);
+      border: 1px solid var(--err);
+      border-radius: var(--radius-md);
+      font: 700 11.5px/1 var(--font-ui);
+      cursor: pointer;
+    }
+    .pc-footer.emergency-band .em-clear-btn:hover { background: var(--err); color: #fff; }
+
+    /* Disabled-action reason text shown on Start Session + Create Safe Handoff
+       when paused. Reuses .btn-stack/.btn-stack.err pattern from Phase 4. */
+    body.is-paused .start-session-btn,
+    body.is-paused #handoffBtn {
+      cursor: not-allowed;
+      opacity: 0.95;
+    }
+    body.is-paused .start-session-btn .btn-pause-reason,
+    body.is-paused #handoffBtn .btn-pause-reason {
+      display: block;
+    }
+    .start-session-btn .btn-pause-reason,
+    #handoffBtn .btn-pause-reason {
+      display: none;
+      font-size: 9.5px;
+      font-weight: 500;
+      color: var(--err);
+      letter-spacing: 0.2px;
+      margin-top: 2px;
+    }
+
+    /* === Escape Hatch — 540px modal, two confirmation states (CD ruling Q4 + spec §8.3) === */
+    .escape-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 14, 0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      z-index: 220;
+    }
+    .escape-modal-overlay.is-open { display: flex; }
+    .escape-modal {
+      width: 540px;
+      max-width: 100%;
+      background: var(--pane);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .escape-modal .em-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 22px;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--border);
+    }
+    .escape-modal .em-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--warn);
+      font-weight: 700;
+    }
+    .escape-modal .em-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .escape-modal .em-body {
+      padding: 18px 22px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .escape-modal .em-body p + p { margin-top: 10px; }
+    .escape-modal .em-footer {
+      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+      padding: 14px 22px;
+      background: var(--chrome);
+      border-top: 1px solid var(--border);
+    }
+    .escape-modal .em-btn {
+      height: 32px; padding: 0 14px;
+      background: var(--pane-2);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      font: 600 12px/1 var(--font-ui);
+      cursor: pointer;
+    }
+    .escape-modal .em-btn:hover { border-color: var(--user1-border); color: var(--user1); }
+    .escape-modal .em-btn.warn {
+      background: var(--warn-soft);
+      border-color: var(--warn);
+      color: var(--warn);
+    }
+    .escape-modal .em-btn.warn:hover {
+      background: var(--warn);
+      color: var(--canvas);
+    }
+
+    /* Escape Hatch State 3 — amber persistent banner inside main view */
+    .escape-banner {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 24px;
+      background: var(--warn-soft);
+      border-top: 1px solid var(--warn-border);
+      border-bottom: 1px solid var(--warn-border);
+      flex-shrink: 0;
+    }
+    body.escape-hatched .escape-banner { display: flex; }
+    .escape-banner .escape-icon {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--warn);
+      color: var(--canvas);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .escape-banner .escape-text {
+      flex: 1;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .escape-banner .escape-text .lead {
+      font-weight: 700;
+      color: var(--warn);
+      margin-right: 6px;
+    }
+    .escape-banner .escape-actions { display: flex; gap: 10px; flex-shrink: 0; }
+    .escape-banner .escape-actions button {
+      height: 32px; padding: 0 14px;
+      background: var(--pane-2);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      font: 600 12px/1 var(--font-ui);
+      cursor: pointer;
+    }
+    .escape-banner .escape-actions button:hover { border-color: var(--user1-border); color: var(--user1); }
+
+    /* === Test Mode v2 visual alignment (CD ruling Q4 — additive only) === */
+    /* Yellow viewport border in test mode (token §3 item 1) */
+    body.test-mode .pc-viewport,
+    body.test-mode .pc-shell {
+      border: 2px solid var(--test-bob);
+    }
+
+    /* Diagonal "TEST MODE" ribbon corner watermark (token §3 item 2) */
+    body.test-mode::before {
+      content: "TEST MODE";
+      position: fixed;
+      top: 28px;
+      right: -50px;
+      background: var(--test-bob);
+      color: var(--canvas);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 5px 60px;
+      transform: rotate(45deg);
+      z-index: 999;
+      pointer-events: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Test controls strip in center column (token §3 item 3) */
+    .test-controls-strip {
+      display: none;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--test-bob-soft);
+      border-bottom: 1px solid var(--test-bob);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    body.test-mode .test-controls-strip { display: flex; }
+    .test-controls-strip .tc-btn {
+      height: 26px;
+      padding: 0 9px;
+      font-size: 11px;
+      background: var(--pane-2);
+      border: 1px solid var(--test-bob-border);
+      color: var(--test-bob);
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .test-controls-strip .tc-btn:hover {
+      background: var(--test-bob);
+      color: var(--canvas);
+    }
+    .test-controls-strip .tc-spacer { flex: 1; }
+    .test-controls-strip .tc-progress {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--test-bob);
+    }
+
+    /* Footer test-pill (token §3 item 5) */
+    .pc-footer .test-pill {
+      display: none;
+      padding: 2px 8px;
+      background: var(--test-bob-soft);
+      border: 1px solid var(--test-bob);
+      border-radius: 10px;
+      color: var(--test-bob);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    body.test-mode .pc-footer .test-pill { display: inline-flex; }
+    body.test-mode .pc-footer .safety-pill { display: none; }
+
+    /* Working tree path input in test colors (token §3 item 6) */
+    body.test-mode #repoPath,
+    body.test-mode .repo-row .repo-path-input {
+      background: var(--test-bob-soft);
+      border-color: var(--test-bob-border);
+      color: var(--test-bob);
+    }
+    /* === End PC redesign Phase 8 === */
+
     .test-controls {
       display: flex;
       align-items: center;
@@ -3370,7 +3663,7 @@
       <span id="activeUserTheme" class="role-tag">Complete setup before handoff work</span>
       <span class="spacer"></span>
       <span class="test-mode-chip">⚠ Test mode</span>
-      <span class="pause-chip">⏸ Paused</span>
+      <!-- Phase 8 Q3: pause-chip removed. Header pauseBtn (.danger state) carries the visual state. -->
       <div class="test-controls" aria-label="PANDA test mode controls">
         <button id="testModeBtn" class="test-mode-btn" type="button">Start Test Mode</button>
         <span id="testStatusPill" class="test-status-pill" data-test-result="">Test Ready</span>
@@ -3380,6 +3673,11 @@
         <button id="quitTestModeBtn" class="quit-test-btn hidden" type="button">Quit Test Mode</button>
       </div>
       <button id="switchUserBtn" class="switch-user-btn" type="button">Setup users</button>
+      <!-- Phase 8 Q2: pauseBtn moved from legacy-pending div to header per v2 mockup. -->
+      <button id="pauseBtn" class="btn" type="button">
+        <span class="pause-dot"></span>
+        <span class="pause-label">Emergency Pause</span>
+      </button>
     </header>
     <div class="pc-statusbar">
       <span class="pill" id="statusBarRepoLabel">No tree</span>
@@ -3498,6 +3796,14 @@
 
       <!-- CENTER COLUMN — Status Messages dominant + Quick Message saves-on-blur + Start Session (Phase 3) -->
       <div class="center-col">
+        <!-- Phase 8 Feature 3 (token §3 item 3): test controls strip — only visible when body.test-mode -->
+        <div class="test-controls-strip" id="testControlsStrip" aria-hidden="true">
+          <button id="testStripRunBtn" class="tc-btn" type="button">▶ Run Test</button>
+          <button id="testStripResetBtn" class="tc-btn" type="button">↺ Reset Sandbox</button>
+          <button id="testStripEvidenceBtn" class="tc-btn" type="button">📁 Open Evidence</button>
+          <span class="tc-spacer"></span>
+          <span class="tc-progress" id="testStripProgress">0 of 7 manual checks complete</span>
+        </div>
         <div class="status-sec">
           <div class="sec-head"><span>Status Messages</span><span class="right-tag" id="resultChip">Idle</span></div>
           <div class="status-list" id="resultBox" tabindex="0" aria-live="polite"></div>
@@ -3533,8 +3839,7 @@
         <div class="legacy-pending" data-flow-panel="start">
           <input id="projectFilesDirectory" value="C:\panda-gallery" spellcheck="false">
           <button type="button" data-path-picker="projectFilesDirectory" data-path-mode="folder" data-path-title="Select project files directory">Browse</button>
-          <button class="danger" id="pauseBtn" type="button">Emergency Pause</button>
-          <button id="clearPauseBtn" type="button">Clear Pause</button>
+          <!-- Phase 8 Q2: pauseBtn moved to header; clearPauseBtn moved to .pc-footer.emergency-band. -->
         </div>
       </div>
 
@@ -3611,6 +3916,21 @@
         </div>
       </div>
     </main>
+
+    <!-- Phase 8: standard pc-footer (28px). Hidden when body.is-paused (Phase 8 emergency band takes over). -->
+    <footer class="pc-footer pc-footer-standard">
+      <span class="safety-pill">Safety rules: Always enforced</span>
+      <span class="test-pill">⚠ TEST MODE — Fake users, fake accounts, sandbox repo</span>
+      <span class="spacer"></span>
+    </footer>
+
+    <!-- Phase 8: emergency pause band (40px red, only visible when body.is-paused). -->
+    <footer class="pc-footer emergency-band" id="emergencyPauseFooter">
+      <span class="em-label">⚠ Emergency Pause Active</span>
+      <span class="em-detail" id="emergencyPauseDetail">Triggered manually</span>
+      <span class="em-spacer"></span>
+      <button id="clearPauseBtn" class="em-clear-btn" type="button">Clear Pause</button>
+    </footer>
 
     <div class="setup-overlay hidden" id="setupOverlay" aria-modal="true" role="dialog">
       <section class="setup-dialog" data-user-tone="user1">
@@ -5265,21 +5585,53 @@
       }
     }
 
-    async function pauseWorkflow(paused) {
+    // Phase 8: pauseWorkflow re-pointed to the new /api/emergency-pause/toggle
+    // endpoint per CD ruling Q1 (token-strict, in-memory only). Legacy
+    // /api/pause / control_state.paused left intact for back-compat callers
+    // but the UI no longer reaches them.
+    async function pauseWorkflow(active) {
       setBusy(true);
       try {
-        const reason = paused ? ($('messageText').value.trim() || 'Manual Emergency Pause') : '';
-        const data = await api(paused ? '/api/pause' : '/api/pause/clear', {
-          reason,
-          operator_context: activeOperatorContext()
+        const triggeredBy = active ? (activeProfile()?.display_name || 'Operator') : '';
+        const data = await api('/api/emergency-pause/toggle', {
+          active: !!active,
+          triggered_by: triggeredBy
         });
-        showResult(paused ? `Emergency Pause active: <strong>${escapeHtml(reason)}</strong>` : 'Emergency Pause cleared.');
-        renderControlCenter({control_state: data.control_state, project_manager: {recommended_next_action: paused ? 'Stop work until the pause is cleared.' : 'Run Start Session before work resumes.'}, timeline: state.control?.timeline || [], messages: state.control?.messages || []});
-        await refreshControlCenter();
+        applyEmergencyPauseUi(!!data.emergency_pause_active, triggeredBy);
+        if (active) {
+          showResult(`Emergency Pause active: <strong>${escapeHtml(triggeredBy)}</strong> halted session and handoff actions.`, 'warn');
+        } else {
+          showResult('Emergency Pause cleared. Session and handoff actions resumed.');
+        }
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       } finally {
         setBusy(false);
+      }
+    }
+
+    // Phase 8: apply the emergency pause UI state. Driven by toggle response
+    // and by init-time status poll. Does not write to settings or control_state.
+    function applyEmergencyPauseUi(active, triggeredBy) {
+      document.body.classList.toggle('is-paused', !!active);
+      const btn = $('pauseBtn');
+      const label = btn?.querySelector('.pause-label');
+      if (btn) btn.classList.toggle('danger', !!active);
+      if (label) label.textContent = active ? 'Paused' : 'Emergency Pause';
+      const detail = $('emergencyPauseDetail');
+      if (detail && active) {
+        const who = triggeredBy || 'an operator';
+        const ts = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+        detail.textContent = `Triggered by ${who} at ${ts}`;
+      }
+    }
+
+    async function refreshEmergencyPauseStatus() {
+      try {
+        const data = await apiGet('/api/emergency-pause/status');
+        applyEmergencyPauseUi(!!data.emergency_pause_active, data.triggered_by || '');
+      } catch (_) {
+        // Best-effort; pause defaults to inactive on cold start.
       }
     }
 
@@ -5513,6 +5865,69 @@
     });
     $('pauseBtn').addEventListener('click', () => pauseWorkflow(true));
     $('clearPauseBtn').addEventListener('click', () => pauseWorkflow(false));
+
+    // Phase 8 Feature 2: escape hatch State 1 → State 2 → POST → State 3 wiring.
+    $('escapeStep1CancelBtn').addEventListener('click', () => {
+      $('escapeStep1Overlay').classList.remove('is-open');
+      $('escapeStep1Overlay').setAttribute('aria-hidden', 'true');
+    });
+    $('escapeStep1ProceedBtn').addEventListener('click', () => {
+      $('escapeStep1Overlay').classList.remove('is-open');
+      $('escapeStep1Overlay').setAttribute('aria-hidden', 'true');
+      $('escapeStep2Overlay').classList.add('is-open');
+      $('escapeStep2Overlay').setAttribute('aria-hidden', 'false');
+    });
+    $('escapeStep2BackBtn').addEventListener('click', () => {
+      $('escapeStep2Overlay').classList.remove('is-open');
+      $('escapeStep2Overlay').setAttribute('aria-hidden', 'true');
+    });
+    $('escapeStep2ConfirmBtn').addEventListener('click', async () => {
+      $('escapeStep2ConfirmBtn').disabled = true;
+      try {
+        const failedId = window.__pcEscapeFailedPackageId || null;
+        await api('/api/escape-hatch/confirm', { failed_package_id: failedId });
+        $('escapeStep2Overlay').classList.remove('is-open');
+        $('escapeStep2Overlay').setAttribute('aria-hidden', 'true');
+        // Dismiss Phase 7 incoming overlay (if open) so the user lands on main view.
+        const incoming = document.getElementById('incomingConfirmationOverlay');
+        if (incoming) {
+          incoming.classList.remove('is-open');
+          incoming.setAttribute('aria-hidden', 'true');
+        }
+        document.body.classList.add('escape-hatched');
+        showResult('Handoff escape-hatched. Persistent amber warning is shown until a fresh handoff is created or recovered.', 'warn');
+        if (typeof loadSettings === 'function') { try { await loadSettings(); } catch (_) {} }
+        if (typeof refreshControlCenter === 'function') { try { await refreshControlCenter(); } catch (_) {} }
+      } catch (err) {
+        console.error('Phase 8: escape-hatch/confirm failed', err);
+      } finally {
+        $('escapeStep2ConfirmBtn').disabled = false;
+      }
+    });
+    $('escapeBannerSettingsBtn').addEventListener('click', () => {
+      // Surface raw settings via console for now; future phase may open
+      // a structured viewer. Keeps Phase 8 scope tight.
+      try {
+        console.log('PC settings (raw):', state && state.settings);
+        showResult('Raw settings dumped to browser console.');
+      } catch (_) { /* noop */ }
+    });
+
+    // Phase 8 Feature 3: test controls strip buttons mirror the existing
+    // header test controls (visual alignment only — no new behavior). Each
+    // delegates to the same handler the header button uses.
+    $('testStripRunBtn').addEventListener('click', () => {
+      const btn = document.getElementById('runTestAgainBtn');
+      if (btn) btn.click();
+    });
+    $('testStripResetBtn').addEventListener('click', () => {
+      const btn = document.getElementById('createTestSandboxBtn');
+      if (btn) btn.click();
+    });
+    $('testStripEvidenceBtn').addEventListener('click', () => {
+      const btn = document.getElementById('openTestEvidenceBtn');
+      if (btn) btn.click();
+    });
     $('searchBtn').addEventListener('click', runSearch);
     $('packagesBtn').addEventListener('click', loadPackages);
     $('testModeBtn').addEventListener('click', () => {
@@ -5626,6 +6041,18 @@
       } catch (error) {
         showResult(escapeHtml(error.message), 'error');
       }
+      // Phase 8: surface the existing emergency pause state on every launch.
+      // Volatile module state — defaults to inactive on cold server start.
+      try { await refreshEmergencyPauseStatus(); } catch (_) {}
+      // Phase 8: escape-hatched state derived from settings — if a handover
+      // has been escape-hatched (failed_package_id set, handover_pending=false),
+      // show the persistent amber banner.
+      try {
+        const hs = state.settings && state.settings.handover_state;
+        if (hs && hs.failed_package_id && !hs.handover_pending) {
+          document.body.classList.add('escape-hatched');
+        }
+      } catch (_) {}
       // Phase 7: signal settings load attempt complete so the incoming-confirmation
       // modal can decide whether to auto-show (CD ruling 5a). Always fires — even
       // on the error path — so the launch gate is removed promptly.
@@ -5954,6 +6381,54 @@
     })();
   </script>
 
+  <!-- Phase 8 Feature 2: escape hatch State 1 modal — first confirmation. Opens from incomingEscapeHatchLink. Per locked pc_v2_escape_hatch.html. -->
+  <div class="escape-modal-overlay" id="escapeStep1Overlay" aria-hidden="true" role="dialog" aria-labelledby="escapeStep1Title">
+    <div class="escape-modal">
+      <div class="em-header">
+        <span class="em-eyebrow">⚠ Handoff load failed</span>
+        <span class="em-title" id="escapeStep1Title">Proceed without a handoff?</span>
+      </div>
+      <div class="em-body">
+        <p>The handoff package could not be loaded. This may mean the package file was moved, deleted, or the settings file is corrupted.</p>
+        <p>You can proceed without it, but you will have no handoff summary and may be missing context.</p>
+      </div>
+      <div class="em-footer">
+        <button id="escapeStep1CancelBtn" class="em-btn" type="button">Cancel — try again</button>
+        <button id="escapeStep1ProceedBtn" class="em-btn warn" type="button">Proceed without handoff</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 8 Feature 2: escape hatch State 2 modal — "Are you sure?" second confirmation. Per spec v1.1 §8.3. -->
+  <div class="escape-modal-overlay" id="escapeStep2Overlay" aria-hidden="true" role="dialog" aria-labelledby="escapeStep2Title">
+    <div class="escape-modal">
+      <div class="em-header">
+        <span class="em-eyebrow">⚠ Confirm — second step</span>
+        <span class="em-title" id="escapeStep2Title">Are you sure?</span>
+      </div>
+      <div class="em-body">
+        <p>Work with caution — no handoff summary is available.</p>
+        <p>If you continue, PC will mark this handoff as escape-hatched and you will land on the main view with a persistent amber warning until a fresh handoff is created or recovered.</p>
+      </div>
+      <div class="em-footer">
+        <button id="escapeStep2BackBtn" class="em-btn" type="button">No — go back</button>
+        <button id="escapeStep2ConfirmBtn" class="em-btn warn" type="button">Yes — proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 8 Feature 2: escape hatch State 3 — amber persistent banner inside main view. Visible when body.escape-hatched. -->
+  <div class="escape-banner" id="escapeBanner" role="alert">
+    <span class="escape-icon" aria-hidden="true">⚠</span>
+    <span class="escape-text">
+      <span class="lead">Handoff load failed —</span>
+      no handoff summary available. Create or obtain a fresh handoff before serious work begins.
+    </span>
+    <div class="escape-actions">
+      <button id="escapeBannerSettingsBtn" type="button">View raw settings</button>
+    </div>
+  </div>
+
   <!-- Phase 7: outgoing confirmation modal — opens after Phase 6 progress Done click on complete; per pc_v2_outgoing_confirmation.html -->
   <div class="outgoing-confirmation-overlay" id="outgoingConfirmationOverlay" data-tone="user1" aria-hidden="true" role="dialog" aria-labelledby="outgoingConfirmationTitle">
     <div class="confirmation-body">
@@ -6142,10 +6617,17 @@
         }
       });
 
-      // Escape hatch link — no-op stub (Phase 8 wires).
+      // Phase 8 Feature 2: escape hatch — opens the State 1 modal. The flow is
+      // State 1 (Proceed without a handoff?) → State 2 (Are you sure?) →
+      // POST /api/escape-hatch/confirm → close modals + reveal main view with
+      // State 3 amber persistent banner (body.escape-hatched).
       $('incomingEscapeHatchLink').addEventListener('click', function (ev) {
         ev.preventDefault();
-        console.log('Phase 8: escape hatch not yet implemented');
+        const settings = (typeof state !== 'undefined' && state && state.settings) || null;
+        const pkgId = (settings && settings.handover_state && settings.handover_state.handoff_package_id) || null;
+        window.__pcEscapeFailedPackageId = pkgId;
+        $('escapeStep1Overlay').classList.add('is-open');
+        $('escapeStep1Overlay').setAttribute('aria-hidden', 'false');
       });
 
       // Phase 6 emits 'pc:handoff-complete' on Done click after a successful run.

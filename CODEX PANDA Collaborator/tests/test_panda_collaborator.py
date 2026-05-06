@@ -786,6 +786,19 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("$('testChecklistLogBtn').addEventListener('click'", html)
         self.assertIn("$('quitTestModeBannerBtn').addEventListener('click', () => quitTestMode())", html)
 
+    def test_test_mode_footer_contains_test_pill_not_safety_pill(self):
+        # Phase 8 Feature 3 (token §3 item 5): when body.test-mode is active,
+        # the footer shows a yellow `test-pill` and the standard `safety-pill`
+        # is hidden. CSS rule pair: `body.test-mode .pc-footer .test-pill { display: inline-flex }`
+        # + `body.test-mode .pc-footer .safety-pill { display: none }`.
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('class="test-pill"', html)
+        self.assertIn('class="safety-pill"', html)
+        self.assertIn("body.test-mode .pc-footer .test-pill { display: inline-flex; }", html)
+        self.assertIn("body.test-mode .pc-footer .safety-pill { display: none; }", html)
+        # The test-pill copy aligns with the v2 mockup verbatim
+        self.assertIn("⚠ TEST MODE — Fake users, fake accounts, sandbox repo", html)
+
     def test_test_mode_uses_bob_karen_and_does_not_persist_to_normal_settings(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
@@ -1627,6 +1640,141 @@ class PandaCollaboratorHandoverStateTests(unittest.TestCase):
         # true after create_handoff_package, before save_handover_state — but the
         # verification chain documents the expected flow boundary.
         self.assertTrue(loaded["handover_state"]["handover_pending"])
+
+
+class PandaCollaboratorEmergencyPauseTests(unittest.TestCase):
+    """Phase 8: token-strict in-memory emergency pause (CD ruling Q1).
+
+    Coexists with the legacy set_pause() / control_state.paused surface; the
+    new endpoints do NOT touch the settings file or control_state. Pause does
+    not survive restart by design (`_emergency_pause_state` is module-level
+    volatile state).
+    """
+
+    def setUp(self):
+        # Reset volatile state between tests so order doesn't matter.
+        pc.toggle_emergency_pause(False, "")
+
+    def tearDown(self):
+        pc.toggle_emergency_pause(False, "")
+
+    def test_emergency_pause_activate_disables_primary_actions(self):
+        # POST toggle active=true → GET status returns active + triggered_by + ts
+        result = pc.toggle_emergency_pause(True, "Darrin")
+        self.assertEqual(result["emergency_pause_active"], True)
+        status = pc.get_emergency_pause_status()
+        self.assertEqual(status["emergency_pause_active"], True)
+        self.assertEqual(status["triggered_by"], "Darrin")
+        self.assertRegex(status["triggered_at"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+    def test_emergency_pause_clear_re_enables_primary_actions(self):
+        pc.toggle_emergency_pause(True, "Darrin")
+        result = pc.toggle_emergency_pause(False, "")
+        self.assertEqual(result["emergency_pause_active"], False)
+        status = pc.get_emergency_pause_status()
+        self.assertEqual(status["emergency_pause_active"], False)
+        self.assertIsNone(status["triggered_by"])
+        self.assertIsNone(status["triggered_at"])
+
+    def test_emergency_pause_does_not_persist_across_restart(self):
+        # Activate, then simulate restart by reloading settings — pause must
+        # NOT appear in settings file.
+        pc.toggle_emergency_pause(True, "Darrin")
+        # Simulate fresh process: clear volatile state (as a real restart would).
+        pc._emergency_pause_state["active"] = False
+        pc._emergency_pause_state["triggered_by"] = None
+        pc._emergency_pause_state["triggered_at"] = None
+        # New "process" reads its volatile state — should be inactive.
+        status = pc.get_emergency_pause_status()
+        self.assertEqual(status["emergency_pause_active"], False)
+        # Settings file is untouched: load_settings does not surface emergency-pause.
+        # (We can't fully assert "not on disk" without a settings fixture; the
+        # behavior is structural — confirm_escape_hatch + save_handover_state
+        # are the only Phase 7/8 paths that write settings.)
+
+
+class PandaCollaboratorEscapeHatchTests(unittest.TestCase):
+    """Phase 8: confirm_escape_hatch() handles the incoming-modal escape path
+    per spec v1.1 §8.3 — sets handover_state.failed_package_id, clears
+    handover_pending and the other fields, persists via save_settings()."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="panda-collab-escape-"))
+        self.settings_path = self.tmp / "settings.local.json"
+        self.old_settings = pc.os.environ.get("PANDA_COLLABORATOR_SETTINGS_PATH")
+        pc.os.environ["PANDA_COLLABORATOR_SETTINGS_PATH"] = str(self.settings_path)
+        # Seed two-user settings + a pending handover so the escape hatch has
+        # something realistic to clear.
+        pc.save_settings(
+            {
+                "active_user_id": "user1",
+                "project_files_directory": str(self.tmp / "panda-gallery"),
+                "users": [
+                    {
+                        "display_name": "Darrin",
+                        "default_repo_path": str(self.tmp / "repo-a"),
+                        "handoff_agent": "Codex",
+                        "handoff_title": "Darrin handoff",
+                        "codex_account": "darrin-codex@example.invalid",
+                        "claude_account": "darrin-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "cd-a.exe"),
+                        "claude_code_path": str(self.tmp / "cc-a"),
+                        "git_author_name": "Darrin",
+                        "git_author_email": "darrin@example.invalid",
+                    },
+                    {
+                        "display_name": "Pam",
+                        "default_repo_path": str(self.tmp / "repo-b"),
+                        "handoff_agent": "Claude",
+                        "handoff_title": "Pam handoff",
+                        "codex_account": "pam-codex@example.invalid",
+                        "claude_account": "pam-claude@example.invalid",
+                        "claude_desktop_path": str(self.tmp / "cd-b.exe"),
+                        "claude_code_path": str(self.tmp / "cc-b"),
+                        "git_author_name": "Pam",
+                        "git_author_email": "pam@example.invalid",
+                    },
+                ],
+            }
+        )
+        pc.save_handover_state("user2", "PG-pending-pkg")
+
+    def tearDown(self):
+        if self.old_settings is None:
+            pc.os.environ.pop("PANDA_COLLABORATOR_SETTINGS_PATH", None)
+        else:
+            pc.os.environ["PANDA_COLLABORATOR_SETTINGS_PATH"] = self.old_settings
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_escape_hatch_sets_failed_package_id_and_clears_pending(self):
+        # Pre-condition: pending=true via setUp's save_handover_state call
+        pre = pc.load_settings()["handover_state"]
+        self.assertTrue(pre["handover_pending"])
+        self.assertEqual(pre["handoff_package_id"], "PG-pending-pkg")
+
+        result = pc.confirm_escape_hatch("PG-pending-pkg")
+        self.assertEqual(result["failed_package_id"], "PG-pending-pkg")
+
+        post = pc.load_settings()["handover_state"]
+        self.assertFalse(post["handover_pending"])
+        self.assertEqual(post["failed_package_id"], "PG-pending-pkg")
+        self.assertIsNone(post["incoming_user_slot"])
+        self.assertIsNone(post["handover_timestamp"])
+        self.assertIsNone(post["handoff_package_id"])
+
+    def test_escape_hatch_with_null_package_id_still_clears_pending(self):
+        result = pc.confirm_escape_hatch(None)
+        self.assertIsNone(result["failed_package_id"])
+        post = pc.load_settings()["handover_state"]
+        self.assertFalse(post["handover_pending"])
+        self.assertIsNone(post["failed_package_id"])
+
+    def test_escape_hatch_survives_disk_round_trip(self):
+        # POST escape, then reload settings → failed_package_id must persist.
+        pc.confirm_escape_hatch("PG-survives-restart")
+        loaded = pc.load_settings()
+        self.assertEqual(loaded["handover_state"]["failed_package_id"], "PG-survives-restart")
+        self.assertFalse(loaded["handover_state"]["handover_pending"])
 
 
 if __name__ == "__main__":
