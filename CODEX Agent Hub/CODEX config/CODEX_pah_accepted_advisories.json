@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "accepted_advisories": [
+    {
+      "condition_id": "shadow_snapshot_from_legacy_state",
+      "accepted": true,
+      "owner": "Codex",
+      "accepted_at": "2026-05-06T11:30:00-07:00",
+      "review_after": "2026-06-15T00:00:00-07:00",
+      "reason": "PAH fast health intentionally uses the sanitized projection snapshot while the final mail-state authority model is being completed.",
+      "source_evidence": "CODEX_PAH_EXCELLENT_FINAL_STATE_SPEC_v1.0.md"
+    },
+    {
+      "condition_id": "cc_sidecar_absent_idle",
+      "accepted": true,
+      "owner": "Codex",
+      "accepted_at": "2026-05-06T11:30:00-07:00",
+      "review_after": "2026-06-15T00:00:00-07:00",
+      "reason": "Missing CC active_dispatch.json is expected when no active CC dispatch is being live-monitored.",
+      "source_evidence": "CODEX_PAH_EXCELLENT_FINAL_STATE_SPEC_v1.0.md"
+    }
+  ]
+}

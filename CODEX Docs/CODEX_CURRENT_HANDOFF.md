@@ -1,5 +1,13 @@
 # CODEX Current Handoff
 
+## Start Here - 2026-05-06 Chat 22 Handoff
+
+The current authoritative handoff addendum is:
+
+`C:\CODEX PG\CODEX Docs\CODEX_CHAT22_HANDOFF_20260506_0958.md`
+
+Read it before acting. It records Darrin's hard no-UI/UX-touch rule, the dirty PAH UI state, the backup/staging hazard, and the resume-only handoff generated on 2026-05-06.
+
 ## Start Here - 2026-05-02 Fresh Chat Handoff
 
 The current authoritative handoff is:
@@ -102,7 +110,7 @@ Important: do not write into `C:\panda-gallery`; all Codex-derived files belong 
 <!-- CODEX_AUTOMATED_HANDOFF_START -->
 ## Automated Handoff Snapshot
 
-Generated: 2026-05-04 15:42:42 -07:00
+Generated: 2026-05-08 16:48:32 -07:00
 Mode: `Handoff`
 
 - Last automated handoff: `C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md`
@@ -648,6 +656,8 @@ Relay dirty-state instruction:
   - `C:\panda-gallery\relay\developer_hub.py`
   - `C:\panda-gallery\tests\relay\test_relay_templates_edit_state.py`
 - Codex only inspected these Relay diffs read-only to report their presence.
+
+
 
 
 

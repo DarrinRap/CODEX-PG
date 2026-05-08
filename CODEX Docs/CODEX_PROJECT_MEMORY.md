@@ -162,7 +162,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-05-04 15:42:42 -07:00
+Last generated: 2026-05-08 16:48:32 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -405,6 +405,15 @@ Created: 2026-05-03
 - "Properly vetted" means the spec is written down, checked for errors, oversights, conflicts, and ambiguities, and approved by Darrin or by an explicit current directive that names the vetted spec.
 - Diagnostics, mail checks, read-only investigation, and reporting can happen before the spec, but code/file implementation starts only after the vetted-spec gate is satisfied.
 
+## No UI/UX Touch Rule
+
+Created: 2026-05-06
+
+- Darrin gave a hard rule after a PAH header regression: Codex must not touch UI or UX files.
+- Do not make UI/UX design feature recommendations for any app unless Darrin explicitly approves that exact work in the current context.
+- For visual previews that are explicitly requested, open the target directly in Microsoft Edge; do not rely on local clickable/web links.
+- Do not stage, commit, revert, or clean dirty UI/UX files unless Darrin explicitly overrides this rule.
+
 ## CC/CD Mailbox Follow-Up Rule
 
 Created: 2026-05-04
@@ -415,6 +424,16 @@ Created: 2026-05-04
 - Do not write PHI, secrets, credentials, or patient data into follow-ups.
 - Prefer PAH mailbox routes/protocols over ad hoc file writes. Writing into `C:\panda-gallery` remains protected unless Darrin explicitly authorizes that specific CC mailbox action.
 - Keep nag volume low and useful: one consolidated follow-up per agent per check cycle unless there is an urgent or Darrin-blocking thread.
+## Mailbox Manager Heartbeat Rule
+
+Created: 2026-05-06
+
+- Codex should act as a PG mailbox manager during active PG coordination windows.
+- Check all four mailbox lanes regularly: `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX Inbox`, `C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox`, `C:\panda-gallery\workflows\cc_mailbox\CC Inbox`, and `C:\panda-gallery\workflows\cc_mailbox\CLAUDE Inbox`.
+- Report any dispatched message that remains unread more than 60 minutes after dispatch. Include message path/id, apparent sender, intended recipient/lane, dispatch timestamp if available, current age, and recommended nudge.
+- When a nudge is needed, route it to the appropriate mailbox lane and ask the recipient to read fully, respond in-thread, and state START/RTC/SHIPPED, completion, blocker, or requested decision.
+- Protocol boundary remains active: Codex must not send implementation-go or commit-go tokens directly to CC. If Darrin says "go" for CC work in Codex chat, route the authorization request/status through Claude Desktop/CD via `C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox`.
+- Do not touch Relay files, dirty parked files, UI/UX files, or stage/commit/revert anything while performing mailbox-manager checks unless Darrin explicitly authorizes that action in the current chat.
 
 
 
@@ -422,4 +441,145 @@ Created: 2026-05-04
 
 
 
+
+
+
+## Memory - Vellum Approval Viewer Planning (2026-05-07 19:03:19 -07:00)
+
+Darrin established a mockup-first approval workflow and Vellum planning thread. Preserve these files and use them as the source of truth for future Vellum/PG UI approval work:
+
+- Clarifications and Darrin answers: $clarifications
+- Focused Vellum default mockup approval viewer spec draft: $spec
+- Standing approval workflow preferences: $pref
+
+Protocol reminder: these files are planning/status artifacts only. They do not authorize CC implementation or commits. Codex must not send implementation-go or commit-go directly to CC; formal CC authorization remains CD-owned. Vellum spec requires focused Vellum workflow mockups approved by Darrin before any CC coding.
+
+## Memory - Vellum Technical Upgrade Spec (2026-05-07 19:16:46 -07:00)
+
+Darrin completed clarification Q1-Q11 for the Vellum technical upgrade spec and approved drafting. New source files:
+
+- Technical spec: $tech
+- Clarifying questions: $techQs
+- CD review request: $cdPath
+
+Important protocol: Codex asked CD to review all new Vellum work and make changes as needed. Codex did not send coding instructions to CC. CD owns any future CC communication/authorization.
+
+Self-review summary: Pass 1 fixed 5 issues, Pass 2 fixed 4, Pass 3 fixed 2, Pass 4 found 0 significant issues.
+
+## Memory - 
+THE PG UI UX OVERHAUL SPECS with VELLUM UPGRADES
+ (
+2026-05-07 19:18:10 -07:00
+)
+
+Darrin named the combined document group **
+THE PG UI UX OVERHAUL SPECS with VELLUM UPGRADES
+**. Use this exact name for the PG UI/UX overhaul plus Vellum approval-viewer upgrade planning set.
+
+Included files:
+- `C:\Users\drrap\Downloads\PG_UX_UI_Overhaul_Strategy_v1.2.docx`
+- `C:\panda-gallery\workflows\design\approval_packets\PG_UX_UI_Overhaul_v1.2_clarifying_questions.md`
+- `C:\panda-gallery\workflows\design\VELLUM_DEFAULT_MOCKUP_APPROVAL_VIEWER_SPEC_v1.md`
+- `C:\panda-gallery\workflows\design\approval_packets\VELLUM_TECHNICAL_UPGRADE_SPEC_clarifying_questions.md`
+- `C:\panda-gallery\workflows\design\VELLUM_APPROVAL_VIEWER_TECHNICAL_UPGRADE_SPEC_v1.md`
+- `C:\panda-gallery\workflows\design\approval_packets\Darrin_approval_workflow_preferences.md`
+
+CD naming clarification sent: `
+C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox\20260507_191810_CODEX_to_CD_pg_ui_ux_overhaul_specs_with_vellum_upgrades_NAMING_CLARIFICATION.md
+`
+
+Protocol reminder: this naming clarification is status only, not implementation-go or commit-go. Codex must not directly authorize CC coding; CD owns future CC routing/authorization.
+
+## Memory Correction - 
+THE PG UI UX OVERHAUL SPECS with VELLUM UPGRADES
+ Paths (
+2026-05-07 20:02:06 -07:00
+)
+
+Corrected prior placeholder-path issue in mailbox/status notes. Use these actual paths for the grouped specs:
+- PG UX/UI Overhaul v1.2 DOCX: `C:\Users\drrap\Downloads\PG_UX_UI_Overhaul_Strategy_v1.2.docx`
+- PG UX/UI Overhaul clarification record: `C:\panda-gallery\workflows\design\approval_packets\PG_UX_UI_Overhaul_v1.2_clarifying_questions.md`
+- Vellum approval viewer planning spec: `C:\panda-gallery\workflows\design\VELLUM_DEFAULT_MOCKUP_APPROVAL_VIEWER_SPEC_v1.md`
+- Vellum technical upgrade clarification record: `C:\panda-gallery\workflows\design\approval_packets\VELLUM_TECHNICAL_UPGRADE_SPEC_clarifying_questions.md`
+- Vellum technical upgrade spec: `C:\panda-gallery\workflows\design\VELLUM_APPROVAL_VIEWER_TECHNICAL_UPGRADE_SPEC_v1.md`
+- Approval workflow preferences: `C:\panda-gallery\workflows\design\approval_packets\Darrin_approval_workflow_preferences.md`
+
+Correction notices sent:
+- CD: `
+C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox\20260507_200206_CODEX_to_CD_pg_ui_ux_vellum_paths_CORRECTION_STATUS_ONLY.md
+`
+- CC: `
+C:\panda-gallery\workflows\cc_mailbox\CC Inbox\20260507_200206_CODEX_to_CC_pg_ui_ux_vellum_paths_CORRECTION_STATUS_ONLY.md
+`
+
+Protocol: status/location only, not implementation-go or commit-go. CD owns future CC routing/authorization.
+
+## Memory - CD Finalization Request for 
+THE PG UI UX OVERHAUL SPECS with VELLUM UPGRADES
+ (
+2026-05-07 20:13:11 -07:00
+)
+
+Darrin asked Codex to share **
+THE PG UI UX OVERHAUL SPECS with VELLUM UPGRADES
+** with CD, ask CD to check/update as recommended, ask Darrin questions if needed, finalize the spec package, and share finalized specs with CC through CD-owned routing.
+
+CD request sent: `
+C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox\20260507_201311_CODEX_to_CD_pg_ui_ux_overhaul_specs_with_vellum_upgrades_FINALIZE_REQUEST.md
+`
+
+Files included:
+- PG UX/UI Overhaul v1.2 DOCX: `C:\Users\drrap\Downloads\PG_UX_UI_Overhaul_Strategy_v1.2.docx`
+- PG UX/UI Overhaul clarification record: `C:\panda-gallery\workflows\design\approval_packets\PG_UX_UI_Overhaul_v1.2_clarifying_questions.md`
+- Vellum approval viewer planning spec: `C:\panda-gallery\workflows\design\VELLUM_DEFAULT_MOCKUP_APPROVAL_VIEWER_SPEC_v1.md`
+- Vellum technical upgrade clarification record: `C:\panda-gallery\workflows\design\approval_packets\VELLUM_TECHNICAL_UPGRADE_SPEC_clarifying_questions.md`
+- Vellum technical upgrade spec: `C:\panda-gallery\workflows\design\VELLUM_APPROVAL_VIEWER_TECHNICAL_UPGRADE_SPEC_v1.md`
+- Approval workflow preferences: `C:\panda-gallery\workflows\design\approval_packets\Darrin_approval_workflow_preferences.md`
+
+Protocol: Codex did not send coding instructions to CC. CD owns future CC routing/authorization.
+
+## Memory - PAH Phase 2 Spec Shared With CD (
+2026-05-07 20:56:48 -07:00
+)
+
+Darrin asked Codex to share the PAH update spec with CD for opinion and recommended enhancements.
+
+Primary spec: `
+C:\CODEX PG\CODEX Canonical Specs\CODEX_PAH_PHASE2_OBSERVABILITY_RESILIENCE_CC_SPEC_v0.1.md
+`
+CD review request: `
+C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox\20260507_205648_CODEX_to_CD_pah_phase2_spec_review_enhancement_REQUEST.md
+`
+
+Protocol: review/opinion only; not implementation-go, commit-go, or CC dispatch. CD owns future CC routing/authorization.
+
+## Memory - PAH Phase 2 v0.2 Returned To CD (
+2026-05-07 21:00:58 -07:00
+)
+
+Created PAH Phase 2 v0.2 with CD-requested amendments and routed back to CD only.
+
+- Spec: `
+C:\CODEX PG\CODEX Canonical Specs\CODEX_PAH_PHASE2_OBSERVABILITY_RESILIENCE_CC_SPEC_v0.2.md
+`
+- CD return: `
+C:\CODEX PG\CODEX Claude Codex Mailbox\CLAUDE Inbox\20260507_210058_CODEX_to_CD_pah_phase2_v0.2_review_return.md
+`
+
+Boundary: PAH remains paused; no CC dispatch or implementation authorization.
+
+## Memory - BA Dead-Code Detection Future Enhancement (
+2026-05-08
+)
+
+Darrin asked whether BA can identify dead code. Future BA development should add this only as a conservative, backend/report-only capability.
+
+Recommended scope:
+- Detect likely unused imports, unreachable branches, orphaned scripts/components, unreferenced helpers, stale files outside active manifests/routes/tests, and duplicate or superseded utilities.
+- Report findings with confidence levels such as `safe`, `likely`, and `needs human review`.
+- Include evidence for every finding, such as reference search results, manifest/route/test absence, and known dynamic-entrypoint caveats.
+- Never auto-delete, auto-stage, or auto-commit dead-code removals.
+- Treat dynamic imports, reflection, CLI/manual scripts, fixtures, archives, and workflow/mailbox files as human-review unless there is strong evidence.
+
+Protocol: BA dead-code detection should become an advisory quality gate first, not a removal tool. Any deletion requires explicit Darrin/CD/CC approval through the normal routing rules.
 

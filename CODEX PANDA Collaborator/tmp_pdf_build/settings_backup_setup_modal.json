@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "setup_completed": false,
+  "active_user_id": "user2",
+  "project_files_directory": "C:\\CODEX PG\\CODEX CLAUDE PG DATA",
+  "users": [
+    {
+      "id": "user1",
+      "display_name": "Darrin",
+      "default_repo_path": "C:\\CODEX PG",
+      "handoff_agent": "Codex",
+      "handoff_title": "Darrin handoff",
+      "codex_account": "Codex (Darrin)",
+      "claude_account": "Claude (Darrin)",
+      "claude_desktop_path": "C:\\Users\\drrap\\AppData\\Local\\AnthropicClaude\\claude.exe",
+      "claude_code_path": "C:\\Users\\drrap\\AppData\\Roaming\\npm\\claude.CMD",
+      "git_author_name": "Codex Backup",
+      "git_author_email": "codex-backup@local"
+    },
+    {
+      "id": "user2",
+      "display_name": "Pam",
+      "default_repo_path": "C:\\CODEX PG",
+      "handoff_agent": "Claude",
+      "handoff_title": "CD handoff",
+      "codex_account": "Codex (Pam)",
+      "claude_account": "Claude (Pam)",
+      "claude_desktop_path": "C:\\Users\\drrap\\AppData\\Local\\AnthropicClaude\\claude.exe",
+      "claude_code_path": "C:\\Users\\drrap\\AppData\\Roaming\\npm\\claude.CMD",
+      "git_author_name": "Pam Rapoport",
+      "git_author_email": "darrinpam@comcast.net"
+    }
+  ],
+  "updated_at": "2026-04-30T22:35:00-07:00"
+}

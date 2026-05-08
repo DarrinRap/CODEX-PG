@@ -1,0 +1,8 @@
+﻿{
+    "port":  8765,
+    "poll_seconds":  15,
+    "alert_popups_enabled":  false,
+    "auto_open_dashboard_at_login":  false,
+    "restart_max_attempts":  3,
+    "restart_cooldown_minutes":  10
+}

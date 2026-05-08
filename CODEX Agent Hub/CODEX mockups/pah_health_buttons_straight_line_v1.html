@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PANDA Agent Hub - Health Row Mockup</title>
+<style>
+:root {
+  --canvas: #14141f;
+  --ink: #161625;
+  --pane: #1a1a2e;
+  --pane-raised: #22223a;
+  --border: #2a2a3e;
+  --border-hover: #3a3a4e;
+  --text: #e0ddd5;
+  --muted: #888888;
+  --accent: #e8a87c;
+  --accent-hover: #d4945a;
+  --ok: #7fb069;
+  --warn: #f39c12;
+  --err: #e74c3c;
+  --font-ui: "Segoe UI", "SF Pro", "Noto Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+body {
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+.app {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 144px minmax(0, 1fr) 28px;
+  background: var(--canvas);
+}
+.topbar {
+  display: grid;
+  grid-template-columns: 380px 150px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 18px;
+  min-width: 0;
+  padding: 0 24px;
+  border-bottom: 2px solid var(--border);
+  background: var(--ink);
+}
+.brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.mark {
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f0b98c, var(--accent) 58%, var(--accent-hover));
+  color: var(--ink);
+  font-size: 38px;
+  font-weight: 900;
+}
+.brand-title {
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 750;
+  color: #f5efe7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brand-sub {
+  margin-top: 6px;
+  font-size: 25px;
+  line-height: 1.1;
+  color: #aaa39a;
+}
+.asof {
+  color: #aaa39a;
+  font-size: 25px;
+  white-space: nowrap;
+}
+.health-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.health-chip {
+  height: 80px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 18px;
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  background: var(--pane-raised);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .45), 0 1px 1px rgba(0, 0, 0, .24);
+  font-size: 27px;
+  line-height: 1;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.health-chip.api { width: 118px; color: var(--ok); border-color: rgba(127, 176, 105, .48); }
+.health-chip.routes { width: 166px; color: var(--warn); border-color: rgba(243, 156, 18, .56); }
+.health-chip.queue { width: 154px; color: #f15549; border-color: rgba(231, 76, 60, .64); }
+.health-chip.ledger { width: 164px; color: var(--ok); border-color: rgba(127, 176, 105, .48); }
+.dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.api .dot,
+.ledger .dot { background: var(--ok); }
+.routes .dot { background: var(--warn); }
+.queue .dot { background: #f15549; }
+.main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 1.05fr) minmax(360px, 1.35fr) minmax(320px, .95fr);
+  gap: 28px;
+  padding: 30px 40px;
+  overflow: hidden;
+}
+.panel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 54px minmax(0, 1fr);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--pane);
+  overflow: hidden;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 2px solid var(--border);
+  background: var(--ink);
+}
+.panel-head strong {
+  color: var(--accent);
+  font-size: 26px;
+  letter-spacing: 2px;
+}
+.count {
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 800;
+}
+.scroll {
+  min-height: 0;
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.card {
+  min-height: 74px;
+  border: 1px solid var(--border-hover);
+  border-radius: 10px;
+  background: rgba(34, 34, 58, .72);
+  padding: 14px 16px;
+}
+.card-title {
+  color: #f5efe7;
+  font-size: 17px;
+  font-weight: 750;
+}
+.card-sub {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 0 18px;
+  border-top: 1px solid var(--border);
+  background: var(--ink);
+  color: var(--muted);
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">P</div>
+      <div>
+        <div class="brand-title">PANDA Agent Hub</div>
+        <div class="brand-sub">Mailroom</div>
+      </div>
+    </div>
+    <div class="asof">as of 11:46 PM</div>
+    <div class="health-row" aria-label="PAH server health">
+      <div class="health-chip api"><span class="dot"></span><span>API</span></div>
+      <div class="health-chip routes"><span class="dot"></span><span>Routes</span></div>
+      <div class="health-chip queue"><span class="dot"></span><span>Queue</span></div>
+      <div class="health-chip ledger"><span class="dot"></span><span>Ledger</span></div>
+    </div>
+  </header>
+  <main class="main">
+    <section class="panel">
+      <div class="panel-head"><strong>PARTICIPANTS</strong><span class="count">4</span></div>
+      <div class="scroll">
+        <div class="card"><div class="card-title">Darrin</div><div class="card-sub">Owner queue clear</div></div>
+        <div class="card"><div class="card-title">Codex</div><div class="card-sub">Reviewing PAH checks</div></div>
+        <div class="card"><div class="card-title">Claude Desktop</div><div class="card-sub">Mailbox route healthy</div></div>
+        <div class="card"><div class="card-title">Claude Code</div><div class="card-sub">Idle until dispatched</div></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><strong>STEWARD &amp; MAILBOXES</strong><span class="count">15</span></div>
+      <div class="scroll">
+        <div class="card"><div class="card-title">Communication backlog</div><div class="card-sub">15 open-on-agent threads</div></div>
+        <div class="card"><div class="card-title">Routes</div><div class="card-sub">Diagnostics available</div></div>
+        <div class="card"><div class="card-title">Inspector</div><div class="card-sub">Latest runtime pack available</div></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><strong>QUEUE</strong><span class="count">15</span></div>
+      <div class="scroll">
+        <div class="card"><div class="card-title">PC redesign audit</div><div class="card-sub">Waiting on mailbox response</div></div>
+        <div class="card"><div class="card-title">BA result</div><div class="card-sub">0 fail, 19 warn, 1 unknown</div></div>
+        <div class="card"><div class="card-title">PAH visual check</div><div class="card-sub">Health row aligned</div></div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">
+    <span>PANDA Agent Hub</span>
+    <span>Local mailroom cockpit</span>
+  </footer>
+</div>
+</body>
+</html>
