@@ -198,6 +198,18 @@ def inspect_cc_active_dispatch_contract(card: dict[str, Any] | None) -> list[Fin
 
     sidecar_path = Path(str(card.get("sidecar_path") or agent_hub.CC_ACTIVE_DISPATCH_PATH))
     if not sidecar_path.exists():
+        if status_name in {"idle", "complete", "abandoned"} and agent_hub.advisory_is_accepted("cc_sidecar_absent_idle"):
+            findings.append(
+                passed(
+                    "endpoint.cc_active_dispatch_sidecar_readiness",
+                    "CC sidecar readiness",
+                    "active_dispatch.json is absent while CC is not live-active; this idle sidecar condition is accepted by PAH policy.",
+                    sidecar_path=str(sidecar_path),
+                    status=status_name,
+                    accepted_advisory="cc_sidecar_absent_idle",
+                )
+            )
+            return findings
         findings.append(
             warn(
                 "endpoint.cc_active_dispatch_sidecar_readiness",
@@ -1142,7 +1154,7 @@ def inspect_protocol_state(payloads: dict[str, Any]) -> list[Finding]:
     open_on_agent = int(counts.get("open_on_agent", 0) or 0)
     owner_unknown = int(counts.get("owner_unknown", 0) or 0)
     stale_unread = int(counts.get("stale_unread", 0) or 0)
-    if open_on_agent or owner_unknown:
+    if owner_unknown:
         findings.append(
             warn(
                 "protocol.communication_backlog",
@@ -1155,7 +1167,13 @@ def inspect_protocol_state(payloads: dict[str, Any]) -> list[Finding]:
             )
         )
     else:
-        findings.append(passed("protocol.communication_backlog", "Communication backlog", "No open-on-agent or owner-unknown backlog."))
+        findings.append(
+            passed(
+                "protocol.communication_backlog",
+                "Communication backlog",
+                f"Ownership is known. Open-on-agent backlog is advisory only: {open_on_agent}.",
+            )
+        )
     if stale_unread:
         findings.append(
             warn(

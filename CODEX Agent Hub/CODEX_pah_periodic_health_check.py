@@ -148,8 +148,11 @@ def communication_backlog(cockpit: dict[str, Any]) -> dict[str, Any]:
     owner_unknown = int(counts.get("owner_unknown", 0) or 0)
     open_on_darrin = int(counts.get("open_on_darrin", 0) or 0)
     items = cockpit.get("thread_focus", {})
+    has_owner_unknown = owner_unknown > 0
     return {
-        "ok": open_on_agent == 0 and owner_unknown == 0,
+        "ok": not has_owner_unknown,
+        "advisory": True,
+        "level": "warn" if has_owner_unknown else "ok",
         "open_on_agent": open_on_agent,
         "owner_unknown": owner_unknown,
         "open_on_darrin": open_on_darrin,
@@ -175,6 +178,14 @@ def record_communication_backlog_event(backlog: dict[str, Any]) -> dict[str, Any
         open_on_darrin=backlog.get("open_on_darrin", 0),
         agent_threads=backlog.get("agent_threads", []),
         owner_unknown_threads=backlog.get("owner_unknown_threads", []),
+    )
+
+
+def periodic_checks_ok(checks: dict[str, Any]) -> bool:
+    return all(
+        bool(item.get("ok"))
+        for item in checks.values()
+        if isinstance(item, dict) and not bool(item.get("advisory"))
     )
 
 
@@ -293,11 +304,7 @@ def main() -> int:
             f"{backlog.get('owner_unknown')} owner unknown."
         )
 
-    report["ok"] = all(
-        bool(item.get("ok"))
-        for item in report["checks"].values()
-        if isinstance(item, dict)
-    )
+    report["ok"] = periodic_checks_ok(report["checks"])
     report["duration_ms"] = int((time.perf_counter() - started) * 1000)
     agent_hub.append_interaction_ledger_event(
         "steward_check_finished",

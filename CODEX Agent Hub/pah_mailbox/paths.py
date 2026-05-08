@@ -18,8 +18,9 @@ CC_CLAUDE_INBOX = CC_MAILBOX_ROOT / "CLAUDE Inbox"
 CC_SENT = CC_MAILBOX_ROOT / "CC Sent"
 CC_CLAUDE_SENT = CC_MAILBOX_ROOT / "CLAUDE Sent"
 PAH_CLAUDE_CODE_INBOX = MAILBOX_ROOT / "CODEX_CLAUDE_CODE Inbox"
-# Static at import time: restart PAH after creating/removing the native CC mailbox.
-CLAUDE_CODE_INBOX = CC_INBOX if CC_MAILBOX_ROOT.exists() else PAH_CLAUDE_CODE_INBOX
+# Claude Code's active inbox is always the native PG mailbox. The older CODEX-side
+# folders are monitored as legacy traps only; they are never active dispatch routes.
+CLAUDE_CODE_INBOX = CC_INBOX
 CLAUDE_CODE_INBOX_LEGACY = MAILBOX_ROOT / "CODEX Claude Code Inbox"
 CODEX_SENT = MAILBOX_ROOT / "CODEX Sent"
 CLAUDE_SENT = MAILBOX_ROOT / "CLAUDE Sent"
@@ -52,6 +53,10 @@ MESSAGE_DIRS = [
     ("Codex Sent", CODEX_SENT),
     ("Claude Sent", CLAUDE_SENT),
 ]
+if PAH_CLAUDE_CODE_INBOX != CLAUDE_CODE_INBOX:
+    MESSAGE_DIRS.append(("Codex -> Claude Code (PAH local legacy)", PAH_CLAUDE_CODE_INBOX))
+if CLAUDE_CODE_INBOX_LEGACY != CLAUDE_CODE_INBOX:
+    MESSAGE_DIRS.append(("Codex -> Claude Code (legacy)", CLAUDE_CODE_INBOX_LEGACY))
 
 ROUTE_INBOXES = {
     "codex_to_claude": CLAUDE_INBOX,
@@ -71,6 +76,5 @@ def ensure_runtime_dirs() -> None:
         PROCESSED_MESSAGES_DIR,
         CC_INBOX,
         CC_CLAUDE_INBOX,
-        PAH_CLAUDE_CODE_INBOX,
     ):
         path.mkdir(parents=True, exist_ok=True)

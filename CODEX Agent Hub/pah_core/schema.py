@@ -165,7 +165,7 @@ def parse_legacy_metadata(text: str) -> dict[str, Any]:
     lines = text.splitlines()
     for index, line in enumerate(lines[:80]):
         stripped = line.strip()
-        bold_match = re.match(r"^\*\*([^:*]+(?:[- ][^:*]+)*):\*\*\s*(.*)$", stripped)
+        bold_match = re.match(r"^\*\*([^:*]{1,120}):\*\*\s*(.*)$", stripped)
         if bold_match:
             stripped = f"{bold_match.group(1)}: {bold_match.group(2).strip()}"
         if stripped.startswith("Reply-To:"):

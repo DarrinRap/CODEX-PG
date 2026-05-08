@@ -19,7 +19,7 @@ PARTICIPANTS: dict[str, Participant] = {
     "pah": Participant("pah", "PANDA Agent Hub", "router", "PAH Inbox", False),
     "codex": Participant("codex", "Codex", "agent", "CODEX Inbox"),
     "claude-desktop": Participant("claude-desktop", "Claude Desktop", "agent", "CLAUDE Inbox"),
-    "claude-code": Participant("claude-code", "Claude Code", "agent", "CODEX_CLAUDE_CODE Inbox"),
+    "claude-code": Participant("claude-code", "Claude Code", "agent", "CC Inbox"),
 }
 
 ALIASES: dict[str, str] = {

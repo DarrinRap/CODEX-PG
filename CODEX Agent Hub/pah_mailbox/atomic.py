@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import time
 
 
 def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
@@ -14,8 +15,15 @@ def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
 
 
 def atomic_append_text(path: Path, text: str, encoding: str = "utf-8") -> None:
-    existing = ""
-    if path.exists():
-        existing = path.read_text(encoding=encoding, errors="replace")
-    atomic_write_text(path, existing + text, encoding=encoding)
-
+    path.parent.mkdir(parents=True, exist_ok=True)
+    last_error: OSError | None = None
+    for attempt in range(5):
+        try:
+            with path.open("a", encoding=encoding, newline="") as handle:
+                handle.write(text)
+            return
+        except OSError as exc:
+            last_error = exc
+            time.sleep(0.05 * (attempt + 1))
+    if last_error is not None:
+        raise last_error

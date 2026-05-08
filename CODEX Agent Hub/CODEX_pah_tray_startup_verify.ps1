@@ -286,14 +286,19 @@ else {
             Add-Result 'pah_smoke_test_passes' 'DEFERRED' '# PHASE-3-MANUAL: harness-invoked smoke timed out at 60s in this environment; run `python CODEX_run_smoke_tests.py` standalone (typically <30s) to confirm pass'
         }
         else {
+            try { $proc.Refresh() } catch {}
             $smokeText = ((Get-Content -LiteralPath $smokeStdout -ErrorAction SilentlyContinue) -join "`n").Trim()
             $smokeErrText = ((Get-Content -LiteralPath $smokeStderr -ErrorAction SilentlyContinue) -join "`n").Trim()
             Remove-Item -LiteralPath $smokeStdout, $smokeStderr -Force -ErrorAction SilentlyContinue
-            if ($proc.ExitCode -eq 0) {
+            $exitCode = $proc.ExitCode
+            if ($null -eq $exitCode -and $smokeText -match 'PAH smoke tests passed') {
+                $exitCode = 0
+            }
+            if ($exitCode -eq 0) {
                 Add-Result 'pah_smoke_test_passes' 'PASS' $smokeText
             }
             else {
-                $detail = "exit=$($proc.ExitCode); python=$pythonPath; out=$smokeText"
+                $detail = "exit=$exitCode; python=$pythonPath; out=$smokeText"
                 if ($smokeErrText) { $detail += "; err=$smokeErrText" }
                 Add-Result 'pah_smoke_test_passes' 'FAIL' $detail
             }

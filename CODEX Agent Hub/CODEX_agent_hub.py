@@ -83,6 +83,7 @@ from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
 from pah_mailbox.idempotency import processed_message_event_status, record_processed_message_event
 from pah_mailbox.paths import (
     CC_CLAUDE_INBOX,
+    CC_INBOX,
     CLAUDE_CODE_INBOX,
     CLAUDE_CODE_INBOX_LEGACY,
     CLAUDE_INBOX,
@@ -98,6 +99,7 @@ from pah_mailbox.paths import (
     MAILBOX_ROOT,
     MESSAGE_DIRS,
     NOTIFICATIONS_DIR,
+    PAH_CLAUDE_CODE_INBOX,
     PANDA_GALLERY_ROOT,
     PROCESSED_MESSAGES_DIR,
     PROJECT_ROOT,
@@ -123,6 +125,8 @@ PAH_MAIL_STATE_SNAPSHOT_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_mail_state_
 PAH_STATE_PERF_LOG_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_mail_state_perf.local.jsonl"
 PAH_COMM_SPEED_LOG_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_comm_speed_tests.jsonl"
 PAH_COMM_SPEED_LATEST_PATH = HUB_ROOT / "CODEX state" / "CODEX_pah_comm_speed_latest.local.json"
+PAH_ACCEPTED_ADVISORIES_PATH = CONFIG_DIR / "CODEX_pah_accepted_advisories.json"
+PAH_HEALTH_POLICY_PATH = HUB_ROOT / "CODEX_PAH_HEALTH_POLICY.md"
 PERIODIC_HEALTH_LATEST_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_periodic_health_latest.json"
 INSPECTOR_LATEST_JSON_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.json"
 INSPECTOR_LATEST_MARKDOWN_PATH = HUB_ROOT / "CODEX logs" / "CODEX_pah_inspector_latest.md"
@@ -460,6 +464,10 @@ def sanitize_snapshot_message(row: dict[str, Any]) -> dict[str, Any]:
         "requires_darrin_authority",
         "stale_unread",
         "urgent_codex_request",
+        "mailbox_route_status",
+        "mailbox_route_issue",
+        "mailbox_expected_inbox",
+        "mailbox_actual_inbox",
     )
     return {key: row.get(key, "" if key not in {"unread", "review_pending", "requires_darrin_authority"} else False) for key in allowed}
 
@@ -506,6 +514,8 @@ def build_mail_state_snapshot(status_data: dict[str, Any]) -> dict[str, Any]:
     warnings = ["shadow_snapshot_from_legacy_state"]
     if owner_unknown:
         warnings.append("owner_unknown_threads_present")
+    if int(counts.get("mailbox_route_issues", 0) or 0):
+        warnings.append("mailbox_route_issues_present")
     return {
         "schema_version": 1,
         "generated_at": generated_at,
@@ -517,6 +527,9 @@ def build_mail_state_snapshot(status_data: dict[str, Any]) -> dict[str, Any]:
             "archived_threads": counts.get("archived_threads", 0),
             "snapshot_messages": len(messages),
             "snapshot_threads": len(threads),
+            "mailbox_route_issues": counts.get("mailbox_route_issues", 0),
+            "unread_mailbox_route_issues": counts.get("unread_mailbox_route_issues", 0),
+            "legacy_mailbox_messages": counts.get("legacy_mailbox_messages", 0),
         },
         "freshness": {
             "state_profile_generated_at": profile.get("generated_at", ""),
@@ -543,6 +556,7 @@ def build_mail_state_snapshot(status_data: dict[str, Any]) -> dict[str, Any]:
         },
         "mail": {
             "latest": messages,
+            "route_issues": status_data.get("mailbox_route_issues", []),
         },
         "threads": threads,
         "messages": messages,
@@ -587,14 +601,30 @@ def normalize_message_direction(direction: str, from_agent: str, to_agent: str) 
 AGENT_INBOX_DIRS: dict[str, tuple[Path, ...]] = {
     "codex": (CODEX_INBOX,),
     "claude-desktop": (CLAUDE_INBOX, CC_CLAUDE_INBOX),
-    "claude-code": (CLAUDE_CODE_INBOX, CLAUDE_CODE_INBOX_LEGACY),
+    "claude-code": (CLAUDE_CODE_INBOX,),
 }
 ALL_AGENT_INBOX_DIRS = tuple(dict.fromkeys(path for paths in AGENT_INBOX_DIRS.values() for path in paths))
+CANONICAL_AGENT_INBOX_DIRS: dict[str, tuple[Path, ...]] = {
+    "codex": (CODEX_INBOX,),
+    "claude-desktop": (CLAUDE_INBOX, CC_CLAUDE_INBOX),
+    "claude-code": (CC_INBOX,),
+}
+LEGACY_AGENT_INBOX_DIRS: dict[str, tuple[Path, ...]] = {
+    "claude-code": tuple(
+        dict.fromkeys(
+            path
+            for path in (PAH_CLAUDE_CODE_INBOX, CLAUDE_CODE_INBOX_LEGACY)
+            if path != CC_INBOX
+        )
+    ),
+}
+ALL_LEGACY_AGENT_INBOX_DIRS = tuple(dict.fromkeys(path for paths in LEGACY_AGENT_INBOX_DIRS.values() for path in paths))
+ALL_MONITORED_AGENT_INBOX_DIRS = tuple(dict.fromkeys((*ALL_AGENT_INBOX_DIRS, *ALL_LEGACY_AGENT_INBOX_DIRS)))
 CLEANUP_MAILBOX_TARGETS: dict[str, tuple[Path, ...]] = {
     "all": ALL_AGENT_INBOX_DIRS,
     "codex": (CODEX_INBOX,),
     "claude-desktop": (CLAUDE_INBOX, CC_CLAUDE_INBOX),
-    "claude-code": (CLAUDE_CODE_INBOX, CLAUDE_CODE_INBOX_LEGACY),
+    "claude-code": (CLAUDE_CODE_INBOX,),
 }
 CLEANUP_ARCHIVE_ROOTS: dict[Path, Path] = {
     CODEX_INBOX: CODEX_ARCHIVE / "Inbox Cleanup",
@@ -673,6 +703,10 @@ class Message:
     summary: str = ""
     body_preview: str = ""
     body: str = ""
+    mailbox_route_status: str = "ok"
+    mailbox_route_issue: str = ""
+    mailbox_expected_inbox: str = ""
+    mailbox_actual_inbox: str = ""
 
     @property
     def is_request(self) -> bool:
@@ -817,6 +851,7 @@ def parse_message(path: Path, direction: str) -> Message:
     body_plain = re.sub(r"[#>*_`\[\]()-]", " ", text)
     msg.body_preview = compact(" ".join(body_plain.split()), 320)
     apply_legacy_message_inference(msg, metadata)
+    annotate_mailbox_route(msg)
     return msg
 
 
@@ -1030,6 +1065,78 @@ def message_in_any_agent_inbox(msg: Message) -> bool:
     return message_parent_in(msg, ALL_AGENT_INBOX_DIRS)
 
 
+def message_in_any_monitored_inbox(msg: Message) -> bool:
+    return message_parent_in(msg, ALL_MONITORED_AGENT_INBOX_DIRS)
+
+
+def message_in_legacy_agent_inbox(msg: Message) -> bool:
+    return message_parent_in(msg, ALL_LEGACY_AGENT_INBOX_DIRS)
+
+
+def canonical_inboxes_for_agent(agent_id: str) -> tuple[Path, ...]:
+    return CANONICAL_AGENT_INBOX_DIRS.get(agent_id, ())
+
+
+def expected_inbox_label(agent_id: str) -> str:
+    inboxes = canonical_inboxes_for_agent(agent_id)
+    return str(inboxes[0]) if inboxes else ""
+
+
+def annotate_mailbox_route(msg: Message) -> None:
+    msg.mailbox_actual_inbox = str(msg.path.parent)
+    msg.mailbox_expected_inbox = expected_inbox_label(msg.to_agent)
+    if not msg.to_agent or not message_in_any_monitored_inbox(msg):
+        msg.mailbox_route_status = "ok"
+        msg.mailbox_route_issue = ""
+        return
+    if message_in_legacy_agent_inbox(msg):
+        msg.mailbox_route_status = "warn"
+        msg.mailbox_route_issue = "legacy_mailbox_lane"
+        return
+    canonical_inboxes = canonical_inboxes_for_agent(msg.to_agent)
+    if canonical_inboxes and not message_parent_in(msg, canonical_inboxes):
+        msg.mailbox_route_status = "warn"
+        msg.mailbox_route_issue = "misfiled_for_recipient"
+        return
+    if msg.from_agent == "codex" and msg.to_agent == "claude-code":
+        msg.mailbox_route_status = "warn"
+        msg.mailbox_route_issue = "codex_to_cc_requires_cd_relay"
+        return
+    msg.mailbox_route_status = "ok"
+    msg.mailbox_route_issue = ""
+
+
+def mailbox_route_issue_rows(
+    messages: list[Message],
+    read_state_data: dict[str, Any] | None = None,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for msg in messages:
+        if not msg.mailbox_route_issue:
+            continue
+        read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
+        rows.append(
+            {
+                "message_id": msg.message_id,
+                "title": msg.title,
+                "path": str(msg.path),
+                "name": msg.name,
+                "from_agent": msg.from_agent,
+                "to_agent": msg.to_agent,
+                "issue": msg.mailbox_route_issue,
+                "status": msg.mailbox_route_status,
+                "expected_inbox": msg.mailbox_expected_inbox,
+                "actual_inbox": msg.mailbox_actual_inbox,
+                "unread": bool(read_status.get("unread")),
+                "age_seconds": max(0, int(time.time() - msg.modified)),
+            }
+        )
+    rows.sort(key=lambda item: (not bool(item.get("unread")), -int(item.get("age_seconds", 0) or 0)))
+    return rows[:limit]
+
+
 def is_dispatch_message(msg: Message) -> bool:
     msg_type = str(msg.message_type or "").strip().lower()
     if msg_type in DISPATCH_MESSAGE_TYPES:
@@ -1179,6 +1286,8 @@ def message_status_badges(msg: Message, unread: bool = False) -> list[str]:
         badges.append("waiting_on_darrin")
     if msg.is_request:
         badges.append("request")
+    if msg.mailbox_route_issue:
+        badges.append("route_issue")
     priority = msg.priority.lower().strip()
     if priority in {"high", "urgent"}:
         badges.append(priority)
@@ -1186,7 +1295,7 @@ def message_status_badges(msg: Message, unread: bool = False) -> list[str]:
         normalized = value.lower().strip()
         if normalized and normalized not in badges:
             badges.append(normalized)
-    return badges[:5]
+    return badges[:6]
 
 
 def build_threads(
@@ -1547,6 +1656,55 @@ def read_json(path: Path, default: dict[str, Any]) -> dict[str, Any]:
 
 def write_json(path: Path, value: dict[str, Any]) -> None:
     atomic_write_text(path, json.dumps(value, indent=2) + "\n")
+
+
+def accepted_advisory_records() -> list[dict[str, Any]]:
+    data = read_json(PAH_ACCEPTED_ADVISORIES_PATH, {"accepted_advisories": []})
+    records = data.get("accepted_advisories", [])
+    return [record for record in records if isinstance(record, dict)]
+
+
+def advisory_review_active(record: dict[str, Any]) -> bool:
+    review_after = str(record.get("review_after", "")).strip()
+    if not review_after:
+        return True
+    try:
+        review_at = datetime.fromisoformat(review_after.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return datetime.now().astimezone() <= review_at.astimezone()
+
+
+def accepted_advisory_record(condition_id: str) -> dict[str, Any] | None:
+    for record in accepted_advisory_records():
+        if str(record.get("condition_id", "")) == condition_id and bool(record.get("accepted", True)):
+            if advisory_review_active(record):
+                return record
+    return None
+
+
+def advisory_is_accepted(condition_id: str) -> bool:
+    return accepted_advisory_record(condition_id) is not None
+
+
+def advisory_acceptance_summary(condition_ids: list[str]) -> dict[str, Any]:
+    accepted: list[dict[str, Any]] = []
+    unaccepted: list[str] = []
+    for condition_id in condition_ids:
+        record = accepted_advisory_record(condition_id)
+        if record is None:
+            unaccepted.append(condition_id)
+        else:
+            accepted.append(
+                {
+                    "condition_id": condition_id,
+                    "owner": str(record.get("owner", "")),
+                    "reason": str(record.get("reason", "")),
+                    "review_after": str(record.get("review_after", "")),
+                    "source_evidence": str(record.get("source_evidence", "")),
+                }
+            )
+    return {"accepted": accepted, "unaccepted": unaccepted}
 
 
 def load_message_audit_state() -> dict[str, Any]:
@@ -2281,6 +2439,22 @@ def build_decision_queue(
     return decisions
 
 
+def message_replies_to(candidate: Message, source: Message) -> bool:
+    source_refs = {item for item in (source.message_id, source.name, str(source.path)) if item}
+    return any(ref in source_refs for ref in candidate.reply_to)
+
+
+def urgent_codex_request_has_codex_ack(msg: Message, messages: list[Message]) -> bool:
+    for candidate in messages:
+        if candidate.from_agent != "codex":
+            continue
+        if candidate.to_agent not in {"claude-desktop", "claude-code"}:
+            continue
+        if message_replies_to(candidate, msg):
+            return True
+    return False
+
+
 def urgent_codex_request_rows(
     messages: list[Message],
     read_state_data: dict[str, Any] | None = None,
@@ -2292,6 +2466,8 @@ def urgent_codex_request_rows(
         if not is_urgent_codex_request_message(msg):
             continue
         if message_has_reply_tombstone(msg) or classify_thread_state(msg) == "closed":
+            continue
+        if urgent_codex_request_has_codex_ack(msg, messages):
             continue
         read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
         age_seconds = max(0, int(time.time() - msg.modified))
@@ -3940,12 +4116,12 @@ def codex_mailbox_sla_progress(
         )
     urgent_breached = sum(1 for row in rows if row["urgent"] and row["breached"])
     normal_breached = sum(1 for row in rows if not row["urgent"] and row["breached"])
-    severity = "err" if urgent_breached else "warn" if normal_breached else "ok"
+    severity = "err" if urgent_breached else "ok"
     oldest = max((row["age_seconds"] for row in rows), default=0)
     if urgent_breached:
         action = "Read urgent Codex mail now."
     elif normal_breached:
-        action = "Review Codex mailbox SLA breach."
+        action = "Normal unread backlog is tracked in backlog views, not agent-progress health."
     else:
         action = "Wait - Codex mailbox within SLA."
     summary = f"{len(rows)} unread; {urgent_breached} urgent breach / {normal_breached} normal breach"
@@ -3961,6 +4137,7 @@ def codex_mailbox_sla_progress(
         "unread": len(rows),
         "urgent_breached": urgent_breached,
         "normal_breached": normal_breached,
+        "normal_breach_advisory": normal_breached > 0,
         "oldest_unread_seconds": oldest,
         "items": sorted(rows, key=lambda row: (-int(row["breached"]), -int(row["urgent"]), -int(row["age_seconds"])))[:10],
     }
@@ -4020,7 +4197,7 @@ def set_thread_archive_state(
     raise ValueError(f"Unsupported thread archive state: {state_name}")
 
 
-def git_status() -> dict[str, str]:
+def git_status() -> dict[str, Any]:
     import subprocess
 
     try:
@@ -4039,9 +4216,10 @@ def git_status() -> dict[str, str]:
             check=False,
         )
         status_text = status_result.stdout.strip() or status_result.stderr.strip()
+        status_lines = [line for line in status_text.splitlines() if line.strip()]
         branch = ""
         tracking = ""
-        first_line = status_text.splitlines()[0] if status_text else ""
+        first_line = status_lines[0] if status_lines else ""
         if first_line.startswith("## "):
             branch_text = first_line[3:].split(" [", 1)[0]
             if "..." in branch_text:
@@ -4049,11 +4227,16 @@ def git_status() -> dict[str, str]:
             else:
                 branch = branch_text
         commit_parts = (log_result.stdout.strip() if log_result.returncode == 0 else "").split("\t", 2)
+        dirty_lines = [line for line in status_lines if not line.startswith("## ")]
         return {
             "ok": str(status_result.returncode == 0),
             "text": status_text,
             "branch": branch,
             "tracking": tracking,
+            "clean": status_result.returncode == 0 and not dirty_lines and "[" not in first_line,
+            "dirty_count": len(dirty_lines),
+            "untracked_count": len([line for line in dirty_lines if line.startswith("?? ")]),
+            "dirty_paths": [line[3:] if len(line) > 3 else line for line in dirty_lines[:25]],
             "last_commit": commit_parts[0] if len(commit_parts) >= 1 else "",
             "last_commit_message": commit_parts[1] if len(commit_parts) >= 2 else "",
             "last_commit_iso": commit_parts[2] if len(commit_parts) >= 3 else "",
@@ -4064,9 +4247,47 @@ def git_status() -> dict[str, str]:
             "text": str(exc),
             "branch": "",
             "tracking": "",
+            "clean": False,
+            "dirty_count": 0,
+            "untracked_count": 0,
+            "dirty_paths": [],
             "last_commit": "",
             "last_commit_message": "",
             "last_commit_iso": "",
+        }
+
+
+def pah_scoped_git_status() -> dict[str, Any]:
+    import subprocess
+
+    pathspec = "CODEX Agent Hub"
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(PROJECT_ROOT), "status", "--short", "--", pathspec],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        dirty_lines = [line for line in result.stdout.splitlines() if line.strip()]
+        return {
+            "ok": result.returncode == 0,
+            "scope": pathspec,
+            "clean": result.returncode == 0 and not dirty_lines,
+            "dirty_count": len(dirty_lines),
+            "untracked_count": len([line for line in dirty_lines if line.startswith("?? ")]),
+            "dirty_paths": [line[3:] if len(line) > 3 else line for line in dirty_lines[:25]],
+            "text": result.stdout.strip() or result.stderr.strip(),
+        }
+    except Exception as exc:  # pragma: no cover - health should degrade gently
+        return {
+            "ok": False,
+            "scope": pathspec,
+            "clean": False,
+            "dirty_count": 0,
+            "untracked_count": 0,
+            "dirty_paths": [],
+            "text": str(exc),
         }
 
 
@@ -4092,6 +4313,10 @@ def cached_communication_diagnostics() -> dict[str, Any]:
 
 def cached_git_status() -> dict[str, Any]:
     return cached_expensive_status("git_status", GIT_STATUS_CACHE_SECONDS, git_status)
+
+
+def cached_pah_scoped_git_status() -> dict[str, Any]:
+    return cached_expensive_status("pah_scoped_git_status", GIT_STATUS_CACHE_SECONDS, pah_scoped_git_status)
 
 
 def state(
@@ -4157,10 +4382,34 @@ def state(
             profile, "split_archived_threads", lambda: [thread for thread in all_threads if thread.get("archived")]
         )
         completed_threads = timed_state_step(profile, "completed_thread_ids", lambda: completed_thread_ids(messages))
+        physical_unread_messages = timed_state_step(
+            profile,
+            "count_physical_unread_messages",
+            lambda: sum(1 for msg in messages if read_status_cache.get(str(msg.path), {}).get("unread")),
+        )
         unread_messages = timed_state_step(
             profile,
-            "count_unread_messages",
-            lambda: sum(1 for msg in messages if read_status_cache.get(str(msg.path), {}).get("unread")),
+            "count_attention_unread_messages",
+            lambda: sum(
+                1
+                for msg in messages
+                if message_is_attention_unread(msg, read_state_data, read_status_cache, completed_threads)
+            ),
+        )
+        mailbox_route_issues = timed_state_step(
+            profile,
+            "mailbox_route_issue_rows",
+            lambda: mailbox_route_issue_rows(messages, read_state_data, read_status_cache=read_status_cache),
+        )
+        unread_mailbox_route_issues = timed_state_step(
+            profile,
+            "count_unread_mailbox_route_issues",
+            lambda: sum(1 for item in mailbox_route_issues if item.get("unread")),
+        )
+        legacy_mailbox_messages = timed_state_step(
+            profile,
+            "count_legacy_mailbox_messages",
+            lambda: sum(1 for msg in messages if msg.mailbox_route_issue == "legacy_mailbox_lane"),
         )
         diagnostics = timed_state_step(profile, "cached_communication_diagnostics", cached_communication_diagnostics)
         route_tests = timed_state_step(profile, "route_test_status_refresh", lambda: route_test_status(refresh=True))
@@ -4227,6 +4476,7 @@ def state(
         "counts": {
             "messages": len(messages),
             "unread_messages": unread_messages,
+            "physical_unread_messages": physical_unread_messages,
             "threads": len(active_threads),
             "archived_threads": len(archived_threads),
             "decisions": len(decisions),
@@ -4242,6 +4492,9 @@ def state(
             "urgent_codex_requests": len(urgent_codex_requests),
             "agent_progress_red": agent_progress.get("counts", {}).get("red", 0),
             "agent_progress_yellow": agent_progress.get("counts", {}).get("yellow", 0),
+            "mailbox_route_issues": len(mailbox_route_issues),
+            "unread_mailbox_route_issues": unread_mailbox_route_issues,
+            "legacy_mailbox_messages": legacy_mailbox_messages,
         },
         "latest": latest,
         "mailboxes": mailbox_overview,
@@ -4253,6 +4506,7 @@ def state(
         "thread_focus": thread_focus,
         "urgent_codex_requests": urgent_codex_requests,
         "agent_progress": agent_progress,
+        "mailbox_route_issues": mailbox_route_issues,
         "decisions": decisions,
         "decision_history": [item for item in all_decisions if item.get("decision_state") != ACTIVE_STATE],
         "decision_state": decision_state,
@@ -4397,6 +4651,21 @@ def health_component(level: str, label: str, detail: str, **extra: Any) -> dict[
     return {"level": normalized, "label": label, "detail": detail, **extra}
 
 
+def health_payload_status(overall: str) -> dict[str, Any]:
+    normalized = overall if overall in {"ok", "warn", "err", "unknown"} else "unknown"
+    return {
+        "ok": normalized == "ok",
+        "operational": normalized in {"ok", "warn"},
+        "blocking_failure": normalized == "err",
+        "summary": {
+            "ok": "PAH healthy.",
+            "warn": "PAH operational with warnings.",
+            "err": "PAH has a blocking failure.",
+            "unknown": "PAH health is unknown.",
+        }[normalized],
+    }
+
+
 def inspector_freshness_component() -> dict[str, Any]:
     max_age_seconds = 10 * 60
     if not INSPECTOR_LATEST_JSON_PATH.exists():
@@ -4441,7 +4710,7 @@ def periodic_health_monitor_summary() -> dict[str, Any]:
     failed = [
         name
         for name, check in checks.items()
-        if isinstance(check, dict) and not bool(check.get("ok"))
+        if isinstance(check, dict) and not bool(check.get("ok")) and not bool(check.get("advisory"))
     ]
     level = "err" if failed else "ok" if report.get("ok") else "warn"
     generated_at = str(report.get("generated_at", ""))
@@ -4548,43 +4817,95 @@ def fast_health_payload_from_snapshot(snapshot: dict[str, Any]) -> dict[str, Any
     authority = snapshot.get("authority", {}) if isinstance(snapshot.get("authority"), dict) else {}
     warnings = snapshot.get("warnings", []) if isinstance(snapshot.get("warnings"), list) else []
     errors = snapshot.get("errors", []) if isinstance(snapshot.get("errors"), list) else []
+    warning_ids = [str(item) for item in warnings]
+    advisory_summary = advisory_acceptance_summary(warning_ids)
+    unaccepted_warnings = advisory_summary["unaccepted"]
     snapshot_age = snapshot.get("age_seconds")
     stale_snapshot = isinstance(snapshot_age, (int, float)) and snapshot_age > 60
     open_on_darrin = int(classifier.get("open_on_darrin", 0) or 0)
     open_on_agent = int(classifier.get("open_on_agent", 0) or 0)
     owner_unknown = int(classifier.get("owner_unknown", 0) or 0)
     unanswered_total = open_on_darrin + open_on_agent + owner_unknown
-    snapshot_level = "err" if errors else "warn" if warnings or stale_snapshot else "ok"
+    profile = latest_state_profile()
+    profile_counts = profile.get("counts", {}) if isinstance(profile.get("counts"), dict) else {}
+    urgent_codex = int(profile_counts.get("urgent_codex_requests", 0) or 0)
+    progress_red = int(profile_counts.get("agent_progress_red", 0) or 0)
+    progress_yellow = int(profile_counts.get("agent_progress_yellow", 0) or 0)
+    mailbox_route_issues = int(
+        profile_counts.get("mailbox_route_issues", source_counts.get("mailbox_route_issues", 0)) or 0
+    )
+    unread_mailbox_route_issues = int(
+        profile_counts.get("unread_mailbox_route_issues", source_counts.get("unread_mailbox_route_issues", 0)) or 0
+    )
+    legacy_mailbox_messages = int(
+        profile_counts.get("legacy_mailbox_messages", source_counts.get("legacy_mailbox_messages", 0)) or 0
+    )
+    progress_level = "err" if progress_red else "warn" if progress_yellow else "ok"
+    route_tests = route_test_status(refresh=False)
+    route_counts = route_tests.get("counts", {}) if isinstance(route_tests.get("counts"), dict) else {}
+    route_problem_states = {
+        key: int(value or 0)
+        for key, value in route_counts.items()
+        if str(key) not in {"received_reply", "pass", "ok"} and int(value or 0) > 0
+    }
+    route_total = sum(int(value or 0) for value in route_counts.values())
+    route_level = "warn" if route_problem_states else "ok" if route_total else "unknown"
+    route_detail = (
+        f"{route_counts.get('received_reply', 0)} route test(s) have received replies."
+        if route_total
+        else "No route test state is available yet."
+    )
+    snapshot_level = "err" if errors else "warn" if unaccepted_warnings or stale_snapshot else "ok"
     git = cached_git_status()
+    pah_git = cached_pah_scoped_git_status()
     git_clean = bool(git.get("clean"))
+    pah_git_clean = bool(pah_git.get("clean"))
     components = {
         "server": health_component("ok", "Server API online", f"PAH API generated this fast health payload at {generated_at}."),
         "routes": health_component(
-            "unknown",
+            route_level,
             "Mailbox routes",
-            "Fast health uses the latest mail-state snapshot; detailed route tests are available in Inspector or cockpit.",
-            problem_routes=[],
+            route_detail,
+            counts=route_counts,
+            problem_routes=route_problem_states,
         ),
         "inspector": inspector_freshness_component(),
         "mailboxes": health_component(
-            "warn" if owner_unknown else "ok",
+            "warn" if owner_unknown or mailbox_route_issues else "ok",
             "Mailboxes",
-            f"{source_counts.get('messages', 0)} message(s); {owner_unknown} owner-unknown thread(s).",
+            (
+                f"{source_counts.get('messages', 0)} message(s); {owner_unknown} owner-unknown thread(s); "
+                f"{mailbox_route_issues} route issue(s), {unread_mailbox_route_issues} unread."
+            ),
             owner_unknown=owner_unknown,
             messages=source_counts.get("messages", 0),
             threads=source_counts.get("threads", 0),
+            mailbox_route_issues=mailbox_route_issues,
+            unread_mailbox_route_issues=unread_mailbox_route_issues,
+            legacy_mailbox_messages=legacy_mailbox_messages,
         ),
         "unanswered": health_component(
-            "err" if owner_unknown else "warn" if unanswered_total else "ok",
+            "err" if owner_unknown else "ok",
             "Unanswered work",
             f"{open_on_darrin} open on Darrin; {open_on_agent} open on agents; {owner_unknown} owner unknown.",
             open_on_darrin=open_on_darrin,
             open_on_agent=open_on_agent,
             owner_unknown=owner_unknown,
             total=unanswered_total,
+            advisory=bool(unanswered_total),
         ),
-        "urgent_codex": health_component("unknown", "Urgent Codex requests", "Fast health does not compute urgent request detail."),
-        "agent_progress": health_component("unknown", "Agent progress", "Fast health defers detailed progress cards to cockpit/Inspector."),
+        "urgent_codex": health_component(
+            "warn" if urgent_codex else "ok",
+            "Urgent Codex requests",
+            f"{urgent_codex} urgent request(s) flagged for Codex.",
+            urgent_codex_requests=urgent_codex,
+        ),
+        "agent_progress": health_component(
+            progress_level,
+            "Agent progress",
+            f"{progress_red} red; {progress_yellow} yellow progress monitor card(s).",
+            counts={"red": progress_red, "yellow": progress_yellow},
+        ),
         "archive": health_component(
             "ok" if SWEEP_AUDIT_LOG_PATH.exists() else "unknown",
             "Archive sweep",
@@ -4614,31 +4935,54 @@ def fast_health_payload_from_snapshot(snapshot: dict[str, Any]) -> dict[str, Any
             },
             authority_model=str(authority.get("model", "projection_only")),
             darrin_only_protected_action_authority=bool(authority.get("darrin_only_protected_action_authority", True)),
+            accepted_advisories=advisory_summary["accepted"],
+            unaccepted_advisories=unaccepted_warnings,
         ),
         "diagnostics": health_component(
             "warn" if snapshot_level != "ok" else "ok",
             "Diagnostics",
-            "Fast health reports snapshot warnings; run Inspector for full diagnostics.",
+            "Fast health reports snapshot warnings; run Inspector for full diagnostics."
+            if unaccepted_warnings or errors
+            else "Fast health snapshot advisories are accepted by PAH policy.",
             snapshot_warnings=warnings,
+            unaccepted_snapshot_warnings=unaccepted_warnings,
+            accepted_advisories=advisory_summary["accepted"],
             snapshot_errors=errors,
         ),
         "periodic_monitor": periodic_health_monitor_summary(),
+        "pah_backup": health_component(
+            "ok",
+            "PAH backup scope",
+            "PAH-scoped files are clean."
+            if pah_git_clean
+            else f"Advisory: PAH scope has {pah_git.get('dirty_count', 0)} changed or untracked item(s).",
+            scope=str(pah_git.get("scope", "CODEX Agent Hub")),
+            clean=pah_git_clean,
+            advisory=not pah_git_clean,
+            dirty_count=int(pah_git.get("dirty_count", 0) or 0),
+            untracked_count=int(pah_git.get("untracked_count", 0) or 0),
+            dirty_paths=pah_git.get("dirty_paths", []),
+        ),
         "github_backup": health_component(
-            "ok" if git_clean else "warn",
+            "ok",
             "Git/GitHub backup",
-            "Working tree is clean." if git_clean else str(git.get("status_label") or git.get("text") or "Working tree has uncommitted or unsynced changes."),
+            "Working tree is clean." if git_clean else "Advisory: " + str(git.get("status_label") or git.get("text") or "Working tree has uncommitted or unsynced changes."),
             branch=str(git.get("branch", "")),
             tracking=str(git.get("tracking", "")),
             clean=git_clean,
+            advisory=not git_clean,
         ),
     }
     overall = health_level(*(str(item.get("level", "unknown")) for item in components.values()))
+    status = health_payload_status(overall)
     return {
-        "ok": overall == "ok",
+        "ok": status["ok"],
+        "operational": status["operational"],
+        "blocking_failure": status["blocking_failure"],
         "schema_version": 1,
         "generated_at": generated_at,
         "overall": overall,
-        "summary": "PAH healthy." if overall == "ok" else "PAH needs attention.",
+        "summary": status["summary"],
         "source": "mail_state_snapshot",
         "components": components,
     }
@@ -4658,6 +5002,9 @@ def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
     open_on_darrin = int(counts.get("open_on_darrin", 0) or 0)
     open_on_agent = int(counts.get("open_on_agent", 0) or 0)
     owner_unknown = int(counts.get("owner_unknown", 0) or 0)
+    mailbox_route_issues = int(counts.get("mailbox_route_issues", 0) or 0)
+    unread_mailbox_route_issues = int(counts.get("unread_mailbox_route_issues", 0) or 0)
+    legacy_mailbox_messages = int(counts.get("legacy_mailbox_messages", 0) or 0)
     unanswered_total = open_on_darrin + open_on_agent + owner_unknown
     failed_checks = int(diagnostics.get("checks_fail", 0) or 0)
     warn_checks = int(diagnostics.get("checks_warn", 0) or 0)
@@ -4667,6 +5014,8 @@ def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
     progress_level = str(agent_progress.get("severity", "unknown")) if isinstance(agent_progress, dict) else "unknown"
     progress_cards = agent_progress.get("cards", []) if isinstance(agent_progress, dict) else []
     git_clean = bool(git.get("clean"))
+    pah_git = cached_pah_scoped_git_status()
+    pah_git_clean = bool(pah_git.get("clean"))
     git_status = str(git.get("status_label") or "")
 
     components = {
@@ -4680,23 +5029,30 @@ def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
         ),
         "inspector": inspector_freshness_component(),
         "mailboxes": health_component(
-            "warn" if owner_unknown else "ok",
+            "warn" if owner_unknown or mailbox_route_issues else "ok",
             "Mailboxes",
-            f"{owner_unknown} owner-unknown thread(s); {stale_unread} stale unread message(s).",
+            (
+                f"{owner_unknown} owner-unknown thread(s); {stale_unread} stale unread message(s); "
+                f"{mailbox_route_issues} route issue(s), {unread_mailbox_route_issues} unread."
+            ),
             owner_unknown=owner_unknown,
             stale_unread=stale_unread,
+            mailbox_route_issues=mailbox_route_issues,
+            unread_mailbox_route_issues=unread_mailbox_route_issues,
+            legacy_mailbox_messages=legacy_mailbox_messages,
         ),
         "unanswered": health_component(
-            "err" if owner_unknown else "warn" if unanswered_total else "ok",
+            "err" if owner_unknown else "ok",
             "Unanswered work",
             f"{open_on_darrin} open on Darrin; {open_on_agent} open on agents; {owner_unknown} owner unknown.",
             open_on_darrin=open_on_darrin,
             open_on_agent=open_on_agent,
             owner_unknown=owner_unknown,
             total=unanswered_total,
+            advisory=bool(unanswered_total),
         ),
         "urgent_codex": health_component(
-            "err" if urgent_codex else "ok",
+            "warn" if urgent_codex else "ok",
             "Urgent Codex requests",
             f"{urgent_codex} urgent request(s) flagged for Codex.",
             urgent_codex_requests=urgent_codex,
@@ -4732,22 +5088,39 @@ def health_payload_from_cockpit(cockpit: dict[str, Any]) -> dict[str, Any]:
             actionable_validation_issues=actionable_validation,
         ),
         "periodic_monitor": monitor,
+        "pah_backup": health_component(
+            "ok",
+            "PAH backup scope",
+            "PAH-scoped files are clean."
+            if pah_git_clean
+            else f"Advisory: PAH scope has {pah_git.get('dirty_count', 0)} changed or untracked item(s).",
+            scope=str(pah_git.get("scope", "CODEX Agent Hub")),
+            clean=pah_git_clean,
+            advisory=not pah_git_clean,
+            dirty_count=int(pah_git.get("dirty_count", 0) or 0),
+            untracked_count=int(pah_git.get("untracked_count", 0) or 0),
+            dirty_paths=pah_git.get("dirty_paths", []),
+        ),
         "github_backup": health_component(
-            "ok" if git_clean else "warn",
+            "ok",
             "Git/GitHub backup",
-            "Working tree is clean." if git_clean else git_status or "Working tree has uncommitted or unsynced changes.",
+            "Working tree is clean." if git_clean else "Advisory: " + (git_status or "Working tree has uncommitted or unsynced changes."),
             branch=str(git.get("branch", "")),
             tracking=str(git.get("tracking", "")),
             clean=git_clean,
+            advisory=not git_clean,
         ),
     }
     overall = health_level(*(str(item.get("level", "unknown")) for item in components.values()))
+    status = health_payload_status(overall)
     return {
-        "ok": overall == "ok",
+        "ok": status["ok"],
+        "operational": status["operational"],
+        "blocking_failure": status["blocking_failure"],
         "schema_version": 1,
         "generated_at": generated_at,
         "overall": overall,
-        "summary": "PAH healthy." if overall == "ok" else "PAH needs attention.",
+        "summary": status["summary"],
         "components": components,
     }
 
@@ -5154,11 +5527,15 @@ def cockpit_payload() -> dict[str, Any]:
                 "urgent_codex_requests": status_data.get("counts", {}).get("urgent_codex_requests", 0),
                 "agent_progress_red": status_data.get("counts", {}).get("agent_progress_red", 0),
                 "agent_progress_yellow": status_data.get("counts", {}).get("agent_progress_yellow", 0),
+                "mailbox_route_issues": status_data.get("counts", {}).get("mailbox_route_issues", 0),
+                "unread_mailbox_route_issues": status_data.get("counts", {}).get("unread_mailbox_route_issues", 0),
+                "legacy_mailbox_messages": status_data.get("counts", {}).get("legacy_mailbox_messages", 0),
             },
         },
         "thread_focus": thread_focus,
         "urgent_codex_requests": urgent_codex_requests,
         "agent_progress": agent_progress,
+        "mailbox_route_issues": status_data.get("mailbox_route_issues", []),
         "simple_mail": {
             "latest": status_data.get("latest", [])[:120],
             "mailboxes": status_data.get("mailboxes", []),
@@ -5343,6 +5720,7 @@ def message_to_json(
         and not thread_has_completion_evidence
         and classifier_state in {"open_on_agent", "owner_unknown"}
     )
+    attention_unread = message_is_attention_unread(msg, read_state_data, read_status_cache, completed_threads)
     wake_candidate_agent = safe_slug(msg.to_agent).replace("-", "_") if msg.to_agent else ""
     wake_candidate_label = msg.to_agent or ""
     urgent_codex_request = is_urgent_codex_request_message(msg)
@@ -5364,7 +5742,8 @@ def message_to_json(
         "from_agent": msg.from_agent,
         "to_agent": msg.to_agent,
         "read_state": read_status["state"],
-        "unread": read_status["unread"],
+        "physical_unread": read_status["unread"],
+        "unread": attention_unread,
         "age_seconds": age_seconds,
         "stale_unread": stale_unread,
         "urgent_codex_request": urgent_codex_request,
@@ -5375,7 +5754,11 @@ def message_to_json(
         "review_pending": message_has_review_pending_gate(msg),
         "requires_darrin_authority": message_requires_darrin_authority(msg),
         "thread_has_completion_evidence": thread_has_completion_evidence,
-        "status_badges": message_status_badges(msg, read_status["unread"]),
+        "mailbox_route_status": msg.mailbox_route_status,
+        "mailbox_route_issue": msg.mailbox_route_issue,
+        "mailbox_expected_inbox": msg.mailbox_expected_inbox,
+        "mailbox_actual_inbox": msg.mailbox_actual_inbox,
+        "status_badges": message_status_badges(msg, attention_unread),
         "quarantine_allowed": quarantine_allowed,
         "quarantine_reason": quarantine_reason,
         "summary": msg.summary or msg.body_preview,
@@ -5431,9 +5814,9 @@ def build_agent_mailbox_messages(
         "claude-desktop": [],
         "claude-code": [],
     }
+    completed_threads = completed_thread_ids(messages)
     for msg in messages:
-        read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
-        if not read_status["unread"]:
+        if not message_is_attention_unread(msg, read_state_data, read_status_cache, completed_threads):
             continue
         targets: list[str] = []
         if msg.is_waiting_on_darrin and message_in_any_agent_inbox(msg):
@@ -5453,6 +5836,25 @@ def build_agent_mailbox_messages(
     return boxes
 
 
+def message_is_attention_unread(
+    msg: Message,
+    read_state_data: dict[str, Any] | None = None,
+    read_status_cache: dict[str, dict[str, Any]] | None = None,
+    completed_threads: set[str] | None = None,
+) -> bool:
+    read_status = cached_message_read_status(msg, read_state_data, read_status_cache)
+    if not read_status["unread"]:
+        return False
+    if message_has_reply_tombstone(msg):
+        return False
+    if completed_threads is not None and msg.stable_thread in completed_threads and not is_completion_evidence_message(msg):
+        return False
+    classifier_state = classify_thread_state(msg)
+    if classifier_state == "closed":
+        return False
+    return classifier_state in {"open_on_agent", "open_on_darrin"}
+
+
 def build_agent_status(
     messages: list[Message],
     read_state_data: dict[str, Any] | None,
@@ -5464,6 +5866,7 @@ def build_agent_status(
     now = datetime.now().timestamp()
     thread_focus = thread_focus or {}
     active_work_states = {"todo", "in_progress", "review", "blocked"}
+    completed_threads = completed_thread_ids(messages)
     agent_rows = [
         {"id": "codex", "label": "Codex", "initials": "CX", "role": "builder / sender"},
         {"id": "claude-desktop", "label": "Claude Desktop", "initials": "CL", "role": "planner / reviewer"},
@@ -5488,6 +5891,16 @@ def build_agent_status(
             "type": msg.message_type,
         }
 
+    def latest_messages_for_threads(source: list[Message], thread_ids: set[str]) -> list[Message]:
+        rows: list[Message] = []
+        seen: set[str] = set()
+        for msg in sorted(source, key=lambda item: item.modified, reverse=True):
+            if msg.stable_thread not in thread_ids or msg.stable_thread in seen:
+                continue
+            seen.add(msg.stable_thread)
+            rows.append(msg)
+        return rows
+
     rows: list[dict[str, Any]] = []
     work_items = [
         item for item in work_board.get("items", []) if str(item.get("state", "")).lower() in active_work_states
@@ -5503,19 +5916,18 @@ def build_agent_status(
                 if msg.stable_thread in open_thread_ids and message_in_any_agent_inbox(msg)
             ]
             outbound: list[Message] = []
-            waiting_messages = inbound
+            waiting_messages = latest_messages_for_threads(inbound, open_thread_ids)
             agent_work: list[dict[str, Any]] = []
         else:
             inbound = [msg for msg in messages if msg.to_agent == agent_id and message_in_agent_inbox(msg, agent_id)]
             outbound = [msg for msg in messages if msg.from_agent == agent_id]
-            waiting_messages = [
-                msg
-                for msg in inbound
-                if cached_message_read_status(msg, read_state_data, read_status_cache)["unread"]
-                or msg.thread_status.lower() in {"waiting_on_agent", "waiting_on_darrin"}
-                or msg.status.lower() in {"open", "blocked"}
-                or msg.message_type.lower() in {"response_request", "dispatch", "decision_request"}
-            ]
+            open_on_agent = list(thread_focus.get("open_on_agent", []))
+            open_thread_ids = {
+                str(row.get("thread_id") or row.get("id"))
+                for row in open_on_agent
+                if normalize_agent_id(str(row.get("owner") or "")).replace("-", "_") == agent_id.replace("-", "_")
+            }
+            waiting_messages = latest_messages_for_threads(inbound, open_thread_ids)
             agent_work = [item for item in work_items if str(item.get("owner", "")) == agent_id]
 
         latest_inbound = inbound[0] if inbound else None
@@ -5549,8 +5961,8 @@ def build_agent_status(
 
         unread = sum(
             1
-            for msg in inbound
-            if cached_message_read_status(msg, read_state_data, read_status_cache)["unread"]
+            for msg in waiting_messages
+            if message_is_attention_unread(msg, read_state_data, read_status_cache, completed_threads)
         )
         urgent_waiting = [
             msg

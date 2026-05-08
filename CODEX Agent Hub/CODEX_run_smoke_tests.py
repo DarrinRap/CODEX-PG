@@ -31,7 +31,8 @@ from pah_core.validation_state import (
     validation_state_summary,
 )
 from pah_core.work_items import create_work_item, update_work_item, work_board_status
-from pah_mailbox.atomic import atomic_write_text
+from pah_mailbox import atomic as mailbox_atomic
+from pah_mailbox.atomic import atomic_append_text, atomic_write_text
 from pah_mailbox.backpressure import MailboxMessageRef, detect_backpressure
 from pah_mailbox.idempotency import processed_message_event_status, record_processed_message_event
 from pah_adapters.headless_contract import (
@@ -46,7 +47,15 @@ from pah_adapters.registry import adapter_status
 from pah_core.cross_check import cross_check_auto_resolution_status
 from pah_diagnostics.checks import run_communication_diagnostics
 from pah_diagnostics.route_tests import reply_search_dirs_for_route, route_test_status, save_route_test_state
-from pah_mailbox.paths import CC_CLAUDE_INBOX, CC_INBOX, CLAUDE_CODE_INBOX, MESSAGE_DIRS, ROUTE_INBOXES
+from pah_mailbox.paths import (
+    CC_CLAUDE_INBOX,
+    CC_INBOX,
+    CLAUDE_CODE_INBOX,
+    CLAUDE_CODE_INBOX_LEGACY,
+    MESSAGE_DIRS,
+    PAH_CLAUDE_CODE_INBOX,
+    ROUTE_INBOXES,
+)
 from pah_mailbox.quarantine import quarantine_message, validate_quarantine_candidate, validate_quarantine_reason
 from pah_security.approvals import (
     MCP_READONLY_CONFIG_PATH,
@@ -425,8 +434,12 @@ def test_routes_and_scope() -> None:
     active_message_paths = [path for _, path in MESSAGE_DIRS]
     assert_true(CC_INBOX in active_message_paths, "active mailbox list includes native CC inbox")
     assert_true(
-        not any("legacy" in label.lower() for label, _ in MESSAGE_DIRS),
-        "active mailbox list excludes legacy CC inboxes",
+        any("legacy" in label.lower() for label, _ in MESSAGE_DIRS),
+        "message scanner monitors legacy CC inboxes so mail cannot disappear",
+    )
+    assert_true(
+        not any(path in agent_hub.ALL_AGENT_INBOX_DIRS for path in (PAH_CLAUDE_CODE_INBOX, CLAUDE_CODE_INBOX_LEGACY)),
+        "legacy CC inboxes are not active agent inboxes",
     )
     if CC_CLAUDE_INBOX.exists():
         assert_true(
@@ -784,6 +797,11 @@ def test_health_payload_contract() -> None:
     assert_true(payload["schema_version"] == 1, "health schema version")
     assert_true(payload["overall"] in {"ok", "warn", "err", "unknown"}, "health overall level is normalized")
     assert_true(isinstance(payload["ok"], bool), "health ok is boolean")
+    assert_true(isinstance(payload["operational"], bool), "health operational is boolean")
+    assert_true(isinstance(payload["blocking_failure"], bool), "health blocking_failure is boolean")
+    assert_true(payload["operational"] == (payload["overall"] in {"ok", "warn"}), "health operational accepts warnings")
+    assert_true(payload["blocking_failure"] == (payload["overall"] == "err"), "health blocking_failure tracks err")
+    assert_true(bool(payload["summary"]), "health summary is present")
     assert_true(payload.get("source") in {None, "mail_state_snapshot"}, "health source is compatible")
     components = payload["components"]
     for name in (
@@ -798,6 +816,7 @@ def test_health_payload_contract() -> None:
         "mediated_messaging",
         "diagnostics",
         "periodic_monitor",
+        "pah_backup",
         "github_backup",
     ):
         assert_true(name in components, f"health carries {name} component")
@@ -807,6 +826,40 @@ def test_health_payload_contract() -> None:
     assert_true("problem_routes" in components["routes"], "routes health carries held/failed route detail")
     assert_true("stale" in components["inspector"], "inspector health carries freshness state")
     assert_true("delivery_levels" in components["mediated_messaging"], "mediated messaging health reports delivery levels")
+    assert_true("dirty_paths" in components["pah_backup"], "PAH backup health carries scoped dirty paths")
+
+
+def test_accepted_advisory_registry_contract() -> None:
+    with TemporaryDirectory() as temp_dir:
+        registry_path = Path(temp_dir) / "accepted_advisories.json"
+        original = agent_hub.PAH_ACCEPTED_ADVISORIES_PATH
+        try:
+            agent_hub.PAH_ACCEPTED_ADVISORIES_PATH = registry_path
+            registry_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "accepted_advisories": [
+                            {
+                                "condition_id": "shadow_snapshot_from_legacy_state",
+                                "accepted": True,
+                                "owner": "Codex",
+                                "accepted_at": "2026-05-06T11:30:00-07:00",
+                                "review_after": "2099-01-01T00:00:00-07:00",
+                                "reason": "smoke",
+                                "source_evidence": "smoke",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            assert_true(agent_hub.advisory_is_accepted("shadow_snapshot_from_legacy_state"), "active advisory is accepted")
+            summary = agent_hub.advisory_acceptance_summary(["shadow_snapshot_from_legacy_state", "unknown_condition"])
+            assert_true(len(summary["accepted"]) == 1, "accepted advisory is summarized")
+            assert_true(summary["unaccepted"] == ["unknown_condition"], "unaccepted advisory remains visible")
+        finally:
+            agent_hub.PAH_ACCEPTED_ADVISORIES_PATH = original
 
 
 def test_inspector_freshness_component_exposes_report_timestamp() -> None:
@@ -888,6 +941,17 @@ def test_health_payload_uses_snapshot_when_available() -> None:
     assert_true("mediated_messaging" in payload["components"], "snapshot health keeps mediated messaging component")
 
 
+def test_health_payload_status_contract() -> None:
+    assert_true(agent_hub.health_payload_status("ok")["ok"], "ok status sets ok")
+    assert_true(agent_hub.health_payload_status("ok")["operational"], "ok status is operational")
+    assert_true(not agent_hub.health_payload_status("ok")["blocking_failure"], "ok status is not blocking")
+    assert_true(not agent_hub.health_payload_status("warn")["ok"], "warn status preserves strict ok false")
+    assert_true(agent_hub.health_payload_status("warn")["operational"], "warn status is operational")
+    assert_true(not agent_hub.health_payload_status("warn")["blocking_failure"], "warn status is not blocking")
+    assert_true(agent_hub.health_payload_status("err")["blocking_failure"], "err status is blocking")
+    assert_true(not agent_hub.health_payload_status("err")["operational"], "err status is not operational")
+
+
 def test_periodic_health_monitor_summary_ignores_stale_failures() -> None:
     with TemporaryDirectory() as temp_dir:
         path = Path(temp_dir) / "periodic_health.json"
@@ -913,6 +977,38 @@ def test_periodic_health_monitor_summary_ignores_stale_failures() -> None:
             assert_true(
                 "communication_backlog" in component["failed_checks"],
                 "stale periodic report still preserves failed check detail",
+            )
+        finally:
+            agent_hub.PERIODIC_HEALTH_LATEST_PATH = original
+
+
+def test_periodic_health_monitor_summary_ignores_advisory_backlog() -> None:
+    with TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "periodic_health.json"
+        original = agent_hub.PERIODIC_HEALTH_LATEST_PATH
+        try:
+            agent_hub.PERIODIC_HEALTH_LATEST_PATH = path
+            path.write_text(
+                json.dumps(
+                    {
+                        "ok": True,
+                        "generated_at": "2099-01-01T00:00:00-07:00",
+                        "duration_ms": 100,
+                        "schedule": {"interval_minutes": 10, "next_run_after": "2099-01-01T00:10:00-07:00"},
+                        "checks": {
+                            "server_endpoints": {"ok": True},
+                            "communication_backlog": {"ok": False, "advisory": True, "level": "warn"},
+                        },
+                        "warnings": ["active backlog"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            component = agent_hub.periodic_health_monitor_summary()
+            assert_true(component["level"] == "ok", "advisory backlog does not fail health monitor component")
+            assert_true(
+                "communication_backlog" not in component["failed_checks"],
+                "advisory backlog is not reported as a failed periodic check",
             )
         finally:
             agent_hub.PERIODIC_HEALTH_LATEST_PATH = original
@@ -1296,8 +1392,8 @@ def test_pah_inspector_cc_progress_sidecar_contract() -> None:
             idle_card = agent_hub.cc_active_dispatch_progress()
             idle_findings = {finding.check_id: finding for finding in inspector.inspect_cc_active_dispatch_contract(idle_card)}
             assert_true(
-                idle_findings["endpoint.cc_active_dispatch_sidecar_readiness"].status == "warn",
-                "inspector warns when CC sidecar is absent",
+                idle_findings["endpoint.cc_active_dispatch_sidecar_readiness"].status == "pass",
+                "inspector accepts absent CC sidecar when CC is idle",
             )
 
             now_iso = agent_hub.datetime.now().astimezone().isoformat(timespec="seconds")
@@ -1432,7 +1528,8 @@ def test_health_payload_unanswered_component() -> None:
     }
     health = agent_hub.health_payload_from_cockpit(cockpit)
     unanswered = health["components"]["unanswered"]
-    assert_true(unanswered["level"] == "warn", "open answered work is a warning")
+    assert_true(unanswered["level"] == "ok", "known-owner backlog is advisory, not runtime health degradation")
+    assert_true(unanswered["advisory"], "known-owner backlog remains visible as advisory")
     assert_true(unanswered["total"] == 5, "unanswered total sums Darrin, agent, and unknown owners")
 
     cockpit["cockpit_state"]["counts"]["owner_unknown"] = 1
@@ -1550,6 +1647,22 @@ def test_interaction_ledger_helper_writes_jsonl() -> None:
             assert_true(isinstance(payload["nested"]["path"], str), "interaction ledger serializes nested paths")
         finally:
             agent_hub.INTERACTION_LEDGER_PATH = original
+
+
+def test_atomic_append_does_not_replace_target_file() -> None:
+    with TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "append.jsonl"
+        path.write_text("first\n", encoding="utf-8")
+        original_replace = mailbox_atomic.os.replace
+        try:
+            def failing_replace(source: object, target: object) -> None:
+                raise PermissionError("replace should not be used for append-only logs")
+
+            mailbox_atomic.os.replace = failing_replace
+            atomic_append_text(path, "second\n")
+        finally:
+            mailbox_atomic.os.replace = original_replace
+        assert_true(path.read_text(encoding="utf-8") == "first\nsecond\n", "atomic append preserves existing log content without replace")
 
 
 def test_interaction_ledger_recent_events_and_summary() -> None:
@@ -1723,9 +1836,10 @@ def test_agent_no_mail_claim_validation() -> None:
                     "created_at": "2026-04-29T10:00:00-07:00",
                     "from": "codex",
                     "to": "claude-desktop",
-                    "type": "coordination",
+                    "type": "response_request",
                     "status": "open",
                     "thread_status": "active",
+                    "action_owner": "claude-desktop",
                     "priority": "normal",
                     "approval_boundary": "coordination_only",
                     "requires_darrin_decision": False,
@@ -1774,6 +1888,8 @@ def test_periodic_communication_backlog_detects_discrepancies() -> None:
     }
     backlog = periodic_health.communication_backlog(cockpit)
     assert_true(not backlog["ok"], "communication backlog fails when agents or unknown owners have work")
+    assert_true(backlog["advisory"], "communication backlog is advisory for periodic health success")
+    assert_true(backlog["level"] == "warn", "communication backlog exposes warning level when work is waiting")
     assert_true(backlog["open_on_agent"] == 1, "communication backlog reports open-on-agent count")
     assert_true(backlog["owner_unknown"] == 1, "communication backlog reports owner-unknown count")
     assert_true(backlog["agent_threads"][0]["thread_id"] == "PAH-E2E-TEST", "communication backlog includes agent thread details")
@@ -1783,6 +1899,17 @@ def test_periodic_communication_backlog_detects_discrepancies() -> None:
         "thread_focus": {},
     }
     assert_true(periodic_health.communication_backlog(clear)["ok"], "Darrin-only work does not fail agent communication backlog")
+
+
+def test_periodic_advisory_backlog_does_not_block_success() -> None:
+    checks = {
+        "server_endpoints": {"ok": True},
+        "archive_read_sweep": {"ok": True},
+        "communication_backlog": {"ok": False, "advisory": True},
+    }
+    assert_true(periodic_health.periodic_checks_ok(checks), "advisory backlog does not fail periodic health")
+    checks["smoke_tests"] = {"ok": False}
+    assert_true(not periodic_health.periodic_checks_ok(checks), "blocking failed checks still fail periodic health")
 
 
 def test_periodic_communication_backlog_records_discrepancy_event() -> None:
@@ -1865,7 +1992,9 @@ def test_urgent_codex_request_protocol() -> None:
     with TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
         codex_inbox = root / "CODEX Inbox"
+        claude_inbox = root / "CLAUDE Inbox"
         codex_inbox.mkdir()
+        claude_inbox.mkdir()
         path = codex_inbox / "urgent.md"
         text = render_message_markdown(
             {
@@ -1901,9 +2030,9 @@ def test_urgent_codex_request_protocol() -> None:
         }
         try:
             agent_hub.clear_message_parse_cache()
-            agent_hub.MESSAGE_DIRS = (("Claude -> Codex", codex_inbox),)
-            agent_hub.AGENT_INBOX_DIRS = {"codex": (codex_inbox,), "claude-desktop": (), "claude-code": ()}
-            agent_hub.ALL_AGENT_INBOX_DIRS = (codex_inbox,)
+            agent_hub.MESSAGE_DIRS = (("Claude -> Codex", codex_inbox), ("Codex -> Claude", claude_inbox))
+            agent_hub.AGENT_INBOX_DIRS = {"codex": (codex_inbox,), "claude-desktop": (claude_inbox,), "claude-code": ()}
+            agent_hub.ALL_AGENT_INBOX_DIRS = (codex_inbox, claude_inbox)
             notification_state = root / "notification_state.json"
             notification_log = root / "notification_log.jsonl"
             processed_sidecar = root / "processed" / "urgent.json"
@@ -1999,6 +2128,30 @@ def test_urgent_codex_request_protocol() -> None:
             result_again = agent_hub.run_notification_scan()
             assert_true(result_again["urgent_breakthrough_logged"] == 0, "urgent breakthrough scan is idempotent")
             assert_true(len(sent_notifications) == 1, "urgent breakthrough does not duplicate notifications")
+            ack_path = claude_inbox / "ack.md"
+            ack_path.write_text(
+                render_message_markdown(
+                    {
+                        "schema_version": MESSAGE_SCHEMA_VERSION,
+                        "message_id": "PAH-URGENT-CODEX-001-ACK",
+                        "reply_to": ["PAH-URGENT-CODEX-001"],
+                        "from": "codex",
+                        "to": "claude-desktop",
+                        "type": "status",
+                        "status": "acknowledged",
+                    },
+                    "Urgent request acknowledged",
+                    "Codex has read and acknowledged the urgent request.",
+                    "Queued behind the current foreground task.",
+                ),
+                encoding="utf-8",
+            )
+            agent_hub.clear_message_parse_cache()
+            acked_messages = agent_hub.load_messages()
+            assert_true(
+                len(agent_hub.urgent_codex_request_rows(acked_messages, read_state_data)) == 0,
+                "Codex acknowledgement reply clears urgent breakthrough queue",
+            )
         finally:
             for key, value in original_values.items():
                 setattr(agent_hub, key, value)
@@ -3381,6 +3534,10 @@ def test_stale_unread_only_wakes_actionable_agent_threads() -> None:
     no_action_row = agent_hub.message_to_json(no_action_share, {})
     assert_true(no_action_row["classifier_state"] == "closed", "no-action share classifier is exposed")
     assert_true(not no_action_row["stale_unread"], "closed no-action shares do not become wake candidates")
+    assert_true(
+        not agent_hub.message_is_attention_unread(no_action_share, {}),
+        "closed raw-unread shares do not count as attention unread",
+    )
 
     open_request = agent_hub.Message(
         direction="smoke",
@@ -3404,6 +3561,10 @@ def test_stale_unread_only_wakes_actionable_agent_threads() -> None:
     request_row = agent_hub.message_to_json(open_request, {})
     assert_true(request_row["classifier_state"] == "open_on_agent", "open request classifier is exposed")
     assert_true(request_row["stale_unread"], "open agent-owned stale unread messages remain wake candidates")
+    assert_true(
+        agent_hub.message_is_attention_unread(open_request, {}),
+        "open agent-owned unread messages count as attention unread",
+    )
 
     completed_thread_row = agent_hub.message_to_json(open_request, {}, {open_request.stable_thread})
     assert_true(
@@ -3413,6 +3574,10 @@ def test_stale_unread_only_wakes_actionable_agent_threads() -> None:
     assert_true(
         not completed_thread_row["stale_unread"],
         "older unread messages in completed threads do not become wake candidates",
+    )
+    assert_true(
+        not agent_hub.message_is_attention_unread(open_request, {}, completed_threads={open_request.stable_thread}),
+        "older unread messages in completed threads do not count as attention unread",
     )
 
 
@@ -3472,6 +3637,86 @@ def test_legacy_mailbox_route_inference_avoids_owner_unknown() -> None:
             assert_true(agent_hub.classify_thread_state(shipped_msg) == "closed", "legacy shipped report closes")
         finally:
             agent_hub.ALL_AGENT_INBOX_DIRS = original_dirs
+
+
+def test_legacy_cc_mailboxes_are_scanned_and_warned() -> None:
+    active_message_paths = [path for _, path in MESSAGE_DIRS]
+    if PAH_CLAUDE_CODE_INBOX != CLAUDE_CODE_INBOX:
+        assert_true(PAH_CLAUDE_CODE_INBOX in active_message_paths, "PAH local legacy CC inbox remains visible")
+    if CLAUDE_CODE_INBOX_LEGACY != CLAUDE_CODE_INBOX:
+        assert_true(CLAUDE_CODE_INBOX_LEGACY in active_message_paths, "old Claude Code inbox remains visible")
+
+    with TemporaryDirectory() as temp_dir:
+        canonical_cc = Path(temp_dir) / "CC Inbox"
+        legacy_cc = Path(temp_dir) / "CODEX_CLAUDE_CODE Inbox"
+        canonical_cc.mkdir()
+        legacy_cc.mkdir()
+        path = legacy_cc / "legacy_direct.md"
+        path.write_text(
+            "---\n"
+            "from: codex\n"
+            "to: claude-code\n"
+            "message_id: PAH-LEGACY-CC-VISIBLE\n"
+            "---\n\n"
+            "# Legacy direct message\n\n"
+            "Coordination only.\n",
+            encoding="utf-8",
+        )
+        original_all = agent_hub.ALL_AGENT_INBOX_DIRS
+        original_monitored = agent_hub.ALL_MONITORED_AGENT_INBOX_DIRS
+        original_legacy = agent_hub.ALL_LEGACY_AGENT_INBOX_DIRS
+        original_canonical = agent_hub.CANONICAL_AGENT_INBOX_DIRS
+        try:
+            agent_hub.ALL_AGENT_INBOX_DIRS = (canonical_cc,)
+            agent_hub.ALL_LEGACY_AGENT_INBOX_DIRS = (legacy_cc,)
+            agent_hub.ALL_MONITORED_AGENT_INBOX_DIRS = (canonical_cc, legacy_cc)
+            agent_hub.CANONICAL_AGENT_INBOX_DIRS = {"claude-code": (canonical_cc,)}
+            message = agent_hub.parse_message(path, "Codex -> Claude Code (PAH local legacy)")
+            assert_true(message.mailbox_route_issue == "legacy_mailbox_lane", "legacy CC lane is flagged")
+            assert_true(not agent_hub.message_in_any_agent_inbox(message), "legacy CC lane is not active")
+            assert_true(message.mailbox_expected_inbox == str(canonical_cc), "legacy message points at canonical CC inbox")
+            assert_true(message.mailbox_actual_inbox == str(legacy_cc), "legacy message records actual inbox")
+        finally:
+            agent_hub.ALL_AGENT_INBOX_DIRS = original_all
+            agent_hub.ALL_MONITORED_AGENT_INBOX_DIRS = original_monitored
+            agent_hub.ALL_LEGACY_AGENT_INBOX_DIRS = original_legacy
+            agent_hub.CANONICAL_AGENT_INBOX_DIRS = original_canonical
+
+
+def test_misfiled_inbox_message_is_warned() -> None:
+    with TemporaryDirectory() as temp_dir:
+        codex_inbox = Path(temp_dir) / "CODEX Inbox"
+        claude_inbox = Path(temp_dir) / "CLAUDE Inbox"
+        codex_inbox.mkdir()
+        claude_inbox.mkdir()
+        path = claude_inbox / "misfiled_to_codex.md"
+        path.write_text(
+            "---\n"
+            "from: claude-desktop\n"
+            "to: codex\n"
+            "message_id: PAH-MISFILED-CODEX\n"
+            "---\n\n"
+            "# Misfiled message\n\n"
+            "This belongs in CODEX Inbox.\n",
+            encoding="utf-8",
+        )
+        original_all = agent_hub.ALL_AGENT_INBOX_DIRS
+        original_monitored = agent_hub.ALL_MONITORED_AGENT_INBOX_DIRS
+        original_legacy = agent_hub.ALL_LEGACY_AGENT_INBOX_DIRS
+        original_canonical = agent_hub.CANONICAL_AGENT_INBOX_DIRS
+        try:
+            agent_hub.ALL_AGENT_INBOX_DIRS = (codex_inbox, claude_inbox)
+            agent_hub.ALL_MONITORED_AGENT_INBOX_DIRS = (codex_inbox, claude_inbox)
+            agent_hub.ALL_LEGACY_AGENT_INBOX_DIRS = ()
+            agent_hub.CANONICAL_AGENT_INBOX_DIRS = {"codex": (codex_inbox,), "claude-desktop": (claude_inbox,)}
+            message = agent_hub.parse_message(path, "Codex -> Claude")
+            assert_true(message.mailbox_route_issue == "misfiled_for_recipient", "wrong recipient inbox is flagged")
+            assert_true(message.mailbox_expected_inbox == str(codex_inbox), "misfiled message points at correct inbox")
+        finally:
+            agent_hub.ALL_AGENT_INBOX_DIRS = original_all
+            agent_hub.ALL_MONITORED_AGENT_INBOX_DIRS = original_monitored
+            agent_hub.ALL_LEGACY_AGENT_INBOX_DIRS = original_legacy
+            agent_hub.CANONICAL_AGENT_INBOX_DIRS = original_canonical
 
 
 def test_thread_archive_state_reopens_on_new_activity() -> None:
@@ -3605,10 +3850,13 @@ def main() -> None:
     test_cockpit_payload_contract()
     test_cockpit_payload_skips_message_quarantine_checks()
     test_health_payload_contract()
+    test_accepted_advisory_registry_contract()
     test_inspector_freshness_component_exposes_report_timestamp()
     test_inspector_protocol_v3_ledger_check_uses_durable_history()
     test_health_payload_uses_snapshot_when_available()
+    test_health_payload_status_contract()
     test_periodic_health_monitor_summary_ignores_stale_failures()
+    test_periodic_health_monitor_summary_ignores_advisory_backlog()
     test_ready_payload_contract()
     test_mail_state_snapshot_sanitized_contract()
     test_pah_ui_pg_design_bible_tokens()
@@ -3631,6 +3879,7 @@ def main() -> None:
     test_message_audit_records_discovery_and_classifier_transition()
     test_agent_no_mail_claim_validation()
     test_periodic_communication_backlog_detects_discrepancies()
+    test_periodic_advisory_backlog_does_not_block_success()
     test_periodic_communication_backlog_records_discrepancy_event()
     test_cockpit_action_queue_ordering()
     test_urgent_codex_request_protocol()
@@ -3662,6 +3911,8 @@ def main() -> None:
     test_stale_unread_only_wakes_actionable_agent_threads()
     test_classifier_unstructured_inbox_message_is_owner_unknown()
     test_legacy_mailbox_route_inference_avoids_owner_unknown()
+    test_legacy_cc_mailboxes_are_scanned_and_warned()
+    test_misfiled_inbox_message_is_warned()
     test_thread_archive_state_reopens_on_new_activity()
     test_decision_state()
     test_validation_state()
