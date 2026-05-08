@@ -2,12 +2,17 @@ param(
     [int]$Port = 8765,
     [int]$PollSeconds = 15,
     [int]$AlertCooldownMinutes = 60,
-    [switch]$NoServer
+    [int]$RestartMaxAttempts = 3,
+    [int]$RestartCooldownMinutes = 10,
+    [switch]$NoServer,
+    [switch]$FunctionsOnly  # Phase 1: dot-source mode for the launcher; defines helpers and returns without starting a tray.
 )
 
 $ErrorActionPreference = 'Stop'
 
-if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
+# Skip the STA re-invoke when used as a helper library — the launcher just
+# needs the function definitions, not a running tray.
+if (-not $FunctionsOnly -and [Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
     $argsList = @(
         '-NoProfile',
         '-STA',
@@ -36,20 +41,35 @@ Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $App = Join-Path $ScriptRoot 'CODEX_agent_hub.py'
 $Logs = Join-Path $ScriptRoot 'CODEX logs'
+$Config = Join-Path $ScriptRoot 'CODEX config'
 $Notifications = Join-Path $ScriptRoot 'CODEX notifications'
 $StartupShortcut = Join-Path ([Environment]::GetFolderPath('Startup')) 'PANDA Agent Hub Tray.lnk'
 New-Item -ItemType Directory -Force -Path $Logs | Out-Null
+New-Item -ItemType Directory -Force -Path $Config | Out-Null
 New-Item -ItemType Directory -Force -Path $Notifications | Out-Null
 
 $Stdout = Join-Path $Logs 'CODEX_agent_hub_tray_stdout.log'
 $Stderr = Join-Path $Logs 'CODEX_agent_hub_tray_stderr.log'
 $NotificationLog = Join-Path $Notifications 'CODEX_notification_log.jsonl'
-Remove-Item -LiteralPath $Stdout -Force -ErrorAction SilentlyContinue
-Remove-Item -LiteralPath $Stderr -Force -ErrorAction SilentlyContinue
+$TrayLifecycleLog = Join-Path $Logs 'CODEX_pah_tray_lifecycle.jsonl'
+$ServerLifecycleLog = Join-Path $Logs 'CODEX_pah_server_lifecycle.jsonl'
+$HealthTransitionLog = Join-Path $Logs 'CODEX_pah_health_transitions.jsonl'
+$TrayConfigPath = Join-Path $Config 'CODEX_pah_tray_config.json'
+# Functions-only callers (e.g. the launcher) must not clobber a running
+# tray's stdout/stderr capture.
+if (-not $FunctionsOnly) {
+    Remove-Item -LiteralPath $Stdout -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $Stderr -Force -ErrorAction SilentlyContinue
+}
 
 $script:Url = "http://127.0.0.1:$Port"
 $script:Process = $null
 $script:StartedServer = $false
+$script:OwnershipState = 'offline'   # offline | owned_server | attached_server | port_conflict
+$script:DisplayState = 'starting'    # Running | Warn | Starting | Down | Conflict | Restarting
+$script:LastDisplayState = ''
+$script:ReadinessFailures = 0
+$script:RestartTimestamps = @()      # list of [datetime] of recent restart attempts (sliding window)
 $script:RestartAttempts = 0
 $script:LastAlertKey = ''
 $script:LastStaleUnread = -1
@@ -115,11 +135,112 @@ function Invoke-PahJson {
 }
 
 function Test-PahServer {
+    # Backward-compatible port-listener probe. Public — callers (incl.
+    # CODEX_launch_agent_hub_dashboard.ps1) depend on this name. Phase 1
+    # introduces ownership-aware variants below; this one stays simple.
+    return Test-PahPortListener -Port $Port
+}
+
+# ==========================================================================
+#  Phase 1 hardening — config, ownership, health, restart, logging
+# ==========================================================================
+
+function Get-PahTrayConfig {
+    if (Test-Path -LiteralPath $TrayConfigPath) {
+        try {
+            return Get-Content -LiteralPath $TrayConfigPath -Raw | ConvertFrom-Json
+        }
+        catch {
+        }
+    }
+    $defaults = [pscustomobject]@{
+        port = $Port
+        poll_seconds = $PollSeconds
+        alert_popups_enabled = $false
+        auto_open_dashboard_at_login = $false
+        restart_max_attempts = $RestartMaxAttempts
+        restart_cooldown_minutes = $RestartCooldownMinutes
+    }
+    try {
+        $defaults | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $TrayConfigPath -Encoding UTF8
+    }
+    catch {
+    }
+    return $defaults
+}
+
+function Write-PahJsonlEvent {
+    param([string]$LogPath, [hashtable]$Payload)
+    $Payload['timestamp'] = (Get-Date).ToString('o')
+    try {
+        $line = $Payload | ConvertTo-Json -Compress -Depth 6
+        Add-Content -LiteralPath $LogPath -Value $line -Encoding UTF8
+    }
+    catch {
+    }
+}
+
+function Write-PahLifecycleEvent {
+    param([string]$Event, [hashtable]$Extra = @{})
+    $payload = @{
+        event = $Event
+        port = $Port
+        ownership_state = $script:OwnershipState
+        startup_shortcut_installed = (Test-Path -LiteralPath $StartupShortcut)
+    }
+    foreach ($k in $Extra.Keys) { $payload[$k] = $Extra[$k] }
+    Write-PahJsonlEvent -LogPath $TrayLifecycleLog -Payload $payload
+}
+
+function Write-PahServerLifecycle {
+    param([string]$Event, [hashtable]$Extra = @{})
+    $procPid = if ($script:Process) { $script:Process.Id } else { $null }
+    $payload = @{
+        event = $Event
+        port = $Port
+        pid = $procPid
+        stdout_log = $Stdout
+        stderr_log = $Stderr
+    }
+    foreach ($k in $Extra.Keys) { $payload[$k] = $Extra[$k] }
+    Write-PahJsonlEvent -LogPath $ServerLifecycleLog -Payload $payload
+}
+
+function Write-PahHealthTransition {
+    param([string]$From, [string]$To, [hashtable]$Extra = @{})
+    $payload = @{
+        event = 'health_state_transition'
+        from_state = $From
+        to_state = $To
+        ownership_state = $script:OwnershipState
+        port = $Port
+    }
+    foreach ($k in $Extra.Keys) { $payload[$k] = $Extra[$k] }
+    Write-PahJsonlEvent -LogPath $HealthTransitionLog -Payload $payload
+}
+
+function Test-PahTrayInstance {
+    # Single-instance helper. Callable from launcher via dot-source.
+    # Returns $true if another tray process is bound to the same port,
+    # excluding the calling process.
+    param([int]$Port = 8765)
+    $self = $PID
+    $matches = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.CommandLine -like '*CODEX_start_agent_hub_tray.ps1*' -and
+            $_.CommandLine -like "*-Port $Port*" -and
+            $_.ProcessId -ne $self
+        }
+    return $null -ne $matches
+}
+
+function Test-PahPortListener {
+    param([int]$Port, [int]$TimeoutMs = 800)
     $client = $null
     try {
         $client = New-Object System.Net.Sockets.TcpClient
         $connect = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
-        if (-not $connect.AsyncWaitHandle.WaitOne(800)) {
+        if (-not $connect.AsyncWaitHandle.WaitOne($TimeoutMs)) {
             return $false
         }
         $client.EndConnect($connect)
@@ -130,6 +251,149 @@ function Test-PahServer {
     }
     finally {
         if ($client) { $client.Close() }
+    }
+}
+
+function Test-PahServerIdentity {
+    # /api/ping is the cheap PAH-identity probe. A non-PAH listener on the
+    # same port either won't expose /api/ping or will return non-PAH content.
+    try {
+        $response = Invoke-WebRequest -Uri "$script:Url/api/ping" -UseBasicParsing -TimeoutSec 2
+        if ($response.StatusCode -ne 200) { return $false }
+        $body = [string]$response.Content
+        return ($body -like '*panda*' -or $body -like '*pah*' -or $body -like '*"ok"*')
+    }
+    catch {
+        return $false
+    }
+}
+
+function Get-PahServerOwnership {
+    if (-not (Test-PahPortListener -Port $Port)) {
+        return 'offline'
+    }
+    if (-not (Test-PahServerIdentity)) {
+        return 'port_conflict'
+    }
+    if ($script:Process -and -not $script:Process.HasExited) {
+        return 'owned_server'
+    }
+    return 'attached_server'
+}
+
+function Get-PahHealthClassification {
+    param($Status, [string]$Ownership)
+    if ($Ownership -eq 'port_conflict') { return 'Conflict' }
+    if ($Ownership -eq 'offline') {
+        if ($script:Process -and -not $script:Process.HasExited) {
+            return 'Starting'
+        }
+        return 'Down'
+    }
+    if ($null -eq $Status) { return 'Warn' }
+    if ($Status.level -and $Status.level -match 'warn') { return 'Warn' }
+    return 'Running'
+}
+
+function Update-PahDisplayState {
+    param([string]$NewState, [hashtable]$Extra = @{})
+    if ($script:LastDisplayState -eq $NewState) { return }
+    Write-PahHealthTransition -From $script:LastDisplayState -To $NewState -Extra $Extra
+    $script:LastDisplayState = $NewState
+    $script:DisplayState = $NewState
+}
+
+function Reset-RestartWindow {
+    $cutoff = (Get-Date).AddMinutes(-$RestartCooldownMinutes)
+    $script:RestartTimestamps = @($script:RestartTimestamps | Where-Object { $_ -ge $cutoff })
+    $script:RestartAttempts = $script:RestartTimestamps.Count
+}
+
+function Invoke-PahBoundedRestart {
+    # Bounded restart per spec §4.5. Only allowed for owned_server (Q6 ruling).
+    # Returns $true if a restart attempt was made.
+    if ($script:OwnershipState -ne 'owned_server') {
+        Write-PahServerLifecycle -Event 'restart_skipped' -Extra @{
+            reason = 'not_owned_server'
+            ownership_state = $script:OwnershipState
+        }
+        return $false
+    }
+    Reset-RestartWindow
+    if ($script:RestartAttempts -ge $RestartMaxAttempts) {
+        Write-PahServerLifecycle -Event 'restart_blocked' -Extra @{
+            reason = 'max_attempts_in_window'
+            attempts = $script:RestartAttempts
+            window_minutes = $RestartCooldownMinutes
+        }
+        return $false
+    }
+    $script:RestartTimestamps += (Get-Date)
+    $script:RestartAttempts = $script:RestartTimestamps.Count
+    Write-PahServerLifecycle -Event 'restart_attempt' -Extra @{
+        attempt = $script:RestartAttempts
+        max_attempts = $RestartMaxAttempts
+        readiness_failures = $script:ReadinessFailures
+    }
+    Update-PahDisplayState -NewState 'Restarting' -Extra @{ attempt = $script:RestartAttempts }
+    Start-PahServer
+    return $true
+}
+
+function Invoke-PahHealthCheck {
+    # Bounded local check (spec §4.7). Does NOT spawn a temp server.
+    $results = [ordered]@{
+        ping = $null
+        ready = $null
+        tray_status = $null
+        health = $null
+    }
+    foreach ($endpoint in @('ping', 'ready', 'tray-status', 'health')) {
+        try {
+            $response = Invoke-WebRequest -Uri "$script:Url/api/$endpoint" -UseBasicParsing -TimeoutSec 4
+            $key = ($endpoint -replace '-', '_')
+            $results[$key] = [int]$response.StatusCode
+        }
+        catch {
+            $key = ($endpoint -replace '-', '_')
+            $results[$key] = $null
+        }
+    }
+    Write-PahJsonlEvent -LogPath $HealthTransitionLog -Payload @{
+        event = 'health_check_result'
+        port = $Port
+        ownership_state = $script:OwnershipState
+        ping = $results.ping
+        ready = $results.ready
+        tray_status = $results.tray_status
+        health = $results.health
+    }
+    return $results
+}
+
+function Copy-PahStatusSummary {
+    $status = Invoke-PahJson '/api/tray-status'
+    $lines = @(
+        'PANDA Agent Hub — tray status',
+        "URL: $script:Url",
+        "Ownership: $script:OwnershipState",
+        "Display: $script:DisplayState",
+        "Port: $Port",
+        "Captured: $((Get-Date).ToString('o'))"
+    )
+    if ($status) {
+        $lines += "Title: $($status.title)"
+        $lines += "Unread: $($status.counts.unread)  overdue: $($status.counts.stale_unread)  urgent: $($status.counts.urgent_codex_requests)"
+        $lines += "Decisions: $($status.counts.decisions_needed)  diagnostics: $($status.counts.diagnostic_problems)"
+    }
+    else {
+        $lines += 'Status: <unreachable>'
+    }
+    $text = $lines -join [Environment]::NewLine
+    try {
+        Set-Clipboard -Value $text
+    }
+    catch {
     }
 }
 
@@ -161,6 +425,11 @@ function Start-PahServer {
     )
     $script:Process = Start-Process -FilePath python -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $Stdout -RedirectStandardError $Stderr -PassThru
     $script:StartedServer = $true
+    $script:OwnershipState = 'owned_server'
+    Write-PahServerLifecycle -Event 'server_started' -Extra @{
+        cmd = "python $($arguments -join ' ')"
+        url = $script:Url
+    }
     for ($i = 0; $i -lt 40; $i++) {
         Start-Sleep -Milliseconds 250
         $fromLog = Read-ServerUrlFromLog
@@ -243,16 +512,31 @@ function Set-TrayMenuStatus {
 }
 
 function Update-TrayStatus {
+    # Refresh ownership classification + display state on every poll. Bounded
+    # restart fires only when ownership is owned_server AND readiness has
+    # failed twice in a row (spec §4.5 + Q6 ruling).
+    $script:OwnershipState = Get-PahServerOwnership
     $status = Invoke-PahJson '/api/tray-status'
     Set-TrayMenuStatus $status
+    Update-RestartMenuItem
+    Update-StartupMenuItems
+
+    $newDisplay = Get-PahHealthClassification -Status $status -Ownership $script:OwnershipState
+    Update-PahDisplayState -NewState $newDisplay
+
     if ($null -eq $status) {
-        if ($script:StartedServer -and $script:Process -and $script:Process.HasExited -and $script:RestartAttempts -lt 3) {
-            $script:RestartAttempts += 1
-            Show-PahBalloon 'PANDA Agent Hub restarted' 'The local PAH server stopped, so the tray is starting it again.' 6000
-            Start-PahServer
+        $script:ReadinessFailures += 1
+        if ($script:OwnershipState -eq 'owned_server' -and
+            $script:Process -and $script:Process.HasExited -and
+            $script:ReadinessFailures -ge 2) {
+            $attempted = Invoke-PahBoundedRestart
+            if ($attempted) {
+                $script:ReadinessFailures = 0
+            }
         }
         return
     }
+    $script:ReadinessFailures = 0
 
     $stale = [int]$status.counts.stale_unread
     $urgent = [int]$status.counts.urgent_codex_requests
@@ -272,6 +556,30 @@ function Update-TrayStatus {
     Update-AlertMenuText
 }
 
+function Update-RestartMenuItem {
+    if (-not $script:RestartItem) { return }
+    $script:RestartItem.Enabled = ($script:OwnershipState -eq 'owned_server')
+    $script:RestartItem.Text = if ($script:OwnershipState -eq 'owned_server') {
+        'Restart PAH Server'
+    }
+    elseif ($script:OwnershipState -eq 'attached_server') {
+        'Restart PAH Server (attached — use originator)'
+    }
+    elseif ($script:OwnershipState -eq 'port_conflict') {
+        'Restart PAH Server (port in use by other process)'
+    }
+    else {
+        'Restart PAH Server (offline)'
+    }
+}
+
+function Update-StartupMenuItems {
+    if (-not $script:InstallStartupItem -or -not $script:RemoveStartupItem) { return }
+    $installed = Test-Path -LiteralPath $StartupShortcut
+    $script:InstallStartupItem.Visible = -not $installed
+    $script:RemoveStartupItem.Visible = $installed
+}
+
 function Install-StartupShortcut {
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($StartupShortcut)
@@ -286,8 +594,42 @@ function Remove-StartupShortcut {
     Remove-Item -LiteralPath $StartupShortcut -Force -ErrorAction SilentlyContinue
 }
 
-if (-not (Test-PahServer)) {
+# Functions-only callers stop here — the helpers above are now defined in
+# the caller's scope without spawning a tray.
+if ($FunctionsOnly) {
+    return
+}
+
+# Single-instance check — refuse to start a second tray on the same port.
+if (Test-PahTrayInstance -Port $Port) {
+    Write-PahLifecycleEvent -Event 'tray_start_skipped' -Extra @{
+        reason = 'duplicate_instance_on_port'
+    }
+    [System.Windows.Forms.MessageBox]::Show(
+        "PANDA Agent Hub tray is already running on port $Port.",
+        'PANDA Agent Hub',
+        'OK',
+        'Information'
+    ) | Out-Null
+    exit
+}
+
+# Load tray config (writes defaults on first run).
+$null = Get-PahTrayConfig
+
+# Classify any existing PAH listener BEFORE deciding to start a server.
+$script:OwnershipState = Get-PahServerOwnership
+if ($script:OwnershipState -eq 'offline') {
     Start-PahServer
+    $script:OwnershipState = Get-PahServerOwnership
+}
+elseif ($script:OwnershipState -eq 'port_conflict') {
+    Write-PahServerLifecycle -Event 'port_conflict_detected' -Extra @{
+        url = $script:Url
+    }
+}
+Write-PahLifecycleEvent -Event 'tray_started' -Extra @{
+    no_server_flag = [bool]$NoServer
 }
 
 $NotifyIcon = New-Object System.Windows.Forms.NotifyIcon
@@ -301,6 +643,39 @@ $OpenItem.Add_Click({ Open-PahDashboard })
 
 $RefreshItem = $Menu.Items.Add('Refresh Status')
 $RefreshItem.Add_Click({ Update-TrayStatus })
+
+$HealthCheckItem = $Menu.Items.Add('Run Health Check')
+$HealthCheckItem.Add_Click({
+    $r = Invoke-PahHealthCheck
+    [System.Windows.Forms.MessageBox]::Show(
+        ("Health check at $script:Url`n" +
+         "ping: $($r.ping)`n" +
+         "ready: $($r.ready)`n" +
+         "tray-status: $($r.tray_status)`n" +
+         "health: $($r.health)`n" +
+         "ownership: $script:OwnershipState"),
+        'PANDA Agent Hub — Health Check',
+        'OK',
+        'Information'
+    ) | Out-Null
+})
+
+$script:RestartItem = $Menu.Items.Add('Restart PAH Server')
+$script:RestartItem.Enabled = $false
+$script:RestartItem.Add_Click({
+    $attempted = Invoke-PahBoundedRestart
+    if (-not $attempted) {
+        [System.Windows.Forms.MessageBox]::Show(
+            'Restart not allowed: tray is not the owner of the running PAH server, or the bounded-restart window is exhausted. See server-lifecycle log for details.',
+            'PANDA Agent Hub',
+            'OK',
+            'Information'
+        ) | Out-Null
+    }
+})
+
+$CopyStatusItem = $Menu.Items.Add('Copy Status Summary')
+$CopyStatusItem.Add_Click({ Copy-PahStatusSummary })
 
 $DismissItem = $Menu.Items.Add('Dismiss current alerts')
 $DismissItem.Add_Click({ Dismiss-CurrentAlerts })
@@ -347,15 +722,19 @@ $FolderItem.Add_Click({ Start-Process $ScriptRoot })
 $LogsItem = $Menu.Items.Add('Open Logs')
 $LogsItem.Add_Click({ Start-Process $Logs })
 
-$InstallStartupItem = $Menu.Items.Add('Install at Windows Startup')
-$InstallStartupItem.Add_Click({
+$script:InstallStartupItem = $Menu.Items.Add('Install at Windows Startup')
+$script:InstallStartupItem.Add_Click({
     Install-StartupShortcut
+    Write-PahLifecycleEvent -Event 'startup_shortcut_installed'
+    Update-StartupMenuItems
     Show-PahBalloon 'PANDA Agent Hub' 'Tray startup shortcut installed.' 5000
 })
 
-$RemoveStartupItem = $Menu.Items.Add('Remove Windows Startup')
-$RemoveStartupItem.Add_Click({
+$script:RemoveStartupItem = $Menu.Items.Add('Remove Windows Startup')
+$script:RemoveStartupItem.Add_Click({
     Remove-StartupShortcut
+    Write-PahLifecycleEvent -Event 'startup_shortcut_removed'
+    Update-StartupMenuItems
     Show-PahBalloon 'PANDA Agent Hub' 'Tray startup shortcut removed.' 5000
 })
 
@@ -366,9 +745,16 @@ $ExitItem.Add_Click({
     if ($StatusTimer) { $StatusTimer.Stop() }
     if ($NotificationTimer) { $NotificationTimer.Stop() }
     $NotifyIcon.Visible = $false
-    if ($script:StartedServer -and $script:Process -and -not $script:Process.HasExited) {
+    # Q6 ruling: only kill the server if WE started it (owned_server). An
+    # attached server stays alive — the originator owns its lifecycle.
+    if ($script:OwnershipState -eq 'owned_server' -and
+        $script:Process -and -not $script:Process.HasExited) {
+        Write-PahServerLifecycle -Event 'server_killed_on_tray_exit'
         $script:Process.Kill()
         $script:Process.WaitForExit()
+    }
+    Write-PahLifecycleEvent -Event 'tray_exited' -Extra @{
+        reason = 'menu_exit'
     }
     [System.Windows.Forms.Application]::Exit()
 })

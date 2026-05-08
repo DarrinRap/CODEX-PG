@@ -13,32 +13,18 @@ $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $TrayScript = Join-Path $ScriptRoot 'CODEX_start_agent_hub_tray.ps1'
 $Url = "http://127.0.0.1:$Port"
 
+# Dot-source the tray script in functions-only mode to share the
+# single-instance / port-listener helpers (Test-PahTrayInstance,
+# Test-PahPortListener). This is the single source of truth for tray
+# detection (Phase 1 Q3 ruling).
+. $TrayScript -Port $Port -FunctionsOnly
+
 function Test-PahServer {
-    $client = $null
-    try {
-        $client = New-Object System.Net.Sockets.TcpClient
-        $connect = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
-        if (-not $connect.AsyncWaitHandle.WaitOne(800)) {
-            return $false
-        }
-        $client.EndConnect($connect)
-        return $true
-    }
-    catch {
-        return $false
-    }
-    finally {
-        if ($client) { $client.Close() }
-    }
+    return Test-PahPortListener -Port $Port
 }
 
 function Test-PahTrayRunning {
-    $matches = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.CommandLine -like '*CODEX_start_agent_hub_tray.ps1*' -and
-            $_.CommandLine -like "*-Port $Port*"
-        }
-    return $null -ne $matches
+    return Test-PahTrayInstance -Port $Port
 }
 
 function Test-PahHttpReady {
