@@ -94,6 +94,7 @@ from pah_mailbox.paths import (
     CODEX_SENT,
     CONFIG_DIR,
     DECISION_QUEUE_PATH,
+    DIAGNOSTICS_DIR,
     HUB_ROOT,
     LEDGER_PATH,
     MAILBOX_ROOT,
@@ -3265,6 +3266,109 @@ def append_sweep_audit_entries(entries: list[tuple[str, str, str]]) -> None:
     atomic_append_text(SWEEP_AUDIT_LOG_PATH, "".join(lines))
 
 
+ARCHIVE_DIRECTIVE_TARGET_KEYS = (
+    "target_message_id",
+    "target_message_ids",
+    "target_id",
+    "target_ids",
+    "archive_message_id",
+    "archive_message_ids",
+    "message_id_to_archive",
+)
+
+
+def path_is_within(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def assert_archive_destination_outside_inboxes(destination: Path, active_inbox_roots: tuple[Path, ...]) -> None:
+    for inbox_root in active_inbox_roots:
+        if path_is_within(destination, inbox_root):
+            raise ValueError(f"Archive destination resolves inside active inbox: {destination}")
+
+
+def archive_directive_target_ids(messages: list[Message]) -> set[str]:
+    targets: set[str] = set()
+    for msg in messages:
+        if normalize_status_token(msg.message_type) != "archive_directive":
+            continue
+        metadata = extract_message_metadata(msg.body)
+        for key in ARCHIVE_DIRECTIVE_TARGET_KEYS:
+            value = metadata.get(key)
+            values = value if isinstance(value, list) else [value]
+            for item in values:
+                text = str(item or "").strip()
+                if text:
+                    targets.add(text)
+    return targets
+
+
+def message_archive_eligibility(
+    message: Message,
+    sidecar_state: dict[str, Any] | None,
+    active_inbox_roots: tuple[Path, ...],
+) -> dict[str, Any]:
+    state = sidecar_state or {}
+    diagnostics: list[str] = []
+    archive_directives = {str(item) for item in state.get("archive_directive_targets", set())}
+
+    if not message_parent_in(message, active_inbox_roots):
+        return {"eligible": False, "reason": "outside_active_inbox", "diagnostics": diagnostics}
+    if message.name.startswith("SUPERSEDED_"):
+        return {"eligible": True, "reason": "superseded_filename", "diagnostics": diagnostics}
+    if state.get("reply_tombstone"):
+        return {"eligible": True, "reason": "replied_tombstone", "diagnostics": diagnostics}
+    if message.message_id and message.message_id in archive_directives:
+        return {"eligible": True, "reason": "archive_directive", "diagnostics": diagnostics}
+
+    if not is_structured_mailbox_message(message):
+        diagnostics.append("owner_unknown_or_unstructured")
+        return {"eligible": False, "reason": "owner_unknown_or_unstructured", "diagnostics": diagnostics}
+
+    msg_type = normalize_status_token(message.message_type)
+    status = normalize_status_token(message.status)
+    thread_status = normalize_status_token(message.thread_status)
+    if msg_type == "shipped" or status == "shipped":
+        return {"eligible": True, "reason": "terminal_frontmatter", "diagnostics": diagnostics}
+    if msg_type == "superseded":
+        return {"eligible": True, "reason": "terminal_frontmatter", "diagnostics": diagnostics}
+    if status == "closed" and thread_status == "closed":
+        return {"eligible": True, "reason": "terminal_frontmatter", "diagnostics": diagnostics}
+
+    if not msg_type:
+        diagnostics.append("missing_type")
+    if not status:
+        diagnostics.append("missing_status")
+    if not diagnostics:
+        diagnostics.append("no_terminal_archive_evidence")
+    return {"eligible": False, "reason": "not_terminal", "diagnostics": diagnostics}
+
+
+def write_archive_uncertainty_diagnostics(
+    records: list[dict[str, Any]],
+    actor: str,
+    dry_run: bool,
+) -> str:
+    if not records or dry_run:
+        return ""
+    DIAGNOSTICS_DIR.mkdir(parents=True, exist_ok=True)
+    path = DIAGNOSTICS_DIR / "CODEX_pah_archive_policy_uncertain_latest.json"
+    payload = {
+        "schema_version": 1,
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "actor": actor.strip() or "codex",
+        "policy": "terminal_evidence_only",
+        "uncertain_count": len(records),
+        "records": records[:200],
+    }
+    atomic_write_text(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    return str(path)
+
+
 def cleanup_inbox_accumulation(
     actor: str = "codex",
     older_than_hours: int = MESSAGE_RETENTION_HOURS,
@@ -3274,7 +3378,10 @@ def cleanup_inbox_accumulation(
     _ = older_than_hours
     inbox_dirs = cleanup_target_dirs(mailbox)
     moved: list[dict[str, Any]] = []
-    skipped = {"missing_inbox": 0, "non_markdown": 0}
+    skipped = {"missing_inbox": 0, "non_markdown": 0, "not_terminal": 0}
+    messages = load_messages()
+    archive_directives = archive_directive_target_ids(messages)
+    uncertainty_records: list[dict[str, Any]] = []
 
     for inbox_dir in inbox_dirs:
         if not inbox_dir.exists():
@@ -3286,19 +3393,60 @@ def cleanup_inbox_accumulation(
             if path.suffix.lower() != ".md":
                 skipped["non_markdown"] += 1
                 continue
+            msg = next((item for item in messages if message_cache_key(item.path) == message_cache_key(path)), None)
+            if msg is None:
+                skipped["not_terminal"] += 1
+                uncertainty_records.append(
+                    {"path": str(path), "reason": "not_loaded_as_message", "diagnostics": ["not_loaded_as_message"]}
+                )
+                continue
+            eligibility = message_archive_eligibility(
+                msg,
+                {
+                    "reply_tombstone": load_reply_tombstone(msg),
+                    "archive_directive_targets": archive_directives,
+                },
+                inbox_dirs,
+            )
+            if not eligibility["eligible"]:
+                skipped["not_terminal"] += 1
+                if eligibility["diagnostics"]:
+                    uncertainty_records.append(
+                        {
+                            "message_id": msg.message_id,
+                            "thread_id": msg.stable_thread,
+                            "path": str(msg.path),
+                            "reason": eligibility["reason"],
+                            "diagnostics": eligibility["diagnostics"],
+                        }
+                    )
+                continue
             modified = path.stat().st_mtime
             date_dir = datetime.fromtimestamp(modified).strftime("%Y%m%d")
             archive_dir = cleanup_archive_root_for(path) / inbox_dir.name / date_dir
             destination = unique_destination(archive_dir / path.name)
+            assert_archive_destination_outside_inboxes(destination, inbox_dirs)
+            tombstone_source = reply_tombstone_path(path)
+            tombstone_destination = destination.with_name(destination.name + REPLIED_TOMBSTONE_SUFFIX)
+            tombstone_exists = tombstone_source.exists()
+            if tombstone_exists:
+                tombstone_destination = unique_destination(tombstone_destination)
+                assert_archive_destination_outside_inboxes(tombstone_destination, inbox_dirs)
             record = {
                 "source": str(path),
                 "destination": str(destination),
                 "inbox": str(inbox_dir),
                 "archive": str(archive_dir),
+                "archive_reason": eligibility["reason"],
             }
+            if tombstone_exists:
+                record["tombstone_source"] = str(tombstone_source)
+                record["tombstone_destination"] = str(tombstone_destination)
             if not dry_run:
                 archive_dir.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(path), str(destination))
+                if tombstone_exists:
+                    shutil.move(str(tombstone_source), str(tombstone_destination))
             moved.append(record)
 
     return {
@@ -3308,6 +3456,8 @@ def cleanup_inbox_accumulation(
         "count": len(moved),
         "moved": moved,
         "skipped": skipped,
+        "diagnostics_path": write_archive_uncertainty_diagnostics(uncertainty_records, actor, dry_run),
+        "uncertain": uncertainty_records,
     }
 
 
@@ -3328,7 +3478,6 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
             f"actor={actor_name}; dry_run={str(bool(dry_run)).lower()}; classifier=owner_unknown_guard",
         )
     ]
-    read_state_data = load_read_state()
     inbox_dirs = cleanup_inbox_dirs()
     inbox_summary: dict[str, dict[str, Any]] = {}
     for inbox_dir in inbox_dirs:
@@ -3345,7 +3494,12 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
             "skipped_pending_dispatch": 0,
             "skipped_active_thread": 0,
             "skipped_unstructured": 0,
+            "skipped_nonterminal": 0,
+            "archive_uncertain": 0,
             "replied_tombstone": 0,
+            "terminal_frontmatter": 0,
+            "superseded_filename": 0,
+            "archive_directive": 0,
             "archive_conflicts": 0,
         }
 
@@ -3364,38 +3518,80 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
                 "skipped_pending_dispatch": 0,
                 "skipped_active_thread": 0,
                 "skipped_unstructured": 0,
+                "skipped_nonterminal": 0,
+                "archive_uncertain": 0,
                 "replied_tombstone": 0,
+                "terminal_frontmatter": 0,
+                "superseded_filename": 0,
+                "archive_directive": 0,
                 "archive_conflicts": 0,
             }
         return inbox_summary[key]
 
     messages = load_messages()
     completed_threads = completed_thread_ids(messages)
+    archive_directives = archive_directive_target_ids(messages)
     candidates: list[Message] = []
     skipped_waiting = 0
     skipped_pre_staged = 0
     skipped_pending_dispatch = 0
     skipped_active_thread = 0
     skipped_unstructured = 0
+    skipped_nonterminal = 0
+    archive_uncertain = 0
     replied_tombstone_candidates = 0
+    terminal_frontmatter_candidates = 0
+    superseded_filename_candidates = 0
+    archive_directive_candidates = 0
     candidate_reasons: dict[str, str] = {}
+    uncertainty_records: list[dict[str, Any]] = []
     for msg in messages:
         if not message_parent_in(msg, inbox_dirs):
             continue
         summary = summary_for(msg.path)
         summary["scanned"] += 1
         reply_tombstone = load_reply_tombstone(msg)
-        if reply_tombstone:
-            replied_tombstone_candidates += 1
-            summary["replied_tombstone"] += 1
+        eligibility = message_archive_eligibility(
+            msg,
+            {
+                "reply_tombstone": reply_tombstone,
+                "archive_directive_targets": archive_directives,
+            },
+            inbox_dirs,
+        )
+        if eligibility["eligible"]:
+            archive_reason = str(eligibility["reason"])
+            if archive_reason == "replied_tombstone":
+                replied_tombstone_candidates += 1
+                summary["replied_tombstone"] += 1
+            elif archive_reason == "terminal_frontmatter":
+                terminal_frontmatter_candidates += 1
+                summary["terminal_frontmatter"] += 1
+            elif archive_reason == "superseded_filename":
+                superseded_filename_candidates += 1
+                summary["superseded_filename"] += 1
+            elif archive_reason == "archive_directive":
+                archive_directive_candidates += 1
+                summary["archive_directive"] += 1
             summary["candidates"] += 1
-            candidate_reasons[message_cache_key(msg.path)] = "replied_tombstone"
+            candidate_reasons[message_cache_key(msg.path)] = archive_reason
             candidates.append(msg)
             continue
         thread_state = classify_thread_state(msg)
         if thread_state == "owner_unknown" or not is_structured_mailbox_message(msg):
             skipped_unstructured += 1
             summary["skipped_unstructured"] += 1
+            archive_uncertain += 1
+            summary["archive_uncertain"] += 1
+            uncertainty_records.append(
+                {
+                    "message_id": msg.message_id,
+                    "thread_id": msg.stable_thread,
+                    "path": str(msg.path),
+                    "reason": eligibility["reason"],
+                    "diagnostics": eligibility["diagnostics"],
+                }
+            )
             audit_entries.append(
                 (
                     "archive-skipped",
@@ -3469,28 +3665,49 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
                     classifier_state=thread_state,
                 )
             continue
-        read_status = message_read_status(msg.path, msg.message_id, msg.body, read_state_data)
-        if read_status["unread"]:
-            summary["skipped_unread"] += 1
-            continue
-        summary["candidates"] += 1
-        candidates.append(msg)
+        skipped_nonterminal += 1
+        summary["skipped_nonterminal"] += 1
+        if eligibility["diagnostics"]:
+            archive_uncertain += 1
+            summary["archive_uncertain"] += 1
+            uncertainty_records.append(
+                {
+                    "message_id": msg.message_id,
+                    "thread_id": msg.stable_thread,
+                    "path": str(msg.path),
+                    "reason": eligibility["reason"],
+                    "diagnostics": eligibility["diagnostics"],
+                }
+            )
+        audit_entries.append(("archive-skipped", str(msg.path), f"reason={eligibility['reason']}; terminal_evidence=false"))
+        if not dry_run:
+            append_interaction_ledger_event(
+                "message_archive_skipped",
+                actor=actor_name,
+                message=msg,
+                dry_run=dry_run,
+                reason=str(eligibility["reason"]),
+                classifier_state=thread_state,
+                diagnostics=eligibility["diagnostics"],
+            )
 
     moved: list[dict[str, str]] = []
     archive_conflicts = 0
     for msg in candidates:
-        archive_reason = candidate_reasons.get(message_cache_key(msg.path), "read")
+        archive_reason = candidate_reasons.get(message_cache_key(msg.path), "terminal_evidence")
         archive_dir = cleanup_archive_root_for(msg.path) / msg.path.parent.name / datetime.fromtimestamp(
             msg.path.stat().st_mtime
         ).strftime("%Y%m%d")
         requested_destination = archive_dir / msg.path.name
         destination = unique_destination(requested_destination)
+        assert_archive_destination_outside_inboxes(destination, inbox_dirs)
         destination_conflict = destination != requested_destination
         tombstone_source = reply_tombstone_path(msg.path)
         tombstone_destination = destination.with_name(destination.name + REPLIED_TOMBSTONE_SUFFIX)
         tombstone_exists = tombstone_source.exists()
         if tombstone_exists:
             tombstone_destination = unique_destination(tombstone_destination)
+            assert_archive_destination_outside_inboxes(tombstone_destination, inbox_dirs)
         record = {
             "message_id": msg.message_id,
             "thread_id": msg.stable_thread,
@@ -3562,12 +3779,16 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
                 f"moved={len(moved)}; skipped_waiting_on_darrin={skipped_waiting}; "
                 f"skipped_pre_staged_pending_trigger={skipped_pre_staged}; "
                 f"skipped_pending_dispatch={skipped_pending_dispatch}; skipped_active_thread={skipped_active_thread}; "
-                f"skipped_unstructured={skipped_unstructured}; replied_tombstone={replied_tombstone_candidates}; "
+                f"skipped_unstructured={skipped_unstructured}; skipped_nonterminal={skipped_nonterminal}; "
+                f"archive_uncertain={archive_uncertain}; replied_tombstone={replied_tombstone_candidates}; "
+                f"terminal_frontmatter={terminal_frontmatter_candidates}; superseded_filename={superseded_filename_candidates}; "
+                f"archive_directive={archive_directive_candidates}; "
                 f"archive_conflicts={archive_conflicts}; "
                 f"duration_ms={duration_ms}"
             ),
         )
     )
+    diagnostics_path = write_archive_uncertainty_diagnostics(uncertainty_records, actor_name, dry_run)
     if not dry_run:
         append_sweep_audit_entries(audit_entries)
         append_interaction_ledger_event(
@@ -3580,8 +3801,14 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
             skipped_pending_dispatch=skipped_pending_dispatch,
             skipped_active_thread=skipped_active_thread,
             skipped_unstructured=skipped_unstructured,
+            skipped_nonterminal=skipped_nonterminal,
+            archive_uncertain=archive_uncertain,
             replied_tombstone=replied_tombstone_candidates,
+            terminal_frontmatter=terminal_frontmatter_candidates,
+            superseded_filename=superseded_filename_candidates,
+            archive_directive=archive_directive_candidates,
             archive_conflicts=archive_conflicts,
+            diagnostics_path=diagnostics_path,
             duration_ms=duration_ms,
         )
     return {
@@ -3594,8 +3821,15 @@ def archive_read_codex_inbox_messages(actor: str = "codex", dry_run: bool = Fals
         "skipped_pending_dispatch": skipped_pending_dispatch,
         "skipped_active_thread": skipped_active_thread,
         "skipped_unstructured": skipped_unstructured,
+        "skipped_nonterminal": skipped_nonterminal,
+        "archive_uncertain": archive_uncertain,
         "replied_tombstone": replied_tombstone_candidates,
+        "terminal_frontmatter": terminal_frontmatter_candidates,
+        "superseded_filename": superseded_filename_candidates,
+        "archive_directive": archive_directive_candidates,
         "archive_conflicts": archive_conflicts,
+        "diagnostics_path": diagnostics_path,
+        "uncertain": uncertainty_records,
         "inbox_summary": sorted(inbox_summary.values(), key=lambda item: item["path"].lower()),
         "moved": moved,
     }

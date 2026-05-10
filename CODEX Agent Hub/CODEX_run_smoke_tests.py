@@ -2889,6 +2889,86 @@ def test_port_fallback_can_be_disabled_for_tray_launches() -> None:
             raise AssertionError("tray launch must fail instead of silently falling back to a random port")
 
 
+def test_message_archive_eligibility_terminal_policy_conditions() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        inbox = root / "CODEX Inbox"
+        inbox.mkdir()
+
+        def policy_message(
+            name: str,
+            message_id: str,
+            message_type: str = "report",
+            status: str = "complete",
+            thread_status: str = "closed",
+            schema_version: str = str(MESSAGE_SCHEMA_VERSION),
+        ) -> agent_hub.Message:
+            path = inbox / name
+            path.write_text("policy fixture\n", encoding="utf-8")
+            return agent_hub.Message(
+                direction="policy",
+                path=path,
+                name=name,
+                modified=path.stat().st_mtime,
+                message_id=message_id,
+                thread_id=message_id,
+                thread_status=thread_status,
+                status=status,
+                from_agent="claude-desktop",
+                to_agent="codex",
+                schema_version=schema_version,
+                message_type=message_type,
+                body="policy fixture\n",
+            )
+
+        active_roots = (inbox,)
+        assert_true(
+            agent_hub.message_archive_eligibility(policy_message("type_shipped.md", "POLICY-TYPE-SHIPPED", "shipped"), {}, active_roots)[
+                "eligible"
+            ],
+            "type shipped is archive eligible",
+        )
+        assert_true(
+            agent_hub.message_archive_eligibility(policy_message("status_shipped.md", "POLICY-STATUS-SHIPPED", status="shipped"), {}, active_roots)[
+                "eligible"
+            ],
+            "status shipped is archive eligible",
+        )
+        assert_true(
+            agent_hub.message_archive_eligibility(policy_message("closed.md", "POLICY-CLOSED", status="closed"), {}, active_roots)["eligible"],
+            "status closed plus thread_status closed is archive eligible",
+        )
+        assert_true(
+            agent_hub.message_archive_eligibility(policy_message("SUPERSEDED_old.md", "POLICY-SUPERSEDED", status="active"), {}, active_roots)[
+                "reason"
+            ]
+            == "superseded_filename",
+            "SUPERSEDED filename prefix is archive eligible",
+        )
+        assert_true(
+            agent_hub.message_archive_eligibility(
+                policy_message("directive_target.md", "POLICY-DIRECTIVE-TARGET", message_type="", status="active"),
+                {"archive_directive_targets": {"POLICY-DIRECTIVE-TARGET"}},
+                active_roots,
+            )["reason"]
+            == "archive_directive",
+            "archive directive target id is archive eligible",
+        )
+        read_only = agent_hub.message_archive_eligibility(
+            policy_message("read_only_complete.md", "POLICY-READ-ONLY", status="complete"),
+            {},
+            active_roots,
+        )
+        assert_true(not read_only["eligible"], "read/seen state is not part of archive eligibility")
+        missing_type = agent_hub.message_archive_eligibility(
+            policy_message("missing_type.md", "POLICY-MISSING-TYPE", message_type="", status="active"),
+            {},
+            active_roots,
+        )
+        assert_true(not missing_type["eligible"], "missing type remains active")
+        assert_true("missing_type" in missing_type["diagnostics"], "missing type is diagnostic evidence")
+
+
 def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
     with TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
@@ -2921,7 +3001,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                 {
                     "from": "claude-code",
                     "to": "codex",
-                    "type": "report",
+                    "type": "shipped",
                     "status": "complete",
                     "thread_status": "closed",
                 },
@@ -2944,7 +3024,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                     "from": "codex",
                     "to": "claude-desktop",
                     "type": "report",
-                    "status": "complete",
+                    "status": "shipped",
                     "thread_status": "closed",
                     "thread_id": "PAH-ARCHIVE-CLAUDE-MULTI",
                 },
@@ -2956,7 +3036,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                     "from": "codex",
                     "to": "claude-desktop",
                     "type": "report",
-                    "status": "complete",
+                    "status": "closed",
                     "thread_status": "closed",
                     "thread_id": "PAH-ARCHIVE-CLAUDE-MULTI",
                 },
@@ -3078,7 +3158,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
 
             preview = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=True)
             assert_true(preview["protocol_version"] == 2, "archive read returns protocol v2 summary")
-            assert_true(preview["count"] == 4, "dry run finds every read message across active inboxes")
+            assert_true(preview["count"] == 3, "dry run finds only terminal-evidence archive candidates")
             assert_true(preview["archive_conflicts"] == 1, "dry run reports archive destination conflicts")
             assert_true(
                 read_codex.exists() and read_claude.exists() and read_claude_second.exists() and read_claude_code.exists(),
@@ -3093,15 +3173,16 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
             assert_true(preview["skipped_pending_dispatch"] == 1, "dry run skips read pending dispatches")
             assert_true(preview["skipped_active_thread"] == 1, "dry run skips active agent-owned directive threads")
             assert_true(preview["skipped_unstructured"] == 1, "dry run skips unstructured mailbox messages")
+            assert_true(preview["skipped_nonterminal"] == 2, "dry run leaves read/nonterminal messages active")
 
             result = agent_hub.archive_read_codex_inbox_messages(actor="smoke", dry_run=False)
             assert_true(result["protocol_version"] == 2, "archive read move returns protocol v2 summary")
-            assert_true(result["count"] == 4, "archive read moves all read non-Darrin-waiting messages")
+            assert_true(result["count"] == 3, "archive sweep moves only terminal-evidence messages")
             assert_true(result["archive_conflicts"] == 1, "archive read move reports archive destination conflicts")
             assert_true(not read_codex.exists(), "read Codex inbox message is removed")
             assert_true(not read_claude.exists(), "read Claude inbox message is removed")
             assert_true(not read_claude_second.exists(), "second read Claude inbox message is removed")
-            assert_true(not read_claude_code.exists(), "read Claude Code inbox message is removed")
+            assert_true(read_claude_code.exists(), "read nonterminal Claude Code inbox message stays active")
             assert_true(unread_codex.exists(), "unread message stays active")
             assert_true(waiting_darrin.exists(), "Darrin-waiting message stays active")
             assert_true(pre_staged_draft.exists(), "pre-staged draft stays active even when read")
@@ -3114,10 +3195,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                 any((claude_archive / "CLAUDE Inbox").rglob("read_claude_second.md")),
                 "second Claude read mail lands in archive",
             )
-            assert_true(
-                any((claude_code_archive / "CC Inbox").rglob("read_claude_code.md")),
-                "Claude Code read mail lands in archive",
-            )
+            assert_true(not any((claude_code_archive / "CC Inbox").rglob("read_claude_code.md")), "read-only Claude Code mail is not archived")
             codex_move = next(item for item in result["moved"] if item["message_id"] == "PAH-ARCHIVE-READ-CODEX")
             assert_true(codex_move["destination_conflict"] is True, "archive move record reports destination conflict")
             assert_true(
@@ -3131,8 +3209,9 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
             assert_true(result_by_name["CODEX Inbox"]["moved"] == 1, "Codex inbox reports one moved read message")
             assert_true(result_by_name["CODEX Inbox"]["archive_conflicts"] == 1, "Codex inbox reports archive conflict")
             assert_true(result_by_name["CLAUDE Inbox"]["moved"] == 2, "Claude Desktop inbox reports both read messages moved")
-            assert_true(result_by_name["CC Inbox"]["moved"] == 1, "Claude Code inbox reports one moved read message")
+            assert_true(result_by_name["CC Inbox"]["moved"] == 0, "Claude Code inbox reports no read-only moves")
             assert_true(result_by_name["CC Inbox"]["skipped_active_thread"] == 1, "Claude Code inbox reports active directive skip")
+            assert_true(result_by_name["CC Inbox"]["skipped_nonterminal"] == 1, "Claude Code inbox reports read nonterminal skip")
             assert_true(result_by_name["CLAUDE Inbox"]["skipped_waiting_on_darrin"] == 1, "Claude Desktop summary reports Darrin skip")
             assert_true(
                 result_by_name["CLAUDE Inbox"]["skipped_pre_staged_pending_trigger"] == 1,
@@ -3145,6 +3224,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
             assert_true(result["skipped_pending_dispatch"] == 1, "pending dispatch skip is reported")
             assert_true(result["skipped_active_thread"] == 1, "active thread skip is reported")
             assert_true(result["skipped_unstructured"] == 1, "unstructured skip is reported")
+            assert_true(result["skipped_nonterminal"] == 2, "nonterminal skip is reported")
             active_messages = agent_hub.load_messages()
             active_ids = {message.message_id for message in active_messages}
             assert_true("PAH-ARCHIVE-READ-CODEX" not in active_ids, "archived read Codex mail leaves active message scan")
@@ -3153,7 +3233,7 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                 "PAH-ARCHIVE-READ-CLAUDE-SECOND" not in active_ids,
                 "second archived read Claude mail leaves active message scan",
             )
-            assert_true("PAH-ARCHIVE-READ-CLAUDE-CODE" not in active_ids, "archived read Claude Code mail leaves active message scan")
+            assert_true("PAH-ARCHIVE-READ-CLAUDE-CODE" in active_ids, "read-only Claude Code mail remains in active message scan")
             assert_true("PAH-ARCHIVE-UNREAD-CODEX" in active_ids, "unread mail remains in active message scan")
             assert_true("PAH-ARCHIVE-WAITING-DARRIN" in active_ids, "Darrin-waiting mail remains in active message scan")
             assert_true("PAH-ARCHIVE-PRE-STAGED-DRAFT" in active_ids, "pre-staged draft remains in active message scan")
@@ -3174,7 +3254,6 @@ def test_archive_read_mail_moves_read_messages_from_active_inboxes() -> None:
                 "PAH-ARCHIVE-READ-CLAUDE-SECOND" not in visible_ids,
                 "second archived read Claude mail leaves active agent mailbox",
             )
-            assert_true("PAH-ARCHIVE-READ-CLAUDE-CODE" not in visible_ids, "archived read Claude Code mail leaves active agent mailbox")
             audit_text = agent_hub.SWEEP_AUDIT_LOG_PATH.read_text(encoding="utf-8")
             assert_true("[sweep-started]" in audit_text, "sweep audit records run start")
             assert_true("[archive-moved]" in audit_text, "sweep audit records moved files")
@@ -3901,6 +3980,7 @@ def main() -> None:
     test_message_validation_cache_reuses_unchanged_files_and_invalidates_changes()
     test_fast_validation_mode_skips_schema_but_keeps_route_checks()
     test_port_fallback_can_be_disabled_for_tray_launches()
+    test_message_archive_eligibility_terminal_policy_conditions()
     test_archive_read_mail_moves_read_messages_from_active_inboxes()
     test_archive_read_moves_replied_tombstoned_unread_messages()
     test_classifier_darrin_precedence_beats_completion_fallback()
