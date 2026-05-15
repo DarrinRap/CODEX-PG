@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CONFLICT-1 Arrange Mount Vocabulary Visual</title>
+<style>
+:root {
+  --chrome:#171724;
+  --pane:#1c1b2a;
+  --pane-raised:#242335;
+  --pane-selected:#2c2b44;
+  --canvas:#0d0d14;
+  --stage:#050507;
+  --border:#343348;
+  --border-soft:#28273a;
+  --border-hover:#5a5870;
+  --text:#f1eee9;
+  --text-muted:#a8a29a;
+  --text-dim:#77717b;
+  --accent:#e8a87c;
+  --accent-light:#ffd0ad;
+  --accent-hover:#f2b98f;
+  --accent-ink:#1a1210;
+  --accent-soft:rgba(232,168,124,.12);
+  --mode-arrange:#e8a87c;
+  --ok:#7fd08a;
+  --font-ui:"Segoe UI","SF Pro",Arial,sans-serif;
+  --font-mono:"Cascadia Mono",Consolas,monospace;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  min-height:100vh;
+  background:var(--canvas);
+  color:var(--text);
+  font-family:var(--font-ui);
+  font-size:13px;
+}
+.page {
+  min-height:100vh;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.topbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 14px;
+  background:var(--chrome);
+  border:1px solid var(--border);
+  border-radius:6px;
+}
+.eyebrow {
+  font-family:var(--font-mono);
+  color:var(--accent);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+h1 {
+  margin:4px 0 0;
+  font-size:18px;
+  font-weight:700;
+}
+.source-note {
+  color:var(--text-muted);
+  max-width:780px;
+  line-height:1.35;
+}
+.compare {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  align-items:start;
+  flex:1;
+}
+.option {
+  background:var(--chrome);
+  border:1px solid var(--border);
+  border-radius:6px;
+  overflow:hidden;
+  min-height:620px;
+  display:grid;
+  grid-template-rows:auto auto 1fr;
+}
+.option-head {
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.option-title {
+  font-size:15px;
+  font-weight:700;
+}
+.option-rationale {
+  margin-top:4px;
+  color:var(--text-muted);
+  line-height:1.35;
+}
+.badge {
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--accent);
+  border:1px solid var(--accent);
+  background:var(--accent-soft);
+  border-radius:999px;
+  padding:4px 8px;
+  white-space:nowrap;
+}
+.mock-shell {
+  display:grid;
+  grid-template-columns:240px 1fr;
+  min-height:540px;
+}
+.leftpanel {
+  background:var(--pane);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.panel-top-strip {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  height:26px;
+  padding:0 6px;
+  border-bottom:1px solid var(--border-soft);
+  flex-shrink:0;
+}
+.collapse-btn {
+  display:flex;
+  align-items:center;
+  gap:3px;
+  font-size:9px;
+  font-family:var(--font-mono);
+  color:var(--text-dim);
+  background:transparent;
+  border:none;
+  padding:2px 5px;
+  border-radius:2px;
+}
+.sec-hdr {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:28px;
+  padding:0 12px;
+  font-size:11px;
+  font-weight:700;
+  color:var(--accent);
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  flex-shrink:0;
+}
+.subnote {
+  padding:0 12px 6px;
+  font-size:9px;
+  font-family:var(--font-mono);
+  color:var(--text-dim);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.tmpl-item {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:47px;
+  padding:5px 12px;
+  border-bottom:1px solid var(--border-soft);
+}
+.tmpl-item.on {
+  background:var(--accent-soft);
+  border-left:2px solid var(--accent);
+  padding-left:10px;
+}
+.tmpl-thumb {
+  width:40px;
+  height:30px;
+  background:var(--pane-raised);
+  border:1px solid var(--border);
+  border-radius:2px;
+  display:grid;
+  gap:1px;
+  padding:2px;
+  flex-shrink:0;
+}
+.tmpl-thumb-slot {
+  background:var(--border);
+  border-radius:1px;
+}
+.tmpl-thumb-slot.hot {
+  background:var(--accent);
+}
+.tmpl-copy {
+  min-width:0;
+  flex:1;
+}
+.tmpl-name {
+  font-size:11px;
+  color:var(--text-muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tmpl-item.on .tmpl-name {
+  color:var(--accent);
+}
+.tmpl-count {
+  font-family:var(--font-mono);
+  font-size:9px;
+  color:var(--text-dim);
+  margin-top:2px;
+}
+.canvas-preview {
+  background:var(--canvas);
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.arrange-bar {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 14px;
+  background:var(--chrome);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.mode-chip {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  height:24px;
+  padding:0 10px;
+  border-radius:12px;
+  font-size:11px;
+}
+.mode-chip.on {
+  background:var(--accent-soft);
+  border:1px solid var(--accent);
+  color:var(--accent);
+}
+.mode-chip.off {
+  background:var(--chrome);
+  border:1px solid var(--border);
+  color:var(--text-muted);
+}
+.arr-sep {
+  width:1px;
+  height:18px;
+  background:var(--border);
+  margin:0 4px;
+}
+.arr-btn {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  height:24px;
+  padding:0 10px;
+  background:var(--pane-raised);
+  border:1px solid var(--border);
+  border-radius:3px;
+  font-size:11px;
+  color:var(--text-muted);
+  white-space:nowrap;
+}
+.canvas-card {
+  margin:auto;
+  width:min(400px,80%);
+  background:var(--pane);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:16px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:repeat(5,46px);
+  gap:7px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+.slot {
+  background:var(--pane-raised);
+  border:1.5px dashed var(--border-hover);
+  border-radius:3px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  color:var(--text-dim);
+  font-size:9px;
+}
+.slot.filled {
+  border:1.5px solid var(--border);
+  background:linear-gradient(135deg,#1b1b22,#050507);
+}
+.slot.bw {
+  border-style:solid;
+  border-color:var(--border-hover);
+  background:rgba(232,168,124,.04);
+}
+.slot-label {
+  position:absolute;
+  bottom:2px;
+  left:3px;
+  font-family:var(--font-mono);
+  font-size:8px;
+  color:var(--text-dim);
+  background:rgba(10,10,20,.7);
+  padding:0 3px;
+  border-radius:2px;
+}
+.left-only {
+  grid-template-columns:240px;
+}
+.mount-native .leftpanel {
+  width:100%;
+}
+.mount-grid {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  padding:0 10px 10px;
+}
+.mount-card {
+  border:1px solid var(--border);
+  background:var(--pane-raised);
+  border-radius:4px;
+  padding:8px;
+}
+.mount-card.on {
+  border-color:var(--accent);
+  background:var(--accent-soft);
+}
+.mount-card-top {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.mount-map {
+  width:54px;
+  height:38px;
+  border:1px solid var(--border);
+  border-radius:3px;
+  background:var(--stage);
+  display:grid;
+  gap:1px;
+  padding:3px;
+  flex-shrink:0;
+}
+.mount-card-title {
+  font-size:11px;
+  color:var(--text);
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.mount-card-meta {
+  margin-top:2px;
+  font-family:var(--font-mono);
+  font-size:9px;
+  color:var(--text-dim);
+}
+.mount-tags {
+  display:flex;
+  gap:4px;
+  flex-wrap:wrap;
+  margin-top:7px;
+}
+.tag {
+  font-family:var(--font-mono);
+  font-size:8px;
+  padding:2px 5px;
+  border-radius:2px;
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  background:var(--chrome);
+}
+.tag.hot {
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.footer {
+  background:var(--chrome);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+.rec {
+  color:var(--text-muted);
+  line-height:1.4;
+}
+.rec b {
+  color:var(--text);
+}
+.chips {
+  display:flex;
+  gap:8px;
+  flex-shrink:0;
+}
+.chip {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  color:var(--text-muted);
+  background:var(--pane-raised);
+  font-size:12px;
+  font-weight:600;
+}
+.chip .dot {
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  border:1px solid currentColor;
+}
+.chip.recommended {
+  border-color:var(--accent);
+  color:var(--accent);
+  background:var(--accent-soft);
+}
+.chip.recommended .dot {
+  background:var(--accent);
+  box-shadow:inset 0 0 0 2px var(--chrome);
+}
+@media (max-width:1100px) {
+  .compare { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">CONFLICT-1 - Arrange Template/Mount Vocabulary</div>
+      <h1>Two possible left-panel interpretations for CD ruling</h1>
+    </div>
+    <div class="source-note">
+      Decision 0011 locks "Mount" as the user-facing noun for saved layout objects, while v3 Arrange and Session 142 still use "Template" in visible left-panel and toolbar labels.
+    </div>
+  </header>
+
+  <section class="compare" aria-label="Side-by-side visual options">
+    <article class="option">
+      <div class="option-head">
+        <div>
+          <div class="option-title">Option A - Label Swap Only</div>
+          <div class="option-rationale">Preserves the v3 layout and card treatment; changes only user-facing nouns from Template to Mount where the object is saved/reusable.</div>
+        </div>
+        <div class="badge">Recommended</div>
+      </div>
+      <div class="mock-shell">
+        <aside class="leftpanel">
+          <div class="panel-top-strip"><button class="collapse-btn">F7</button></div>
+          <div class="sec-hdr"><span>System Mounts</span><span>v</span></div>
+
+          <div class="tmpl-item on">
+            <div class="tmpl-thumb" style="grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);">
+              <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+              <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+              <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+            </div>
+            <div class="tmpl-copy"><div class="tmpl-name">Full Mouth Series</div><div class="tmpl-count">18 slots</div></div>
+          </div>
+          <div class="tmpl-item">
+            <div class="tmpl-thumb" style="grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);">
+              <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+            </div>
+            <div class="tmpl-copy"><div class="tmpl-name">4 Bitewings</div><div class="tmpl-count">4 slots</div></div>
+          </div>
+          <div class="tmpl-item">
+            <div class="tmpl-thumb" style="grid-template-columns:repeat(3,1fr);grid-template-rows:2fr 1fr;">
+              <div class="tmpl-thumb-slot" style="grid-column:1/-1;"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+            </div>
+            <div class="tmpl-copy"><div class="tmpl-name">PAN + 3 PA</div><div class="tmpl-count">4 slots</div></div>
+          </div>
+
+          <div class="sec-hdr" style="margin-top:4px;"><span>My Mounts</span><span>v</span></div>
+          <div class="tmpl-item">
+            <div class="tmpl-thumb" style="grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);">
+              <div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+              <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+            </div>
+            <div class="tmpl-copy"><div class="tmpl-name">Pre-op Adams 2026</div><div class="tmpl-count">6 / 18 slots</div></div>
+          </div>
+        </aside>
+
+        <div class="canvas-preview">
+          <div class="arrange-bar">
+            <div class="mode-chip on">Template</div>
+            <div class="mode-chip off">Freeform</div>
+            <div class="arr-sep"></div>
+            <div class="arr-btn">Full Mouth Series</div>
+            <div class="arr-btn">New Mount</div>
+            <div class="arr-sep"></div>
+            <div class="arr-btn">Auto-Arrange</div>
+          </div>
+          <div class="canvas-card">
+            <div class="slot filled"><span class="slot-label">PA1</span></div>
+            <div class="slot filled"><span class="slot-label">PA2</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA3</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA4</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA5</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA6</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA7</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA8</span></div>
+            <div class="slot bw"><span>+</span><span class="slot-label">BW1</span></div>
+            <div class="slot bw"><span>+</span><span class="slot-label">BW2</span></div>
+            <div class="slot bw"><span>+</span><span class="slot-label">BW3</span></div>
+            <div class="slot bw"><span>+</span><span class="slot-label">BW4</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA9</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA10</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA11</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA12</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA13</span></div>
+            <div class="slot"><span>+</span><span class="slot-label">PA14</span></div>
+            <div class="slot"><span>+</span></div>
+            <div class="slot"><span>+</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="option mount-native">
+      <div class="option-head">
+        <div>
+          <div class="option-title">Option B - Mount-Native Left Panel</div>
+          <div class="option-rationale">Treats Mount as a richer clinical object: saved, patient-specific, and visually represented by slot maps with state badges.</div>
+        </div>
+        <div class="badge">Exploration</div>
+      </div>
+      <div class="mock-shell left-only">
+        <aside class="leftpanel">
+          <div class="panel-top-strip"><button class="collapse-btn">F7</button></div>
+          <div class="sec-hdr"><span>Mount Library</span><span>v</span></div>
+          <div class="subnote">Reusable dental mounts</div>
+          <div class="mount-grid">
+            <div class="mount-card on">
+              <div class="mount-card-top">
+                <div class="mount-map" style="grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);">
+                  <div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+                  <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+                  <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+                </div>
+                <div class="tmpl-copy">
+                  <div class="mount-card-title">Full Mouth Series</div>
+                  <div class="mount-card-meta">Template Mount · 18 slots</div>
+                </div>
+              </div>
+              <div class="mount-tags"><span class="tag hot">FMX</span><span class="tag">PA/BW</span><span class="tag">clinical preset</span></div>
+            </div>
+            <div class="mount-card">
+              <div class="mount-card-top">
+                <div class="mount-map" style="grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);">
+                  <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+                </div>
+                <div class="tmpl-copy">
+                  <div class="mount-card-title">Bitewings</div>
+                  <div class="mount-card-meta">Template Mount · 4 slots</div>
+                </div>
+              </div>
+              <div class="mount-tags"><span class="tag">BW</span><span class="tag">quick series</span></div>
+            </div>
+            <div class="mount-card">
+              <div class="mount-card-top">
+                <div class="mount-map" style="grid-template-columns:repeat(3,1fr);grid-template-rows:2fr 1fr;">
+                  <div class="tmpl-thumb-slot" style="grid-column:1/-1;"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+                </div>
+                <div class="tmpl-copy">
+                  <div class="mount-card-title">PAN + 3 PA</div>
+                  <div class="mount-card-meta">Template Mount · 4 slots</div>
+                </div>
+              </div>
+              <div class="mount-tags"><span class="tag">PAN</span><span class="tag">mixed</span></div>
+            </div>
+          </div>
+          <div class="sec-hdr"><span>Patient Mounts</span><span>v</span></div>
+          <div class="subnote">Saved for Adams, Rebecca</div>
+          <div class="mount-grid">
+            <div class="mount-card">
+              <div class="mount-card-top">
+                <div class="mount-map" style="grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);">
+                  <div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot"></div>
+                  <div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot"></div>
+                </div>
+                <div class="tmpl-copy">
+                  <div class="mount-card-title">Pre-op Adams 2026</div>
+                  <div class="mount-card-meta">Patient Mount · 6 / 18 filled</div>
+                </div>
+              </div>
+              <div class="mount-tags"><span class="tag hot">draft</span><span class="tag">saved May 14</span></div>
+            </div>
+            <div class="mount-card">
+              <div class="mount-card-top">
+                <div class="mount-map" style="grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);">
+                  <div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot hot"></div>
+                  <div class="tmpl-thumb-slot"></div><div class="tmpl-thumb-slot hot"></div><div class="tmpl-thumb-slot"></div>
+                </div>
+                <div class="tmpl-copy">
+                  <div class="mount-card-title">Perio recall layout</div>
+                  <div class="mount-card-meta">Freeform Mount · 3 images</div>
+                </div>
+              </div>
+              <div class="mount-tags"><span class="tag">freeform</span><span class="tag">patient-specific</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </article>
+  </section>
+
+  <footer class="footer">
+    <div class="rec"><b>Codex recommendation:</b> choose Option A now. Decision 0011 says the lock is on user-facing noun only and explicitly keeps code identifiers unchanged; v3 already shows slot-layout thumbnails, so no broader left-panel redesign is required for v1.</div>
+    <div class="chips" aria-label="CD ruling choices">
+      <div class="chip recommended"><span class="dot"></span>[A] Label swap</div>
+      <div class="chip"><span class="dot"></span>[B] Mount-native</div>
+    </div>
+  </footer>
+</main>
+</body>
+</html>

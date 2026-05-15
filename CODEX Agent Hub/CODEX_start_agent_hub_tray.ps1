@@ -10,6 +10,38 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Enable-PahDpiAwareRendering {
+    $typeName = 'PahTrayDpiNative'
+    if (-not ($typeName -as [type])) {
+        Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class PahTrayDpiNative {
+    [DllImport("user32.dll")]
+    public static extern bool SetProcessDPIAware();
+
+    [DllImport("user32.dll", EntryPoint="SetProcessDpiAwarenessContext")]
+    public static extern bool SetProcessDpiAwarenessContext(IntPtr dpiContext);
+}
+"@
+    }
+
+    try {
+        # PER_MONITOR_AWARE_V2 keeps WinForms tray menus crisp on scaled displays.
+        [PahTrayDpiNative]::SetProcessDpiAwarenessContext([IntPtr](-4)) | Out-Null
+        return
+    }
+    catch {
+    }
+
+    try {
+        [PahTrayDpiNative]::SetProcessDPIAware() | Out-Null
+    }
+    catch {
+    }
+}
+
 # Skip the STA re-invoke when used as a helper library — the launcher just
 # needs the function definitions, not a running tray.
 if (-not $FunctionsOnly -and [Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
@@ -18,6 +50,8 @@ if (-not $FunctionsOnly -and [Threading.Thread]::CurrentThread.ApartmentState -n
         '-STA',
         '-ExecutionPolicy',
         'Bypass',
+        '-WindowStyle',
+        'Hidden',
         '-File',
         "`"$PSCommandPath`"",
         '-Port',
@@ -38,14 +72,23 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
 
+if (-not $FunctionsOnly) {
+    Enable-PahDpiAwareRendering
+    [System.Windows.Forms.Application]::EnableVisualStyles()
+    [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false)
+}
+
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $App = Join-Path $ScriptRoot 'CODEX_agent_hub.py'
 $Logs = Join-Path $ScriptRoot 'CODEX logs'
 $Config = Join-Path $ScriptRoot 'CODEX config'
+$Assets = Join-Path $ScriptRoot 'CODEX assets'
 $Notifications = Join-Path $ScriptRoot 'CODEX notifications'
 $StartupShortcut = Join-Path ([Environment]::GetFolderPath('Startup')) 'PANDA Agent Hub Tray.lnk'
+$TrayIconPath = Join-Path $Assets 'PANDA_Agent_Hub_panda_tray.ico'
 New-Item -ItemType Directory -Force -Path $Logs | Out-Null
 New-Item -ItemType Directory -Force -Path $Config | Out-Null
+New-Item -ItemType Directory -Force -Path $Assets | Out-Null
 New-Item -ItemType Directory -Force -Path $Notifications | Out-Null
 
 $Stdout = Join-Path $Logs 'CODEX_agent_hub_tray_stdout.log'
@@ -71,6 +114,7 @@ $script:LastDisplayState = ''
 $script:ReadinessFailures = 0
 $script:RestartTimestamps = @()      # list of [datetime] of recent restart attempts (sliding window)
 $script:RestartAttempts = 0
+$script:LastObservedServerExitPid = $null
 $script:LastAlertKey = ''
 $script:LastStaleUnread = -1
 $script:LastUrgentCodex = -1
@@ -80,6 +124,7 @@ $script:SnoozeUntil = [datetime]::MaxValue
 $script:NotificationLogPopupsEnabled = $false
 $script:NotificationPosition = 0
 $script:TrayPopupsDisabled = $true
+$script:SuppressPahStartupMessage = $false
 
 function New-PahLaunchUrl {
     return $script:Url
@@ -121,6 +166,17 @@ function Limit-Text {
     if ([string]::IsNullOrWhiteSpace($Text)) { return 'PANDA Agent Hub' }
     if ($Text.Length -le $Max) { return $Text }
     return $Text.Substring(0, [Math]::Max(0, $Max - 3)) + '...'
+}
+
+function Get-PahTrayIcon {
+    if (Test-Path -LiteralPath $TrayIconPath) {
+        try {
+            return New-Object System.Drawing.Icon $TrayIconPath
+        }
+        catch {
+        }
+    }
+    return [System.Drawing.SystemIcons]::Application
 }
 
 function Invoke-PahJson {
@@ -312,7 +368,13 @@ function Reset-RestartWindow {
 function Invoke-PahBoundedRestart {
     # Bounded restart per spec §4.5. Only allowed for owned_server (Q6 ruling).
     # Returns $true if a restart attempt was made.
-    if ($script:OwnershipState -ne 'owned_server') {
+    $ownedExitedServer = (
+        $script:StartedServer -and
+        $script:Process -and
+        $script:Process.HasExited -and
+        $script:OwnershipState -eq 'offline'
+    )
+    if ($script:OwnershipState -ne 'owned_server' -and -not $ownedExitedServer) {
         Write-PahServerLifecycle -Event 'restart_skipped' -Extra @{
             reason = 'not_owned_server'
             ownership_state = $script:OwnershipState
@@ -334,6 +396,7 @@ function Invoke-PahBoundedRestart {
         attempt = $script:RestartAttempts
         max_attempts = $RestartMaxAttempts
         readiness_failures = $script:ReadinessFailures
+        owned_exited_server = [bool]$ownedExitedServer
     }
     Update-PahDisplayState -NewState 'Restarting' -Extra @{ attempt = $script:RestartAttempts }
     Start-PahServer
@@ -410,6 +473,41 @@ function Read-ServerUrlFromLog {
     return $null
 }
 
+function Get-PahServerPythonExecutable {
+    # Prefer pythonw.exe for tray-owned server launches so the background
+    # server cannot create a blank console window. Avoid WindowsApps shim
+    # launchers because they can spawn a real child process and leave the tray
+    # tracking the wrapper PID instead of the server listener.
+    foreach ($candidate in @(
+        "$env:LOCALAPPDATA\Python\pythoncore-3.14-64\pythonw.exe",
+        "$env:LOCALAPPDATA\Python\pythoncore-3.13-64\pythonw.exe",
+        "$env:LOCALAPPDATA\Python\pythoncore-3.12-64\pythonw.exe",
+        "$env:ProgramFiles\Python314\pythonw.exe",
+        "$env:ProgramFiles\Python313\pythonw.exe",
+        "$env:ProgramFiles\Python312\pythonw.exe"
+    )) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python -and $python.Source) {
+        $siblingPythonw = Join-Path (Split-Path -Parent $python.Source) 'pythonw.exe'
+        if ((Test-Path -LiteralPath $siblingPythonw) -and $siblingPythonw -notlike '*\WindowsApps\*') {
+            return $siblingPythonw
+        }
+    }
+    $pythonw = Get-Command pythonw.exe -ErrorAction SilentlyContinue
+    if ($pythonw -and $pythonw.Source -and $pythonw.Source -notlike '*\WindowsApps\*') {
+        return $pythonw.Source
+    }
+    if ($python -and $python.Source) {
+        return $python.Source
+    }
+    return 'python'
+}
+
 function Start-PahServer {
     if ($NoServer) {
         return
@@ -423,11 +521,13 @@ function Start-PahServer {
         '--no-port-fallback',
         '--no-browser'
     )
-    $script:Process = Start-Process -FilePath python -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $Stdout -RedirectStandardError $Stderr -PassThru
+    $serverPython = Get-PahServerPythonExecutable
+    $script:Process = Start-Process -FilePath $serverPython -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $Stdout -RedirectStandardError $Stderr -PassThru
     $script:StartedServer = $true
     $script:OwnershipState = 'owned_server'
+    $script:LastObservedServerExitPid = $null
     Write-PahServerLifecycle -Event 'server_started' -Extra @{
-        cmd = "python $($arguments -join ' ')"
+        cmd = "$serverPython $($arguments -join ' ')"
         url = $script:Url
     }
     for ($i = 0; $i -lt 40; $i++) {
@@ -515,6 +615,20 @@ function Update-TrayStatus {
     # Refresh ownership classification + display state on every poll. Bounded
     # restart fires only when ownership is owned_server AND readiness has
     # failed twice in a row (spec §4.5 + Q6 ruling).
+    $ownedChildExited = (
+        $script:StartedServer -and
+        $script:Process -and
+        $script:Process.HasExited
+    )
+    if ($ownedChildExited -and $script:LastObservedServerExitPid -ne $script:Process.Id) {
+        try { $script:Process.Refresh() } catch {}
+        Write-PahServerLifecycle -Event 'owned_server_exited' -Extra @{
+            exit_code = $script:Process.ExitCode
+            prior_ownership_state = $script:OwnershipState
+        }
+        $script:LastObservedServerExitPid = $script:Process.Id
+    }
+
     $script:OwnershipState = Get-PahServerOwnership
     $status = Invoke-PahJson '/api/tray-status'
     Set-TrayMenuStatus $status
@@ -526,8 +640,9 @@ function Update-TrayStatus {
 
     if ($null -eq $status) {
         $script:ReadinessFailures += 1
-        if ($script:OwnershipState -eq 'owned_server' -and
-            $script:Process -and $script:Process.HasExited -and
+        if ($ownedChildExited -and
+            $script:OwnershipState -eq 'offline' -and
+            -not (Test-PahPortListener -Port $Port) -and
             $script:ReadinessFailures -ge 2) {
             $attempted = Invoke-PahBoundedRestart
             if ($attempted) {
@@ -581,13 +696,18 @@ function Update-StartupMenuItems {
 }
 
 function Install-StartupShortcut {
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut($StartupShortcut)
-    $shortcut.TargetPath = 'powershell.exe'
-    $shortcut.Arguments = "-NoProfile -STA -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Port $Port -PollSeconds $PollSeconds -AlertCooldownMinutes $AlertCooldownMinutes"
-    $shortcut.WorkingDirectory = $ScriptRoot
-    $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,44"
-    $shortcut.Save()
+    # Disabled after the 2026-05-08 tray-start regression: Windows Startup
+    # launches through PowerShell/wscript can surface blank terminal windows.
+    # Keep startup opt-in unavailable until PAH has a proven no-console host.
+    Remove-StartupShortcut
+    if (-not $script:SuppressPahStartupMessage) {
+        [System.Windows.Forms.MessageBox]::Show(
+            'Windows Startup for PANDA Agent Hub is disabled until the tray launcher has a proven no-terminal start path.',
+            'PANDA Agent Hub',
+            'OK',
+            'Information'
+        ) | Out-Null
+    }
 }
 
 function Remove-StartupShortcut {
@@ -633,7 +753,7 @@ Write-PahLifecycleEvent -Event 'tray_started' -Extra @{
 }
 
 $NotifyIcon = New-Object System.Windows.Forms.NotifyIcon
-$NotifyIcon.Icon = [System.Drawing.SystemIcons]::Application
+$NotifyIcon.Icon = Get-PahTrayIcon
 $NotifyIcon.Text = 'PANDA Agent Hub'
 $NotifyIcon.Visible = $true
 

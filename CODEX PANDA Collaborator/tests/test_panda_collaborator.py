@@ -571,17 +571,34 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertNotIn('id="pandaStepGuide"', html)
         self.assertIn("function pandaStepGuideState()", html)
         self.assertIn("function renderPandaStepGuide()", html)
-        # Sequence labels still appear in left-col Register buttons and right-col Create Handoff section
+        # Sequence labels still appear in the live left-to-right workflow rail
         self.assertIn("Register User 1", html)
         self.assertIn("Register User 2", html)
         self.assertIn("Start Session", html)
-        # Phase 1 workflow rail shows the 5 step labels including Hand off and Working
-        self.assertIn('data-wg-step="create-handoff"', html)
+        self.assertIn('id="workflowGuide"', html)
+        for step in ("setup", "tree", "start", "activity", "handoff"):
+            self.assertIn(f'data-wg-step="{step}"', html)
+        self.assertIn("step.done ? '✓' : String(index + 1)", html)
+        self.assertIn("node.classList.add(step.state)", html)
+        self.assertIn("stateText.textContent = step.stateText", html)
+        self.assertIn("const treeDone = Boolean(state.repo?.repo_root);", html)
         # JS workflow lock CSS rules preserved as dead CSS until Phase 8 cleanup
         self.assertIn(".sequence-panel.is-current .panel-head", html)
         self.assertIn(".sequence-panel.is-ready .panel-head", html)
         self.assertIn(".sequence-panel.is-pending .panel-head", html)
         self.assertIn("panel.dataset.flowState", html)
+
+    def test_guided_flow_uses_visible_completion_and_actionable_states(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("### App-Wide Guided Completion Flow", (PROJECT_ROOT / "PRODUCTION_SPEC.md").read_text(encoding="utf-8"))
+        self.assertRegex(html, r"(?s)\.wg-step\.complete \.step-num\s*\{.*?background:\s*var\(--ok\);")
+        self.assertRegex(html, r"(?s)\.wg-step\.ready \.step-num\s*\{.*?background:\s*var\(--ok-soft\);")
+        self.assertRegex(html, r"(?s)\.wg-step\.active \.step-num\s*\{.*?background:\s*var\(--accent\);")
+        self.assertRegex(html, r"(?s)\.wg-step\.pending \.step-num\s*\{.*?background:\s*var\(--pane\);")
+        self.assertIn("state: step.done ? 'complete' : step.id === current && step.enabled ? 'active' : step.enabled ? 'ready' : 'pending'", html)
+        self.assertIn("node.setAttribute('title', step.state === 'pending' ? step.pendingReason", html)
+        self.assertIn("start: setupDone && treeDone", html)
 
     def test_setup_checklist_reveals_steps_progressively(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -590,6 +607,41 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertRegex(html, r"\['user2Ready', 'Register User 2', user2Ready, user1Ready\]")
         self.assertRegex(html, r"\['allReady', 'Open Collaborator Hub', readiness\.allReady, user1Ready && user2Ready\]")
         self.assertIn("].filter(([, , , visible]) => visible)", html)
+
+    def test_quick_message_is_not_handoff_gated(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("function messageStepReady()", html)
+        self.assertIn("return Boolean(setupReady().allReady);", html)
+        self.assertIn("$('messageText').disabled = isBusy || !messageStepReady();", html)
+        self.assertIn("$('messageText').disabled = state.busy || !messageStepReady();", html)
+        self.assertNotIn("$('messageText').disabled = isBusy || !handoffReady;", html)
+        self.assertNotIn("$('messageText').disabled = state.busy || !handoffStepReady();", html)
+
+    def test_render_repo_supports_saved_state_and_empty_state(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("function renderRepo(repo = state.repo)", html)
+        render_repo = html.split("function renderRepo(repo = state.repo)", 1)[1].split("/* Phase 3: showResult", 1)[0]
+        self.assertIn("if (!repo)", render_repo)
+        self.assertIn("renderStatusBar(null);", render_repo)
+        self.assertIn("localStorage.setItem('pandaCollaborator.repoPath', repo.repo_root || '');", render_repo)
+        self.assertIn("$('branchChip').textContent = repo.branch || 'branch –';", render_repo)
+        self.assertIn("${escapeHtml(repo.repo_root || '')}", render_repo)
+
+    def test_setup_fields_map_to_visible_user_panels(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        render_settings = html.split("function renderSettings()", 1)[1].split("async function loadSettings()", 1)[0]
+        save_settings = html.split("async function saveSettings", 1)[1].split("async function saveCurrentSettings", 1)[0]
+
+        self.assertIn("const user1Profile = user1;", render_settings)
+        self.assertIn("$('profileRepoPath').value = user1Profile?.default_repo_path || '';", render_settings)
+        self.assertIn("$('profileAgent').value = user1Profile?.handoff_agent || user1Profile?.display_name || '';", render_settings)
+        self.assertIn("$('profileRepoPathUser2').value = user2?.default_repo_path || '';", render_settings)
+        self.assertNotIn("const profile = activeProfile();", render_settings)
+        self.assertNotIn("$('profileRepoPath').value = profile?.default_repo_path || '';", render_settings)
+        self.assertIn("syncAllRegistrationFieldsToState();", save_settings)
+        self.assertNotIn("syncActiveProfileFieldsToState();", save_settings)
 
     def test_user_one_registration_uses_warm_amber_theme(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -644,10 +696,10 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         self.assertIn("'/api/path/pick'", html)
         self.assertIn("claude_desktop_path", html)
         self.assertIn("claude_code_path", html)
-        # Phase 1: the only step-num="4" element is the workflow-guide review-activity stage.
+        # Phase 1: the only step-num="4" element is the workflow-guide activity stage.
         # It must not appear as a wizard registration badge; verify it only appears inside .wg-step.
         self.assertEqual(html.count('<span class="step-num">4</span>'), 1)
-        self.assertIn('data-wg-step="review-activity"', html)
+        self.assertIn('data-wg-step="activity"', html)
 
     def test_repository_paths_have_folder_browse_buttons(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -799,6 +851,17 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
         # The test-pill copy aligns with the v2 mockup verbatim
         self.assertIn("⚠ TEST MODE — Fake users, fake accounts, sandbox repo", html)
 
+    def test_test_mode_diagonal_ribbon_uses_high_contrast_yellow_black(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        ribbon_rule = html.split("body.test-mode::before {", 1)[1].split("}", 1)[0]
+
+        self.assertIn('content: "TEST MODE";', ribbon_rule)
+        self.assertIn("background: #ffdf4d;", ribbon_rule)
+        self.assertIn("color: #050505;", ribbon_rule)
+        self.assertIn("font-weight: 900;", ribbon_rule)
+        self.assertNotIn("background: var(--test-bob);", ribbon_rule)
+        self.assertNotIn("color: var(--canvas);", ribbon_rule)
+
     def test_test_mode_uses_bob_karen_and_does_not_persist_to_normal_settings(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
@@ -918,6 +981,14 @@ class PandaCollaboratorWebThemeTests(unittest.TestCase):
                 missing.append({"id": button_id, "label": label, "attrs": attrs})
 
         self.assertEqual(missing, [], "Every visible button must perform work or be covered by a delegated handler.")
+
+    def test_dollar_id_references_have_dom_targets(self):
+        html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
+
+        dom_ids = set(re.findall(r'id="([^"]+)"', html))
+        dollar_refs = set(re.findall(r"\$\('([^']+)'\)", html))
+
+        self.assertEqual(dollar_refs - dom_ids, set())
 
     def test_create_safe_handoff_button_is_prominent_and_state_colored(self):
         html = (PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")

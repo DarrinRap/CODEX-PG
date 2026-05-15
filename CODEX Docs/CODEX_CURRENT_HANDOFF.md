@@ -1,5 +1,12 @@
 # CODEX Current Handoff
 
+## Start Here - 2026-05-10 Vellum-Only Reset Handoff
+
+The current authoritative handoff is:
+
+$handoffPath
+
+Newest user rule: **hold all work except Vellum until Darrin says otherwise**. Read the handoff above before acting. Do not continue PAH, PC, BA, PG demo/seed, mail cleanup, duplicate cleanup, or broad UI/UX work unless Darrin explicitly reopens that lane.
 ## Start Here - 2026-05-06 Chat 22 Handoff
 
 The current authoritative handoff addendum is:
@@ -110,7 +117,7 @@ Important: do not write into `C:\panda-gallery`; all Codex-derived files belong 
 <!-- CODEX_AUTOMATED_HANDOFF_START -->
 ## Automated Handoff Snapshot
 
-Generated: 2026-05-08 16:48:32 -07:00
+Generated: 2026-05-14 21:38:05 -07:00
 Mode: `Handoff`
 
 - Last automated handoff: `C:\CODEX PG\CODEX Docs\CODEX_LAST_AUTOMATED_HANDOFF.md`
@@ -656,6 +663,8 @@ Relay dirty-state instruction:
   - `C:\panda-gallery\relay\developer_hub.py`
   - `C:\panda-gallery\tests\relay\test_relay_templates_edit_state.py`
 - Codex only inspected these Relay diffs read-only to report their presence.
+
+
 
 
 

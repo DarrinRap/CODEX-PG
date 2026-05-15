@@ -1,0 +1,36 @@
+{
+  "actor": "smoke",
+  "generated_at": "2026-05-10T16:24:07-07:00",
+  "policy": "terminal_evidence_only",
+  "records": [
+    {
+      "diagnostics": [
+        "owner_unknown_or_unstructured"
+      ],
+      "message_id": "",
+      "path": "C:\\Users\\drrap\\AppData\\Local\\Temp\\tmpmhfqv4c1\\CLAUDE Inbox\\unstructured_amendment.md",
+      "reason": "owner_unknown_or_unstructured",
+      "thread_id": "unstructured_amendment.md"
+    },
+    {
+      "diagnostics": [
+        "no_terminal_archive_evidence"
+      ],
+      "message_id": "PAH-ARCHIVE-READ-CLAUDE-CODE",
+      "path": "C:\\Users\\drrap\\AppData\\Local\\Temp\\tmpmhfqv4c1\\CC Inbox\\read_claude_code.md",
+      "reason": "not_terminal",
+      "thread_id": "PAH-ARCHIVE-READ-CLAUDE-CODE"
+    },
+    {
+      "diagnostics": [
+        "no_terminal_archive_evidence"
+      ],
+      "message_id": "PAH-ARCHIVE-UNREAD-CODEX",
+      "path": "C:\\Users\\drrap\\AppData\\Local\\Temp\\tmpmhfqv4c1\\CODEX Inbox\\unread_codex.md",
+      "reason": "not_terminal",
+      "thread_id": "PAH-ARCHIVE-UNREAD-CODEX"
+    }
+  ],
+  "schema_version": 1,
+  "uncertain_count": 3
+}

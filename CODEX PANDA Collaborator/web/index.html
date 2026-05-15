@@ -483,7 +483,7 @@
       padding: 0 10px;
       font-size: 11px;
     }
-    .pc-header .test-status-pill { min-height: 22px; font-size: 10px; padding: 2px 8px; }
+    .pc-header .test-status-pill { min-height: 22px; font-size: 10px; padding: 2px 8px; cursor: default; }
 
     /* Statusbar — precision data row, ~26px, mono pills */
     .pc-statusbar {
@@ -568,16 +568,30 @@
       text-overflow: ellipsis;
       min-width: 0;
     }
-    /* step-state hidden in compact mode — color cue on step-num + label conveys state */
-    .wg-step .step-state { display: none; }
-    .wg-step.complete .step-num { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-border); }
+    .wg-step .step-state {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+    }
+    .wg-step.complete .step-num { background: var(--ok); color: var(--canvas); border-color: var(--ok); }
     .wg-step.complete .step-label { color: var(--ok); }
+    .wg-step.ready .step-num { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-border); }
+    .wg-step.ready .step-label { color: var(--text); }
     .wg-step.active .step-num { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
     .wg-step.active .step-label { color: var(--accent); font-weight: 600; }
+    .wg-step.pending .step-num { background: var(--pane); color: var(--text-dim); border-color: var(--border); }
+    .wg-step.pending .step-label { color: var(--text-dim); }
     .wg-step.attention .step-num { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-border); }
     .wg-step.attention .step-label { color: var(--warn); }
     .wg-step.blocked .step-num { background: var(--err-soft); color: var(--err); border-color: var(--err-border); }
     .wg-step.blocked .step-label { color: var(--err); }
+    .wg-step.complete .step-state { color: var(--ok); }
+    .wg-step.ready .step-state { color: var(--ok); }
+    .wg-step.active .step-state { color: var(--accent); }
+    .wg-step.pending .step-state { color: var(--text-dim); }
     .wg-step .arrow {
       width: 8px;
       height: 8px;
@@ -1380,6 +1394,7 @@
       background: var(--pane);
       border: 1px solid var(--border-hover);
       border-radius: var(--radius-lg);
+      max-height: min(900px, calc(100vh - 44px));
       box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
     }
     .setup-dialog .setup-dialog-head {
@@ -1404,10 +1419,12 @@
     .setup-dialog .registration-panel[data-user-tone="user1"] {
       background: var(--pane-2);
       border-left: 3px solid var(--user1);
+      min-height: 0;
     }
     .setup-dialog .registration-panel[data-user-tone="user2"] {
       background: var(--pane-2);
       border-left: 3px solid var(--user2);
+      min-height: 0;
     }
     /* Identity-color name in panel header */
     .setup-dialog .registration-panel[data-user-tone="user1"] .registration-title strong { color: var(--user1); }
@@ -1477,6 +1494,7 @@
     .setup-dialog .registration-panel {
       padding: 10px 12px 12px;
       border-radius: var(--radius-md);
+      min-height: 0;
     }
     .setup-dialog .registration-panel .registration-title {
       display: flex;
@@ -1778,17 +1796,19 @@
        Replaced with box-shadow on body.test-mode (declared in the test-mode
        token block above) so the yellow ring renders without layout reflow. */
 
-    /* Diagonal "TEST MODE" ribbon corner watermark (token §3 item 2) */
+    /* Diagonal "TEST MODE" ribbon corner watermark (token §3 item 2).
+       Keep hard colors here: the pseudo-element must remain readable even if
+       the test-mode token variables are missing or overridden. */
     body.test-mode::before {
       content: "TEST MODE";
       position: fixed;
       top: 28px;
       right: -50px;
-      background: var(--test-bob);
-      color: var(--canvas);
+      background: #ffdf4d;
+      color: #050505;
       font-family: var(--font-mono);
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 900;
       letter-spacing: 1.5px;
       padding: 5px 60px;
       transform: rotate(45deg);
@@ -3711,28 +3731,28 @@
       <span class="pill unknown" id="statusBarTreeState">Unknown</span>
       <span class="path" id="statusBarPath" title="No path selected">—</span>
     </div>
-    <div class="workflow-guide" aria-label="Handoff workflow guide">
-      <div class="wg-step active" data-wg-step="setup">
+    <div class="workflow-guide" id="workflowGuide" aria-label="Handoff workflow guide">
+      <div class="wg-step active" data-wg-step="setup" data-pg-order-group="pc-guided-flow" data-pg-order="10" data-pg-order-label="Setup users" data-pg-order-strict="true">
         <div class="step-head"><span class="step-num">1</span><span class="step-label">Setup users</span></div>
         <div class="step-state">Active</div>
         <div class="arrow"></div>
       </div>
-      <div class="wg-step" data-wg-step="confirm-tree">
-        <div class="step-head"><span class="step-num">2</span><span class="step-label">Confirm tree</span></div>
+      <div class="wg-step pending" data-wg-step="tree" data-pg-order-group="pc-guided-flow" data-pg-order="20" data-pg-order-label="Scan tree" data-pg-order-strict="true">
+        <div class="step-head"><span class="step-num">2</span><span class="step-label">Scan tree</span></div>
         <div class="step-state">Not started</div>
         <div class="arrow"></div>
       </div>
-      <div class="wg-step" data-wg-step="start-session">
+      <div class="wg-step pending" data-wg-step="start" data-pg-order-group="pc-guided-flow" data-pg-order="30" data-pg-order-label="Start session" data-pg-order-strict="true">
         <div class="step-head"><span class="step-num">3</span><span class="step-label">Start session</span></div>
         <div class="step-state">Not started</div>
         <div class="arrow"></div>
       </div>
-      <div class="wg-step" data-wg-step="review-activity">
+      <div class="wg-step pending" data-wg-step="activity" data-pg-order-group="pc-guided-flow" data-pg-order="40" data-pg-order-label="Review activity" data-pg-order-strict="true">
         <div class="step-head"><span class="step-num">4</span><span class="step-label">Review activity</span></div>
         <div class="step-state">Not started</div>
         <div class="arrow"></div>
       </div>
-      <div class="wg-step" data-wg-step="create-handoff">
+      <div class="wg-step pending" data-wg-step="handoff" data-pg-order-group="pc-guided-flow" data-pg-order="50" data-pg-order-label="Create handoff" data-pg-order-strict="true">
         <div class="step-head"><span class="step-num">5</span><span class="step-label">Create handoff</span></div>
         <div class="step-state">Not started</div>
       </div>
@@ -4299,7 +4319,7 @@
       $('endSessionBtn').disabled = isBusy || !handoffReady;
       // Phase 3: messageBtn removed (saves-on-blur). messageText input has no disabled state
       // since saving happens implicitly on blur — disabling editing while busy is sufficient.
-      $('messageText').disabled = isBusy || !handoffReady;
+      $('messageText').disabled = isBusy || !messageStepReady();
       $('pauseBtn').disabled = isBusy || !setupReady().allReady;
       $('clearPauseBtn').disabled = isBusy;
       $('searchBtn').disabled = isBusy;
@@ -4821,39 +4841,25 @@
     }
 
     function pandaStepGuideState() {
-      const setupOpen = !$('setupOverlay')?.classList.contains('hidden');
-      const user1Done = Boolean(storedUserReady('user1'));
-      const user2Done = Boolean(storedUserReady('user2'));
       const setupDone = Boolean(setupReady().allReady && state.settings?.setup_completed);
+      const treeDone = Boolean(state.repo?.repo_root);
       const sessionReady = Boolean(state.control?.start_work_enabled || state.control?.control_state?.start_work_enabled);
       const handoffDone = Boolean(state.control?.latest_handoff || state.packages.length);
-      let current = 'user1';
-
-      if (setupOpen && ['user1', 'user2', 'users', 'hub'].includes(state.registrationStage)) {
-        current = state.registrationStage === 'users' ? (!user1Done ? 'user1' : !user2Done ? 'user2' : 'hub') : state.registrationStage;
-      } else if (!user1Done) {
-        current = 'user1';
-      } else if (!user2Done) {
-        current = 'user2';
-      } else if (!setupDone) {
-        current = 'hub';
-      } else if (!sessionReady) {
-        current = 'start';
-      } else {
-        current = 'handoff';
-      }
-
-      return [
-        ['user1', 'Register User 1', user1Done],
-        ['user2', 'Register User 2', user2Done],
-        ['hub', 'Collaborator Hub', setupDone],
-        ['start', 'Start Session', sessionReady],
-        ['handoff', 'Create Handoff', handoffDone],
-      ].map(([id, label, done], index, rows) => ({
-        id,
-        label,
-        done,
-        current: id === current,
+      const activityDone = Boolean(handoffDone || ((state.control?.messages || []).length > 0) || ((state.control?.timeline || []).length > 0));
+      const rows = [
+        {id: 'setup', label: 'Setup users', done: setupDone, enabled: true, pendingReason: 'Complete both user profiles.'},
+        {id: 'tree', label: 'Scan tree', done: treeDone, enabled: setupDone, pendingReason: 'Save setup first.'},
+        {id: 'start', label: 'Start session', done: sessionReady, enabled: setupDone && treeDone, pendingReason: 'Scan the working tree first.'},
+        {id: 'activity', label: 'Review activity', done: activityDone, enabled: sessionReady, pendingReason: 'Start the session first.'},
+        {id: 'handoff', label: 'Create handoff', done: handoffDone, enabled: handoffStepReady(), pendingReason: 'Start session and scan the tree first.'},
+      ];
+      const current = rows.find(step => step.enabled && !step.done)?.id || rows[rows.length - 1].id;
+      return rows.map((step, index) => ({
+        ...step,
+        current: step.id === current && !step.done,
+        state: step.done ? 'complete' : step.id === current && step.enabled ? 'active' : step.enabled ? 'ready' : 'pending',
+        stateText: step.done ? 'Done' : step.id === current && step.enabled ? 'Now' : step.enabled ? 'Ready' : 'Locked',
+        numText: step.done ? '✓' : String(index + 1),
         arrow: index === rows.length - 1 ? '' : '>'
       }));
     }
@@ -4866,15 +4872,20 @@
       return Boolean(setupReady().allReady && state.repo && sessionStepReady());
     }
 
+    function messageStepReady() {
+      return Boolean(setupReady().allReady);
+    }
+
     function workflowAvailability() {
       const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
       const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
       const setupDone = Boolean(setupReady().allReady && state.settings?.setup_completed);
+      const treeDone = Boolean(state.repo?.repo_root);
       return {
         user1: true,
         user2: user1Ready,
         hub: user1Ready && user2Ready,
-        start: setupDone,
+        start: setupDone && treeDone,
         handoff: handoffStepReady()
       };
     }
@@ -4901,6 +4912,21 @@
 
     function renderPandaStepGuide() {
       updateWorkflowLocks();
+      pandaStepGuideState().forEach(step => {
+        const node = document.querySelector(`[data-wg-step="${step.id}"]`);
+        if (!node) return;
+        node.classList.remove('complete', 'active', 'ready', 'pending', 'attention', 'blocked');
+        node.classList.add(step.state);
+        node.dataset.flowState = step.state;
+        node.setAttribute('aria-current', step.current ? 'step' : 'false');
+        node.setAttribute('title', step.state === 'pending' ? step.pendingReason : `${step.label}: ${step.stateText}`);
+        const num = node.querySelector('.step-num');
+        const label = node.querySelector('.step-label');
+        const stateText = node.querySelector('.step-state');
+        if (num) num.textContent = step.numText;
+        if (label) label.textContent = step.label;
+        if (stateText) stateText.textContent = step.stateText;
+      });
     }
 
     function checklistMarkup(readiness) {
@@ -4918,21 +4944,6 @@
         const status = done ? 'Done' : key === firstOpen ? 'Now' : 'Next';
         const klass = done ? 'done' : key === firstOpen ? 'current' : '';
         return `<li class="${klass}"><span>${escapeHtml(label)}</span><b>${status}</b></li>`;
-      }).join('');
-    }
-
-    function updateRegistrationProgress() {
-      if (!$('registrationProgress')) return;
-      const user1Ready = storedUserReady('user1') || registrationFieldReady('user1');
-      const user2Ready = storedUserReady('user2') || registrationFieldReady('user2');
-      const rows = [
-        ['user1', '1. Register User 1', user1Ready, true],
-        ['user2', '2. Register User 2', user2Ready, true],
-        ['hub', '3. Collaborator Hub', setupReady().allReady, user1Ready && user2Ready]
-      ].filter(([, , , visible]) => visible);
-      $('registrationProgress').innerHTML = rows.map(([stage, label, done]) => {
-        const klass = done ? 'done' : stage === state.registrationStage ? 'current' : '';
-        return `<li class="${klass}">${escapeHtml(label)}</li>`;
       }).join('');
     }
 
@@ -5020,7 +5031,6 @@
       const readiness = setupReady();
       const markup = checklistMarkup(readiness);
       $('setupChecklist').innerHTML = markup;
-      updateRegistrationProgress();
       $('setupChip').textContent = readiness.allReady && state.settings?.setup_completed ? 'Ready' : 'Setup';
       $('setupChip').className = readiness.allReady && state.settings?.setup_completed ? 'chip ok' : 'chip warn';
       $('switchUserBtn').textContent = readiness.allReady ? 'Handover Users' : 'Setup Users';
@@ -5033,7 +5043,7 @@
       $('handoffBtn').disabled = state.busy || !handoffStepReady();
       $('endSessionBtn').disabled = state.busy || !handoffStepReady();
       // Phase 3: messageBtn removed; saves-on-blur handler on messageText
-      $('messageText').disabled = state.busy || !handoffStepReady();
+      $('messageText').disabled = state.busy || !messageStepReady();
       updateHubCards();
       renderPandaStepGuide();
     }
@@ -5212,16 +5222,16 @@
       // Phase 7-fix: identity tag in modal head reflects display name live
       const u1Tag = $('user1DisplayTag'); if (u1Tag) u1Tag.textContent = user1?.display_name || 'User 1';
       const u2Tag = $('user2DisplayTag'); if (u2Tag) u2Tag.textContent = user2?.display_name || 'User 2';
-      const profile = activeProfile();
-      $('profileRepoPath').value = profile?.default_repo_path || '';
-      $('profileAgent').value = profile?.handoff_agent || profile?.display_name || '';
-      $('profileTitle').value = profile?.handoff_title || 'AI workstation handoff';
-      $('codexAccount').value = profile?.codex_account || '';
-      $('claudeAccount').value = profile?.claude_account || '';
-      $('claudeDesktopPath').value = profile?.claude_desktop_path || '';
-      $('claudeCodePath').value = profile?.claude_code_path || '';
-      $('gitAuthorName').value = profile?.git_author_name || '';
-      $('gitAuthorEmail').value = profile?.git_author_email || '';
+      const user1Profile = user1;
+      $('profileRepoPath').value = user1Profile?.default_repo_path || '';
+      $('profileAgent').value = user1Profile?.handoff_agent || user1Profile?.display_name || '';
+      $('profileTitle').value = user1Profile?.handoff_title || 'AI workstation handoff';
+      $('codexAccount').value = user1Profile?.codex_account || '';
+      $('claudeAccount').value = user1Profile?.claude_account || '';
+      $('claudeDesktopPath').value = user1Profile?.claude_desktop_path || '';
+      $('claudeCodePath').value = user1Profile?.claude_code_path || '';
+      $('gitAuthorName').value = user1Profile?.git_author_name || '';
+      $('gitAuthorEmail').value = user1Profile?.git_author_email || '';
       $('profileRepoPathUser2').value = user2?.default_repo_path || '';
       $('profileAgentUser2').value = user2?.handoff_agent || user2?.display_name || '';
       $('profileTitleUser2').value = user2?.handoff_title || 'AI workstation handoff';
@@ -5265,8 +5275,7 @@
     async function saveSettings({scanAfter = false, closeAfter = false} = {}) {
       setBusy(true);
       try {
-        syncProfileNamesToState();
-        syncActiveProfileFieldsToState();
+        syncAllRegistrationFieldsToState();
         if (!setupReady().allReady) {
           openSetupWizard();
           throw new Error('Finish the highlighted setup step before saving.');
@@ -5423,12 +5432,27 @@
       $('statusBarPath').title = repo.repo_root || 'No path selected';
     }
 
-    function renderRepo(repo) {
+    function renderRepo(repo = state.repo) {
+      if (!repo) {
+        state.repo = null;
+        renderPandaStepGuide();
+        renderStatusBar(null);
+        localStorage.removeItem('pandaCollaborator.repoPath');
+        $('handoffBtn').disabled = true;
+        $('branchChip').textContent = 'branch –';
+        $('branchChip').className = 'chip';
+        $('scanTime').textContent = 'last scan: never';
+        $('repoSummary').className = 'empty';
+        $('repoSummary').textContent = 'Scan a repository.';
+        $('fileChip').textContent = '0';
+        $('fileList').innerHTML = '<li class="empty">No changed files.</li>';
+        return;
+      }
       state.repo = repo;
       renderPandaStepGuide();
-      localStorage.setItem('pandaCollaborator.repoPath', repo.repo_root);
+      localStorage.setItem('pandaCollaborator.repoPath', repo.repo_root || '');
       $('handoffBtn').disabled = !handoffStepReady();
-      $('branchChip').textContent = repo.branch;
+      $('branchChip').textContent = repo.branch || 'branch –';
       $('branchChip').className = 'chip';
       $('scanTime').textContent = 'last scan: ' + new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
       renderStatusBar(repo);
@@ -5443,7 +5467,7 @@
           <div class="metric"><b>${counts.deleted || 0}</b><span>Deleted</span></div>
           <div class="metric"><b>${counts.conflicted || 0}</b><span>Conflicts</span></div>
         </div>
-        <p class="small path">${escapeHtml(repo.repo_root)}</p>
+        <p class="small path">${escapeHtml(repo.repo_root || '')}</p>
       `;
 
       const files = repo.files || [];
@@ -6398,7 +6422,7 @@
         pollHandle = setInterval(pollProgress, 500);
       }
 
-      // Wire Done button via $('id') pattern so the click-wiring lint passes.
+      // Wire Done button through the shared ID helper so the click-wiring lint passes.
       // Phase 7: on a successful handoff, chain to the outgoing confirmation modal
       // by dispatching 'pc:handoff-complete' before closing this one.
       $('handoffProgressDoneBtn').addEventListener('click', function () {

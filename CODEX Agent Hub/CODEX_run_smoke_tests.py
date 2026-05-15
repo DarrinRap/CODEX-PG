@@ -2208,6 +2208,11 @@ def test_dashboard_launcher_reuses_existing_browser_window() -> None:
     assert_true("SendKeys" not in tray_text, "tray open is not limited to active-tab window titles")
     assert_true("$OpenItem.Add_Click({ Open-PahDashboard })" in tray_text, "tray menu refreshes or reuses dashboard")
     assert_true("$NotifyIcon.Add_DoubleClick({ Open-PahDashboard })" in tray_text, "tray double-click refreshes or reuses dashboard")
+    assert_true("function Get-PahServerPythonExecutable" in tray_text, "tray has no-console python launcher helper")
+    assert_true("$serverPython = Get-PahServerPythonExecutable" in tray_text, "tray resolves server python before launch")
+    assert_true("Start-Process -FilePath $serverPython" in tray_text, "tray server launch uses resolved no-console python")
+    assert_true("Start-Process -FilePath python " not in tray_text, "tray does not hard-code python console launcher")
+    assert_true("Windows Startup for PANDA Agent Hub is disabled" in tray_text, "startup shortcut creation is disabled after terminal-window regression")
 
 
 def test_launch_refresh_payload_contract() -> None:

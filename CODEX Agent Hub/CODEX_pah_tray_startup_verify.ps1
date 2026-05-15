@@ -71,27 +71,16 @@ function Add-Result {
 $tempStartupDir = Join-Path ([System.IO.Path]::GetTempPath()) "pah-tray-verify-$([Guid]::NewGuid())"
 New-Item -ItemType Directory -Path $tempStartupDir -Force | Out-Null
 $origStartupShortcut = $script:StartupShortcut
+$origSuppressPahStartupMessage = $script:SuppressPahStartupMessage
 $script:StartupShortcut = Join-Path $tempStartupDir 'PANDA Agent Hub Tray.lnk'
+$script:SuppressPahStartupMessage = $true
 try {
     Install-StartupShortcut
-    if (Test-Path -LiteralPath $script:StartupShortcut) {
-        $shell = New-Object -ComObject WScript.Shell
-        $sc = $shell.CreateShortcut($script:StartupShortcut)
-        $tp = $sc.TargetPath
-        $argLine = $sc.Arguments
-        $wd = $sc.WorkingDirectory
-        $tpOk = $tp -ilike '*powershell*'
-        $argsOk = ($argLine -like '*CODEX_start_agent_hub_tray.ps1*') -and ($argLine -like '*-Port*')
-        $wdOk = (Test-Path -LiteralPath $wd)
-        if ($tpOk -and $argsOk -and $wdOk) {
-            Add-Result 'shortcut_install_creates_file_with_expected_target' 'PASS'
-        }
-        else {
-            Add-Result 'shortcut_install_creates_file_with_expected_target' 'FAIL' "tp_ok=$tpOk args_ok=$argsOk wd_ok=$wdOk"
-        }
+    if (-not (Test-Path -LiteralPath $script:StartupShortcut)) {
+        Add-Result 'startup_install_disabled_does_not_create_terminal_launcher' 'PASS'
     }
     else {
-        Add-Result 'shortcut_install_creates_file_with_expected_target' 'FAIL' "shortcut not created at $script:StartupShortcut"
+        Add-Result 'startup_install_disabled_does_not_create_terminal_launcher' 'FAIL' "startup shortcut still created at $script:StartupShortcut"
     }
 
     Remove-StartupShortcut
@@ -104,6 +93,7 @@ try {
 }
 finally {
     $script:StartupShortcut = $origStartupShortcut
+    $script:SuppressPahStartupMessage = $origSuppressPahStartupMessage
     Remove-Item -Recurse -Force -Path $tempStartupDir -ErrorAction SilentlyContinue
 }
 
@@ -210,6 +200,67 @@ else {
     Add-Result 'no_listener_returns_offline_state' 'FAIL' "ownership=$ownership (expected offline)"
 }
 
+# Regression guard: when the tray-owned server process has exited, ownership
+# reclassifies to `offline` because the port is gone. That must still be
+# restartable; otherwise PAH can die and stay dead.
+$restartPort = 64177
+$origPort = $script:Port
+$origUrl = $script:Url
+$origStartedServer = $script:StartedServer
+$origProcess = $script:Process
+$origOwnershipState = $script:OwnershipState
+$origRestartTimestamps = $script:RestartTimestamps
+$origRestartAttempts = $script:RestartAttempts
+$origReadinessFailures = $script:ReadinessFailures
+$origLastObservedServerExitPid = $script:LastObservedServerExitPid
+$origServerLifecycleLog = $script:ServerLifecycleLog
+$restartProc = $null
+try {
+    $restartProc = Start-Process powershell -ArgumentList '-NoProfile', '-Command', 'exit 0' -PassThru -WindowStyle Hidden
+    $restartProc.WaitForExit()
+
+    Set-Variable -Scope Script -Name Port -Value $restartPort
+    Set-Variable -Scope Script -Name Url -Value "http://127.0.0.1:$restartPort"
+    $script:StartedServer = $true
+    $script:Process = $restartProc
+    $script:OwnershipState = 'offline'
+    $script:RestartTimestamps = @()
+    $script:RestartAttempts = 0
+    $script:ReadinessFailures = 2
+    $script:LastObservedServerExitPid = $null
+    $script:ServerLifecycleLog = Join-Path ([System.IO.Path]::GetTempPath()) "pah-tray-restart-regression-$([Guid]::NewGuid()).jsonl"
+    $script:RestartInvoked = $false
+
+    function Start-PahServer {
+        $script:RestartInvoked = $true
+    }
+
+    $attempted = Invoke-PahBoundedRestart
+    if ($attempted -and $script:RestartInvoked) {
+        Add-Result 'owned_exited_offline_server_is_restartable' 'PASS' "port=$restartPort"
+    }
+    else {
+        Add-Result 'owned_exited_offline_server_is_restartable' 'FAIL' "attempted=$attempted restart_invoked=$script:RestartInvoked"
+    }
+}
+finally {
+    if ($restartProc -and -not $restartProc.HasExited) {
+        $restartProc.Kill()
+        $restartProc.WaitForExit()
+    }
+    Set-Variable -Scope Script -Name Port -Value $origPort
+    Set-Variable -Scope Script -Name Url -Value $origUrl
+    $script:StartedServer = $origStartedServer
+    $script:Process = $origProcess
+    $script:OwnershipState = $origOwnershipState
+    $script:RestartTimestamps = $origRestartTimestamps
+    $script:RestartAttempts = $origRestartAttempts
+    $script:ReadinessFailures = $origReadinessFailures
+    $script:LastObservedServerExitPid = $origLastObservedServerExitPid
+    $script:ServerLifecycleLog = $origServerLifecycleLog
+    $script:RestartInvoked = $false
+}
+
 # PHASE-3-MANUAL: identity probe against a real PAH server returns
 # `attached_server` or `owned_server` based on whether the tray spawned it.
 # Cannot test headlessly because we don't keep a PAH process alive in the
@@ -240,6 +291,19 @@ if ($exposed.Count -eq $expected.Count) {
 else {
     $missing = ($expected | Where-Object { $_ -notin $exposed }) -join ','
     Add-Result 'shared_helpers_available_via_dot_source' 'FAIL' "missing: $missing"
+}
+
+# Background server launch should prefer pythonw.exe and never hard-code
+# python.exe directly. This catches the blank-terminal regression.
+$trayText = Get-Content -LiteralPath $TrayScript -Raw
+$usesNoConsoleHelper = $trayText -like '*function Get-PahServerPythonExecutable*'
+$serverLaunchUsesHelper = $trayText -like '*$serverPython = Get-PahServerPythonExecutable*' -and $trayText -like '*Start-Process -FilePath $serverPython*'
+$legacyPythonLaunchAbsent = $trayText -notlike '*Start-Process -FilePath python *'
+if ($usesNoConsoleHelper -and $serverLaunchUsesHelper -and $legacyPythonLaunchAbsent) {
+    Add-Result 'server_launch_prefers_no_console_python' 'PASS'
+}
+else {
+    Add-Result 'server_launch_prefers_no_console_python' 'FAIL' "helper=$usesNoConsoleHelper launch=$serverLaunchUsesHelper legacy_absent=$legacyPythonLaunchAbsent"
 }
 
 # ============================================================================

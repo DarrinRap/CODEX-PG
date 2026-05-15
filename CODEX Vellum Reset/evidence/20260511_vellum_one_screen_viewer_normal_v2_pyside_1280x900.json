@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "screenshot": "C:\\CODEX PG\\CODEX Vellum Reset\\evidence\\20260511_vellum_one_screen_viewer_normal_v2_pyside_1280x900.png",
+  "target_item": "viewer_normal_v2",
+  "target_path": "C:\\panda-gallery\\workflows\\design\\applets\\vellum_approval\\fixtures\\sample_packet\\viewer_normal_v2.png",
+  "packet": "C:\\panda-gallery\\workflows\\design\\applets\\vellum_approval\\fixtures\\sample_packet",
+  "window_width": 1280,
+  "window_height": 699,
+  "canvas_zoom": 1.0,
+  "canvas_zoom_percent": 100,
+  "status": "approved_direction",
+  "state_label": "Viewer / Normal",
+  "side_by_side_only": false
+}

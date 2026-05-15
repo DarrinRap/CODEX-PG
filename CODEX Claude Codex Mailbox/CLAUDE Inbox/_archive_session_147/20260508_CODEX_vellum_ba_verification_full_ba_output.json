@@ -1,0 +1,3392 @@
+{
+  "schema_version": "BA_AUDIT_RESULT_v1",
+  "generated_at": "2026-05-09T10:07:51-07:00",
+  "repo_root": "C:\\panda-gallery",
+  "runner_version": "1.4.0",
+  "manifest_path": "workflows/design/ba_audit_manifest.json",
+  "progress_snapshot_path": "workflows/design/applets/ba_audit_progress.json",
+  "target_app": "Vellum",
+  "fixture_role": "",
+  "production_excluded": false,
+  "available_apps": [
+    "Audit Module",
+    "BA Negative Fixture",
+    "Bible Audit",
+    "Clip Launcher",
+    "Inspector",
+    "Panda Agent Hub",
+    "PANDA Collaborator",
+    "Panda Gallery",
+    "PG Design Ledger",
+    "Relay",
+    "Tracker",
+    "Vellum"
+  ],
+  "scope": [
+    {
+      "app": "Vellum",
+      "paths": [
+        "workflows/design/applets/am_mockup_review.py",
+        "workflows/design/applets/vellum_approval"
+      ],
+      "files_found": 15,
+      "status": "scanned",
+      "scanners": [
+        "app_inventory",
+        "pg_design_lint",
+        "action_feedback_static",
+        "workflow_order_static"
+      ],
+      "notes": "PG mockup review and approval viewer applet; lint enabled in Phase 6 ship (covers am_mockup_review.py + vellum_approval/ package)",
+      "fixture_role": "",
+      "production_excluded": false
+    }
+  ],
+  "totals": {
+    "pass": 9,
+    "fail": 21,
+    "warn": 87,
+    "unknown": 20,
+    "registered_apps": 12,
+    "target_apps": 1,
+    "scanned_apps": 1,
+    "checks": 137
+  },
+  "metrics": {
+    "evidence_score": 0.07692307692307693,
+    "evidence_score_percent": 7.7,
+    "coverage_debt": 0.145985401459854,
+    "coverage_debt_percent": 14.6,
+    "evidence_score_formula": "pass / (pass + fail + warn)",
+    "coverage_debt_formula": "unknown / (pass + fail + warn + unknown)"
+  },
+  "app_metrics": {
+    "Vellum": {
+      "pass": 9,
+      "fail": 21,
+      "warn": 87,
+      "unknown": 20,
+      "checks": 137,
+      "evidence_score": 0.07692307692307693,
+      "evidence_score_percent": 7.7,
+      "coverage_debt": 0.145985401459854,
+      "coverage_debt_percent": 14.6,
+      "evidence_score_formula": "pass / (pass + fail + warn)",
+      "coverage_debt_formula": "unknown / (pass + fail + warn + unknown)"
+    }
+  },
+  "bible_coverage_matrix": [
+    {
+      "id": "BIBLE-COV-001",
+      "bible_area": "Registered app inventory and source scope",
+      "scanner": "app_inventory",
+      "coverage": "covered_static",
+      "evidence": "Manifest paths are resolved and readable source files are counted.",
+      "gap": "Does not prove those files are the entire app surface.",
+      "target_enabled": true
+    },
+    {
+      "id": "BIBLE-COV-002",
+      "bible_area": "PG Design Bible token/QSS discipline",
+      "scanner": "pg_design_lint",
+      "coverage": "covered_static_when_enabled",
+      "evidence": "Uses the same pg_design_lint engine as the commit gate for enabled repo paths.",
+      "gap": "Files outside pg_design_lint scope remain unproven and must not be reported as pass.",
+      "target_enabled": true
+    },
+    {
+      "id": "BIBLE-COV-003",
+      "bible_area": "Action controls expose user feedback",
+      "scanner": "action_feedback_static",
+      "coverage": "heuristic_static",
+      "evidence": "Finds buttons/actions and nearby handler or feedback markers.",
+      "gap": "Static heuristics cannot prove runtime click behavior for complex Qt or delegated handlers.",
+      "target_enabled": true
+    },
+    {
+      "id": "BIBLE-COV-003B",
+      "bible_area": "Broken-wire workflow affordances",
+      "scanner": "broken_wire_static",
+      "coverage": "heuristic_static",
+      "evidence": "Finds high-risk visible controls whose text-entry, visual, launch, or state path is disconnected.",
+      "gap": "Static heuristics cannot prove full runtime workflows; app-specific browser and tray probes remain required for final proof.",
+      "target_enabled": false
+    },
+    {
+      "id": "BIBLE-COV-004",
+      "bible_area": "BA browser action feedback",
+      "scanner": "runtime_action_feedback",
+      "coverage": "covered_runtime_for_ba",
+      "evidence": "Runs a Playwright browser probe against BA controls with visible status/timestamp feedback.",
+      "gap": "Currently covers the BA HTML applet only.",
+      "target_enabled": false
+    },
+    {
+      "id": "BIBLE-COV-005",
+      "bible_area": "Panda Agent Hub runtime health",
+      "scanner": "runtime_check_pack",
+      "coverage": "covered_runtime_for_pah",
+      "evidence": "Imports PAH Inspector findings for endpoint, mailbox, ledger, protocol, and UI wiring evidence.",
+      "gap": "Does not cover non-PAH apps until dedicated runtime adapters exist.",
+      "target_enabled": false
+    },
+    {
+      "id": "BIBLE-COV-006",
+      "bible_area": "BA truth/report consistency",
+      "scanner": "ba_self_integrity/report_consistency/staleness",
+      "coverage": "covered_self",
+      "evidence": "Verifies mandatory truth markers, no legacy fake all-app tokens, totals consistency, and timestamps.",
+      "gap": "Only proves BA's report contract, not target app behavior.",
+      "target_enabled": true
+    },
+    {
+      "id": "BIBLE-COV-007",
+      "bible_area": "Screenshot overlap, clipping, and visual regression",
+      "scanner": "planned_visual_runtime",
+      "coverage": "not_implemented",
+      "evidence": "No BA visual regression scanner exists yet.",
+      "gap": "Screen glitches require Playwright/PySide screenshot probes and image comparison before BA can gate them.",
+      "target_enabled": false
+    },
+    {
+      "id": "BIBLE-COV-008",
+      "bible_area": "PySide runtime click feedback",
+      "scanner": "planned_pyside_runtime",
+      "coverage": "not_implemented",
+      "evidence": "No cross-app PySide click harness exists yet.",
+      "gap": "Qt button feedback remains static or manually verified until an app-specific runtime adapter exists.",
+      "target_enabled": false
+    },
+    {
+      "id": "BIBLE-COV-009",
+      "bible_area": "Left-to-right workflow and tool order",
+      "scanner": "workflow_order_static",
+      "coverage": "covered_static_when_marked",
+      "evidence": "Checks declared HTML order markers and reports unproven PySide source order as a coverage gap.",
+      "gap": "Does not prove pixel geometry; PySide surfaces need runtime probes or explicit metadata.",
+      "target_enabled": true
+    },
+    {
+      "id": "BIBLE-COV-010",
+      "bible_area": "BA browser runtime geometry and screen-glitch proof",
+      "scanner": "runtime_geometry",
+      "coverage": "covered_runtime_for_ba",
+      "evidence": "Runs Playwright geometry probes against Bible Audit at 1920x1080 and 1000x900, saving screenshot artifacts.",
+      "gap": "Covers Bible Audit only; no non-BA runtime geometry adapters or screenshot baseline diffing yet.",
+      "target_enabled": false
+    }
+  ],
+  "runtime_trust_pack": {
+    "target_app": "Vellum",
+    "mode": "standard",
+    "runtime_required": false,
+    "runtime_applicable": false,
+    "runtime_complete": false,
+    "server_url": "http://127.0.0.1:8791",
+    "playwright_available": false,
+    "artifact_folder": "",
+    "viewports": [
+      {
+        "id": "desktop_1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "id": "narrow_1000x900",
+        "width": 1000,
+        "height": 900
+      }
+    ],
+    "required_scanners": [],
+    "executed_scanners": [],
+    "skipped_scanners": [],
+    "controls_probed": [],
+    "selectors_measured": [],
+    "screenshots": [],
+    "missing_evidence": [],
+    "runtime_findings": [],
+    "verdict": "runtime_not_applicable"
+  },
+  "mockup_preflight": {
+    "enabled": false,
+    "verdict": "not_requested"
+  },
+  "checks": [
+    {
+      "id": "BA-LINT-VELLUM-0003",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R02 error",
+      "message": "hex literal #f4d35e is not in the PG palette",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 232,
+          "col": 17,
+          "detail": "\u00a72.1-\u00a72.8"
+        }
+      ],
+      "recommendation": "Replace the literal with the nearest palette token.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0008",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R02 error",
+      "message": "hex literal #f4d35e is not in the PG palette",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 1321,
+          "col": 51,
+          "detail": "\u00a72.1-\u00a72.8"
+        }
+      ],
+      "recommendation": "Replace the literal with the nearest palette token.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0014",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2595,
+          "col": 13,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0025",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3053,
+          "col": 13,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0032",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3312,
+          "col": 13,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0038",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R02 error",
+      "message": "hex literal #f4d35e is not in the PG palette",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3412,
+          "col": 14,
+          "detail": "\u00a72.1-\u00a72.8"
+        }
+      ],
+      "recommendation": "Replace the literal with the nearest palette token.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0040",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3425,
+          "col": 16,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0047",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R02 error",
+      "message": "hex literal #888 is not in the PG palette",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3788,
+          "col": 33,
+          "detail": "\u00a72.1-\u00a72.8"
+        }
+      ],
+      "recommendation": "Replace the literal with the nearest palette token.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0051",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3884,
+          "col": 13,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0056",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4000,
+          "col": 11,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0060",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R02 error",
+      "message": "hex literal #888 is not in the PG palette",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4176,
+          "col": 37,
+          "detail": "\u00a72.1-\u00a72.8"
+        }
+      ],
+      "recommendation": "Replace the literal with the nearest palette token.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0061",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4222,
+          "col": 13,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0067",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4351,
+          "col": 13,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0073",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4443,
+          "col": 27,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0075",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R17 error",
+      "message": "Inline styles heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4478,
+          "col": 33,
+          "detail": "STYLE.md \u00a710"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0079",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R02 error",
+      "message": "hex literal #888 is not in the PG palette",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4594,
+          "col": 37,
+          "detail": "\u00a72.1-\u00a72.8"
+        }
+      ],
+      "recommendation": "Replace the literal with the nearest palette token.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0108",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R02 error",
+      "message": "hex literal #4a4a5e is not in the PG palette",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 225,
+          "col": 25,
+          "detail": "\u00a72.1-\u00a72.8"
+        }
+      ],
+      "recommendation": "Replace the literal with the nearest palette token.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0121",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R27 error",
+      "message": "R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 559,
+          "detail": "R27 QScrollArea body addStretch"
+        }
+      ],
+      "recommendation": "Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0122",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R27 error",
+      "message": "R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 642,
+          "detail": "R27 QScrollArea body addStretch"
+        }
+      ],
+      "recommendation": "Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0123",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R27 error",
+      "message": "R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 730,
+          "detail": "R27 QScrollArea body addStretch"
+        }
+      ],
+      "recommendation": "Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0124",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "fail",
+      "severity": "error",
+      "title": "R27 error",
+      "message": "R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 750,
+          "detail": "R27 QScrollArea body addStretch"
+        }
+      ],
+      "recommendation": "Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0001",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 227,
+          "col": 28,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0002",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 230,
+          "col": 17,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0004",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #7fb069 appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 233,
+          "col": 17,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0005",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 236,
+          "col": 18,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0007",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #7fb069 appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 1319,
+          "col": 51,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0009",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 1376,
+          "col": 36,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0010",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2026,
+          "col": 28,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0011",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2174,
+          "col": 32,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0012",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2361,
+          "col": 28,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0013",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2404,
+          "col": 28,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0015",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2607,
+          "col": 53,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0016",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2614,
+          "col": 80,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0017",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2626,
+          "col": 60,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0018",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2758,
+          "col": 18,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0019",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2838,
+          "col": 20,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0022",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R16 warning",
+      "message": "resize in top-level window needs a \u00a713 derivation comment",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3039,
+          "col": 13,
+          "detail": "\u00a713"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0023",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R16 warning",
+      "message": "resize in top-level window needs a \u00a713 derivation comment",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3045,
+          "col": 13,
+          "detail": "\u00a713"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0024",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3052,
+          "col": 34,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0026",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3064,
+          "col": 24,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0027",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3094,
+          "col": 52,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0028",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3097,
+          "col": 29,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0029",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3098,
+          "col": 31,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0030",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 5px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3108,
+          "col": 32,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0031",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3113,
+          "col": 63,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0033",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3320,
+          "col": 42,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0034",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3324,
+          "col": 42,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0035",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3328,
+          "col": 42,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0036",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3333,
+          "col": 40,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0037",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3410,
+          "col": 14,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0039",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #7fb069 appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3413,
+          "col": 14,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0041",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3428,
+          "col": 60,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0043",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3625,
+          "col": 27,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0044",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #7fb069 appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3627,
+          "col": 27,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0045",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R05a warning",
+      "message": "point size 7 is off the PG type scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3646,
+          "col": 9,
+          "detail": "\u00a73.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0046",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R05a warning",
+      "message": "point size 9 is off the PG type scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3711,
+          "col": 33,
+          "detail": "\u00a73.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0048",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 2px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3792,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0049",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 2px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3792,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0050",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 2px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3793,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0052",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3892,
+          "col": 80,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0053",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3913,
+          "col": 24,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0054",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3913,
+          "col": 58,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0055",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3916,
+          "col": 80,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0057",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4007,
+          "col": 50,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0058",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4013,
+          "col": 60,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0059",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4097,
+          "col": 13,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0062",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4284,
+          "col": 30,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0063",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4288,
+          "col": 23,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0064",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R05a warning",
+      "message": "point size 7 is off the PG type scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4314,
+          "col": 9,
+          "detail": "\u00a73.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0066",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R16 warning",
+      "message": "resize in top-level window needs a \u00a713 derivation comment",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4350,
+          "col": 9,
+          "detail": "\u00a713"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0068",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4358,
+          "col": 60,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0069",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4360,
+          "col": 57,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0070",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4361,
+          "col": 54,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0071",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4363,
+          "col": 56,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0072",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4364,
+          "col": 59,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0074",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4452,
+          "col": 29,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0078",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R16 warning",
+      "message": "setFixedHeight in top-level window needs a \u00a713 derivation comment",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4567,
+          "col": 9,
+          "detail": "\u00a713"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0080",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R03b warning",
+      "message": "QFileDialog is forbidden by R03b.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 5280,
+          "col": 9,
+          "detail": "Inviolable Rule #22"
+        }
+      ],
+      "recommendation": "Known debt until dark replacements ship; avoid new uses when possible.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0081",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R03b warning",
+      "message": "QFileDialog is forbidden by R03b.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 5307,
+          "col": 38,
+          "detail": "Inviolable Rule #22"
+        }
+      ],
+      "recommendation": "Known debt until dark replacements ship; avoid new uses when possible.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0082",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R03b warning",
+      "message": "QFileDialog is forbidden by R03b.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 6472,
+          "col": 9,
+          "detail": "Inviolable Rule #22"
+        }
+      ],
+      "recommendation": "Known debt until dark replacements ship; avoid new uses when possible.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0083",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R03b warning",
+      "message": "QFileDialog is forbidden by R03b.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 6473,
+          "col": 22,
+          "detail": "Inviolable Rule #22"
+        }
+      ],
+      "recommendation": "Known debt until dark replacements ship; avoid new uses when possible.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0086",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/fixtures/gen_fixture_images.py",
+          "line": 13,
+          "col": 19,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0091",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R03b warning",
+      "message": "QFileDialog is forbidden by R03b.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 35,
+          "col": 1,
+          "detail": "Inviolable Rule #22"
+        }
+      ],
+      "recommendation": "Known debt until dark replacements ship; avoid new uses when possible.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0092",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 108,
+          "col": 12,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0094",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 346,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0096",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R03b warning",
+      "message": "QFileDialog is forbidden by R03b.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 458,
+          "col": 19,
+          "detail": "Inviolable Rule #22"
+        }
+      ],
+      "recommendation": "Known debt until dark replacements ship; avoid new uses when possible.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0097",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R03b warning",
+      "message": "QFileDialog is forbidden by R03b.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 474,
+          "col": 19,
+          "detail": "Inviolable Rule #22"
+        }
+      ],
+      "recommendation": "Known debt until dark replacements ship; avoid new uses when possible.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0098",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #e8a87c appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 55,
+          "col": 12,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0099",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R26 warning",
+      "message": "mode-zone color #7fb069 appears outside allowed locality",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 57,
+          "col": 8,
+          "detail": "Bible non-negotiable #6"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0101",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 9px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 147,
+          "col": 72,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0102",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 9px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 164,
+          "col": 26,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0103",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 12px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 169,
+          "col": 26,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0104",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 9px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 179,
+          "col": 72,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0105",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 9px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 210,
+          "col": 26,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0106",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 215,
+          "col": 26,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0107",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R18 warning",
+      "message": "border-radius 3px is off the PG radius scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 217,
+          "col": 49,
+          "detail": "\u00a74.2"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0109",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 329,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0110",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 418,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0111",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 418,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0112",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 2px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 419,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0113",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 548,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0114",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 2px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 624,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0115",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 632,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0116",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 728,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0117",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R04 warning",
+      "message": "spacing value 6px is off the PG scale",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 748,
+          "col": 9,
+          "detail": "\u00a74.1"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0119",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R28 warning",
+      "message": "R28: Tooltip contains unimplemented-marker text ('phase 2'). Either implement the feature or remove the control before shipping.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4063,
+          "detail": "R28 phrase=phase 2"
+        }
+      ],
+      "recommendation": "Remove placeholder/stub wording from shipped tooltips, or hide the unfinished control.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0120",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R28 warning",
+      "message": "R28: Tooltip contains unimplemented-marker text ('phase 3'). Either implement the feature or remove the control before shipping.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4249,
+          "detail": "R28 phrase=phase 3"
+        }
+      ],
+      "recommendation": "Remove placeholder/stub wording from shipped tooltips, or hide the unfinished control.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0125",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "warn",
+      "severity": "warning",
+      "title": "R28 warning",
+      "message": "R28: Tooltip contains unimplemented-marker text ('phase 2'). Either implement the feature or remove the control before shipping.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 553,
+          "detail": "R28 phrase=phase 2"
+        }
+      ],
+      "recommendation": "Remove placeholder/stub wording from shipped tooltips, or hide the unfinished control.",
+      "truth_bucket": "proven_failures",
+      "truth_label": "Proven Failures",
+      "confidence": "high"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0006",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R28 info",
+      "message": "inline dynamic count found; counts belong on the second line",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 914,
+          "col": 48,
+          "detail": "Inviolable Rule #21"
+        }
+      ],
+      "recommendation": "Split label and count into separate centered lines.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0020",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R25 info",
+      "message": "resizable surface missing _compute_min_size, _compute_default_size",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3015,
+          "col": 1,
+          "detail": "\u00a713"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0021",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R25 info",
+      "message": "resizable surface may be missing QSettings geometry persistence",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3015,
+          "col": 1,
+          "detail": "\u00a713"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0042",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R11 info",
+      "message": "label near control may be missing Qt.AlignVCenter",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 3441,
+          "col": 24,
+          "detail": "Inviolable Rule #14"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0065",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R25 info",
+      "message": "resizable surface missing _compute_min_size, _compute_default_size",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4342,
+          "col": 1,
+          "detail": "\u00a713"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0076",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R11 info",
+      "message": "label near control may be missing Qt.AlignVCenter",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4547,
+          "col": 29,
+          "detail": "Inviolable Rule #14"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0077",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R12 info",
+      "message": "Slider label not right-aligned heuristic found",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 4548,
+          "col": 23,
+          "detail": "Inviolable Rule #18"
+        }
+      ],
+      "recommendation": "Review against the Design Bible requirement.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0084",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R19 info",
+      "message": "empty-state copy may be missing the Bible tutorial voice pattern",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/exporter.py",
+          "line": 75,
+          "col": 1,
+          "detail": "\u00a78"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0085",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R28 info",
+      "message": "inline dynamic count found; counts belong on the second line",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/exporter.py",
+          "line": 140,
+          "col": 45,
+          "detail": "Inviolable Rule #21"
+        }
+      ],
+      "recommendation": "Split label and count into separate centered lines.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0087",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R19 info",
+      "message": "empty-state copy may be missing the Bible tutorial voice pattern",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/inbox.py",
+          "line": 51,
+          "col": 1,
+          "detail": "\u00a78"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0088",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R19 info",
+      "message": "empty-state copy may be missing the Bible tutorial voice pattern",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/models.py",
+          "line": 160,
+          "col": 1,
+          "detail": "\u00a78"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0089",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R19 info",
+      "message": "empty-state copy may be missing the Bible tutorial voice pattern",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/packet_io.py",
+          "line": 350,
+          "col": 1,
+          "detail": "\u00a78"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0090",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R19 info",
+      "message": "empty-state copy may be missing the Bible tutorial voice pattern",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/queueing.py",
+          "line": 110,
+          "col": 1,
+          "detail": "\u00a78"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0093",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R19 info",
+      "message": "empty-state copy may be missing the Bible tutorial voice pattern",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 154,
+          "col": 1,
+          "detail": "\u00a78"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0095",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R28 info",
+      "message": "inline dynamic count found; counts belong on the second line",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 374,
+          "col": 37,
+          "detail": "Inviolable Rule #21"
+        }
+      ],
+      "recommendation": "Split label and count into separate centered lines.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0100",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R19 info",
+      "message": "empty-state copy may be missing the Bible tutorial voice pattern",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 102,
+          "col": 1,
+          "detail": "\u00a78"
+        }
+      ],
+      "recommendation": "Address the lint violation or document a legitimate suppression.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-LINT-VELLUM-0118",
+      "app": "Vellum",
+      "scanner": "pg_design_lint",
+      "status": "unknown",
+      "severity": "info",
+      "title": "R28 info",
+      "message": "inline dynamic count found; counts belong on the second line",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 1065,
+          "col": 36,
+          "detail": "Inviolable Rule #21"
+        }
+      ],
+      "recommendation": "Split label and count into separate centered lines.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-WORKFLOW-ORDER-VELLUM-0001",
+      "app": "Vellum",
+      "scanner": "workflow_order_static",
+      "status": "unknown",
+      "severity": "coverage-gap",
+      "title": "PySide workflow order unproven",
+      "message": "Static Python source shows UI action controls, but BA cannot prove left-to-right runtime order from source text alone.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "detail": "PySide/QAction/QComboBox control evidence"
+        }
+      ],
+      "recommendation": "Add explicit order metadata or an app-specific runtime geometry/order probe.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-WORKFLOW-ORDER-VELLUM-0002",
+      "app": "Vellum",
+      "scanner": "workflow_order_static",
+      "status": "unknown",
+      "severity": "coverage-gap",
+      "title": "PySide workflow order unproven",
+      "message": "Static Python source shows UI action controls, but BA cannot prove left-to-right runtime order from source text alone.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "detail": "PySide/QAction/QComboBox control evidence"
+        }
+      ],
+      "recommendation": "Add explicit order metadata or an app-specific runtime geometry/order probe.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-WORKFLOW-ORDER-VELLUM-0003",
+      "app": "Vellum",
+      "scanner": "workflow_order_static",
+      "status": "unknown",
+      "severity": "coverage-gap",
+      "title": "PySide workflow order unproven",
+      "message": "Static Python source shows UI action controls, but BA cannot prove left-to-right runtime order from source text alone.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "detail": "PySide/QAction/QComboBox control evidence"
+        }
+      ],
+      "recommendation": "Add explicit order metadata or an app-specific runtime geometry/order probe.",
+      "truth_bucket": "coverage_gaps",
+      "truth_label": "Coverage Gaps",
+      "confidence": "coverage_gap"
+    },
+    {
+      "id": "BA-ACTION-VELLUM-0001",
+      "app": "Vellum",
+      "scanner": "action_feedback_static",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Python action controls feedback heuristic",
+      "message": "Found 14 action control construction(s), 16 signal connection(s), feedback signal present.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py",
+          "line": 2644,
+          "detail": "first action control evidence"
+        }
+      ],
+      "recommendation": "Static evidence is acceptable; runtime click verification remains future work.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-ACTION-VELLUM-0002",
+      "app": "Vellum",
+      "scanner": "action_feedback_static",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Python action controls feedback heuristic",
+      "message": "Found 3 action control construction(s), 3 signal connection(s), feedback signal present.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/split_view.py",
+          "line": 351,
+          "detail": "first action control evidence"
+        }
+      ],
+      "recommendation": "Static evidence is acceptable; runtime click verification remains future work.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-ACTION-VELLUM-0003",
+      "app": "Vellum",
+      "scanner": "action_feedback_static",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Python action controls feedback heuristic",
+      "message": "Found 6 action control construction(s), 6 signal connection(s), feedback signal present.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/vellum_approval/widgets.py",
+          "line": 340,
+          "detail": "first action control evidence"
+        }
+      ],
+      "recommendation": "Static evidence is acceptable; runtime click verification remains future work.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-INV-VELLUM-001",
+      "app": "Vellum",
+      "scanner": "app_inventory",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Registered app source found",
+      "message": "Found 15 supported file(s) for this app from manifest scope.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/am_mockup_review.py"
+        },
+        {
+          "file": "workflows/design/applets/vellum_approval/__init__.py"
+        },
+        {
+          "file": "workflows/design/applets/vellum_approval/exporter.py"
+        },
+        {
+          "file": "workflows/design/applets/vellum_approval/fixtures/_README.md"
+        },
+        {
+          "file": "workflows/design/applets/vellum_approval/fixtures/gen_fixture_images.py"
+        }
+      ],
+      "recommendation": "No inventory action required.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-SELF-REPORT-HEADER",
+      "app": "Vellum",
+      "scanner": "ba_self_integrity",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Mandatory report truth header present",
+      "message": "report_text starts with the required evidence-backed header.",
+      "evidence": [
+        {
+          "file": "scripts/ba_audit_runner.py",
+          "detail": "build_report_text"
+        }
+      ],
+      "recommendation": "No action required.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-COVERAGE-VELLUM-MATRIX",
+      "app": "Vellum",
+      "scanner": "bible_coverage_matrix",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Bible Coverage Matrix generated",
+      "message": "BA recorded 5 enabled coverage row(s) and 2 known future coverage gap row(s) for this target.",
+      "evidence": [
+        {
+          "file": "scripts/ba_audit_runner.py",
+          "detail": "matrix_rows=11; enabled=5; planned_gaps=2"
+        }
+      ],
+      "recommendation": "Use the matrix to distinguish checked Bible surfaces from future scanner gaps before dispatching fixes.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-CONSISTENCY-0001",
+      "app": "Vellum",
+      "scanner": "report_consistency",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Canonical totals consistent",
+      "message": "All report totals derive from the single checks array.",
+      "evidence": [],
+      "recommendation": "No action required.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-STALENESS-0001",
+      "app": "Vellum",
+      "scanner": "staleness",
+      "status": "pass",
+      "severity": "pass",
+      "title": "Current run timestamp generated",
+      "message": "This run generated canonical timestamp 2026-05-09T10:07:51-07:00 under standard staleness policy.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/ba_audit_latest.json"
+        }
+      ],
+      "recommendation": "Viewer must display this timestamp and warn when loaded data ages beyond threshold.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    },
+    {
+      "id": "BA-STALENESS-0002",
+      "app": "Vellum",
+      "scanner": "staleness",
+      "status": "pass",
+      "severity": "pass",
+      "title": "History log available",
+      "message": "Append-only history exists for run comparison.",
+      "evidence": [
+        {
+          "file": "workflows/design/applets/ba_audit_history.jsonl"
+        }
+      ],
+      "recommendation": "No action required.",
+      "truth_bucket": "informational_evidence",
+      "truth_label": "Informational Evidence",
+      "confidence": "informational"
+    }
+  ],
+  "run_state": "complete",
+  "progress_percent": 100,
+  "run_progress": [
+    {
+      "percent": 5,
+      "phase": "Manifest",
+      "status": "complete",
+      "detail": "Loaded 12 registered app target(s).",
+      "timestamp": "2026-05-09T10:07:50-07:00"
+    },
+    {
+      "percent": 12,
+      "phase": "Target selection",
+      "status": "complete",
+      "detail": "Selected single app target: Vellum.",
+      "timestamp": "2026-05-09T10:07:50-07:00"
+    },
+    {
+      "percent": 22,
+      "phase": "Inventory discovery",
+      "status": "complete",
+      "detail": "Found 15 source file(s) for Vellum.",
+      "timestamp": "2026-05-09T10:07:50-07:00"
+    },
+    {
+      "percent": 35,
+      "phase": "Inventory scanner",
+      "status": "complete",
+      "detail": "Inventory evidence recorded.",
+      "timestamp": "2026-05-09T10:07:50-07:00"
+    },
+    {
+      "percent": 58,
+      "phase": "PG design lint",
+      "status": "complete",
+      "detail": "pg_design_lint evidence recorded for selected target.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 72,
+      "phase": "Action feedback scan",
+      "status": "complete",
+      "detail": "Static action wiring and feedback heuristic recorded.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 74,
+      "phase": "Broken-wire static scan",
+      "status": "skipped",
+      "detail": "Selected target has no broken_wire_static scanner configured.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 76,
+      "phase": "Workflow order scan",
+      "status": "complete",
+      "detail": "Left-to-right workflow/tool order evidence recorded.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 78,
+      "phase": "Forbidden language scan",
+      "status": "skipped",
+      "detail": "Selected target has no forbidden_language_static scanner configured.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 84,
+      "phase": "Runtime Check Pack",
+      "status": "skipped",
+      "detail": "Selected target has no runtime_check_pack scanner configured.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 88,
+      "phase": "Runtime action feedback",
+      "status": "skipped",
+      "detail": "Selected target has no runtime_action_feedback scanner configured.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 89,
+      "phase": "Runtime geometry",
+      "status": "skipped",
+      "detail": "Selected target has no runtime_geometry scanner configured.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 90,
+      "phase": "BA self-integrity",
+      "status": "skipped",
+      "detail": "Self-integrity scanner applies only to the BA applet target.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 91,
+      "phase": "Mockup preflight",
+      "status": "skipped",
+      "detail": "Mockup preflight was not requested.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 92,
+      "phase": "Bible Coverage Matrix",
+      "status": "complete",
+      "detail": "Bible Coverage Matrix evidence recorded.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 94,
+      "phase": "Report consistency",
+      "status": "complete",
+      "detail": "Canonical totals and report consistency evidence recorded.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    },
+    {
+      "percent": 100,
+      "phase": "Complete",
+      "status": "complete",
+      "detail": "Canonical JSON and report text built for the selected app.",
+      "timestamp": "2026-05-09T10:07:51-07:00"
+    }
+  ],
+  "staleness_policy": {
+    "mode": "standard",
+    "warn_hours": 24,
+    "fail_hours": 72
+  },
+  "scanner_versions": {
+    "app_inventory": "1.3.1",
+    "pg_design_lint": "1.0.0",
+    "action_feedback_static": "1.3.2",
+    "broken_wire_static": "1.0.0",
+    "workflow_order_static": "1.0.0",
+    "forbidden_language_static": "1.0.0",
+    "ba_self_integrity": "1.3.1",
+    "bible_coverage_matrix": "1.3.1",
+    "report_consistency": "1.3.1",
+    "runtime_action_feedback": "1.4.0",
+    "runtime_geometry": "1.4.0",
+    "runtime_trust_pack": "1.4.0",
+    "runtime_check_pack": "1.3.0",
+    "mockup_preflight": "1.0.0",
+    "staleness": "1.3.1",
+    "truth_split": "1.3.1"
+  },
+  "limitations": [
+    "BA v1.4 static action scanner is heuristic and cannot prove runtime click feedback.",
+    "External CODEX PG apps other than Panda Agent Hub are statically inspected only; pg_design_lint currently applies to Panda Gallery repo paths in the BA manifest.",
+    "Runtime Action Feedback v1.0 browser-probes Bible Audit controls only; cross-app PySide click coverage still requires app-specific adapters.",
+    "Runtime Geometry v1.4 browser-probes Bible Audit only at 1920x1080 and 1000x900; non-BA visual/runtime adapters are still future work.",
+    "Runtime Check Pack v1.3 wraps PAH Inspector for Panda Agent Hub only; browser visual, PySide click, communication speed trend, and non-PAH runtime adapters are still future work.",
+    "Mockup Preflight v1.0 checks package/readiness metadata and structured surfaces; PNG-only pixel proof still requires a dedicated visual adapter or manual review."
+  ],
+  "truth_split": {
+    "proven_failures": {
+      "count": 108,
+      "label": "Proven Failures",
+      "description": "Deterministic fail/warn findings from scanners that can point to concrete evidence.",
+      "by_status": {
+        "fail": 21,
+        "warn": 87,
+        "unknown": 0,
+        "pass": 0
+      }
+    },
+    "heuristic_suspects": {
+      "count": 0,
+      "label": "Heuristic Suspects",
+      "description": "Static action-feedback suspects that require code tracing or runtime confirmation before app code is changed.",
+      "by_status": {
+        "fail": 0,
+        "warn": 0,
+        "unknown": 0,
+        "pass": 0
+      }
+    },
+    "coverage_gaps": {
+      "count": 20,
+      "label": "Coverage Gaps",
+      "description": "Unknown, skipped, unsupported, or scanner-limit findings that mean BA cannot prove the surface yet.",
+      "by_status": {
+        "fail": 0,
+        "warn": 0,
+        "unknown": 20,
+        "pass": 0
+      }
+    },
+    "informational_evidence": {
+      "count": 9,
+      "label": "Informational Evidence",
+      "description": "Evidenced passes and non-actionable proof rows.",
+      "by_status": {
+        "fail": 0,
+        "warn": 0,
+        "unknown": 0,
+        "pass": 9
+      }
+    }
+  },
+  "report_text": "PANDA BIBLE AUDIT - EVIDENCE-BACKED REPORT\nTarget: Vellum. Coverage: 1 of 1 selected app scanned (20 unknown checks).\nPASS requires scanner evidence; UNKNOWN is never PASS.\nBA v1.4 requires exactly one target app per run; all-app audits are disabled.\n================================================================\nGenerated      : 2026-05-09T10:07:51-07:00\nRunner         : BA runner 1.4.0\nTarget app     : Vellum\nStaleness mode : standard (24h warn / 72h fail)\nRun state      : complete at 100%\nTotals         : 21 fail / 87 warn / 20 unknown / 9 evidenced\nEvidence score: 7.7% (pass / (pass + fail + warn))\nCoverage debt : 14.6% (unknown / (pass + fail + warn + unknown))\nCoverage      : INCOMPLETE active checks\n\nEXECUTIVE SUMMARY\n----------------------------------------------------------------\n  108 proven/high-confidence finding(s) require fix investigation.\n  20 coverage gap(s): BA cannot prove those surface(s) yet.\n\nTRUTH SPLIT\n----------------------------------------------------------------\n  Proven Failures: 108 - Deterministic fail/warn findings from scanners that can point to concrete evidence.\n  Heuristic Suspects: 0 - Static action-feedback suspects that require code tracing or runtime confirmation before app code is changed.\n  Coverage Gaps: 20 - Unknown, skipped, unsupported, or scanner-limit findings that mean BA cannot prove the surface yet.\n  Informational Evidence: 9 - Evidenced passes and non-actionable proof rows.\n\nFIX HANDOFF QUICK INDEX\n----------------------------------------------------------------\n  Fix-worthy     : yes\n  Proven/high    : 108\n  Heuristic      : 0\n  Coverage gaps  : 20\n  Actionable     : 128 fail/warn/unknown finding(s)\n  Reproduce      : python scripts\\ba_audit_runner.py --app \"Vellum\" --summary\n  1. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0003 | workflows/design/applets/am_mockup_review.py:232:17 \u00a72.1-\u00a72.8\n  2. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0008 | workflows/design/applets/am_mockup_review.py:1321:51 \u00a72.1-\u00a72.8\n  3. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0014 | workflows/design/applets/am_mockup_review.py:2595:13 STYLE.md \u00a710\n  4. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0025 | workflows/design/applets/am_mockup_review.py:3053:13 STYLE.md \u00a710\n  5. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0032 | workflows/design/applets/am_mockup_review.py:3312:13 STYLE.md \u00a710\n  6. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0038 | workflows/design/applets/am_mockup_review.py:3412:14 \u00a72.1-\u00a72.8\n  7. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0040 | workflows/design/applets/am_mockup_review.py:3425:16 STYLE.md \u00a710\n  8. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0047 | workflows/design/applets/am_mockup_review.py:3788:33 \u00a72.1-\u00a72.8\n  9. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0051 | workflows/design/applets/am_mockup_review.py:3884:13 STYLE.md \u00a710\n  10. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0056 | workflows/design/applets/am_mockup_review.py:4000:11 STYLE.md \u00a710\n  11. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0060 | workflows/design/applets/am_mockup_review.py:4176:37 \u00a72.1-\u00a72.8\n  12. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0061 | workflows/design/applets/am_mockup_review.py:4222:13 STYLE.md \u00a710\n  13. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0067 | workflows/design/applets/am_mockup_review.py:4351:13 STYLE.md \u00a710\n  14. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0073 | workflows/design/applets/am_mockup_review.py:4443:27 STYLE.md \u00a710\n  15. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0075 | workflows/design/applets/am_mockup_review.py:4478:33 STYLE.md \u00a710\n  16. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0079 | workflows/design/applets/am_mockup_review.py:4594:37 \u00a72.1-\u00a72.8\n  17. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0108 | workflows/design/applets/vellum_approval/widgets.py:225:25 \u00a72.1-\u00a72.8\n  18. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0121 | workflows/design/applets/vellum_approval/widgets.py:559 R27 QScrollArea body addStretch\n  19. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0122 | workflows/design/applets/vellum_approval/widgets.py:642 R27 QScrollArea body addStretch\n  20. FAIL | error | Proven Failures | confidence=high | pg_design_lint | BA-LINT-VELLUM-0123 | workflows/design/applets/vellum_approval/widgets.py:730 R27 QScrollArea body addStretch\n  ... 108 additional actionable finding(s) omitted from quick index.\n\nRUN TELEMETRY\n----------------------------------------------------------------\n    5% Manifest: complete - Loaded 12 registered app target(s).\n   12% Target selection: complete - Selected single app target: Vellum.\n   22% Inventory discovery: complete - Found 15 source file(s) for Vellum.\n   35% Inventory scanner: complete - Inventory evidence recorded.\n   58% PG design lint: complete - pg_design_lint evidence recorded for selected target.\n   72% Action feedback scan: complete - Static action wiring and feedback heuristic recorded.\n   74% Broken-wire static scan: skipped - Selected target has no broken_wire_static scanner configured.\n   76% Workflow order scan: complete - Left-to-right workflow/tool order evidence recorded.\n   78% Forbidden language scan: skipped - Selected target has no forbidden_language_static scanner configured.\n   84% Runtime Check Pack: skipped - Selected target has no runtime_check_pack scanner configured.\n   88% Runtime action feedback: skipped - Selected target has no runtime_action_feedback scanner configured.\n   89% Runtime geometry: skipped - Selected target has no runtime_geometry scanner configured.\n   90% BA self-integrity: skipped - Self-integrity scanner applies only to the BA applet target.\n   91% Mockup preflight: skipped - Mockup preflight was not requested.\n   92% Bible Coverage Matrix: complete - Bible Coverage Matrix evidence recorded.\n   94% Report consistency: complete - Canonical totals and report consistency evidence recorded.\n  100% Complete: complete - Canonical JSON and report text built for the selected app.\n\nWHAT BA ACTUALLY TESTED\n----------------------------------------------------------------\n  Runtime verdict : runtime_not_applicable\n  Runtime complete: false\n  Server URL      : http://127.0.0.1:8791\n  Required        : none\n  Executed        : none\n  Skipped         : none\n  Controls probed : 0\n  Selectors measured: 0\n  Screenshots     : 0\n\nAPP COVERAGE\n----------------------------------------------------------------\n  Vellum: 21 fail / 87 warn / 20 unknown / 9 evidenced; score 7.7%; debt 14.6%\n\nBIBLE COVERAGE MATRIX\n----------------------------------------------------------------\n  BIBLE-COV-001 Registered app inventory and source scope\n    scanner : app_inventory\n    coverage: covered_static; enabled\n    evidence: Manifest paths are resolved and readable source files are counted.\n    gap     : Does not prove those files are the entire app surface.\n  BIBLE-COV-002 PG Design Bible token/QSS discipline\n    scanner : pg_design_lint\n    coverage: covered_static_when_enabled; enabled\n    evidence: Uses the same pg_design_lint engine as the commit gate for enabled repo paths.\n    gap     : Files outside pg_design_lint scope remain unproven and must not be reported as pass.\n  BIBLE-COV-003 Action controls expose user feedback\n    scanner : action_feedback_static\n    coverage: heuristic_static; enabled\n    evidence: Finds buttons/actions and nearby handler or feedback markers.\n    gap     : Static heuristics cannot prove runtime click behavior for complex Qt or delegated handlers.\n  BIBLE-COV-003B Broken-wire workflow affordances\n    scanner : broken_wire_static\n    coverage: heuristic_static; not enabled\n    evidence: Finds high-risk visible controls whose text-entry, visual, launch, or state path is disconnected.\n    gap     : Static heuristics cannot prove full runtime workflows; app-specific browser and tray probes remain required for final proof.\n  BIBLE-COV-004 BA browser action feedback\n    scanner : runtime_action_feedback\n    coverage: covered_runtime_for_ba; not enabled\n    evidence: Runs a Playwright browser probe against BA controls with visible status/timestamp feedback.\n    gap     : Currently covers the BA HTML applet only.\n  BIBLE-COV-005 Panda Agent Hub runtime health\n    scanner : runtime_check_pack\n    coverage: covered_runtime_for_pah; not enabled\n    evidence: Imports PAH Inspector findings for endpoint, mailbox, ledger, protocol, and UI wiring evidence.\n    gap     : Does not cover non-PAH apps until dedicated runtime adapters exist.\n  BIBLE-COV-006 BA truth/report consistency\n    scanner : ba_self_integrity/report_consistency/staleness\n    coverage: covered_self; enabled\n    evidence: Verifies mandatory truth markers, no legacy fake all-app tokens, totals consistency, and timestamps.\n    gap     : Only proves BA's report contract, not target app behavior.\n  BIBLE-COV-007 Screenshot overlap, clipping, and visual regression\n    scanner : planned_visual_runtime\n    coverage: not_implemented; not enabled\n    evidence: No BA visual regression scanner exists yet.\n    gap     : Screen glitches require Playwright/PySide screenshot probes and image comparison before BA can gate them.\n  BIBLE-COV-008 PySide runtime click feedback\n    scanner : planned_pyside_runtime\n    coverage: not_implemented; not enabled\n    evidence: No cross-app PySide click harness exists yet.\n    gap     : Qt button feedback remains static or manually verified until an app-specific runtime adapter exists.\n  BIBLE-COV-009 Left-to-right workflow and tool order\n    scanner : workflow_order_static\n    coverage: covered_static_when_marked; enabled\n    evidence: Checks declared HTML order markers and reports unproven PySide source order as a coverage gap.\n    gap     : Does not prove pixel geometry; PySide surfaces need runtime probes or explicit metadata.\n  BIBLE-COV-010 BA browser runtime geometry and screen-glitch proof\n    scanner : runtime_geometry\n    coverage: covered_runtime_for_ba; not enabled\n    evidence: Runs Playwright geometry probes against Bible Audit at 1920x1080 and 1000x900, saving screenshot artifacts.\n    gap     : Covers Bible Audit only; no non-BA runtime geometry adapters or screenshot baseline diffing yet.\n\nFAIL (21)\n----------------------------------------------------------------\n  BA-LINT-VELLUM-0003 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R02 error\n  Detail: hex literal #f4d35e is not in the PG palette\n  Primary evidence: workflows/design/applets/am_mockup_review.py:232:17 \u00a72.1-\u00a72.8\n  Fix   : Replace the literal with the nearest palette token.\n\n  BA-LINT-VELLUM-0008 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R02 error\n  Detail: hex literal #f4d35e is not in the PG palette\n  Primary evidence: workflows/design/applets/am_mockup_review.py:1321:51 \u00a72.1-\u00a72.8\n  Fix   : Replace the literal with the nearest palette token.\n\n  BA-LINT-VELLUM-0014 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2595:13 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0025 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3053:13 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0032 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3312:13 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0038 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R02 error\n  Detail: hex literal #f4d35e is not in the PG palette\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3412:14 \u00a72.1-\u00a72.8\n  Fix   : Replace the literal with the nearest palette token.\n\n  BA-LINT-VELLUM-0040 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3425:16 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0047 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R02 error\n  Detail: hex literal #888 is not in the PG palette\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3788:33 \u00a72.1-\u00a72.8\n  Fix   : Replace the literal with the nearest palette token.\n\n  BA-LINT-VELLUM-0051 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3884:13 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0056 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4000:11 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0060 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R02 error\n  Detail: hex literal #888 is not in the PG palette\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4176:37 \u00a72.1-\u00a72.8\n  Fix   : Replace the literal with the nearest palette token.\n\n  BA-LINT-VELLUM-0061 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4222:13 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0067 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4351:13 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0073 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4443:27 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0075 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R17 error\n  Detail: Inline styles heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4478:33 STYLE.md \u00a710\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0079 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R02 error\n  Detail: hex literal #888 is not in the PG palette\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4594:37 \u00a72.1-\u00a72.8\n  Fix   : Replace the literal with the nearest palette token.\n\n  BA-LINT-VELLUM-0108 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R02 error\n  Detail: hex literal #4a4a5e is not in the PG palette\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:225:25 \u00a72.1-\u00a72.8\n  Fix   : Replace the literal with the nearest palette token.\n\n  BA-LINT-VELLUM-0121 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R27 error\n  Detail: R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:559 R27 QScrollArea body addStretch\n  Fix   : Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.\n\n  BA-LINT-VELLUM-0122 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R27 error\n  Detail: R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:642 R27 QScrollArea body addStretch\n  Fix   : Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.\n\n  BA-LINT-VELLUM-0123 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R27 error\n  Detail: R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:730 R27 QScrollArea body addStretch\n  Fix   : Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.\n\n  BA-LINT-VELLUM-0124 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R27 error\n  Detail: R27: addStretch() in a QScrollArea body layout suppresses the scrollbar. Remove addStretch() or use addSpacerItem(QSpacerItem(..., Minimum, Expanding)) only at the bottom of a non-scroll layout.\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:750 R27 QScrollArea body addStretch\n  Fix   : Remove addStretch() from the scroll-area body layout or move spacer behavior outside the scroll body.\n\nWARN (87)\n----------------------------------------------------------------\n  BA-LINT-VELLUM-0001 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:227:28 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0002 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:230:17 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0004 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #7fb069 appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:233:17 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0005 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:236:18 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0007 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #7fb069 appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:1319:51 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0009 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:1376:36 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0010 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2026:28 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0011 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2174:32 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0012 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2361:28 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0013 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2404:28 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0015 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2607:53 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0016 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2614:80 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0017 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2626:60 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0018 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2758:18 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0019 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2838:20 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0022 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R16 warning\n  Detail: resize in top-level window needs a \u00a713 derivation comment\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3039:13 \u00a713\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0023 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R16 warning\n  Detail: resize in top-level window needs a \u00a713 derivation comment\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3045:13 \u00a713\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0024 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3052:34 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0026 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3064:24 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0027 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3094:52 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0028 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3097:29 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0029 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3098:31 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0030 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 5px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3108:32 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0031 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3113:63 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0033 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3320:42 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0034 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3324:42 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0035 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3328:42 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0036 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3333:40 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0037 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3410:14 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0039 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #7fb069 appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3413:14 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0041 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3428:60 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0043 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3625:27 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0044 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #7fb069 appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3627:27 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0045 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R05a warning\n  Detail: point size 7 is off the PG type scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3646:9 \u00a73.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0046 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R05a warning\n  Detail: point size 9 is off the PG type scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3711:33 \u00a73.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0048 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 2px is off the PG scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3792:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0049 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 2px is off the PG scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3792:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0050 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 2px is off the PG scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3793:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0052 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3892:80 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0053 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3913:24 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0054 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3913:58 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0055 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3916:80 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0057 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4007:50 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0058 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4013:60 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0059 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4097:13 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0062 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4284:30 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0063 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4288:23 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0064 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R05a warning\n  Detail: point size 7 is off the PG type scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4314:9 \u00a73.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0066 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R16 warning\n  Detail: resize in top-level window needs a \u00a713 derivation comment\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4350:9 \u00a713\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0068 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4358:60 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0069 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4360:57 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0070 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4361:54 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0071 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4363:56 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0072 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4364:59 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0074 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4452:29 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0078 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R16 warning\n  Detail: setFixedHeight in top-level window needs a \u00a713 derivation comment\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4567:9 \u00a713\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0080 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R03b warning\n  Detail: QFileDialog is forbidden by R03b.\n  Primary evidence: workflows/design/applets/am_mockup_review.py:5280:9 Inviolable Rule #22\n  Fix   : Known debt until dark replacements ship; avoid new uses when possible.\n\n  BA-LINT-VELLUM-0081 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R03b warning\n  Detail: QFileDialog is forbidden by R03b.\n  Primary evidence: workflows/design/applets/am_mockup_review.py:5307:38 Inviolable Rule #22\n  Fix   : Known debt until dark replacements ship; avoid new uses when possible.\n\n  BA-LINT-VELLUM-0082 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R03b warning\n  Detail: QFileDialog is forbidden by R03b.\n  Primary evidence: workflows/design/applets/am_mockup_review.py:6472:9 Inviolable Rule #22\n  Fix   : Known debt until dark replacements ship; avoid new uses when possible.\n\n  BA-LINT-VELLUM-0083 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R03b warning\n  Detail: QFileDialog is forbidden by R03b.\n  Primary evidence: workflows/design/applets/am_mockup_review.py:6473:22 Inviolable Rule #22\n  Fix   : Known debt until dark replacements ship; avoid new uses when possible.\n\n  BA-LINT-VELLUM-0086 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/vellum_approval/fixtures/gen_fixture_images.py:13:19 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0091 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R03b warning\n  Detail: QFileDialog is forbidden by R03b.\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:35:1 Inviolable Rule #22\n  Fix   : Known debt until dark replacements ship; avoid new uses when possible.\n\n  BA-LINT-VELLUM-0092 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:108:12 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0094 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:346:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0096 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R03b warning\n  Detail: QFileDialog is forbidden by R03b.\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:458:19 Inviolable Rule #22\n  Fix   : Known debt until dark replacements ship; avoid new uses when possible.\n\n  BA-LINT-VELLUM-0097 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R03b warning\n  Detail: QFileDialog is forbidden by R03b.\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:474:19 Inviolable Rule #22\n  Fix   : Known debt until dark replacements ship; avoid new uses when possible.\n\n  BA-LINT-VELLUM-0098 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #e8a87c appears outside allowed locality\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:55:12 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0099 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R26 warning\n  Detail: mode-zone color #7fb069 appears outside allowed locality\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:57:8 Bible non-negotiable #6\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0101 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 9px is off the PG radius scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:147:72 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0102 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 9px is off the PG radius scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:164:26 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0103 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 12px is off the PG radius scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:169:26 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0104 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 9px is off the PG radius scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:179:72 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0105 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 9px is off the PG radius scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:210:26 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0106 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:215:26 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0107 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R18 warning\n  Detail: border-radius 3px is off the PG radius scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:217:49 \u00a74.2\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0109 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:329:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0110 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:418:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0111 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:418:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0112 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 2px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:419:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0113 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:548:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0114 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 2px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:624:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0115 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:632:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0116 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:728:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0117 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R04 warning\n  Detail: spacing value 6px is off the PG scale\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:748:9 \u00a74.1\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0119 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R28 warning\n  Detail: R28: Tooltip contains unimplemented-marker text ('phase 2'). Either implement the feature or remove the control before shipping.\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4063 R28 phrase=phase 2\n  Fix   : Remove placeholder/stub wording from shipped tooltips, or hide the unfinished control.\n\n  BA-LINT-VELLUM-0120 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R28 warning\n  Detail: R28: Tooltip contains unimplemented-marker text ('phase 3'). Either implement the feature or remove the control before shipping.\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4249 R28 phrase=phase 3\n  Fix   : Remove placeholder/stub wording from shipped tooltips, or hide the unfinished control.\n\n  BA-LINT-VELLUM-0125 [Vellum] pg_design_lint\n  Truth : Proven Failures\n  Confidence: high\n  Title : R28 warning\n  Detail: R28: Tooltip contains unimplemented-marker text ('phase 2'). Either implement the feature or remove the control before shipping.\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:553 R28 phrase=phase 2\n  Fix   : Remove placeholder/stub wording from shipped tooltips, or hide the unfinished control.\n\nUNKNOWN (20)\n----------------------------------------------------------------\n  BA-LINT-VELLUM-0006 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R28 info\n  Detail: inline dynamic count found; counts belong on the second line\n  Primary evidence: workflows/design/applets/am_mockup_review.py:914:48 Inviolable Rule #21\n  Fix   : Split label and count into separate centered lines.\n\n  BA-LINT-VELLUM-0020 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R25 info\n  Detail: resizable surface missing _compute_min_size, _compute_default_size\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3015:1 \u00a713\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0021 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R25 info\n  Detail: resizable surface may be missing QSettings geometry persistence\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3015:1 \u00a713\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0042 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R11 info\n  Detail: label near control may be missing Qt.AlignVCenter\n  Primary evidence: workflows/design/applets/am_mockup_review.py:3441:24 Inviolable Rule #14\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0065 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R25 info\n  Detail: resizable surface missing _compute_min_size, _compute_default_size\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4342:1 \u00a713\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0076 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R11 info\n  Detail: label near control may be missing Qt.AlignVCenter\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4547:29 Inviolable Rule #14\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0077 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R12 info\n  Detail: Slider label not right-aligned heuristic found\n  Primary evidence: workflows/design/applets/am_mockup_review.py:4548:23 Inviolable Rule #18\n  Fix   : Review against the Design Bible requirement.\n\n  BA-LINT-VELLUM-0084 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R19 info\n  Detail: empty-state copy may be missing the Bible tutorial voice pattern\n  Primary evidence: workflows/design/applets/vellum_approval/exporter.py:75:1 \u00a78\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0085 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R28 info\n  Detail: inline dynamic count found; counts belong on the second line\n  Primary evidence: workflows/design/applets/vellum_approval/exporter.py:140:45 Inviolable Rule #21\n  Fix   : Split label and count into separate centered lines.\n\n  BA-LINT-VELLUM-0087 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R19 info\n  Detail: empty-state copy may be missing the Bible tutorial voice pattern\n  Primary evidence: workflows/design/applets/vellum_approval/inbox.py:51:1 \u00a78\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0088 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R19 info\n  Detail: empty-state copy may be missing the Bible tutorial voice pattern\n  Primary evidence: workflows/design/applets/vellum_approval/models.py:160:1 \u00a78\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0089 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R19 info\n  Detail: empty-state copy may be missing the Bible tutorial voice pattern\n  Primary evidence: workflows/design/applets/vellum_approval/packet_io.py:350:1 \u00a78\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0090 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R19 info\n  Detail: empty-state copy may be missing the Bible tutorial voice pattern\n  Primary evidence: workflows/design/applets/vellum_approval/queueing.py:110:1 \u00a78\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0093 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R19 info\n  Detail: empty-state copy may be missing the Bible tutorial voice pattern\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:154:1 \u00a78\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0095 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R28 info\n  Detail: inline dynamic count found; counts belong on the second line\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:374:37 Inviolable Rule #21\n  Fix   : Split label and count into separate centered lines.\n\n  BA-LINT-VELLUM-0100 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R19 info\n  Detail: empty-state copy may be missing the Bible tutorial voice pattern\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:102:1 \u00a78\n  Fix   : Address the lint violation or document a legitimate suppression.\n\n  BA-LINT-VELLUM-0118 [Vellum] pg_design_lint\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : R28 info\n  Detail: inline dynamic count found; counts belong on the second line\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:1065:36 Inviolable Rule #21\n  Fix   : Split label and count into separate centered lines.\n\n  BA-WORKFLOW-ORDER-VELLUM-0001 [Vellum] workflow_order_static\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : PySide workflow order unproven\n  Detail: Static Python source shows UI action controls, but BA cannot prove left-to-right runtime order from source text alone.\n  Primary evidence: workflows/design/applets/am_mockup_review.py PySide/QAction/QComboBox control evidence\n  Fix   : Add explicit order metadata or an app-specific runtime geometry/order probe.\n\n  BA-WORKFLOW-ORDER-VELLUM-0002 [Vellum] workflow_order_static\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : PySide workflow order unproven\n  Detail: Static Python source shows UI action controls, but BA cannot prove left-to-right runtime order from source text alone.\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py PySide/QAction/QComboBox control evidence\n  Fix   : Add explicit order metadata or an app-specific runtime geometry/order probe.\n\n  BA-WORKFLOW-ORDER-VELLUM-0003 [Vellum] workflow_order_static\n  Truth : Coverage Gaps\n  Confidence: coverage_gap\n  Title : PySide workflow order unproven\n  Detail: Static Python source shows UI action controls, but BA cannot prove left-to-right runtime order from source text alone.\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py PySide/QAction/QComboBox control evidence\n  Fix   : Add explicit order metadata or an app-specific runtime geometry/order probe.\n\nEVIDENCED (9)\n----------------------------------------------------------------\n  BA-ACTION-VELLUM-0001 [Vellum] action_feedback_static\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Python action controls feedback heuristic\n  Detail: Found 14 action control construction(s), 16 signal connection(s), feedback signal present.\n  Primary evidence: workflows/design/applets/am_mockup_review.py:2644 first action control evidence\n  Fix   : Static evidence is acceptable; runtime click verification remains future work.\n\n  BA-ACTION-VELLUM-0002 [Vellum] action_feedback_static\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Python action controls feedback heuristic\n  Detail: Found 3 action control construction(s), 3 signal connection(s), feedback signal present.\n  Primary evidence: workflows/design/applets/vellum_approval/split_view.py:351 first action control evidence\n  Fix   : Static evidence is acceptable; runtime click verification remains future work.\n\n  BA-ACTION-VELLUM-0003 [Vellum] action_feedback_static\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Python action controls feedback heuristic\n  Detail: Found 6 action control construction(s), 6 signal connection(s), feedback signal present.\n  Primary evidence: workflows/design/applets/vellum_approval/widgets.py:340 first action control evidence\n  Fix   : Static evidence is acceptable; runtime click verification remains future work.\n\n  BA-INV-VELLUM-001 [Vellum] app_inventory\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Registered app source found\n  Detail: Found 15 supported file(s) for this app from manifest scope.\n  Primary evidence: workflows/design/applets/am_mockup_review.py\n  More evidence   : workflows/design/applets/vellum_approval/__init__.py\n  More evidence   : workflows/design/applets/vellum_approval/exporter.py\n  More evidence   : workflows/design/applets/vellum_approval/fixtures/_README.md\n  More evidence   : workflows/design/applets/vellum_approval/fixtures/gen_fixture_images.py\n  Fix   : No inventory action required.\n\n  BA-SELF-REPORT-HEADER [Vellum] ba_self_integrity\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Mandatory report truth header present\n  Detail: report_text starts with the required evidence-backed header.\n  Primary evidence: scripts/ba_audit_runner.py build_report_text\n  Fix   : No action required.\n\n  BA-COVERAGE-VELLUM-MATRIX [Vellum] bible_coverage_matrix\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Bible Coverage Matrix generated\n  Detail: BA recorded 5 enabled coverage row(s) and 2 known future coverage gap row(s) for this target.\n  Primary evidence: scripts/ba_audit_runner.py matrix_rows=11; enabled=5; planned_gaps=2\n  Fix   : Use the matrix to distinguish checked Bible surfaces from future scanner gaps before dispatching fixes.\n\n  BA-CONSISTENCY-0001 [Vellum] report_consistency\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Canonical totals consistent\n  Detail: All report totals derive from the single checks array.\n  Fix   : No action required.\n\n  BA-STALENESS-0001 [Vellum] staleness\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : Current run timestamp generated\n  Detail: This run generated canonical timestamp 2026-05-09T10:07:51-07:00 under standard staleness policy.\n  Primary evidence: workflows/design/applets/ba_audit_latest.json\n  Fix   : Viewer must display this timestamp and warn when loaded data ages beyond threshold.\n\n  BA-STALENESS-0002 [Vellum] staleness\n  Truth : Informational Evidence\n  Confidence: informational\n  Title : History log available\n  Detail: Append-only history exists for run comparison.\n  Primary evidence: workflows/design/applets/ba_audit_history.jsonl\n  Fix   : No action required.\n\nLIMITATIONS\n----------------------------------------------------------------\n  - BA v1.4 static action scanner is heuristic and cannot prove runtime click feedback.\n  - External CODEX PG apps other than Panda Agent Hub are statically inspected only; pg_design_lint currently applies to Panda Gallery repo paths in the BA manifest.\n  - Runtime Action Feedback v1.0 browser-probes Bible Audit controls only; cross-app PySide click coverage still requires app-specific adapters.\n  - Runtime Geometry v1.4 browser-probes Bible Audit only at 1920x1080 and 1000x900; non-BA visual/runtime adapters are still future work.\n  - Runtime Check Pack v1.3 wraps PAH Inspector for Panda Agent Hub only; browser visual, PySide click, communication speed trend, and non-PAH runtime adapters are still future work.\n  - Mockup Preflight v1.0 checks package/readiness metadata and structured surfaces; PNG-only pixel proof still requires a dedicated visual adapter or manual review.\n\nSCANNER VERSIONS\n----------------------------------------------------------------\n  action_feedback_static: 1.3.2\n  app_inventory: 1.3.1\n  ba_self_integrity: 1.3.1\n  bible_coverage_matrix: 1.3.1\n  broken_wire_static: 1.0.0\n  forbidden_language_static: 1.0.0\n  mockup_preflight: 1.0.0\n  pg_design_lint: 1.0.0\n  report_consistency: 1.3.1\n  runtime_action_feedback: 1.4.0\n  runtime_check_pack: 1.3.0\n  runtime_geometry: 1.4.0\n  runtime_trust_pack: 1.4.0\n  staleness: 1.3.1\n  truth_split: 1.3.1\n  workflow_order_static: 1.0.0\n\n================================================================\nEND OF BA EVIDENCE REPORT\n================================================================",
+  "app_run_summaries": {
+    "Bible Audit": {
+      "generated_at": "2026-05-09T09:54:10-07:00",
+      "fail": 0,
+      "warn": 0,
+      "unknown": 0,
+      "evidence": 126,
+      "evidence_score_percent": 100.0,
+      "coverage_debt_percent": 0.0,
+      "runner_version": "1.4.0"
+    },
+    "Relay": {
+      "generated_at": "2026-05-08T12:18:52-07:00",
+      "fail": 0,
+      "warn": 218,
+      "unknown": 26,
+      "evidence": 15,
+      "evidence_score_percent": 6.4,
+      "coverage_debt_percent": 10.0,
+      "runner_version": "1.4.0"
+    },
+    "Audit Module": {
+      "generated_at": "2026-05-06T12:04:58-07:00",
+      "fail": 149,
+      "warn": 168,
+      "unknown": 36,
+      "evidence": 13,
+      "evidence_score_percent": 3.9,
+      "coverage_debt_percent": 9.8,
+      "runner_version": "1.4.0"
+    },
+    "Panda Agent Hub": {
+      "generated_at": "2026-05-06T12:03:08-07:00",
+      "fail": 0,
+      "warn": 18,
+      "unknown": 1,
+      "evidence": 82,
+      "evidence_score_percent": 82.0,
+      "coverage_debt_percent": 1.0,
+      "runner_version": "1.4.0"
+    },
+    "BA Negative Fixture": {
+      "generated_at": "2026-05-03T19:46:37-07:00",
+      "fail": 4,
+      "warn": 3,
+      "unknown": 0,
+      "evidence": 6,
+      "evidence_score_percent": 46.2,
+      "coverage_debt_percent": 0.0,
+      "runner_version": "1.4.0"
+    },
+    "Clip Launcher": {
+      "generated_at": "2026-05-03T20:36:21-07:00",
+      "fail": 0,
+      "warn": 0,
+      "unknown": 1,
+      "evidence": 7,
+      "evidence_score_percent": 100.0,
+      "coverage_debt_percent": 12.5,
+      "runner_version": "1.4.0"
+    },
+    "PANDA Collaborator": {
+      "generated_at": "2026-05-08T19:15:15-07:00",
+      "fail": 0,
+      "warn": 0,
+      "unknown": 0,
+      "evidence": 64,
+      "evidence_score_percent": 100.0,
+      "coverage_debt_percent": 0.0,
+      "runner_version": "1.4.0"
+    },
+    "Panda Gallery": {
+      "generated_at": "2026-05-06T12:03:07-07:00",
+      "fail": 138,
+      "warn": 193,
+      "unknown": 42,
+      "evidence": 9,
+      "evidence_score_percent": 2.6,
+      "coverage_debt_percent": 11.0,
+      "runner_version": "1.4.0"
+    },
+    "PG Design Ledger": {
+      "generated_at": "2026-05-06T12:05:38-07:00",
+      "fail": 2,
+      "warn": 8,
+      "unknown": 35,
+      "evidence": 14,
+      "evidence_score_percent": 58.3,
+      "coverage_debt_percent": 59.3,
+      "runner_version": "1.4.0"
+    },
+    "Tracker": {
+      "generated_at": "2026-05-08T10:56:36-07:00",
+      "fail": 122,
+      "warn": 140,
+      "unknown": 28,
+      "evidence": 12,
+      "evidence_score_percent": 4.4,
+      "coverage_debt_percent": 9.3,
+      "runner_version": "1.4.0"
+    },
+    "Inspector": {
+      "generated_at": "2026-05-08T10:56:43-07:00",
+      "fail": 34,
+      "warn": 81,
+      "unknown": 8,
+      "evidence": 8,
+      "evidence_score_percent": 6.5,
+      "coverage_debt_percent": 6.1,
+      "runner_version": "1.4.0"
+    },
+    "Vellum": {
+      "generated_at": "2026-05-09T10:07:51-07:00",
+      "fail": 21,
+      "warn": 87,
+      "unknown": 20,
+      "evidence": 9,
+      "evidence_score_percent": 7.7,
+      "coverage_debt_percent": 14.6,
+      "runner_version": "1.4.0"
+    }
+  }
+}

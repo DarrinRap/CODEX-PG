@@ -162,7 +162,7 @@ Configured: 2026-04-24 18:56:29 -07:00
 <!-- CODEX_HANDOFF_AUTOMATION_START -->
 ## Handoff Automation
 
-Last generated: 2026-05-08 16:48:32 -07:00
+Last generated: 2026-05-14 21:38:05 -07:00
 
 Project-local shortcut folder: `C:\CODEX PG\CODEX Handoff Automation`.
 
@@ -582,4 +582,67 @@ Recommended scope:
 - Treat dynamic imports, reflection, CLI/manual scripts, fixtures, archives, and workflow/mailbox files as human-review unless there is strong evidence.
 
 Protocol: BA dead-code detection should become an advisory quality gate first, not a removal tool. Any deletion requires explicit Darrin/CD/CC approval through the normal routing rules.
+
+## Memory - BA Finding And BA Bug Classification Rule (
+2026-05-09
+)
+
+Darrin approved a BA records convention: potential bugs found by Bible Audit should not automatically become normal product bugs.
+
+Use these buckets:
+- `Product Bug`: BA found a real issue in the target app/code.
+- `BA Bug`: BA itself is wrong, misleading, noisy, incomplete, or untrustworthy, including false positives, false negatives, bad evidence, confusing severity, or scanner/report defects.
+- `BA Advisory`: BA found something plausible but not yet proven and needing human review.
+- `BA Calibration Finding`: expected output from a fixture or validator/calibration run.
+
+Default intake label: `BA Candidate Bug` or `BA Finding`, with structured metadata such as:
+
+```yaml
+source: BA
+finding_type: candidate_product_bug
+confidence: medium
+validation_status: unconfirmed
+```
+
+After review, promote to `product_bug`, `ba_bug`, `ba_advisory`, `ba_calibration_finding`, `false_positive`, or `no_action`. Preserve BA evidence and source metadata; do not let BA alone declare a product bug without validation.
+
+Canonical record updated: `C:\CODEX PG\CODEX Canonical Specs\CODEX_BA_DISPOSITION_AWARE_VIEW_SPEC_v1.md`.
+
+## Memory - BA Audit Surface Coverage Lesson (
+2026-05-09
+)
+
+The PANDA Collaborator BA pass on 2026-05-08 was useful because it exposed a BA coverage/scanner problem, not because it found confirmed PC product bugs.
+
+Issue found and fixed:
+- BA registered `PANDA Collaborator` against only `panda_collaborator.py`, which is the launcher/wrapper surface.
+- The active PC UI lives in `C:\CODEX PG\CODEX PANDA Collaborator\web\index.html`, so BA initially reported `No action controls discovered`.
+- BA also did not understand PC's `$()` helper or delegated button groups, creating noisy action-feedback warnings after the HTML file was added.
+
+Durable rule:
+- A clean BA result is meaningful only when the app manifest covers the active UI/runtime surface, not just a launcher or wrapper.
+- If BA says `No action controls discovered` for an app known to have controls, classify it first as a likely `BA Bug` / coverage gap and inspect manifest scope before changing product code.
+- External CODEX PG apps with browser/HTML UI must keep both the launcher/backend entrypoint and primary UI file in BA manifest/default manifest coverage.
+- Scanner changes must include regression tests for the app's real wiring idioms.
+
+Regression protection added in `C:\panda-gallery\tests\test_ba_audit_runner.py`:
+- PANDA Collaborator manifest includes both `panda_collaborator.py` and `web/index.html`.
+- Default manifest fallback keeps the same PC scope.
+- `action_feedback_static` recognizes `$()` click listeners, named JS handlers, and PC delegated button groups.
+
+## Memory - Bug-Triggered BA Retrospective Protocol (
+2026-05-09
+)
+
+Darrin directed that every bug found by Codex, CC, or CD must notify Codex going forward.
+
+When Codex is notified of a bug, perform a BA retrospective before treating the bug as fully closed:
+- Could BA have detected this bug before a human or agent found it?
+- If yes, propose or implement the smallest BA upgrade that would have caught it, such as manifest/scope coverage, scanner recognition, runtime probe, fixture, regression test, report wording, or disposition logic.
+- If no, record why the bug is outside current BA reach, such as needing human visual judgment, unavailable runtime state, missing adapter capability, or an intentionally non-BA domain.
+- Preserve the original bug evidence and the BA-upgrade evidence together.
+- Never treat this retrospective, bug notice, or BA-upgrade idea as implementation-go, commit-go, or CC authorization.
+
+Notification route: CC/CD bug notices to Codex should use `C:\CODEX PG\CODEX Claude Codex Mailbox\CODEX Inbox\` unless Darrin is actively handling it in the current Codex thread.
+
 

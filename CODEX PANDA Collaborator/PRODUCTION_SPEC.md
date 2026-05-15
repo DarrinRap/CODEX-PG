@@ -180,6 +180,18 @@ PANDA must visually separate passive information from user actions.
 - Across the app, safe action buttons that can currently be clicked must render green. Disabled safe actions must render grey. Dangerous actions such as Emergency Pause may retain warning/red treatment while enabled.
 - User identity colors are not button-ready colors. Amber and cyan identify User 1/User 2 surfaces; green identifies an activatable safe command.
 
+### App-Wide Guided Completion Flow
+
+PANDA Collaborator must read as a left-to-right completion flow. The user should be able to start at the left column, move through the center work area, and finish in the right handoff area without guessing which control is next.
+
+- Each workflow step must show a clear visual state: pending/unavailable, ready/actionable, complete, or blocked/error.
+- Completed steps must show a check mark or equivalent completion icon plus a color change near the step label.
+- Disabled safe actions must be grey, inert, and explain their missing prerequisite through tooltip, nearby status text, or the surrounding checklist/stepper.
+- Enabled safe actions must visibly turn on/ungray when they become actionable.
+- A completed prerequisite must visibly unlock the next actionable control. If the user has to read a log or remember a hidden rule to know what changed, the flow is broken.
+- The left-to-right order is mandatory unless a future spec documents an explicit exception and the exception passes live visual review.
+- This requirement applies app-wide: setup, working tree scan, user handover, start session/work, quick message, package review, end session, and create safe handoff.
+
 ### Mandatory UI Review Gate
 
 Darrin has repeatedly flagged formatting and Bible regressions in PC. Every PC UI change must pass this gate before handoff:
@@ -189,7 +201,8 @@ Darrin has repeatedly flagged formatting and Bible regressions in PC. Every PC U
 3. Run `python -m unittest -v tests.test_panda_collaborator`.
 4. Inspect the live browser at the actual viewport size being discussed.
 5. Look specifically for repeated failure modes: overlapping buttons, button text clipping, hidden horizontal overflow, duplicate controls for one action, clickable pill-looking controls, green applied to non-actions, user identity colors used as readiness colors, and narrow-width grids that still force desktop columns.
-6. Update this spec or the applet whenever Darrin identifies a new repeated visual failure.
+6. Verify the app-wide guided completion flow: left-to-right order, check marks/color changes for completed steps, grey disabled actions, green enabled safe actions, and visible unlocks as prerequisites complete.
+7. Update this spec or the applet whenever Darrin identifies a new repeated visual failure.
 
 Completion language must be evidence-based: name the applet, tests, and visual review performed. If a live browser check was not performed, say so plainly.
 

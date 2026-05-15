@@ -50,6 +50,50 @@ Every view that uses dispositions must clearly separate:
 - `Reviewed overlay`: human/Codex disposition labels.
 - `Active remaining`: unresolved confirmed or unreviewed work.
 
+## 2.1 BA Finding And Bug Classification Rule
+
+BA can raise evidence, but BA does not get to declare a normal product bug without review.
+
+Potential issues found by BA should enter records as `BA Candidate Bug` or `BA Finding` until investigated. After review, promote the finding into one of these buckets:
+
+- `Product Bug`: BA found a real issue in the target app/code.
+- `BA Bug`: BA behavior is wrong, misleading, noisy, incomplete, or untrustworthy, including false positives, false negatives, bad evidence, confusing severity, or scanner/report defects.
+- `BA Advisory`: BA found something plausible but not yet proven and needing human review.
+- `BA Calibration Finding`: expected output from a test fixture or validator/calibration run.
+
+Records should preserve `source: BA` and a structured `finding_type` instead of relying only on title wording. Recommended values:
+
+- `candidate_product_bug`
+- `product_bug`
+- `ba_bug`
+- `ba_advisory`
+- `ba_calibration_finding`
+- `false_positive`
+- `no_action`
+
+Recommended minimum metadata:
+
+```yaml
+source: BA
+finding_type: candidate_product_bug
+confidence: medium
+validation_status: unconfirmed
+```
+
+If investigation shows BA itself is the problem:
+
+```yaml
+source: BA
+finding_type: ba_bug
+validation_status: confirmed
+```
+
+Surface-coverage rule: when BA reports `No action controls discovered` for a target that is known to have visible controls, first inspect the app registry/manifest and scanner support before editing product code. If the manifest points only at a launcher, wrapper, or secondary module while the active UI lives elsewhere, classify the finding as `BA Bug` or `coverage_gap` and fix BA scope/scanner coverage. A clean BA report is trusted only for the files and runtime surfaces named in the manifest.
+
+Normal promotion flow:
+
+`BA Finding -> Product Bug / BA Bug / BA Advisory / BA Calibration Finding / No Action`
+
 ## 3. In Scope
 
 - Disposition schema for BA finding review.
@@ -154,6 +198,9 @@ Each entry must include:
   "ba_target": "PG Design Ledger",
   "original_status": "fail",
   "scanner": "action_feedback_static",
+  "source": "BA",
+  "finding_type": "ba_bug",
+  "validation_status": "confirmed",
   "disposition": "false_positive",
   "confidence": "high",
   "reviewed_by": "Codex",
@@ -303,7 +350,15 @@ The validator output should add:
 
 `entries_applied` counts ledger entries. `findings_covered` counts raw BA rows matched by exact or grouped dispositions. The validator must not change `validation_verdict` from `report_trusted_with_findings` to `report_trusted` just because findings were dispositioned. A cleaner phrase such as `report_trusted_with_dispositioned_findings` may be added later, but the raw report still contains findings.
 
-## 12. Storage Location
+## 12. Bug-Triggered BA Retrospective Rule
+
+Every confirmed bug found by Codex, CC, or CD must trigger a Codex-visible BA retrospective. The bug notice should identify the source evidence, affected app/files, how the bug was found, and whether BA previously ran on that surface.
+
+For each bug, Codex must ask: could BA have caught this earlier? If yes, BA should receive the smallest practical upgrade that would have detected it: manifest coverage, scanner adapter, runtime probe, fixture, regression test, report wording, or disposition rule. If no, the record must say why the bug is outside current BA reach.
+
+This retrospective is a quality-loop requirement only. It is not implementation-go, commit-go, or CC authorization.
+
+## 13. Storage Location
 
 For current Codex-side investigation, the ledger lives under:
 
@@ -316,7 +371,7 @@ For production BA use, no Panda Gallery write is authorized by this spec. A futu
 
 No implementation may silently copy Codex-side dispositions into Panda Gallery.
 
-## 13. Vellum Baseline Example
+## 14. Vellum Baseline Example
 
 The first reviewed target is Vellum, currently named `PG Design Ledger` in BA.
 
@@ -350,7 +405,7 @@ This adjusted result must not be phrased as `Vellum passed BA`. Better wording:
 
 `Vellum BA findings have been reviewed; no urgent confirmed defects remain, with cleanup candidates and coverage gaps tracked.`
 
-## 14. Safety Rules
+## 15. Safety Rules
 
 - Do not hide raw fail/warn/unknown counts.
 - Do not convert unknowns into passes.
@@ -361,7 +416,7 @@ This adjusted result must not be phrased as `Vellum passed BA`. Better wording:
 - Do not treat a false positive as proof that the scanner is useless.
 - Do not treat cleanup candidates as emergencies.
 
-## 15. Tests Required Before Implementation Is Complete
+## 16. Tests Required Before Implementation Is Complete
 
 Minimum tests:
 
@@ -377,7 +432,7 @@ Minimum tests:
 10. UI renders raw and adjusted bands with no misleading `all clean` language.
 11. Vellum sample ledger produces 0 active urgent failures and 3 cleanup candidate groups.
 
-## 16. Acceptance Criteria
+## 17. Acceptance Criteria
 
 A future implementation is acceptable only if:
 
@@ -390,7 +445,7 @@ A future implementation is acceptable only if:
 - Tests cover count math and misleading-language prevention.
 - Documentation explains that dispositioned does not mean perfect.
 
-## 17. Non-Authorization Notice
+## 18. Non-Authorization Notice
 
 This spec does not authorize implementation or edits to `C:\panda-gallery`. It is a vetted-spec candidate. Implementation requires Darrin approval and should be scoped separately.
 

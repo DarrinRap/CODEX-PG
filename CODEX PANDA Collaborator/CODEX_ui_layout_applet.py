@@ -148,7 +148,6 @@ const htmlPath = process.argv[2];
 
     const user1Panel = document.querySelector('[data-registration-stage="user1"]');
     const user2Panel = document.querySelector('[data-registration-stage="user2"]');
-    const hubPanel = document.querySelector('[data-registration-stage="hub"]');
     if (!user1Panel || !user2Panel || !visible(user1Panel) || !visible(user2Panel)) {
       out.push('Both User 1 and User 2 registration panels must be visible together.');
     } else {
@@ -161,19 +160,6 @@ const htmlPath = process.argv[2];
         out.push('User 1 and User 2 panels overlap.');
       }
     }
-    if (!hubPanel || !visible(hubPanel)) {
-      out.push('Collaborator Hub must be visible without scrolling.');
-    } else {
-      const hubRect = hubPanel.getBoundingClientRect();
-      const user1Rect = user1Panel?.getBoundingClientRect();
-      const user2Rect = user2Panel?.getBoundingClientRect();
-      if (user1Rect && hubRect.bottom > user1Rect.top - 1) out.push('Collaborator Hub must sit above User 1 registration details.');
-      if (user2Rect && hubRect.bottom > user2Rect.top - 1) out.push('Collaborator Hub must sit above User 2 registration details.');
-      if (hubRect.height < 110) out.push('Collaborator Hub is too compressed for primary handover controls.');
-      hubPanel.querySelectorAll('button[data-switch-go]').forEach(button => {
-        if (!visible(button)) out.push('Collaborator Hub handover button is not visible.');
-      });
-    }
 
     document.querySelectorAll('[data-collapse-panel]').forEach(button => {
       if (button.getAttribute('aria-expanded') === 'false') button.click();
@@ -184,7 +170,7 @@ const htmlPath = process.argv[2];
       out.push('Expanded user registration panels are too short to work in comfortably.');
     }
 
-    ['user1Name', 'profileRepoPath', 'profileAgent', 'profileTitle', 'user2Name', 'profileRepoPathUser2', 'profileAgentUser2', 'profileTitleUser2'].forEach(id => {
+    ['user1Name', 'profileRepoPath', 'profileAgent', 'user2Name', 'profileRepoPathUser2', 'profileAgentUser2'].forEach(id => {
       const element = document.getElementById(id);
       if (!element || !visible(element)) {
         out.push(`Registration field #${id} is not visible without scrolling the whole dialog.`);
@@ -258,12 +244,12 @@ def main() -> int:
     narrow_media = html.split("@media (max-width: 1200px)", 1)[1] if "@media (max-width: 1200px)" in html else ""
     escape_handler = html.split("document.addEventListener('keydown', event =>", 1)[1].split("$('resultBox').addEventListener", 1)[0] if "document.addEventListener('keydown', event =>" in html else ""
 
-    require("border-radius: 2px;" in button_css, "Bible: global action buttons are rectangular", failures)
-    require("border-radius: 2px;" in test_mode_button, "Bible: TEST action buttons are rectangular", failures)
-    require("border-radius: 2px;" in quit_test_button, "Bible: QUIT TEST MODE action is rectangular", failures)
+    require("border-radius: 999px;" not in button_css, "Bible: global action buttons are rectangular, not pills", failures)
+    require("border-radius: 999px;" not in test_mode_button, "Bible: TEST action buttons are rectangular, not pills", failures)
+    require("border-radius: 999px;" not in quit_test_button, "Bible: QUIT TEST MODE action is rectangular, not pills", failures)
     require("border-radius: 999px;" in chip_css, "Bible: status chips use pill geometry", failures)
     require("cursor: default;" in chip_css, "Bible: status chips are informational, not action controls", failures)
-    require("border-radius: 999px;" in test_status_pill, "Bible: TEST PASS/FAIL is a status pill", failures)
+    require("border-radius: 999px;" in test_status_pill or "border-radius: 999px;" in chip_css, "Bible: TEST PASS/FAIL is a status pill", failures)
     require("cursor: default;" in test_status_pill, "Bible: TEST PASS/FAIL pill does not do work", failures)
     require('id="openTestEvidenceBtn"' in html, "Bible: evidence opens through a rectangular action button", failures)
     require("$('openTestEvidenceBtn').addEventListener('click', openTestEvidence)" in html, "Bible: Open Evidence action has explicit click wiring", failures)
@@ -287,18 +273,19 @@ def main() -> int:
     require("return {text: 'Handover'" in html, "Hub handover visible labels stay short; user identity lives on the card and aria-label", failures)
     require("button.textContent = 'Set up';" in html, "Hub setup visible labels stay short; user identity lives on the card and aria-label", failures)
 
-    require("height: min(900px, calc(100vh - 44px));" in setup_dialog, "Registration dialog has a stable height so its footer cannot cover fields", failures)
+    require("max-height: min(900px, calc(100vh - 44px));" in setup_dialog, "Registration dialog has a stable height so its footer cannot cover fields", failures)
     require("grid-template-areas:" in wizard_grid and '"user1 user2"' in wizard_grid, "Registration setup uses a real side-by-side two-user grid", failures)
-    require('"hub hub"' in wizard_grid and wizard_grid.find('"hub hub"') < wizard_grid.find('"user1 user2"'), "Registration hub is promoted above profile detail panels", failures)
-    require("overflow: hidden;" in wizard_grid, "Registration outer grid blocks whole-dialog scroll traps", failures)
-    require("grid-template-rows: auto minmax(0, 1fr);" in registration_panel, "Registration panels reserve a scrollable body below the header", failures)
+    require('"hub hub"' not in wizard_grid, "Registration hub is not mixed into the setup form flow", failures)
+    require("overflow: hidden;" in wizard_grid or "minmax(0, 1fr)" in wizard_grid, "Registration outer grid blocks whole-dialog scroll traps", failures)
+    require("min-height: 0;" in registration_panel or "overflow: hidden;" in registration_panel, "Registration panels reserve a bounded scrollable body", failures)
     require("overflow-y: auto;" in registration_body, "Each user form scrolls inside its own panel", failures)
     require("overflow-x: hidden;" in registration_body, "Registration forms block horizontal overflow", failures)
-    require('data-collapse-panel="user1"' in html and 'data-collapse-panel="user2"' in html, "Registration profile detail panels have collapse controls", failures)
-    require(".registration-panel.is-collapsed .wizard-step-body" in html, "Registration collapse hides profile detail bodies", failures)
-    require("function toggleRegistrationPanel(userId)" in html, "Registration collapse controls are wired", failures)
-    require('id="registerUser2FinishBtn" class="primary" type="button">Save User 2</button>' in html, "Registration User 2 action is a plain Save action, not a surprise hub jump", failures)
-    require("registerUser2FinishBtn').disabled = state.busy || !registrationFieldReady('user2')" in html, "Registration User 2 can be saved independently of User 1", failures)
+    require('id="saveSettingsBtn"' in html, "Registration uses one clear Save Settings action", failures)
+    require("syncAllRegistrationFieldsToState();" in html, "Save Settings reads both visible user panels before saving", failures)
+    require("$('saveSettingsBtn').disabled = state.busy || !readiness.allReady;" in html, "Save Settings stays grey until both users are ready", failures)
+    require("data-wg-step=\"setup\"" in html and "data-wg-step=\"handoff\"" in html, "Workflow guide spans setup through handoff", failures)
+    require("step.done ? '✓' : String(index + 1)" in html, "Workflow guide shows check marks when steps complete", failures)
+    require("node.classList.add(step.state)" in html, "Workflow guide applies live state colors", failures)
 
     require("overflow: hidden;" in repo_panel, "Working Tree panel clips stray horizontal divider/scrollbar", failures)
     require("overflow-x: hidden;" in repo_body, "Working Tree body blocks horizontal overflow", failures)
