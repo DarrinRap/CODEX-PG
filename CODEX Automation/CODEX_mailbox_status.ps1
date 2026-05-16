@@ -16,6 +16,7 @@ $ClaudeInbox = Join-Path $MailboxRoot "CLAUDE Inbox"
 $ActiveIndex = Join-Path $MailboxRoot "CODEX_ACTIVE_DISPATCH_INDEX.md"
 $CurrentAuthority = Join-Path $MailboxRoot "CODEX_CURRENT_AUTHORITY.md"
 $RelayInventory = Join-Path $CodexRoot "CODEX Relay Mockups\CODEX_RELAY_MOCKUP_DELIVERY_INVENTORY.md"
+$StableMailboxCheck = Join-Path $CodexRoot "CODEX Automation\CODEX_mailbox_stable_check.ps1"
 
 function Write-Section {
     param([Parameter(Mandatory=$true)][string]$Title)
@@ -75,6 +76,14 @@ function Show-GitStatus {
 Write-Output "CODEX mailbox/status snapshot"
 Write-Output "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')"
 Write-Output "Mode: read-only"
+
+Write-Section "Stable Mailbox Check"
+if (Test-Path -LiteralPath $StableMailboxCheck) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $StableMailboxCheck -Passes 3 -DelayMilliseconds 1000
+    Write-Output "Stable mailbox check exit code: $LASTEXITCODE"
+} else {
+    Write-Output "Missing: $StableMailboxCheck"
+}
 
 Write-Section "Active Dispatch Index"
 Show-ExistingFile -Path $ActiveIndex -MaxLines 120
